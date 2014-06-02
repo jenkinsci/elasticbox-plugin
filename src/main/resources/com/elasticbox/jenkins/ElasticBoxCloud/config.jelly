@@ -1,0 +1,23 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!--
+    This jelly script is used for per-project configuration.
+
+    See global.jelly for a general discussion about jelly script.
+  -->
+  <f:entry title="${%End Point URL}" field="endpointUrl">
+    <f:textbox clazz="required" default="https://elasticbox.com"/>
+  </f:entry>
+  <f:entry title="${%Max. No. of Instances}" field="maxInstances">
+    <f:textbox clazz="required number" />
+  </f:entry>
+  <f:entry title="${%Retention Time}" field="retentionTime">
+    <f:textbox clazz="required number" />
+  </f:entry>
+  <f:entry title="${%Username}" field="username">
+    <f:textbox clazz="required" />
+  </f:entry>
+  <f:entry title="${%Password}" field="password">
+    <f:password clazz="required" />
+  </f:entry>
+  <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="endpointUrl,username,password" />
+</j:jelly>
