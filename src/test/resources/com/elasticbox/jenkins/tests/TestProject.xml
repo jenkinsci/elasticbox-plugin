@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders/>
+  <publishers/>
+  <buildWrappers>
+    <com.elasticbox.jenkins.InstanceCreator plugin="elasticbox@0.1-SNAPSHOT">
+      <workspace>{workspace_id}</workspace>
+      <box>{box_id}</box>
+      <profile>{profile_id}</profile>
+    </com.elasticbox.jenkins.InstanceCreator>
+    <com.elasticbox.jenkins.SingleUseSlaveBuildOption plugin="elasticbox@1.0-SNAPSHOT"/>
+  </buildWrappers>
+</project>
