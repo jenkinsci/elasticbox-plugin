@@ -8,7 +8,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>elasticbox</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
@@ -25,7 +25,16 @@
       <url>http://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
-    <name>ElasticBox CI Plug-in</name>
-    <description>Provides full integration between Jenkins and ElasticBox (http://elasticbox.com).
-With this plugin, Jenkins can launch, provision, and manage Jenkins slaves on-demand in different cloud providers via ElasticBox.</description>
+  <name>ElasticBox CI Plug-in</name>
+  <description>
+    Provides full integration between Jenkins and ElasticBox (http://elasticbox.com).
+    With this plugin, Jenkins can launch, provision, and manage Jenkins slaves on-demand in different cloud providers via ElasticBox.
+  </description>
+  <developers>
+    <developer>
+      <id>tphongio</id>
+      <name>Phong Nguyen Le</name>
+      <email>ple@elasticbox.com</email>
+    </developer>
+  </developers>  
 </project>
