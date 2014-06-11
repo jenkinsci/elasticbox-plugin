@@ -177,6 +177,19 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         for (Node node : Jenkins.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave && !isSlaveInQueue((ElasticBoxSlave) node, incomingQueue)) {
                 final ElasticBoxSlave slave = (ElasticBoxSlave) node;
+                if (slave.isSingleUse() && slave.getComputer() != null) {
+                    boolean remove = true;
+                    for (hudson.model.Queue.BuildableItem item : Jenkins.getInstance().getQueue().getBuildableItems(slave.getComputer())) {
+                        if (!item.getFuture().isCancelled()) {
+                            remove = false;
+                            break;
+                        };
+                    }
+                    if (remove) {
+                        slavesToRemove.add(slave);
+                        break;
+                    }
+                }
                 if (slave.getInstanceUrl() != null) {
                     try {
                         JSONObject instance = ebClient.getInstance(slave.getInstanceId());

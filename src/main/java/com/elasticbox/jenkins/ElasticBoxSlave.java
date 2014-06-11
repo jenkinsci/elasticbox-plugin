@@ -153,9 +153,12 @@ public class ElasticBoxSlave extends Slave {
         
         if (canTerminate) {
             SlaveComputer computer = getComputer();
-            for (Object build : computer.getBuilds()) {
-                if (build instanceof AbstractBuild && ((AbstractBuild) build).isBuilding()) {
-                    canTerminate = false;
+            if (computer != null) {
+                for (Object build : computer.getBuilds()) {
+                    if (build instanceof AbstractBuild && ((AbstractBuild) build).isBuilding()) {
+                        canTerminate = false;
+                        break;
+                    }
                 }
             }
         }
