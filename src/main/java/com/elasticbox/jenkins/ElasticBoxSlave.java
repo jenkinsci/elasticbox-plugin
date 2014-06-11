@@ -97,9 +97,9 @@ public class ElasticBoxSlave extends Slave {
         return instanceUrl;
     }    
 
-    public String getInstancePageUrl(String instanceId) throws IOException {
+    public String getInstancePageUrl() throws IOException {
         checkInstanceReachable();
-        return MessageFormat.format("{0}/#/instances/{1}/i", getCloud().getEndpointUrl(), instanceId);
+        return MessageFormat.format("{0}/#/instances/{1}/i", getCloud().getEndpointUrl(), getInstanceId());
     }        
         
     public String getInstanceId() {

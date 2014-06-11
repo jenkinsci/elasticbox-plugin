@@ -286,7 +286,7 @@ public class Client {
                 HttpMethod oldMethod = method;
                 try {
                     method = (HttpMethod) oldMethod.getClass().newInstance();
-                } catch (ReflectiveOperationException ex) {
+                } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }
                 method.setURI(oldMethod.getURI());

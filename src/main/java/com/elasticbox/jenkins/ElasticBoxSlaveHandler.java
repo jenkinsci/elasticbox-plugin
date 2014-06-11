@@ -112,8 +112,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         log(MessageFormat.format("Deloying a new instance for slave {0}", request.slave.getDisplayName()), listener);                    
                     } catch (IOException ex) {
                         log(Level.SEVERE, MessageFormat.format("Error deloying a new instance for slave {0}", request.slave.getDisplayName()), ex, listener);
-                        request.slave.setInstanceStatusMessage(MessageFormat.format("Instance cannot be deployed. Error: {0}", 
-                                ex.getMessage().substring(0, Math.min(ex.getMessage().length(), 1024))));
+                        removeSlave(request.slave);
                     }
                 }
                 Jenkins.getInstance().save();
@@ -138,7 +137,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             try {
                 if (request.monitor.isDone()) {
                     if (request.slave.getComputer().isOnline()) {
-                        request.slave.setInstanceStatusMessage(MessageFormat.format("Successfully deployed at {0}", request.slave.getInstanceUrl()));
+                        request.slave.setInstanceStatusMessage(MessageFormat.format("Successfully deployed at {0}", request.slave.getInstancePageUrl()));
                         saveNeeded = true;
                         iter.remove();
                     } else if ((System.currentTimeMillis() - request.monitor.getCreationTime()) >= TIMEOUT) {
