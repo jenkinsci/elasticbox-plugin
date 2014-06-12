@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.elasticbox.IProgressMonitor;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -98,15 +99,20 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 String profileId = label.getName().substring(ElasticBoxLabelFinder.REUSE_PREFIX.length());
                 final ElasticBoxSlave slave = new ElasticBoxSlave(UUID.randomUUID().toString(), false);
                 slave.setProfileId(profileId);
-                slave.setCloud(ElasticBoxCloud.getInstance());
+                slave.setCloud(this);
                 
                 plannedNodes.add(new NodeProvisioner.PlannedNode(slave.getDisplayName(),
                         Computer.threadPoolForRemoting.submit(new Callable<Node>() {
                             public Node call() throws Exception {
-                                ElasticBoxSlaveHandler.submit(slave);                                
                                 slave.setInUse(true);
                                 Jenkins.getInstance().addNode(slave);                                
-                                return slave;
+                                IProgressMonitor monitor = ElasticBoxSlaveHandler.submit(slave);
+                                monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
+                                if (slave.getComputer() != null && slave.getComputer().isOnline()) {
+                                    return slave;
+                                } else {
+                                    throw new Exception(MessageFormat.format("Cannot deploy slave (0}", slave.getDisplayName()));
+                                }                                
                             }
                         }), 1));
                 

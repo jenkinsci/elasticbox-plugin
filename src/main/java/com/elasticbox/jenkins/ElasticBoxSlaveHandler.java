@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,22 +43,126 @@ import org.apache.commons.httpclient.HttpStatus;
 public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     public static final int TIMEOUT_MINUTES = 60;
     private static final long TIMEOUT = TIMEOUT_MINUTES * 60000;
+    private static final IProgressMonitor DONE_MONITOR = new IProgressMonitor() {
 
-    public static class InstanceCreationRequest {
+        public String getResourceUrl() {
+            return null;
+        }
+
+        public boolean isDone() throws IProgressMonitor.IncompleteException, IOException {
+            return true;
+        }
+
+        public long getCreationTime() {
+            throw new UnsupportedOperationException();
+        }
+
+        public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException {
+        }
+    };
+
+    private static class InstanceCreationRequest {
         private final ElasticBoxSlave slave;
-        private IProgressMonitor monitor;
+        private ProgressMonitorWrapper monitor;
 
         public InstanceCreationRequest(ElasticBoxSlave slave) {
             this.slave = slave;
+            monitor = new ProgressMonitorWrapper(slave);
         }
         
     }
+    
+    private static class ProgressMonitorWrapper implements IProgressMonitor {
+        private final Object waitLock = new Object();
+        private final long creationTime;
+        private IProgressMonitor monitor;
+        private ElasticBoxSlave slave;
+
+        public ProgressMonitorWrapper(ElasticBoxSlave slave) {
+            creationTime = System.currentTimeMillis();
+            this.slave = slave;
+        }
+        
+        public String getResourceUrl() {
+            return monitor != null ? monitor.getResourceUrl() : null;
+        }
+
+        public boolean isDone() throws IncompleteException, IOException {
+            return monitor != null ? monitor.isDone() : false;
+        }
+
+        public long getCreationTime() {
+            return creationTime;
+        }
+
+        public void setMonitor(IProgressMonitor monitor) {
+            this.monitor = monitor;
+            synchronized (waitLock) {
+                waitLock.notifyAll();
+            }
+        }
+        
+        private void wait(Callable<Boolean> condition, long timeout) throws Exception {
+            long startTime = System.currentTimeMillis();
+            long remainingTime = timeout;
+            synchronized (waitLock) {
+                while(remainingTime > 0 && condition.call()) {
+                    try {
+                        waitLock.wait(remainingTime);
+                    } catch (InterruptedException ex) {
+                    }
+                    long currentTime = System.currentTimeMillis();
+                    remainingTime = remainingTime - (currentTime - startTime);
+                    startTime = currentTime;
+                }
+            }            
+        }
+        
+        public void waitForDone(int timeout) throws IncompleteException, IOException {
+            long startTime = System.currentTimeMillis();
+            try {
+                wait(new Callable<Boolean>() {
+                    
+                    public Boolean call() throws Exception {
+                        return monitor == null;
+                    }
+                }, timeout);
+            } catch (Exception ex) {
+            }
+            
+            if (monitor == DONE_MONITOR) {
+                return;
+            }
+            
+            long remainingTime = System.currentTimeMillis() - startTime;
+            if (monitor != null && remainingTime > 0) {
+                monitor.waitForDone(Math.round(remainingTime / 60000));
+            }
+            
+            remainingTime = System.currentTimeMillis() - startTime;
+            if (remainingTime > 0) {
+                try {
+                    wait(new Callable<Boolean>() {
+                        
+                        public Boolean call() throws Exception {
+                            return slave.getComputer().isOffline();
+                        }
+                    }, remainingTime);
+                } catch (Exception ex) {
+                }
+            }
+        }
+        
+    }
+    
     private static final Queue<InstanceCreationRequest> incomingQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<InstanceCreationRequest> submittedQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<ElasticBoxSlave> terminatedSlaves = new ConcurrentLinkedQueue<ElasticBoxSlave>();
     
-    public static final void submit(ElasticBoxSlave slave) {
-        incomingQueue.add(new InstanceCreationRequest(slave));
+    public static final IProgressMonitor submit(ElasticBoxSlave slave) {
+        InstanceCreationRequest request = new InstanceCreationRequest(slave);
+        incomingQueue.add(request);
+        return request.monitor;
     }
     
     public static final boolean isSubmitted(ElasticBoxSlave slave) {
@@ -101,6 +206,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         if (cloud != null) {
             int numOfAllowedInstances = cloud.getMaxInstances() - numOfRemainingSlaves;
             if (numOfAllowedInstances > 0) {
+                boolean saveConfig = false;
                 for (int i = 0; i < numOfAllowedInstances; i++) {
                     InstanceCreationRequest request = incomingQueue.poll();
                     if (request == null) {
@@ -109,13 +215,17 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
 
                     try {
                         deployInstance(request);
+                        saveConfig = true;
                         log(MessageFormat.format("Deloying a new instance for slave {0}", request.slave.getDisplayName()), listener);                    
                     } catch (IOException ex) {
                         log(Level.SEVERE, MessageFormat.format("Error deloying a new instance for slave {0}", request.slave.getDisplayName()), ex, listener);
+                        request.monitor.setMonitor(DONE_MONITOR);
                         removeSlave(request.slave);
                     }
                 }
-                Jenkins.getInstance().save();
+                if (saveConfig) {
+                    Jenkins.getInstance().save();
+                }
             } else {
                 log(Level.WARNING, "Max number of ElasticBox instances has been reached", null, listener);
             }            
@@ -196,6 +306,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getString("operation"))) {
                             addToTerminatedQueue(slave);
                         } else if (Client.InstanceState.UNAVAILABLE.equals(state) || (slave.canTerminate() && !isSlaveInQueue(slave, submittedQueue)) ) {
+                            Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, MessageFormat.format("Unavailable instance {0} will be terminated.", slave.getInstanceUrl()));
                             slavesToRemove.add(slave);
                         } else {
                             numOfInstances++;
@@ -272,7 +383,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         IProgressMonitor monitor = ebClient.deploy(request.slave.getProfileId(), profile.getString("owner"), environment, 1, variables);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance {0}", request.slave.getInstanceUrl()));
-        request.monitor = monitor;
+        request.monitor.setMonitor(monitor);
         submittedQueue.add(request);
     }
 

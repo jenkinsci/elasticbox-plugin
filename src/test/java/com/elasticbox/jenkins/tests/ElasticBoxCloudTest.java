@@ -63,7 +63,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         int status = httpClient.executeMethod(post);
         String content = post.getResponseBodyAsString();
         assertEquals(HttpStatus.SC_OK, status);
-        assertStringContains(content, MessageFormat.format("Connection to {0} was successful.", cloud.getEndpointUrl()));
+        assertStringContains(content, content, MessageFormat.format("Connection to {0} was successful.", cloud.getEndpointUrl()));
         
         jenkins.createProjectFromXML("test", getClass().getResourceAsStream("TestProject.xml"));
         

@@ -65,6 +65,8 @@ public class ElasticBoxSlave extends Slave {
 
             @Override
             public Future<?> disconnect(OfflineCause cause) {
+                Future<?> future = super.disconnect(cause);
+                
                 if (cause instanceof OfflineCause.SimpleOfflineCause && 
                         ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString())) {
                     try {
@@ -81,7 +83,8 @@ public class ElasticBoxSlave extends Slave {
                     } catch (IOException ex) {                        
                     }
                 }
-                return super.disconnect(cause); //To change body of generated methods, choose Tools | Templates.
+                
+                return future;
             }
             
         };
