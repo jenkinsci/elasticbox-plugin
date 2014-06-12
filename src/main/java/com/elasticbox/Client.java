@@ -41,10 +41,6 @@ public class Client {
     private static final String JSON_CONTENT_TYPE = "application/json";    
     private static final String DEPLOYMENT_PROFILE_SCHEMA = "http://elasticbox.net/schemas/2014-06-04/deploy-instance-request";
 
-    private Object getCloud() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     public static interface InstanceState {
         String PROCESSING = "processing";
         String DONE = "done";
