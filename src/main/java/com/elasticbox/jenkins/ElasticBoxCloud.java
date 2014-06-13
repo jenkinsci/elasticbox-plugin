@@ -111,7 +111,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                                 if (slave.getComputer() != null && slave.getComputer().isOnline()) {
                                     return slave;
                                 } else {
-                                    throw new Exception(MessageFormat.format("Cannot deploy slave (0}", slave.getDisplayName()));
+                                    throw new Exception(MessageFormat.format("Cannot deploy slave {0}. See the system log for more details.", slave.getDisplayName()));
                                 }                                
                             }
                         }), 1));
@@ -128,7 +128,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
     @Override
     public boolean canProvision(Label label) {
-        return label.getName().startsWith(ElasticBoxLabelFinder.REUSE_PREFIX);
+        return label != null && label.getName() != null && label.getName().startsWith(ElasticBoxLabelFinder.REUSE_PREFIX);
     }
 
     public String getEndpointUrl() {

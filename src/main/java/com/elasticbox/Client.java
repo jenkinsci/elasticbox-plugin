@@ -13,6 +13,7 @@
 package com.elasticbox;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -40,6 +41,7 @@ public class Client {
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String JSON_CONTENT_TYPE = "application/json";    
     private static final String DEPLOYMENT_PROFILE_SCHEMA = "http://elasticbox.net/schemas/2014-06-04/deploy-instance-request";
+    private static final String UTF_8 = "utf-8";
 
     public static interface InstanceState {
         String PROCESSING = "processing";
@@ -69,7 +71,7 @@ public class Client {
         JSONObject json = new JSONObject();
         json.put("email", this.username);
         json.put("password", this.password);
-        post.setRequestEntity(new StringRequestEntity(json.toString(), JSON_CONTENT_TYPE, "utf-8"));
+        post.setRequestEntity(new StringRequestEntity(json.toString(), JSON_CONTENT_TYPE, UTF_8));
         try {
             int status = httpClient.executeMethod(post);
             if (status != HttpStatus.SC_OK) {
@@ -87,11 +89,11 @@ public class Client {
     }
     
     public JSONArray getBoxes(String workspaceId) throws IOException {
-        return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl, workspaceId), true);
+        return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl, URLEncoder.encode(workspaceId, UTF_8)), true);
     }
     
     public JSONArray getProfiles(String workspaceId, String boxId) throws IOException {
-        return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles?box_version={2}", endpointUrl, workspaceId, boxId), true);
+        return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles?box_version={2}", endpointUrl, URLEncoder.encode(workspaceId, UTF_8), boxId), true);
     }
     
     public JSONObject getInstance(String instanceId) throws IOException {
@@ -99,7 +101,7 @@ public class Client {
     }
 
     public JSONObject getProfile(String profileId) throws IOException {
-        return (JSONObject) doGet(MessageFormat.format("{0}/services/profiles/{1}", endpointUrl, profileId), false);        
+        return (JSONObject) doGet(MessageFormat.format("{0}/services/profiles/{1}", endpointUrl, profileId), false);  
     }
     
     protected class ProgressMonitor implements IProgressMonitor {
