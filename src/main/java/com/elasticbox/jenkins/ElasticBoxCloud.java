@@ -30,7 +30,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -97,9 +96,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 }
                 
                 String profileId = label.getName().substring(ElasticBoxLabelFinder.REUSE_PREFIX.length());
-                final ElasticBoxSlave slave = new ElasticBoxSlave(UUID.randomUUID().toString(), false);
-                slave.setProfileId(profileId);
-                slave.setCloud(this);
+                final ElasticBoxSlave slave = new ElasticBoxSlave(profileId, false, this);
                 
                 plannedNodes.add(new NodeProvisioner.PlannedNode(slave.getDisplayName(),
                         Computer.threadPoolForRemoting.submit(new Callable<Node>() {

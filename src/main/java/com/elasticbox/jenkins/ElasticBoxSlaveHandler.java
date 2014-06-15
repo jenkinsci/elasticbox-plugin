@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang.time.StopWatch;
 
 /**
  *
@@ -41,6 +42,8 @@ import org.apache.commons.httpclient.HttpStatus;
  */
 @Extension
 public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
+    private static final Logger LOGGER = Logger.getLogger(InstanceCreator.class.getName());
+    
     public static final int TIMEOUT_MINUTES = 60;
     private static final long TIMEOUT = TIMEOUT_MINUTES * 60000;
     private static final IProgressMonitor DONE_MONITOR = new IProgressMonitor() {
@@ -63,7 +66,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
 
     private static class InstanceCreationRequest {
         private final ElasticBoxSlave slave;
-        private ProgressMonitorWrapper monitor;
+        private final ProgressMonitorWrapper monitor;
 
         public InstanceCreationRequest(ElasticBoxSlave slave) {
             this.slave = slave;
@@ -75,8 +78,8 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private static class ProgressMonitorWrapper implements IProgressMonitor {
         private final Object waitLock = new Object();
         private final long creationTime;
+        private final ElasticBoxSlave slave;
         private IProgressMonitor monitor;
-        private ElasticBoxSlave slave;
 
         public ProgressMonitorWrapper(ElasticBoxSlave slave) {
             creationTime = System.currentTimeMillis();
@@ -105,41 +108,45 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         private void wait(Callable<Boolean> condition, long timeout) throws Exception {
             long startTime = System.currentTimeMillis();
             long remainingTime = timeout;
-            synchronized (waitLock) {
-                while(remainingTime > 0 && condition.call()) {
+            while(remainingTime > 0 && condition.call()) {
+                synchronized (waitLock) {
                     try {
                         waitLock.wait(remainingTime);
                     } catch (InterruptedException ex) {
                     }
-                    long currentTime = System.currentTimeMillis();
-                    remainingTime = remainingTime - (currentTime - startTime);
-                    startTime = currentTime;
                 }
+                long currentTime = System.currentTimeMillis();
+                remainingTime = remainingTime - (currentTime - startTime);
+                startTime = currentTime;                
             }            
         }
         
         public void waitForDone(int timeout) throws IncompleteException, IOException {
-            long startTime = System.currentTimeMillis();
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+            long timeoutMiliseconds = timeout * 60000;
+            long remainingTime = timeoutMiliseconds;
             try {
                 wait(new Callable<Boolean>() {
                     
                     public Boolean call() throws Exception {
                         return monitor == null;
                     }
-                }, timeout);
+                }, timeoutMiliseconds);
             } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             }
             
             if (monitor == DONE_MONITOR) {
                 return;
             }
             
-            long remainingTime = System.currentTimeMillis() - startTime;
+            remainingTime = remainingTime - stopWatch.getTime();
             if (monitor != null && remainingTime > 0) {
                 monitor.waitForDone(Math.round(remainingTime / 60000));
             }
             
-            remainingTime = System.currentTimeMillis() - startTime;
+            remainingTime = remainingTime - stopWatch.getTime();
             if (remainingTime > 0) {
                 try {
                     wait(new Callable<Boolean>() {
@@ -149,6 +156,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         }
                     }, remainingTime);
                 } catch (Exception ex) {
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 }
             }
         }
@@ -258,6 +266,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                 }
             } catch (IProgressMonitor.IncompleteException ex) {
                 log(Level.SEVERE, ex.getMessage(), ex, listener);
+                iter.remove();
             } catch (IOException ex) {
                 log(Level.SEVERE, ex.getMessage(), ex, listener);
             }
@@ -331,13 +340,17 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         for (Iterator<ElasticBoxSlave> iter = terminatedSlaves.iterator(); iter.hasNext();) {
             ElasticBoxSlave slave = iter.next();
             try  {
-                slave.delete();
+                try {
+                    slave.delete();
+                } catch (ClientException ex) {
+                    if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
+                        continue;
+                    } else if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                        throw ex;
+                    }
+                }
                 iter.remove();
                 removeSlave(slave);
-            } catch (ClientException ex) {
-                if (ex.getStatusCode() != HttpStatus.SC_CONFLICT) {
-                    log(Level.WARNING, MessageFormat.format("Error deleting ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
-                }
             } catch (IOException ex) {
                 log(Level.WARNING, MessageFormat.format("Error deleting ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
             }
@@ -365,7 +378,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     
     private void log(Level level, String message, Throwable exception, TaskListener listener) {
         listener.getLogger().println(message);
-        Logger.getLogger(InstanceCreator.class.getName()).log(level, message, exception);       
+        LOGGER.log(level, message, exception);       
     }
     
     private void deployInstance(InstanceCreationRequest request) throws IOException {

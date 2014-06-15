@@ -119,7 +119,16 @@ public class Client {
         }
         
         public boolean isDone() throws IncompleteException, IOException {
-            String state = getState();
+            String state;
+            try {
+                state = getState();
+            } catch (ClientException ex) {
+                if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                    throw new IncompleteException("The instance cannot be found");
+                } else {
+                    throw ex;
+                }
+            }
             if (state.equals(InstanceState.UNAVAILABLE)) {
                 throw new IncompleteException("The instance is unavailable");
             }
@@ -140,7 +149,8 @@ public class Client {
         }
         
         private String getState() throws IOException {
-            JSONObject instance = (JSONObject) doGet(instanceUrl, false);
+            Client client = new Client(endpointUrl, username, password);
+            JSONObject instance = (JSONObject) client.doGet(instanceUrl, false);
             return instance.getString("state");            
         }
         
@@ -155,16 +165,16 @@ public class Client {
             long startTime = System.currentTimeMillis();
             long remainingTime = timeout * 60000;
             String state = null;
-            synchronized(waitLock) {
-                while(remainingTime > 0 && !states.contains((state = getState()))) {
+            while(remainingTime > 0 && !states.contains((state = getState()))) {
+                synchronized(waitLock) {
                     try {
                         waitLock.wait(1000);
                     } catch (InterruptedException ex) {
                     }
-                    long currentTime = System.currentTimeMillis();
-                    remainingTime =  remainingTime - (currentTime - startTime);
-                    startTime = currentTime;
                 }
+                long currentTime = System.currentTimeMillis();
+                remainingTime =  remainingTime - (currentTime - startTime);
+                startTime = currentTime;                
             }
             return state;
         }

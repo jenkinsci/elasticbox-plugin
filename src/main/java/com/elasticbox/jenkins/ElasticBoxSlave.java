@@ -27,6 +27,7 @@ import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,6 +41,22 @@ import org.kohsuke.stapler.StaplerRequest;
  * @author Phong Nguyen Le
  */
 public class ElasticBoxSlave extends Slave {
+    private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        JSONObject profile = client.getProfile(profileId);
+        String boxId = profile.getJSONObject("box").getString("version");
+        JSONObject box = (JSONObject) client.doGet(MessageFormat.format("/services/boxes/{0}", boxId), false);
+        String service = box.getString("service");
+        if ("Linux Compute".equals(service)) {
+            return "/var/jenkins";
+        } else if ("Windows Compute".equals(service)) {
+            return "C:\\Jenkins";
+        } else {
+            throw new IOException(MessageFormat.format("Cannot create slave for profile '{0}' that belongs to box '{1}' with service '{2}'.",
+                    profile.getString("name"), box.getString("name"), service));
+        }
+    }
+    
     private String profileId;
     private boolean singleUse;
     private String instanceUrl;
@@ -49,14 +66,12 @@ public class ElasticBoxSlave extends Slave {
     private transient boolean inUse;
     private transient ElasticBoxCloud cloud;
 
-    public ElasticBoxSlave(String name, boolean singleUse) throws Descriptor.FormException, IOException {
-        this(name, singleUse, "/var/jenkins", 1);
-    }
-    
-    public ElasticBoxSlave(String name, boolean singleUse, String remoteFS, int numExecutors) throws Descriptor.FormException, IOException {
-        super(name, "", remoteFS, numExecutors, Mode.EXCLUSIVE, "", new JNLPLauncher(), RetentionStrategy.INSTANCE);
+    public ElasticBoxSlave(String profileId, boolean singleUse, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
+        super(UUID.randomUUID().toString(), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", new JNLPLauncher(), RetentionStrategy.INSTANCE);
+        this.profileId = profileId;
         this.singleUse = singleUse;
         this.idleStartTime = System.currentTimeMillis();
+        this.cloud = cloud;
     }
 
     @Override
