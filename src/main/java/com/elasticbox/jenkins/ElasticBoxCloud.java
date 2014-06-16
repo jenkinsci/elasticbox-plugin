@@ -47,6 +47,8 @@ import org.kohsuke.stapler.StaplerRequest;
  * @author Phong Nguyen Le
  */
 public class ElasticBoxCloud extends AbstractCloudImpl {
+    private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloud.class.getName());
+    
     private final String endpointUrl;
     private final int maxInstances;
     private final int retentionTime;
@@ -81,7 +83,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                             excessWorkload -= slave.getNumExecutors();
                         }
                     } catch (IOException ex) {
-                        Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                        LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                     }
                 }
             }
@@ -91,7 +93,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         while (excessWorkload > 0) {
             try {
                 if (ElasticBoxSlaveHandler.countInstances() >= maxInstances) {
-                    Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.WARNING, "Max number of ElasticBox instances has been reached");
+                    LOGGER.log(Level.WARNING, "Max number of ElasticBox instances has been reached");
                     break;
                 }
                 
@@ -115,9 +117,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 
                 excessWorkload -= slave.getNumExecutors();
             } catch (Descriptor.FormException ex) {
-                Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             } catch (IOException ex) {
-                Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             }
         }
         return plannedNodes;
@@ -168,7 +170,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     clouds.add(json);
                 }
             } catch (ServletException ex) {
-                Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 throw new RuntimeException(ex);
             }
             int ebCloudCount = 0;

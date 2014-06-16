@@ -42,9 +42,10 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     private static final String TEST_JENKINS_SLAVE_BOX_NAME = "test-jenkins-slave";
     private static final String PUBLIC_JENKINS_HOST = "localhost";
     private static final boolean TEST_BUILD = Boolean.getBoolean("elasticbox.jenkins.testBuild");
+    private static final String TEST_ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.testElasticBoxURL", "https://elasticbox.com");
     
     public void testConfigRoundtrip() throws Exception {
-        ElasticBoxCloud cloud = new ElasticBoxCloud("https://elasticbox.com", 2, 10, Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"), Scrambler.descramble("dHBob25naW8="));
+        ElasticBoxCloud cloud = new ElasticBoxCloud(TEST_ELASTICBOX_URL, 2, 10, Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"), Scrambler.descramble("dHBob25naW8="));
         jenkins.clouds.add(cloud);
         
         WebClient webClient = createWebClient();

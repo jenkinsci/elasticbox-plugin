@@ -36,6 +36,7 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Phong Nguyen Le
  */
 public class InstanceCreator extends BuildWrapper {
+    private static final Logger LOGGER = Logger.getLogger(InstanceCreator.class.getName());
 
     private static Client getClient() throws IOException {
         ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
@@ -133,7 +134,7 @@ public class InstanceCreator extends BuildWrapper {
                     }                    
                 }
             } catch (IOException ex) {
-                Logger.getLogger(InstanceCreator.class.getName()).log(Level.SEVERE, "Error fetching workspaces", ex);
+                LOGGER.log(Level.SEVERE, "Error fetching workspaces", ex);
             }
             
             return sort(workspaces);
@@ -154,7 +155,7 @@ public class InstanceCreator extends BuildWrapper {
                     }                    
                 }
             } catch (IOException ex) {
-                Logger.getLogger(InstanceCreator.class.getName()).log(Level.SEVERE, "Error fetching boxes", ex);
+                LOGGER.log(Level.SEVERE, "Error fetching boxes", ex);
             }                
             
             return sort(boxes);
@@ -175,7 +176,7 @@ public class InstanceCreator extends BuildWrapper {
                     }                    
                 }
             } catch (IOException ex) {
-                Logger.getLogger(InstanceCreator.class.getName()).log(Level.SEVERE, "Error fetching profiles", ex);
+                LOGGER.log(Level.SEVERE, "Error fetching profiles", ex);
             }
 
             return sort(profiles);

@@ -21,7 +21,6 @@ import hudson.model.Queue;
 import hudson.model.labels.LabelAtom;
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -32,6 +31,7 @@ import jenkins.model.Jenkins;
  */
 @Extension
 public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHandler {
+    private static final Logger LOGGER = Logger.getLogger(InstanceCreationQueueDecisionHandler.class.getName());
 
     @Override
     public boolean shouldSchedule(Queue.Task p, List<Action> actions) {
@@ -63,15 +63,15 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                         Jenkins.getInstance().addNode(slave);
                         ElasticBoxSlaveHandler.submit(slave);
                     } catch (Descriptor.FormException ex) {
-                        Logger.getLogger(InstanceCreationQueueDecisionHandler.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                        LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                     } catch (IOException ex) {
-                        Logger.getLogger(InstanceCreationQueueDecisionHandler.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                        LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                     }
                 }
                 try {
                     project.setAssignedLabel(label);
                 } catch (IOException ex) {
-                    Logger.getLogger(InstanceCreationQueueDecisionHandler.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 }
                 
             }

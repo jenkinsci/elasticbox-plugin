@@ -41,6 +41,8 @@ import org.kohsuke.stapler.StaplerRequest;
  * @author Phong Nguyen Le
  */
 public class ElasticBoxSlave extends Slave {
+    private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlave.class.getName());
+    
     private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONObject profile = client.getProfile(profileId);
@@ -90,10 +92,10 @@ public class ElasticBoxSlave extends Slave {
                             ElasticBoxSlave.this.terminate();
                         } catch (ClientException ex) {
                             if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
-                                Logger.getLogger(ElasticBoxSlave.class.getName()).log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
+                                LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
                             }
                         } catch (IOException ex) {
-                            Logger.getLogger(ElasticBoxSlave.class.getName()).log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
+                            LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
                         }                        
                     } catch (IOException ex) {                        
                     }

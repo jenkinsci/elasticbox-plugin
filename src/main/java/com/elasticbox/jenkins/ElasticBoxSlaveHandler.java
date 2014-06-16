@@ -44,7 +44,7 @@ import org.apache.commons.lang.time.StopWatch;
 public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private static final Logger LOGGER = Logger.getLogger(InstanceCreator.class.getName());
     
-    public static final int TIMEOUT_MINUTES = 60;
+    public static final int TIMEOUT_MINUTES = Integer.getInteger("elasticbox.jenkins.deploymentTimeout", 60);
     private static final long TIMEOUT = TIMEOUT_MINUTES * 60000;
     private static final IProgressMonitor DONE_MONITOR = new IProgressMonitor() {
 
@@ -254,7 +254,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             InstanceCreationRequest request = iter.next();
             try {
                 if (request.monitor.isDone()) {
-                    if (request.slave.getComputer().isOnline()) {
+                    if (request.slave.getComputer() != null && request.slave.getComputer().isOnline()) {
                         request.slave.setInstanceStatusMessage(MessageFormat.format("Successfully deployed at {0}", request.slave.getInstancePageUrl()));
                         saveNeeded = true;
                         iter.remove();
@@ -315,7 +315,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getString("operation"))) {
                             addToTerminatedQueue(slave);
                         } else if (Client.InstanceState.UNAVAILABLE.equals(state) || (slave.canTerminate() && !isSlaveInQueue(slave, submittedQueue)) ) {
-                            Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, MessageFormat.format("Unavailable instance {0} will be terminated.", slave.getInstanceUrl()));
+                            Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, MessageFormat.format("Unavailable instance {0} will be terminated.", slave.getInstancePageUrl()));
                             slavesToRemove.add(slave);
                         } else {
                             numOfInstances++;
@@ -395,7 +395,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         JSONObject profile = ebClient.getProfile(request.slave.getProfileId());
         IProgressMonitor monitor = ebClient.deploy(request.slave.getProfileId(), profile.getString("owner"), environment, 1, variables);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
-        request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance {0}", request.slave.getInstanceUrl()));
+        request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance {0}", request.slave.getInstancePageUrl()));
         request.monitor.setMonitor(monitor);
         submittedQueue.add(request);
     }
