@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.Descriptor;
@@ -20,6 +21,7 @@ import hudson.model.Project;
 import hudson.model.Queue;
 import hudson.model.labels.LabelAtom;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,9 +52,17 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                 }
             }
             if (instanceCreator != null) {
-                Queue.Item queueItem = Queue.getInstance().getItem(p);
-                if (queueItem != null && queueItem.getAssignedLabel() != null) {
-                    return false;
+                for(Queue.Item item : Queue.getInstance().getItems(p)) {
+                    boolean shouldScheduleItem = false;
+                    for (Queue.QueueAction action: item.getActions(Queue.QueueAction.class)) {
+                        shouldScheduleItem |= action.shouldSchedule(actions);
+                    }
+                    for (Queue.QueueAction action: Util.filter(actions,Queue.QueueAction.class)) {
+                        shouldScheduleItem |= action.shouldSchedule(item.getActions());
+                    }
+                    if(!shouldScheduleItem) {
+                        return false;
+                    }
                 }
                 
                 LabelAtom label = ElasticBoxLabelFinder.getLabel(instanceCreator.getProfile(), singleUse);
