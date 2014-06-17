@@ -21,7 +21,10 @@ import hudson.model.Descriptor;
 import hudson.model.Messages;
 import hudson.model.Node;
 import hudson.model.Slave;
+import hudson.model.labels.LabelAtom;
+import hudson.slaves.ComputerListener;
 import hudson.slaves.JNLPLauncher;
+import hudson.slaves.NodeProvisioner;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
@@ -78,36 +81,8 @@ public class ElasticBoxSlave extends Slave {
 
     @Override
     public Computer createComputer() {
-        return new SlaveComputer(this) {
-
-            @Override
-            public Future<?> disconnect(OfflineCause cause) {
-                Future<?> future = super.disconnect(cause);
-                
-                if (cause instanceof OfflineCause.SimpleOfflineCause && 
-                        ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString())) {
-                    try {
-                        checkInstanceReachable();
-                        try {
-                            ElasticBoxSlave.this.terminate();
-                        } catch (ClientException ex) {
-                            if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
-                                LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
-                            }
-                        } catch (IOException ex) {
-                            LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
-                        }                        
-                    } catch (IOException ex) {                        
-                    }
-                }
-                
-                return future;
-            }
-            
-        };
+        return new ElasticBoxComputer();
     }
-    
-    
 
     public void setInstanceUrl(String instanceUrl) {
         this.instanceUrl = instanceUrl;
@@ -229,6 +204,71 @@ public class ElasticBoxSlave extends Slave {
         if (!instanceUrl.startsWith(ebCloud.getEndpointUrl())) {
             throw new IOException(MessageFormat.format("The instance {0} has been created at a different ElasticBox endpoint than the currently configured one. Open {0} in a browser to terminate it.", instanceUrl));
         }        
+    }
+    
+    private final class ElasticBoxComputer extends SlaveComputer {
+        private boolean terminateOnOffline = false;
+
+        public ElasticBoxComputer() {
+            super(ElasticBoxSlave.this);
+        }
+
+        @Override
+        public Future<?> disconnect(OfflineCause cause) {
+            boolean online = isOnline();
+            Future<?> future = super.disconnect(cause);
+
+            if (cause instanceof OfflineCause.SimpleOfflineCause && 
+                    ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString())) {
+                // remove any pending launches
+                for (LabelAtom label : ElasticBoxLabelFinder.INSTANCE.findLabels(ElasticBoxSlave.this)) {
+                    for (NodeProvisioner.PlannedNode plannedNode : label.nodeProvisioner.getPendingLaunches()) {
+                        if (plannedNode.displayName.equals(ElasticBoxSlave.this.getNodeName())) {
+                            plannedNode.future.cancel(false);
+                        }
+                    }
+                }
+                if (online) {
+                    terminateOnOffline = true;
+                } else {
+                    terminate();
+                }
+            }
+
+            return future;
+        }
+        
+        private void terminate() {
+            try {
+                checkInstanceReachable();
+                try {
+                    ElasticBoxSlave.this.terminate();
+                } catch (ClientException ex) {
+                    if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                        LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
+                    }
+                } catch (IOException ex) {
+                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
+                }                        
+            } catch (IOException ex) {                    
+            }                
+        }
+        
+    }
+    
+    @Extension
+    public static final class ComputerListenerImpl extends ComputerListener {
+
+        @Override
+        public void onOffline(Computer c) {
+            if (c instanceof ElasticBoxComputer) {
+                ElasticBoxComputer ebComputer = (ElasticBoxComputer) c;
+                if (ebComputer.terminateOnOffline) {
+                    ebComputer.terminate();
+                }
+            }
+        }
+        
     }
 
     @Extension

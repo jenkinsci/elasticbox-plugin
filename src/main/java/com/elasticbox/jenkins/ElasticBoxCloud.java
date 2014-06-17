@@ -31,6 +31,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
@@ -101,7 +106,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 final ElasticBoxSlave slave = new ElasticBoxSlave(profileId, false, this);
                 
                 plannedNodes.add(new NodeProvisioner.PlannedNode(slave.getDisplayName(),
-                        Computer.threadPoolForRemoting.submit(new Callable<Node>() {
+                        new FutureWrapper<Node>(Computer.threadPoolForRemoting.submit(new Callable<Node>() {
                             public Node call() throws Exception {
                                 slave.setInUse(true);
                                 Jenkins.getInstance().addNode(slave);                                
@@ -113,7 +118,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                                     throw new Exception(MessageFormat.format("Cannot deploy slave {0}. See the system log for more details.", slave.getDisplayName()));
                                 }                                
                             }
-                        }), 1));
+                        })), 1));
                 
                 excessWorkload -= slave.getNumExecutors();
             } catch (Descriptor.FormException ex) {
@@ -148,6 +153,42 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
     public int getRetentionTime() {
         return retentionTime;
+    }
+    
+    private static class FutureWrapper<V> implements Future<V> {
+        private Future<V> future;
+        
+        FutureWrapper(Future<V> future) {
+            this.future = future;
+        }
+
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            return future.cancel(mayInterruptIfRunning);
+        }
+
+        public boolean isCancelled() {
+            return future.isCancelled();
+        }
+
+        public boolean isDone() {
+            return future.isDone();
+        }
+
+        public V get() throws InterruptedException, ExecutionException {
+            try {
+                return future.get();
+            } catch (CancellationException ex) {
+                throw new ExecutionException(ex);
+            }
+        }
+
+        public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            try {
+                return future.get(timeout, unit);
+            } catch (CancellationException ex) {
+                throw new ExecutionException(ex);
+            }
+        }        
     }
     
     @Extension

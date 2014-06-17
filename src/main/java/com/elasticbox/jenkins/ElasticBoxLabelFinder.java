@@ -19,6 +19,7 @@ import hudson.model.labels.LabelAtom;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Collections;
+import jenkins.model.Jenkins;
 
 /**
  *
@@ -32,7 +33,8 @@ public class ElasticBoxLabelFinder extends LabelFinder {
 
     public static final LabelAtom getLabel(String profileId, boolean singleUse) {
         String pattern = singleUse ? SINGLE_USE_PREFIX + "{0}" : REUSE_PREFIX + "{0}";
-        return new LabelAtom(MessageFormat.format(pattern, profileId));
+        String labelName = MessageFormat.format(pattern, profileId);
+        return Jenkins.getInstance().getLabelAtom(labelName);
     }
 
     @Override
