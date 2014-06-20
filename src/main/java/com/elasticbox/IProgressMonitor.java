@@ -32,10 +32,11 @@ public interface IProgressMonitor {
     long getCreationTime();
     
     /**
+     * Waits for the task to finish successfully.
      * 
      * @param timeout in minutes
-     * @throws com.elasticbox.IProgressMonitor.IncompleteException
-     * @throws IOException 
+     * @throws com.elasticbox.IProgressMonitor.IncompleteException if the task finished but is not complete
+     * @throws IOException if unexpected error occurred
      */
     void waitForDone(int timeout) throws IncompleteException, IOException;
 }

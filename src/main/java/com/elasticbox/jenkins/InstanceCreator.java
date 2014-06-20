@@ -12,7 +12,6 @@
 
 package com.elasticbox.jenkins;
 
-import com.elasticbox.Client;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -23,11 +22,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -38,16 +33,6 @@ import org.kohsuke.stapler.QueryParameter;
 public class InstanceCreator extends BuildWrapper {
     private static final Logger LOGGER = Logger.getLogger(InstanceCreator.class.getName());
 
-    private static Client getClient() throws IOException {
-        ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
-        if (ebCloud != null) {
-            Client client = new Client(ebCloud.getEndpointUrl(), ebCloud.getUsername(), ebCloud.getPassword());
-            client.connect();
-            return client;
-        }
-        return null;
-    }
-    
     private final String workspace;
     private final String box;
     private final String profile;
@@ -103,7 +88,8 @@ public class InstanceCreator extends BuildWrapper {
 
     @Extension
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-
+        private final ElasticBoxItemProvider profileProvider = new ElasticBoxItemProvider();
+        
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return true;
@@ -114,72 +100,16 @@ public class InstanceCreator extends BuildWrapper {
             return "ElasticBox Instance Creation";
         }
         
-        private ListBoxModel sort(ListBoxModel model) {
-            Collections.sort(model, new Comparator<ListBoxModel.Option> () {
-                public int compare(ListBoxModel.Option o1, ListBoxModel.Option o2) {
-                    return o1.name.compareTo(o2.name);
-                }
-            });
-            return model;
-        }
-
         public ListBoxModel doFillWorkspaceItems() {
-            ListBoxModel workspaces = new ListBoxModel();
-            try {
-                Client ebClient = InstanceCreator.getClient();
-                if (ebClient != null) {
-                    for (Object workspace : ebClient.getWorkspaces()) {
-                        JSONObject json = (JSONObject) workspace;
-                        workspaces.add(json.getString("name"), json.getString("id"));
-                    }                    
-                }
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, "Error fetching workspaces", ex);
-            }
-            
-            return sort(workspaces);
+            return profileProvider.getWorkspaces();
         }
         
         public ListBoxModel doFillBoxItems(@QueryParameter String workspace) {
-            ListBoxModel boxes = new ListBoxModel();
-            if (workspace.trim().length() == 0) {
-                return boxes;
-            }
-
-            try {
-                Client ebClient = InstanceCreator.getClient();
-                if (ebClient != null) {
-                    for (Object box : ebClient.getBoxes(workspace)) {
-                        JSONObject json = (JSONObject) box;
-                        boxes.add(json.getString("name"), json.getString("id"));
-                    }                    
-                }
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, "Error fetching boxes", ex);
-            }                
-            
-            return sort(boxes);
+            return profileProvider.getBoxes(workspace);
         }
 
         public ListBoxModel doFillProfileItems(@QueryParameter String workspace, @QueryParameter String box) {                
-            ListBoxModel profiles = new ListBoxModel();
-            if (box.trim().length() == 0) {
-                return profiles;
-            }
-
-            try {
-                Client ebClient = InstanceCreator.getClient();
-                if (ebClient != null) {
-                    for (Object profile : ebClient.getProfiles(workspace, box)) {
-                        JSONObject json = (JSONObject) profile;
-                        profiles.add(json.getString("name"), json.getString("id"));
-                    }                    
-                }
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, "Error fetching profiles", ex);
-            }
-
-            return sort(profiles);
+            return profileProvider.getProfiles(workspace, box);
         }
     }
 }

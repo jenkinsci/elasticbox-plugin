@@ -155,6 +155,12 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return retentionTime;
     }
     
+    public Client createClient() throws IOException {
+        Client client = new Client(getEndpointUrl(), getUsername(), getPassword());
+        client.connect();
+        return client;
+    }
+    
     private static class FutureWrapper<V> implements Future<V> {
         private Future<V> future;
         
@@ -262,4 +268,5 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         
         return null;
     }
+    
 }
