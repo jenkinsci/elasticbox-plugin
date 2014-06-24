@@ -11,14 +11,34 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers class="vector"/>
   <concurrentBuild>false</concurrentBuild>
-  <builders/>
+  <builders>
+    <com.elasticbox.jenkins.builders.ReconfigureBox plugin="elasticbox@{version}">
+      <instance>{intanceId}</instance>
+      <workspace>{workspaceId}</workspace>
+      <variables>[]</variables>
+    </com.elasticbox.jenkins.builders.ReconfigureBox>
+    <com.elasticbox.jenkins.builders.StopBox plugin="elasticbox@{version}">
+      <instance>{intanceId}</instance>
+      <workspace>{workspaceId}</workspace>
+    </com.elasticbox.jenkins.builders.StopBox>
+    <com.elasticbox.jenkins.builders.StartBox plugin="elasticbox@{version}">
+      <instance>{intanceId}</instance>
+      <workspace>{workspaceId}</workspace>
+    </com.elasticbox.jenkins.builders.StartBox>
+    <com.elasticbox.jenkins.builders.TerminateBox plugin="elasticbox@{version}">
+      <instance>{intanceId}</instance>
+      <workspace>{workspaceId}</workspace>
+    </com.elasticbox.jenkins.builders.TerminateBox>
+    <com.elasticbox.jenkins.builders.LaunchBox plugin="elasticbox@{version}">
+      <workspace>{workspaceId}</workspace>
+      <box>{LaunchBox.boxId}</box>
+      <profile>{LaunchBox.profileId}</profile>
+      <environment>jenkins-plugin-launch-box</environment>
+      <instances>1</instances>
+      <variables>[]</variables>
+    </com.elasticbox.jenkins.builders.LaunchBox>
+  </builders>
   <publishers/>
   <buildWrappers>
-    <com.elasticbox.jenkins.InstanceCreator plugin="elasticbox@0.1-SNAPSHOT">
-      <workspace>{workspace_id}</workspace>
-      <box>{box_id}</box>
-      <profile>{profile_id}</profile>
-    </com.elasticbox.jenkins.InstanceCreator>
-    <com.elasticbox.jenkins.SingleUseSlaveBuildOption plugin="elasticbox@1.0-SNAPSHOT"/>
   </buildWrappers>
 </project>
