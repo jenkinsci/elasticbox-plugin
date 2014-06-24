@@ -17,8 +17,11 @@ import java.net.URLEncoder;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.sf.json.JSON;
@@ -63,23 +66,37 @@ public class Client {
         String DONE = "done";
         String UNAVAILABLE = "unavailable";
     }
+    
+    public static interface InstanceOperation {
+        String DEPLOY = "deploy";
+        String REINSTALL = "reinstall";
+        String RECONFIGURE = "reconfigure";
+        String POWERON = "poweron";
+        String SHUTDOWN = "shutdown";
+        String SHUTDOWN_SERVICE = "shutdown_service";
+        String TERMINATE = "terminate";
+        String TERMINATE_SERVICE = "terminate_service";
+    }
+    
     public static final Set FINISH_STATES = new HashSet(Arrays.asList(InstanceState.DONE, InstanceState.UNAVAILABLE));
-    public static final Set TERMINATE_OPERATIONS = new HashSet(Arrays.asList("terminate", "terminate_service"));
-    public static final Set ON_OPERATIONS = new HashSet(Arrays.asList("deploy", "snapshot", "reinstall", "reconfigure"));
-    public static final Set OFF_OPERATIONS = new HashSet(Arrays.asList("shutdown", "shutdown_service", "terminate", "terminate_service"));
+    public static final Set SHUTDOWN_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.SHUTDOWN, InstanceOperation.SHUTDOWN_SERVICE));
+    public static final Set TERMINATE_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.TERMINATE, InstanceOperation.TERMINATE_SERVICE));
+    public static final Set ON_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.DEPLOY, InstanceOperation.POWERON, InstanceOperation.REINSTALL, InstanceOperation.RECONFIGURE));
+    public static final Set OFF_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.SHUTDOWN, InstanceOperation.SHUTDOWN_SERVICE, InstanceOperation.TERMINATE, InstanceOperation.TERMINATE_SERVICE));
+    
+    private static HttpClient httpClient = null;
     
     private static String getSchemaVersion(String url) {
         return url.substring(BASE_ELASTICBOX_SCHEMA.length(), url.indexOf('/', BASE_ELASTICBOX_SCHEMA.length()));
     }
 
-    private final HttpClient httpClient;
     private final String endpointUrl;
     private final String username;
     private final String password;
     private String token = null;
 
     public Client(String endpointUrl, String username, String password) {
-        this.httpClient = createHttpClient();
+        createHttpClient();
         this.endpointUrl = endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl;
         this.username = username;
         this.password = password;
@@ -120,16 +137,40 @@ public class Client {
         return (JSONObject) doGet(MessageFormat.format("{0}/services/profiles/{1}", endpointUrl, profileId), false);  
     }
     
+    public JSONArray getInstances(String workspaceId) throws IOException {
+        return (JSONArray) doGet(MessageFormat.format("/services/workspaces/{0}/instances", workspaceId), true);
+    }
+    
+    /**
+     * Returns only the variables of main box for now.
+     * 
+     * @param profileId
+     * @return
+     * @throws IOException 
+     */
+    public JSONArray getProfileVariables(String profileId) throws IOException {
+        JSONObject profile = getProfile(profileId);
+        String boxId = profile.getJSONObject("box").getString("version");
+        JSONObject box = (JSONObject) doGet(MessageFormat.format("/services/boxes/{0}", boxId), false);
+        return box.getJSONArray("variables");
+    }    
+    
     protected class ProgressMonitor implements IProgressMonitor {
         private final String instanceUrl;
         private final long creationTime;
         private final Object waitLock = new Object();
+        private final Set<String> operations;
         
         private ProgressMonitor(String instanceUrl) {
-            this.instanceUrl = instanceUrl;
-            creationTime = System.currentTimeMillis();
+            this(instanceUrl, null);
         }
 
+        private ProgressMonitor(String instanceUrl, Set<String> operations) {
+            this.instanceUrl = instanceUrl;
+            this.operations = operations;
+            creationTime = System.currentTimeMillis();            
+        }
+        
         public String getResourceUrl() {
             return instanceUrl;
         }
@@ -180,13 +221,17 @@ public class Client {
             long startTime = System.currentTimeMillis();
             long remainingTime = timeout * 60000;
             String state = null;
-            while(remainingTime > 0 && !states.contains((state = getState()))) {
+            JSONObject instance = (JSONObject) doGet(instanceUrl, false);
+            while(remainingTime > 0 && 
+                (!states.contains((state = instance.getString("state"))) || (operations != null && !operations.contains(instance.getString("operation"))))
+            ) {
                 synchronized(waitLock) {
                     try {
                         waitLock.wait(1000);
                     } catch (InterruptedException ex) {
                     }
                 }
+                instance = (JSONObject) doGet(instanceUrl, false);
                 long currentTime = System.currentTimeMillis();
                 remainingTime =  remainingTime - (currentTime - startTime);
                 startTime = currentTime;                
@@ -224,14 +269,7 @@ public class Client {
             JSONObject mainInstance = (JSONObject) profile.getJSONArray("instances").get(0);
             JSONArray jsonVars = mainInstance.getJSONArray("variables");
             for (Map.Entry<String, String> entry : variables.entrySet()) {
-                JSONObject jsonVar = null;
-                for (Object var : jsonVars) {
-                    JSONObject json = (JSONObject) var;
-                    if (entry.getKey().equals(json.getString("name"))) {
-                        jsonVar = json;
-                        break;
-                    }
-                }
+                JSONObject jsonVar = findVariable(entry.getKey(), jsonVars);
                 if (jsonVar == null) {
                     jsonVar = new JSONObject();
                     jsonVar.put("name", entry.getKey());
@@ -255,34 +293,81 @@ public class Client {
         HttpPost post = new HttpPost(MessageFormat.format("{0}/services/instances", endpointUrl));
         post.setEntity(new StringEntity(deployRequest.toString(), ContentType.APPLICATION_JSON));
         try {
-            HttpResponse response = execute(post, HttpStatus.SC_ACCEPTED);
+            HttpResponse response = execute(post);
             JSONObject instance = JSONObject.fromObject(getResponseBodyAsString(response));
-            return new ProgressMonitor(endpointUrl + instance.getString("uri"));
+            return new ProgressMonitor(endpointUrl + instance.getString("uri"), Collections.singleton(InstanceOperation.DEPLOY));
         } finally {
             post.reset();
         }
     }
     
+    public IProgressMonitor reconfigure(String instanceId, JSONArray variables) throws IOException {
+        JSONObject instance = getInstance(instanceId);
+        JSONArray instanceVariables = instance.getJSONArray("variables");
+        JSONArray boxVariables = instance.getJSONArray("boxes").getJSONObject(0).getJSONArray("variables");
+        List<JSONObject> newVariables = new ArrayList<JSONObject>();
+        for (Object variable : variables) {
+            JSONObject variableJson = (JSONObject) variable;
+            String variableName = variableJson.getString("name");
+            JSONObject instanceVariable = findVariable(variableName, instanceVariables);            
+            if (instanceVariable == null) {
+                JSONObject boxVariable = findVariable(variableName, boxVariables);
+                if (boxVariable != null) {
+                    instanceVariable = JSONObject.fromObject(boxVariable);
+                    newVariables.add(instanceVariable);
+                }
+            }
+            if (instanceVariable != null) {
+                instanceVariable.put("value", variableJson.getString("value"));
+            }
+        }
+        instanceVariables.addAll(newVariables);
+        instance.put("variables", instanceVariables);
+        String instanceUrl = getInstanceUrl(instanceId);
+        HttpPut put = new HttpPut(instanceUrl);
+        put.setEntity(new StringEntity(instance.toString(), ContentType.APPLICATION_JSON));
+        try {
+            execute(put);
+            put.reset();
+            put = new HttpPut(MessageFormat.format("{0}/reconfigure", instanceUrl));
+            execute(put);
+            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.RECONFIGURE));
+        } finally {
+            put.reset();
+        }
+    }
+    
     public IProgressMonitor terminate(String instanceId) throws IOException {
         String instanceUrl = getInstanceUrl(instanceId);
-        ProgressMonitor monitor = new ProgressMonitor(instanceUrl);        
+        ProgressMonitor monitor = new ProgressMonitor(instanceUrl, TERMINATE_OPERATIONS);        
         String state = monitor.getState();
         String operation = state.equals(InstanceState.DONE) ? "terminate" : "force_terminate";
         HttpDelete delete = new HttpDelete(MessageFormat.format("{0}?operation={1}", instanceUrl, operation));
         try {
-            execute(delete, HttpStatus.SC_ACCEPTED);
+            execute(delete);
             return monitor;
         } finally {
             delete.reset();
         }
     }
     
+    public IProgressMonitor poweron(String instanceId) throws IOException {
+        String instanceUrl = getInstanceUrl(instanceId);
+        HttpPut put = new HttpPut(MessageFormat.format("{0}/poweron", instanceUrl));
+        try {
+            execute(put);
+            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.POWERON));
+        } finally {
+            put.reset();
+        }
+    }
+
     public IProgressMonitor shutdown(String instanceId) throws IOException {
         String instanceUrl = getInstanceUrl(instanceId);
         HttpPut put = new HttpPut(MessageFormat.format("{0}/shutdown", instanceUrl));
         try {
-            execute(put, HttpStatus.SC_ACCEPTED);
-            return new ProgressMonitor(instanceUrl);
+            execute(put);
+            return new ProgressMonitor(instanceUrl, SHUTDOWN_OPERATIONS);
         } finally {
             put.reset();
         }
@@ -291,7 +376,7 @@ public class Client {
     public void delete(String instanceId) throws IOException {
         HttpDelete delete = new HttpDelete(MessageFormat.format("{0}?operation=delete", getInstanceUrl(instanceId)));
         try {
-            execute(delete, HttpStatus.SC_ACCEPTED);
+            execute(delete);
         } finally {
             delete.reset();
         }
@@ -303,12 +388,36 @@ public class Client {
         }
         HttpGet get = new HttpGet(url);
         try {
-            HttpResponse response = execute(get, HttpStatus.SC_OK);
+            HttpResponse response = execute(get);
             return isArray ? JSONArray.fromObject(getResponseBodyAsString(response)) : JSONObject.fromObject(getResponseBodyAsString(response));                    
         } finally {
             get.reset();
         }
     }
+    
+    public static final String getResourceId(String resourceUrl) {
+        return resourceUrl != null ? resourceUrl.substring(resourceUrl.lastIndexOf('/') + 1) : null;
+    }
+    
+    public static final String getPageUrl(String endpointUrl, String resourceUrl) {
+        if (resourceUrl.startsWith(MessageFormat.format("{0}/services/instances/", endpointUrl))) {
+            String instanceId = getResourceId(resourceUrl);
+            if (instanceId != null) {
+                return MessageFormat.format("{0}/#/instances/{1}/i", endpointUrl, instanceId);
+            }
+        }
+        return null;
+    }
+
+    private JSONObject findVariable(String name, JSONArray variables) {
+        for (Object var : variables) {
+            JSONObject json = (JSONObject) var;
+            if (json.getString("name").equals(name)) {
+                return json;
+            }
+        }
+        return null;
+    }    
     
     private String getInstanceUrl(String instanceId) {
         return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);
@@ -321,7 +430,7 @@ public class Client {
         } catch (JSONException ex) {
             //
         } 
-        return error != null ? error.getString("message") : errorResponseBody;
+        return error != null && error.containsKey("message")? error.getString("message") : errorResponseBody;
     }
     
     private void setRequiredHeaders(HttpRequestBase request) {
@@ -334,53 +443,55 @@ public class Client {
         return entity != null ? EntityUtils.toString(entity) : null;
     }
     
-    private HttpResponse execute(HttpRequestBase request, int expectedStatus) throws IOException {
+    private HttpResponse execute(HttpRequestBase request) throws IOException {
         if (token == null) {
             connect();
         }
         setRequiredHeaders(request);
         HttpResponse response = httpClient.execute(request);
         int status = response.getStatusLine().getStatusCode();
-        if (status != expectedStatus) {
-            if (status == HttpStatus.SC_UNAUTHORIZED) {
-                token = null;
-                EntityUtils.consumeQuietly(response.getEntity());
-                request.reset();
-                connect();
-                setRequiredHeaders(request);
-                response = httpClient.execute(request);                
-                status = response.getStatusLine().getStatusCode();
-            }
-            if (status != expectedStatus) {
-                token = null;
-                throw new ClientException(getErrorMessage(getResponseBodyAsString(response)), status);
-            }            
+        if (status == HttpStatus.SC_UNAUTHORIZED) {
+            token = null;
+            EntityUtils.consumeQuietly(response.getEntity());
+            request.reset();
+            connect();
+            setRequiredHeaders(request);
+            response = httpClient.execute(request);                
+            status = response.getStatusLine().getStatusCode();
         }
+        if (status < 200 || status > 299) {
+            token = null;
+            throw new ClientException(getErrorMessage(getResponseBodyAsString(response)), status);
+        }            
 
         return response;
     }
     
-    private HttpClient createHttpClient() {
-        try {
-            SSLSocketFactory sslSocketFactory = new SSLSocketFactory(new TrustStrategy() {
+    private static synchronized HttpClient createHttpClient() {
+        if (httpClient == null) {
+            try {
+                SSLSocketFactory sslSocketFactory = new SSLSocketFactory(new TrustStrategy() {
 
-                public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                    return true;
-                }
-                
-            }, SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+                    public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                        return true;
+                    }
 
-            SchemeRegistry registry = new SchemeRegistry();
-            registry.register(
-                    new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
-            registry.register(
-                    new Scheme("https", 443, sslSocketFactory));
+                }, SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
 
-            ClientConnectionManager ccm = new PoolingClientConnectionManager(registry);
+                SchemeRegistry registry = new SchemeRegistry();
+                registry.register(
+                        new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
+                registry.register(
+                        new Scheme("https", 443, sslSocketFactory));
 
-            return new DefaultHttpClient(ccm);
-        } catch (Exception e) {
-            return new DefaultHttpClient();
+                ClientConnectionManager ccm = new PoolingClientConnectionManager(registry);
+
+                httpClient = new DefaultHttpClient(ccm);
+            } catch (Exception e) {
+                httpClient = new DefaultHttpClient();
+            }
         }
+        
+        return httpClient;
     }
 }

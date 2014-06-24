@@ -94,11 +94,11 @@ public class ElasticBoxSlave extends Slave {
 
     public String getInstancePageUrl() throws IOException {
         checkInstanceReachable();
-        return MessageFormat.format("{0}/#/instances/{1}/i", getCloud().getEndpointUrl(), getInstanceId());
+        return Client.getPageUrl(getCloud().getEndpointUrl(), instanceUrl);
     }        
         
     public String getInstanceId() {
-        return instanceUrl != null ? instanceUrl.substring(instanceUrl.lastIndexOf('/') + 1) : null;
+        return Client.getResourceId(instanceUrl);
     }
 
     public boolean isSingleUse() {

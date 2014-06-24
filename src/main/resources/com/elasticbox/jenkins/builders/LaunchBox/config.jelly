@@ -1,0 +1,47 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry title="${%Workspace}" field="workspace">
+        <f:select clazz="required" />
+    </f:entry>
+    <f:entry title="${%Box}" field="box">
+        <f:select clazz="required" />
+    </f:entry>
+    <f:entry title="${%Deployment Profile}" field="profile">
+        <f:select clazz="required eb-profile" />
+    </f:entry>
+    <f:entry title="${%Number of Instances}" field="instances">
+        <f:textbox clazz="required number" default="1"/>
+    </f:entry>
+    <f:entry title="${%Environment}" field="environment">
+        <f:textbox clazz="required"/>
+    </f:entry>
+    <f:entry field="variables">
+        <f:textbox clazz="eb-variables help"/>
+    </f:entry>
+    <f:entry field="variableValues">
+        <f:block>
+            <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
+                <tbody class="eb-variable-inputs">
+                    <tr>
+                        <td class="setting-leftspace" colspan="3">
+                            <div><b>Variables</b></div>
+                        </td>
+                    </tr>
+<!--
+                    <tr>
+                        <td class="setting-leftspace">&nbsp;</td>
+                        <td class="setting-name">Box Filter</td>
+                        <td class="setting-main">
+                            <input name="_.filter" value="" class="setting-input   " type="text">
+                        </td>
+                        <td>&nbsp;</td>
+                    </tr>
+-->
+                </tbody>
+            </table>
+
+            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
+        </f:block>
+    </f:entry>
+</j:jelly>
