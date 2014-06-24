@@ -26,6 +26,8 @@ import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
 import hudson.util.Scrambler;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,6 +43,7 @@ import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -223,6 +226,33 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 if (ebCloudCount > 1) {
                     throw new FormException("You cannot have more than 2 ElasticBox clouds.", "");
                 }
+            }
+            
+            String endpointUrl = formData.getString("endpointUrl");
+            try {
+                new URL(endpointUrl);
+            } catch (MalformedURLException ex) {
+                throw new FormException(MessageFormat.format("Invalid End Point URL: {0}", endpointUrl), "endpointUrl");
+            }
+            
+            boolean invalidNumber = false;
+            try {
+                invalidNumber = formData.getInt("maxInstances") <= 0;
+            } catch (JSONException ex) {
+                invalidNumber = true;
+            } 
+            if (invalidNumber) {
+                throw new FormException("Invalid Max. No. of Instances, it must be a positive whole number.", "maxInstances");
+            }
+            
+            invalidNumber = false;
+            try {
+                invalidNumber = formData.getInt("retentionTime") <= 0;
+            } catch (JSONException ex) {
+                invalidNumber = true;
+            } 
+            if (invalidNumber) {
+                throw new FormException("Invalid Retention Time, it must be a positive whole number.", "retentionTime");
             }
             
             return super.newInstance(req, formData);

@@ -16,12 +16,11 @@ import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
+import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Descriptor;
-import hudson.model.Project;
 import hudson.model.Queue;
 import hudson.model.labels.LabelAtom;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,11 +36,11 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
 
     @Override
     public boolean shouldSchedule(Queue.Task p, List<Action> actions) {
-        if (p instanceof AbstractProject && p instanceof Project) {
+        if (p instanceof AbstractProject && p instanceof BuildableItemWithBuildWrappers) {
             AbstractProject project = (AbstractProject) p;
             InstanceCreator instanceCreator = null;
             boolean singleUse = false;
-            for (Object buildWrapper : ((Project) p).getBuildWrappers().values()) {
+            for (Object buildWrapper : ((BuildableItemWithBuildWrappers) p).getBuildWrappersList().toMap().values()) {
                 if (buildWrapper instanceof InstanceCreator) {
                     instanceCreator = (InstanceCreator) buildWrapper;
                 } else if (buildWrapper instanceof SingleUseSlaveBuildOption) {
