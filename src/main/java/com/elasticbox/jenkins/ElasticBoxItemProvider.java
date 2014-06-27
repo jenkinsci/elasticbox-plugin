@@ -16,10 +16,10 @@ import com.elasticbox.Client;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONObject;
@@ -38,10 +38,10 @@ import org.kohsuke.stapler.StaplerResponse;
 public class ElasticBoxItemProvider {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxItemProvider.class.getName());
     
-    public static class VariableArray implements HttpResponse {
+    public static class JSONArrayResponse implements HttpResponse {
         private final JSONArray jsonArray;
         
-        public VariableArray(JSONArray jsonArray) {
+        public JSONArrayResponse(JSONArray jsonArray) {
             this.jsonArray = jsonArray;
         }
 
@@ -115,25 +115,45 @@ public class ElasticBoxItemProvider {
         return sort(profiles);        
     }
     
-    public VariableArray getProfileVariables(String profile) {
+    public JSONArrayResponse getProfileBoxStack(String profile) {
         if (profile != null && profile.trim().length() > 0) {
             try {
-                return new VariableArray(createClient().getProfileVariables(profile));
+                Client client = createClient();
+                JSONObject profileJson = client.getProfile(profile);
+                String boxId = profileJson.getJSONObject("box").getString("version");
+                return new JSONArrayResponse(new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray());
+                
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for profile {0}", profile), ex);
             }
         }
         
-        return new VariableArray(new JSONArray());
+        return new JSONArrayResponse(new JSONArray());
     }
-    
+
+    public JSONArrayResponse getInstanceBoxStack(String instance) {
+        if (instance != null && instance.trim().length() > 0) {
+            try {
+                Client client = createClient();
+                JSONObject instanceJson = client.getInstance(instance);
+                JSONArray boxes = instanceJson.getJSONArray("boxes");
+                return new JSONArrayResponse(new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, client).toJSONArray());
+                
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for profile {0}", instance), ex);
+            }
+        }
+        
+        return new JSONArrayResponse(new JSONArray());
+    }
+
     /**
      * Returns only the variables of main box for now.
      * 
      * @param instance
      * @return 
      */
-    public VariableArray getInstanceVariables(String instance) {
+    public JSONArrayResponse getInstanceVariables(String instance) {
         if (instance != null && instance.trim().length() > 0) {
             try {
                 JSONObject json = createClient().getInstance(instance);
@@ -148,57 +168,73 @@ public class ElasticBoxItemProvider {
                         }
                     }
                  }
-                return new VariableArray(variables);
+                return new JSONArrayResponse(variables);
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for instance {0}", instance), ex);
             }
         }
         
-        return new VariableArray(new JSONArray());        
+        return new JSONArrayResponse(new JSONArray());        
     }
     
     private static class InstanceFilter {
-        private final String filter;
+        private final String boxId;
 
-        InstanceFilter(String filter) {
-            this.filter = filter != null ? filter.toLowerCase() : filter;
+        InstanceFilter(String boxId) {
+            this.boxId = boxId;
         }
         
         public boolean accept(JSONObject instance) {
-            if (filter == null || filter.isEmpty() || 
-                    instance.getString("name").toLowerCase().contains(filter) || 
-                    instance.getString("environment").toLowerCase().contains(filter)) {
+            if (boxId == null || boxId.isEmpty() || boxId.equals("AnyBox")) {
                 return true;
-            };
-            
-            Object tags = instance.get("tags");
-            if (tags instanceof String[]) {
-                for (String tag : (String[]) tags) {
-                    if (tag.toLowerCase().contains(filter)) {
-                        return true;
-                    }
-                }
             }
             
-            return false;
+            JSONObject mainBox = (JSONObject) instance.getJSONArray("boxes").get(0);
+            return mainBox.getString("id").equals(boxId);
         }
     }
     
-    public ListBoxModel getInstances(String workspace, String filter) {
-        ListBoxModel instances = new ListBoxModel();
+    public JSONArrayResponse getInstancesAsJSONArrayResponse(String workspace, String box) {
+        JSONArray instances = new JSONArray();
         try {
-            JSONArray instanceArray = createClient().getInstances(workspace);
-            InstanceFilter instanceFilter = new InstanceFilter(filter);
+            Client client = createClient();
+            JSONArray instanceArray = client.getInstances(workspace);
+            if (!instanceArray.isEmpty() && !instanceArray.getJSONObject(0).getJSONArray("boxes").getJSONObject(0).containsKey("id")) {
+                List<String> instanceIDs = new ArrayList<String>();
+                for (int i = 0; i < instanceArray.size(); i++) {
+                    instanceIDs.add(instanceArray.getJSONObject(i).getString("id"));
+                }
+                instanceArray = client.getInstances(workspace, instanceIDs);
+            }
+            InstanceFilter instanceFilter = new InstanceFilter(box);
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
                 if (instanceFilter.accept(json)) {
-                    instances.add(MessageFormat.format("{0} - {1}", json.getString("name"), json.getString("environment")), json.getString("id"));
+                    json.put("name", MessageFormat.format("{0} - {1}", json.getString("name"), json.getString("environment")));
+                    instances.add(json);
                 }
             }
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching instances of workspace {0}", workspace), ex);
         }
-        return sort(instances);
+        
+        Collections.sort(instances, new Comparator<Object> () {
+            public int compare(Object o1, Object o2) {
+                return ((JSONObject) o1).getString("name").compareTo(((JSONObject) o2).getString("name"));
+            }
+        });
+        
+        return new JSONArrayResponse(instances);
+    }
+    
+    public ListBoxModel getInstances(String workspace, String box) {
+        ListBoxModel instances = new ListBoxModel();
+        JSONArray instanceArray = getInstancesAsJSONArrayResponse(workspace, box).getJsonArray();
+        for (Object instance : instanceArray) {
+            JSONObject json = (JSONObject) instance;
+                instances.add(MessageFormat.format("{0} - {1}", json.getString("name"), json.getString("environment")), json.getString("id"));
+        }
+        return instances;
     }
     
     private ListBoxModel sort(ListBoxModel model) {
@@ -216,6 +252,110 @@ public class ElasticBoxItemProvider {
             return ebCloud.createClient();
         }
         return null;
+    }
+    
+    private static class BoxStack {
+        private final List<JSONObject> overriddenVariables;
+        private final JSONArray boxes;
+        private final String boxId;
+        private final Client client;
+        
+        BoxStack(String boxId, JSONArray boxes, Client client) {
+            this.boxId = boxId;
+            this.boxes = boxes;      
+            this.client = client;
+            overriddenVariables = new ArrayList<JSONObject>();
+        }
+        
+        public JSONArray toJSONArray() {
+            return JSONArray.fromObject(createBoxStack("", boxId));
+        }
+        
+        private JSONObject findBox(String boxId) {
+            for (Object json : boxes) {
+                JSONObject box = (JSONObject) json;
+                if (box.getString("id").equals(boxId)) {
+                    return box;
+                }
+            }
+            
+            for (Object json : boxes) {
+                JSONObject box = (JSONObject) json;
+                if (box.containsKey("version") && box.getJSONObject("version").getString("box").equals(boxId)) {
+                    return box;
+                }
+            }      
+            
+            return null;
+        }
+        
+        private JSONObject findOverriddenVariable(String name, String scope) {
+            for (Object json : overriddenVariables) {
+                JSONObject variable = (JSONObject) json;
+                if (scope.equals(variable.get("scope")) && variable.get("name").equals(name)) {
+                    return variable;
+                }
+            }
+
+            return null;
+        }
+
+        private List<JSONObject> createBoxStack(String scope, String boxId) {
+            JSONObject box = findBox(boxId);
+            if (box == null) {
+                return Collections.EMPTY_LIST;
+            }
+            
+            List<JSONObject> boxStack = new ArrayList<JSONObject>();
+            JSONObject stackBox = new JSONObject();
+            String icon = null;
+            if (box.containsKey("icon")) {
+                icon = box.getString("icon");
+            }
+            if (icon == null || icon.isEmpty()) {
+                icon = "/images/platform/box.png";
+            } else if (icon.charAt(0) != '/') {
+                icon = '/' + icon;
+            }
+            stackBox.put("id", box.getString("id"));
+            stackBox.put("name", box.getString("name"));
+            stackBox.put("icon", client.getEndpointUrl() + icon);
+            boxStack.add(stackBox);
+            JSONArray stackBoxVariables = new JSONArray();
+            JSONArray variables = box.getJSONArray("variables");
+            List<JSONObject> boxVariables = new ArrayList<JSONObject>();
+            for (Object json : variables) {
+                JSONObject variable = (JSONObject) json;
+                String varScope = (String) variable.get("scope");
+                if (varScope != null && !varScope.isEmpty()) {
+                    String fullScope = scope.isEmpty() ? varScope : scope + '.' + varScope;
+                    if (findOverriddenVariable(variable.getString("name"), scope) == null) {
+                        JSONObject overriddenVariable = JSONObject.fromObject(variable);
+                        overriddenVariable.put("scope", fullScope);
+                        overriddenVariables.add(variable);
+                    }
+                } else if (variable.getString("type").equals("Box")) {
+                    boxVariables.add(variable);
+                } else {
+                    JSONObject stackBoxVariable = JSONObject.fromObject(variable);
+                    stackBoxVariable.put("scope", scope);
+                    JSONObject overriddenVariable = findOverriddenVariable(stackBoxVariable.getString("name"), scope);
+                    if (overriddenVariable != null) {
+                        stackBoxVariable.put("value", overriddenVariable.get("value"));
+                    }
+                    stackBoxVariables.add(stackBoxVariable);
+                }
+            }        
+            stackBox.put("variables", stackBoxVariables);
+
+            for (JSONObject boxVariable : boxVariables) {
+                String variableName = boxVariable.getString("name");
+                boxStack.addAll(createBoxStack(scope.isEmpty() ? variableName : scope + '.' + variableName, boxVariable.getString("value")));
+            }
+
+            return boxStack;
+        }
+            
     }
         
 }

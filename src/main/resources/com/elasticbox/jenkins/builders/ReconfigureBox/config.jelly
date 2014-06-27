@@ -3,16 +3,16 @@
     <f:entry title="${%Workspace}" field="workspace">
         <f:select clazz="required" />
     </f:entry>
-    <f:entry title="Box Filter" field="filter">
-        <f:textbox />
+    <f:entry title="${%Box}" field="box">
+        <f:select clazz="required" />
     </f:entry>
-    <f:entry title="${%Deployed Box}" field="instance">
+    <f:entry title="${%Instance}" field="instance">
         <f:select clazz="required eb-instance" />
     </f:entry>
     <f:entry field="variables">
         <f:textbox clazz="eb-variables help"/>
     </f:entry>
-    <f:entry field="variableValues">
+    <f:entry>
         <f:block>
             <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
                 <tbody class="eb-variable-inputs">
@@ -25,8 +25,8 @@
             </table>
 
             <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
             <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
         </f:block>
     </f:entry>
-
 </j:jelly>

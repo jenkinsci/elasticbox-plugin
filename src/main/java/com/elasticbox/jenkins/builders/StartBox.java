@@ -15,38 +15,32 @@ package com.elasticbox.jenkins.builders;
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.ElasticBoxItemProvider;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
  * @author Phong Nguyen Le
  */
-public class StartBox extends Builder {
-    private final String instance;
-    private final String workspace;
-    
-    @DataBoundConstructor
-    public StartBox(String workspace, String instance) {
-        this.workspace = workspace;
-        this.instance = instance;
-    }
+public class StartBox extends InstanceBuildStep {
 
+    @DataBoundConstructor
+    public StartBox(String workspace, String instance, String buildStep) {
+        super(workspace, instance, buildStep);
+    }
+    
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         ElasticBoxCloud cloud = ElasticBoxCloud.getInstance();
@@ -62,41 +56,22 @@ public class StartBox extends Builder {
             listener.getLogger().println(MessageFormat.format("The box instance {0} has been started successfully ", instancePageUrl));
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(LaunchBox.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
             listener.error("Failed to start box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
     }    
 
-    public String getWorkspace() {
-        return workspace;
-    }
-
-    public String getInstance() {
-        return instance;
-    }
-    
-    
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        private final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
-
-        @Override
-        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-            return true;
-        }
-
+    public static final class DescriptorImpl extends Descriptor {
         @Override
         public String getDisplayName() {
             return "ElasticBox - Start Box";
         }
-        
-        public ListBoxModel doFillWorkspaceItems() {
-            return itemProvider.getWorkspaces();
-        }
-        
-        public ListBoxModel doFillInstanceItems(@QueryParameter String workspace, @QueryParameter String filter) {                
-            return itemProvider.getInstances(workspace, filter);
+
+        @Override
+        public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            return super.newInstance(req, formData);
         }
         
     }

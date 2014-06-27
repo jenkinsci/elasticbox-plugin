@@ -301,7 +301,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         if (!item.getFuture().isCancelled()) {
                             remove = false;
                             break;
-                        };
+                        }
                     }
                     if (remove) {
                         slavesToRemove.add(slave);

@@ -60,7 +60,7 @@ public class Client {
 
     private static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
     private static final String DEPLOYMENT_REQUEST_SCHEMA_NAME = "deploy-instance-request";
-    
+
     public static interface InstanceState {
         String PROCESSING = "processing";
         String DONE = "done";
@@ -100,6 +100,10 @@ public class Client {
         this.endpointUrl = endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl;
         this.username = username;
         this.password = password;
+    }
+
+    public String getEndpointUrl() {
+        return endpointUrl;
     }
         
     public void connect() throws IOException {
@@ -141,19 +145,24 @@ public class Client {
         return (JSONArray) doGet(MessageFormat.format("/services/workspaces/{0}/instances", workspaceId), true);
     }
     
-    /**
-     * Returns only the variables of main box for now.
-     * 
-     * @param profileId
-     * @return
-     * @throws IOException 
-     */
-    public JSONArray getProfileVariables(String profileId) throws IOException {
-        JSONObject profile = getProfile(profileId);
-        String boxId = profile.getJSONObject("box").getString("version");
-        JSONObject box = (JSONObject) doGet(MessageFormat.format("/services/boxes/{0}", boxId), false);
-        return box.getJSONArray("variables");
-    }    
+    public JSONArray getInstances(String workspaceId, List<String> instanceIDs) throws IOException {
+        JSONArray instances = new JSONArray();
+        for (int start = 0; start < instanceIDs.size();) {
+            int end = Math.min(800, instanceIDs.size());            
+            StringBuilder ids = new StringBuilder();
+            for (int i = start; i < end; i++) {
+                ids.append(instanceIDs.get(i)).append(',');
+            }
+            instances.addAll((JSONArray) doGet(MessageFormat.format("/services/workspaces/{0}/instances?ids={1}", workspaceId, ids.toString()), true));
+            start = end;
+        }
+
+        return instances;
+    }
+    
+    public JSONArray getBoxStack(String boxId) throws IOException {
+        return (JSONArray) doGet(MessageFormat.format("/services/boxes/{0}/stack", boxId), true);
+    }
     
     protected class ProgressMonitor implements IProgressMonitor {
         private final String instanceUrl;
@@ -382,6 +391,17 @@ public class Client {
         }
     }
 
+    public IProgressMonitor reinstall(String instanceId) throws IOException {
+        String instanceUrl = getInstanceUrl(instanceId);
+        HttpPut put = new HttpPut(MessageFormat.format("{0}/reinstall", instanceUrl));
+        try {
+            execute(put);
+            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.REINSTALL));
+        } finally {
+            put.reset();
+        }
+    }
+        
     public JSON doGet(String url, boolean isArray) throws IOException {
         if (url.startsWith("/")) {
             url = endpointUrl + url;

@@ -88,7 +88,7 @@ public class InstanceCreator extends BuildWrapper {
 
     @Extension
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private final ElasticBoxItemProvider profileProvider = new ElasticBoxItemProvider();
+        private final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
         
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
@@ -101,15 +101,17 @@ public class InstanceCreator extends BuildWrapper {
         }
         
         public ListBoxModel doFillWorkspaceItems() {
-            return profileProvider.getWorkspaces();
+            return itemProvider.getWorkspaces();
         }
         
         public ListBoxModel doFillBoxItems(@QueryParameter String workspace) {
-            return profileProvider.getBoxes(workspace);
+            return itemProvider.getBoxes(workspace);
         }
 
         public ListBoxModel doFillProfileItems(@QueryParameter String workspace, @QueryParameter String box) {                
-            return profileProvider.getProfiles(workspace, box);
+            ListBoxModel instances = itemProvider.getProfiles(workspace, box);
+            
+            return instances;
         }
     }
 }

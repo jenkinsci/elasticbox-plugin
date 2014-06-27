@@ -21,7 +21,6 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.util.Scrambler;
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.text.MessageFormat;
@@ -37,7 +36,6 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.test.HudsonTestCase;
 
@@ -48,7 +46,7 @@ import org.jvnet.hudson.test.HudsonTestCase;
 public class ElasticBoxCloudTest extends HudsonTestCase {
     private static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
     private static final String PUBLIC_JENKINS_HOST = "localhost";
-    private static final boolean TEST_BUILD = true; //Boolean.getBoolean("elasticbox.jenkins.test.build");
+    private static final boolean TEST_BUILD = Boolean.getBoolean("elasticbox.jenkins.test.build");
     private static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://catapult.elasticbox.com");
     private static final String USER_NAME = System.getProperty("elasticbox.jenkins.test.username", Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"));
     private static final String PASSWORD = System.getProperty("elasticbox.jenkins.test.password", Scrambler.descramble("dHBob25naW8="));

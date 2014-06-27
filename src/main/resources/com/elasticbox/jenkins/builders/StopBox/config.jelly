@@ -1,12 +1,24 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="${%Workspace}" field="workspace">
-        <f:select clazz="required" />
-    </f:entry>
-    <f:entry title="Box Filter" field="filter">
-        <f:textbox />
-    </f:entry>
-    <f:entry title="${%Deployed Box}" field="instance">
-        <f:select clazz="required" />
-    </f:entry>
+    <f:radioBlock checked="${it.buildStep ? 'false' : 'true'}" name="instanceType" inline="true" title="Existing instance" value="existing">
+        <f:entry title="${%Workspace}" field="workspace">
+            <f:select clazz="required" />
+        </f:entry>
+        <f:entry title="${%Box}" field="box">
+            <f:select clazz="required" />
+        </f:entry>
+        <f:entry title="${%Instance}" field="instance">
+            <f:select clazz="required" />
+        </f:entry>
+    </f:radioBlock>
+    <f:radioBlock checked="${it.buildStep ? 'true' : 'false'}" name="instanceType" inline="true" title="Instance deployed by prior build step">
+        <f:entry title="${%Build Step}" field="buildStep">
+            <f:select clazz="eb-buildstep" />
+        </f:entry>
+    </f:radioBlock>
+    <f:block>
+        <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+        <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
+        <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
+    </f:block>
 </j:jelly>

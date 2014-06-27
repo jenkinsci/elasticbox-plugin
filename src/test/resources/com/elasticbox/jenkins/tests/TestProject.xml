@@ -29,14 +29,14 @@
       <instance>{intanceId}</instance>
       <workspace>{workspaceId}</workspace>
     </com.elasticbox.jenkins.builders.TerminateBox>
-    <com.elasticbox.jenkins.builders.LaunchBox plugin="elasticbox@{version}">
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@{version}">
       <workspace>{workspaceId}</workspace>
       <box>{LaunchBox.boxId}</box>
       <profile>{LaunchBox.profileId}</profile>
       <environment>jenkins-plugin-launch-box</environment>
       <instances>1</instances>
       <variables>[]</variables>
-    </com.elasticbox.jenkins.builders.LaunchBox>
+    </com.elasticbox.jenkins.builders.DeployBox>
   </builders>
   <publishers/>
   <buildWrappers>

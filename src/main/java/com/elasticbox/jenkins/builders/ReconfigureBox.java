@@ -21,11 +21,7 @@ import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.Builder;
-import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
@@ -38,16 +34,12 @@ import org.kohsuke.stapler.QueryParameter;
  *
  * @author Phong Nguyen Le
  */
-public class ReconfigureBox extends Builder {
-    private final String instance;
-    private final String workspace;
+public class ReconfigureBox extends InstanceBuildStep {
     private final String variables;
     
     @DataBoundConstructor
     public ReconfigureBox(String workspace, String instance, String variables) {
-        super();
-        this.workspace = workspace;
-        this.instance = instance;
+        super(workspace, instance, null);
         this.variables = variables;
     }
 
@@ -66,48 +58,33 @@ public class ReconfigureBox extends Builder {
             listener.getLogger().println(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(LaunchBox.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
             listener.error("Failed to reconfigure box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
     }    
-
-    public String getWorkspace() {
-        return workspace;
-    }
-
-    public String getInstance() {
-        return instance;
-    }
 
     public String getVariables() {
         return variables;
     }
     
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        private final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
-
-        @Override
-        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-            return true;
-        }
-
+    public static final class DescriptorImpl extends Descriptor {
         @Override
         public String getDisplayName() {
             return "ElasticBox - Reconfigure Box";
         }
 
-        public ListBoxModel doFillWorkspaceItems() {
-            return itemProvider.getWorkspaces();
-        }
-        
-        public ListBoxModel doFillInstanceItems(@QueryParameter String workspace, @QueryParameter String filter) {                
-            return itemProvider.getInstances(workspace, filter);
-        }
-        
-        public ElasticBoxItemProvider.VariableArray doGetVariables(@QueryParameter String instance) {
+        public ElasticBoxItemProvider.JSONArrayResponse doGetVariables(@QueryParameter String instance) {
             return itemProvider.getInstanceVariables(instance);
+        }
+
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String instance) {
+            return itemProvider.getInstanceBoxStack(instance);
+        }
+        
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, @QueryParameter String box) {
+            return itemProvider.getInstancesAsJSONArrayResponse(workspace, box);
         }
         
     }

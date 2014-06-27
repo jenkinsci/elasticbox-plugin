@@ -43,17 +43,22 @@ import org.kohsuke.stapler.StaplerRequest;
  *
  * @author Phong Nguyen Le
  */
-public class LaunchBox extends Builder {
+public class DeployBox extends Builder {
+    private final String id;
     private final String workspace;
     private final String box;
     private final String profile;
     private final String environment;
     private final int instances;
     private final String variables;
+    
+    private transient String instanceId;
 
     @DataBoundConstructor
-    public LaunchBox(String workspace, String box, String profile, int instances, String environment, String variables) {
+    public DeployBox(String id, String workspace, String box, String profile, int instances, String environment, String variables) {
         super();
+        assert id != null && id.startsWith(DeployBox.class.getName() + '-');
+        this.id = id;
         this.workspace = workspace;
         this.box = box;
         this.profile = profile;
@@ -80,12 +85,17 @@ public class LaunchBox extends Builder {
         try {
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
             listener.getLogger().println(MessageFormat.format("The box instance {0} has been deployed successfully ", instancePageUrl));
+            instanceId = Client.getResourceId(monitor.getResourceUrl());
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(LaunchBox.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
             listener.error("Failed to deploy box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getWorkspace() {
@@ -98,8 +108,12 @@ public class LaunchBox extends Builder {
 
     public String getProfile() {
         return profile;
-    }      
+    }  
 
+    public int getInstances() {
+        return instances;
+    }
+    
     public String getEnvironment() {
         return environment;
     }        
@@ -108,6 +122,10 @@ public class LaunchBox extends Builder {
         return variables;
     }
 
+    public String getInstanceId() {
+        return instanceId;
+    }
+    
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         private final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
@@ -119,7 +137,7 @@ public class LaunchBox extends Builder {
 
         @Override
         public String getDisplayName() {
-            return "ElasticBox - Launch Box";
+            return "ElasticBox - Deploy Box";
         }
 
         @Override
@@ -156,9 +174,12 @@ public class LaunchBox extends Builder {
             return itemProvider.getProfiles(workspace, box);
         }
         
-        public ElasticBoxItemProvider.VariableArray doGetVariables(@QueryParameter String profile) {
-            return itemProvider.getProfileVariables(profile);
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String profile) {
+            return itemProvider.getProfileBoxStack(profile);
         }
-                
+        
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, @QueryParameter String box) {
+            return itemProvider.getInstancesAsJSONArrayResponse(workspace, box);
+        }
     }
 }
