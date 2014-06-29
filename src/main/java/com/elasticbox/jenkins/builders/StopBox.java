@@ -44,7 +44,7 @@ public class StopBox extends InstanceBuildStep {
         if (cloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
-        IProgressMonitor monitor = cloud.createClient().shutdown(instance);
+        IProgressMonitor monitor = cloud.createClient().shutdown(getInstanceId(build));
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Stopping box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to stop", instancePageUrl));

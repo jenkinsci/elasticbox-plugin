@@ -1,6 +1,6 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:radioBlock checked="${it.buildStep ? 'false' : 'true'}" name="instanceType" inline="true" title="Existing instance" value="existing">
+    <f:radioBlock name="instanceType" checked="true" inline="true" title="Existing instance" value="eb-existing-instance">
         <f:entry title="${%Workspace}" field="workspace">
             <f:select clazz="required" />
         </f:entry>
@@ -11,7 +11,7 @@
             <f:select clazz="required" />
         </f:entry>
     </f:radioBlock>
-    <f:radioBlock checked="${it.buildStep ? 'true' : 'false'}" name="instanceType" inline="true" title="Instance deployed by prior build step">
+    <f:radioBlock name="instanceType" checked="false" inline="true" title="Instance deployed by prior build step" value="eb-instance-from-prior-buildstep">
         <f:entry title="${%Build Step}" field="buildStep">
             <f:select clazz="eb-buildstep" />
         </f:entry>

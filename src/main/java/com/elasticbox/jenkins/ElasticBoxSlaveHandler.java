@@ -22,16 +22,15 @@ import hudson.model.TaskListener;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.time.StopWatch;
@@ -167,6 +166,21 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private static final Queue<InstanceCreationRequest> submittedQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<ElasticBoxSlave> terminatedSlaves = new ConcurrentLinkedQueue<ElasticBoxSlave>();
     
+    public static JSONArray createJenkinsVariables(String jenkinsUrl, String slaveName) {
+        JSONArray variables = new JSONArray();
+        JSONObject variable = new JSONObject();
+        variable.put("name", "JENKINS_URL");
+        variable.put("type", "Text");
+        variable.put("value", jenkinsUrl);
+        variables.add(variable);
+        variable = new JSONObject();
+        variable.put("name", "SLAVE_NAME");
+        variable.put("type", "Text");
+        variable.put("value", slaveName);
+        variables.add(variable);
+        return variables;
+    }
+    
     public static final IProgressMonitor submit(ElasticBoxSlave slave) {
         InstanceCreationRequest request = new InstanceCreationRequest(slave);
         incomingQueue.add(request);
@@ -224,9 +238,11 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                     try {
                         deployInstance(request);
                         saveConfig = true;
-                        log(MessageFormat.format("Deloying a new instance for slave {0}", request.slave.getDisplayName()), listener);                    
+                        log(MessageFormat.format("Deloying a new instance for slave {0}", 
+                                request.slave.getDisplayName()), listener);                    
                     } catch (IOException ex) {
-                        log(Level.SEVERE, MessageFormat.format("Error deloying a new instance for slave {0}", request.slave.getDisplayName()), ex, listener);
+                        log(Level.SEVERE, MessageFormat.format("Error deloying a new instance for slave {0}", 
+                                request.slave.getDisplayName()), ex, listener);
                         request.monitor.setMonitor(DONE_MONITOR);
                         removeSlave(request.slave);
                     }
@@ -255,13 +271,15 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             try {
                 if (request.monitor.isDone()) {
                     if (request.slave.getComputer() != null && request.slave.getComputer().isOnline()) {
-                        request.slave.setInstanceStatusMessage(MessageFormat.format("Successfully deployed at {0}", request.slave.getInstancePageUrl()));
+                        request.slave.setInstanceStatusMessage(MessageFormat.format("Successfully deployed at {0}", 
+                                request.slave.getInstancePageUrl()));
                         saveNeeded = true;
                         iter.remove();
                     } else if ((System.currentTimeMillis() - request.monitor.getCreationTime()) >= TIMEOUT) {
                         request.slave.setInUse(false);
                         iter.remove();
-                        log(Level.SEVERE, MessageFormat.format("Slave agent {0} didn't contact after {1} minutes.", request.slave.getNodeName(), TIMEOUT_MINUTES), null, listener);
+                        log(Level.SEVERE, MessageFormat.format("Slave agent {0} didn't contact after {1} minutes.", 
+                                request.slave.getNodeName(), TIMEOUT_MINUTES), null, listener);
                     }
                 }
             } catch (IProgressMonitor.IncompleteException ex) {
@@ -284,7 +302,8 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         try {            
             Jenkins.getInstance().removeNode(slave);
         } catch (IOException ex) {
-            Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.SEVERE, MessageFormat.format("Error removing slave {0}", slave.getDisplayName()), ex);
+            Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.SEVERE, 
+                    MessageFormat.format("Error removing slave {0}", slave.getDisplayName()), ex);
         }        
     }
     
@@ -315,7 +334,8 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getString("operation"))) {
                             addToTerminatedQueue(slave);
                         } else if (Client.InstanceState.UNAVAILABLE.equals(state) || (slave.canTerminate() && !isSlaveInQueue(slave, submittedQueue)) ) {
-                            Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, MessageFormat.format("Unavailable instance {0} will be terminated.", slave.getInstancePageUrl()));
+                            Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, 
+                                    MessageFormat.format("Unavailable instance {0} will be terminated.", slave.getInstancePageUrl()));
                             slavesToRemove.add(slave);
                         } else {
                             numOfInstances++;
@@ -389,13 +409,12 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             environment = environment.substring(0, 30);
         }
         
-        Map<String, String> variables = new HashMap<String, String>();
-        variables.put("JENKINS_URL", Jenkins.getInstance().getRootUrl());
-        variables.put("SLAVE_NAME", request.slave.getNodeName());
         JSONObject profile = ebClient.getProfile(request.slave.getProfileId());
-        IProgressMonitor monitor = ebClient.deploy(request.slave.getProfileId(), profile.getString("owner"), environment, 1, variables);
+        IProgressMonitor monitor = ebClient.deploy(request.slave.getProfileId(), profile.getString("owner"), environment
+                , 1, createJenkinsVariables(Jenkins.getInstance().getRootUrl(), request.slave.getNodeName()));
         request.slave.setInstanceUrl(monitor.getResourceUrl());
-        request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance {0}", request.slave.getInstancePageUrl()));
+        request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance {0}", 
+                request.slave.getInstancePageUrl()));
         request.monitor.setMonitor(monitor);
         submittedQueue.add(request);
     }

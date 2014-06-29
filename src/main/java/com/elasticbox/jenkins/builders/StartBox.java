@@ -21,14 +21,11 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.tasks.Builder;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
@@ -47,7 +44,7 @@ public class StartBox extends InstanceBuildStep {
         if (cloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
-        IProgressMonitor monitor = cloud.createClient().poweron(instance);
+        IProgressMonitor monitor = cloud.createClient().poweron(getInstanceId(build));
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Starting box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to start", instancePageUrl));
@@ -64,14 +61,10 @@ public class StartBox extends InstanceBuildStep {
 
     @Extension
     public static final class DescriptorImpl extends Descriptor {
+
         @Override
         public String getDisplayName() {
             return "ElasticBox - Start Box";
-        }
-
-        @Override
-        public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            return super.newInstance(req, formData);
         }
         
     }

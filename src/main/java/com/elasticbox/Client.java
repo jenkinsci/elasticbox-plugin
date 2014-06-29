@@ -254,6 +254,19 @@ public class Client {
     }
     
     public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, Map<String, String> variables) throws IOException {
+        JSONArray variableArray = new JSONArray();
+        for (Map.Entry<String, String> entry : variables.entrySet()) {            
+            JSONObject jsonVar = new JSONObject();
+            jsonVar.put("name", entry.getKey());
+            jsonVar.put("type", "Text");
+            jsonVar.put("value", entry.getValue());
+            variableArray.add(jsonVar);
+        }
+        
+        return deploy(profileId, workspaceId, environment, instances, variableArray);
+    }
+        
+    public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {        
         JSONObject profile = (JSONObject) doGet(MessageFormat.format("/services/profiles/{0}", profileId), false);
         JSONObject deployRequest = new JSONObject();
         
@@ -264,29 +277,18 @@ public class Client {
             if (serviceProfile.containsKey("instances")) {
                 serviceProfile.put("instances", instances);
             }            
-            JSONArray jsonVars = new JSONArray();
-            for (Map.Entry<String, String> entry : variables.entrySet()) {            
-                JSONObject jsonVar = new JSONObject();
-                jsonVar.put("name", entry.getKey());
-                jsonVar.put("type", "Text");
-                jsonVar.put("value", entry.getValue());
-                jsonVars.add(jsonVar);
-            }
             deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + '/' + DEPLOYMENT_REQUEST_SCHEMA_NAME);
-            deployRequest.put("variables", jsonVars);
+            deployRequest.put("variables", variables);
         } else {
             JSONObject mainInstance = (JSONObject) profile.getJSONArray("instances").get(0);
             JSONArray jsonVars = mainInstance.getJSONArray("variables");
-            for (Map.Entry<String, String> entry : variables.entrySet()) {
-                JSONObject jsonVar = findVariable(entry.getKey(), jsonVars);
+            for (Object json : variables) {
+                JSONObject variable = (JSONObject) json;
+                JSONObject jsonVar = findVariable(variable, jsonVars);
                 if (jsonVar == null) {
-                    jsonVar = new JSONObject();
-                    jsonVar.put("name", entry.getKey());
-                    jsonVar.put("type", "Text");
-                    jsonVar.put("value", entry.getValue());
-                    jsonVars.add(jsonVar);
+                    jsonVar = variable;
                 } else {
-                    jsonVar.put("value", entry.getValue());
+                    jsonVar.put("value", variable.getString("value"));
                 }
             }
             JSONObject serviceProfile = mainInstance.getJSONObject("profile");
@@ -317,10 +319,9 @@ public class Client {
         List<JSONObject> newVariables = new ArrayList<JSONObject>();
         for (Object variable : variables) {
             JSONObject variableJson = (JSONObject) variable;
-            String variableName = variableJson.getString("name");
-            JSONObject instanceVariable = findVariable(variableName, instanceVariables);            
+            JSONObject instanceVariable = findVariable(variableJson, instanceVariables);            
             if (instanceVariable == null) {
-                JSONObject boxVariable = findVariable(variableName, boxVariables);
+                JSONObject boxVariable = findVariable(variableJson, boxVariables);
                 if (boxVariable != null) {
                     instanceVariable = JSONObject.fromObject(boxVariable);
                     newVariables.add(instanceVariable);
@@ -429,10 +430,13 @@ public class Client {
         return null;
     }
 
-    private JSONObject findVariable(String name, JSONArray variables) {
+    private JSONObject findVariable(JSONObject variable, JSONArray variables) {
+        String name = variable.getString("name");
+        String scope = variable.getString("scope");
         for (Object var : variables) {
             JSONObject json = (JSONObject) var;
-            if (json.getString("name").equals(name)) {
+            if (json.getString("name").equals(name) && 
+                    ((scope.isEmpty() && !json.containsKey("scope")) || scope.equals(json.getString("scope")))) {
                 return json;
             }
         }

@@ -16,10 +16,10 @@
                 '<td class="setting-leftspace" colspan="2"><div><b>{0} {1}</b></div></td></tr>' +
                 '</tbody></table></td>',
         TEXT_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
-                '<td class="setting-main"><input name="{0}" value="{1}" data-original-value="{2}" data-scope="{3}" class="setting-input eb-variable" type="text"></td>' +
+                '<td class="setting-main"><input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="text"></td>' +
                 '<td>&nbsp;</td></tr>',
         BINDING_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
-                '<td class="setting-main"><select name="{0}" value="{1}" data-original-value="{2}" data-scope="{3}" class="setting-input select eb-variable"></select></td>' +
+                '<td class="setting-main"><select name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input select eb-variable"></select></td>' +
                 '<td>&nbsp;</td></tr>',
 
         Dom = YAHOO.util.Dom,
@@ -35,27 +35,47 @@
                 changeListenerType: 'eb-' + type + '-change-listener'
             };
         },
-
+        
         createVariableRow = function (variable, savedVariable, varTextBox, buildStep) {
-            var row = document.createElement('tr'),
+            var saveVariable = function (name, value, scope, type, varTextBox) {
+                    var savedVariables = Dom.getAttribute(varTextBox, 'value').evalJSON(),
+                        modifiedVariable;
+
+                    if (type !== 'Binding' && value === Dom.getAttribute(this, 'data-original-value')) {
+                         savedVariables = _.filter( savedVariables, function (savedVar) {
+                            return savedVar.name === name && savedVar.scope === scope;
+                        });
+                    } else {
+                        modifiedVariable = _.findWhere( savedVariables, { name: name, scope: scope });
+                        if (modifiedVariable) {
+                            modifiedVariable.value = value;
+                        } else {
+                             savedVariables.push({ name: name, value: value, scope: scope, type: type });
+                        }
+                    }
+
+                    Dom.setAttribute(varTextBox, 'value',  savedVariables.toJSON());
+                },
+                
+                row = document.createElement('tr'),
                 variableTemplate;
 
             if (_.contains(['Text', 'Port', 'Password', 'Number', 'Binding'], variable.type)) {
                 
                 variableTemplate = variable.type === 'Binding' ? BINDING_VARIABLE_TEMPLATE : TEXT_VARIABLE_TEMPLATE;
-                row.innerHTML = ElasticBoxUtils.format(variableTemplate, variable.name, savedVariable && savedVariable.value || variable.value, variable.value, variable.scope);
+                row.innerHTML = ElasticBoxUtils.format(variableTemplate, variable.name, 'eb.' + variable.name, savedVariable && savedVariable.value || variable.value, variable.value, variable.scope);
                 Dom.getElementsByClassName('eb-variable', variable.type === 'Binding' && 'select' || 'input', row, function (variableInput) {
-                    var updateBindingOptions = function () {
-                            var deployBoxSteps = ElasticBoxUtils.getDeployBoxSteps(),
-                                buildStepId;
-
-                            if (Dom.getAttribute(buildStep, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId) {
-                                buildStepId = ElasticBoxUtils.getBuildStepId(buildStep);
-                                deployBoxSteps = _.reject(deployBoxSteps, function (step) {
-                                    return step.id === buildStepId;
-                                });
+                    var savedValue = Dom.getAttribute(variableInput, 'value'),
+                    
+                        updateBindingOptions = function (currentValue) {
+                            var scope = Dom.getAttribute(variableInput, 'data-scope'),
+                                deployBoxSteps = ElasticBoxUtils.getPriorDeployBoxSteps(buildStep),
+                                selectedOption;
+                            
+                            if (!currentValue) {
+                                currentValue = variableInput.value;
                             }
-
+                            
                             // remove existing options for deploy box steps
                             for (var child = Dom.getFirstChild(variableInput); 
                                     child !== null && ElasticBoxUtils.startsWith(child.getAttribute('value'), ElasticBoxUtils.DeployBoxDescriptorId); 
@@ -65,36 +85,29 @@
                             
                             variableInput.innerHTML = _.map(deployBoxSteps, function (step) {
                                         return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
-                                    }).join(' ') + variableInput.innerHTML;                                
+                                    }).join(' ') + variableInput.innerHTML;
+                                    
+                            selectedOption = Dom.getElementBy(function (option) {
+                                return Dom.getAttribute(option, 'value') === currentValue;
+                            }, 'option', variableInput);
+                            if (!selectedOption) {
+                                selectedOption = _.first(Dom.getChildren(variableInput));
+                                saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type, varTextBox);
+                            }
+                            variableInput.selectedIndex = selectedOption ? Dom.getChildren(variableInput).indexOf(selectedOption) : 0;
                         },
                         
-                        getInstancesUrl, workspaceSelect, fillUrl;
+                        getInstancesUrl, workspaceSelect, fillUrl, savedValue;
                             
                     Event.addListener(variableInput, 'change', function () {
-                        var name = Dom.getAttribute(this, 'name'),
-                            value = this.value,
-                            scope = Dom.getAttribute(this, 'data-scope'),
-                            boxVariables = Dom.getAttribute(varTextBox, 'value').evalJSON(),
-                            modifiedVariable;
-
-                        if (variable.type !== 'Binding' && value === Dom.getAttribute(this, 'data-original-value')) {
-                            boxVariables = _.filter(boxVariables, function (variable) {
-                                return variable.name === name && variable.scope === scope;
-                            });
-                        } else {
-                            modifiedVariable = _.findWhere(boxVariables, { name: name, scope: scope });
-                            if (modifiedVariable) {
-                                modifiedVariable.value = value;
-                            } else {
-                                boxVariables.push({ name: name, value: value, scope: scope });
-                            }
-                        }
-                        
-                        Dom.setAttribute(varTextBox, 'value', boxVariables.toJSON());
+                        saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, varTextBox)
                     });
                     if (variable.type === 'Binding') {
-                        updateBindingOptions();
-                        Event.addListener(variableInput, 'focus', updateBindingOptions);
+                        variableInput.innerHTML = '<option value="loading">Loading...</option>'
+                        
+                        Event.addListener(variableInput, 'focus', function () {
+                            updateBindingOptions(this.value);
+                        });
                         
                         workspaceSelect = _.first(Dom.getElementsByClassName('eb-workspace', 'select', buildStep));
                         if (workspaceSelect.value) {
@@ -103,12 +116,15 @@
                                 workspaceSelect.value, Dom.getAttribute(variableInput, 'data-original-value')); 
                             Connect.asyncRequest('GET', getInstancesUrl, {
                                 success: function (response) {
+                                    variableInput.innerHTML = '';
                                     _.each(response.responseText.evalJSON(), function (instance) {
                                         var option = document.createElement('option');
+                                        
                                         option.setAttribute("value", instance.id);
                                         option.innerHTML = instance.name;
-                                        variableInput.appendChild(option);
+                                        variableInput.appendChild(option);                                            
                                     });
+                                    updateBindingOptions(savedValue);
                                 },
 
                                 failure: function (response) {
@@ -229,6 +245,6 @@
                 });            
         };
 
-    setTimeout(initialize, 1000);
+    setTimeout(initialize, 500);
 
 })();

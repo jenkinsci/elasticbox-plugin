@@ -16,6 +16,7 @@ import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -25,9 +26,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import net.sf.json.JSONArray;
@@ -53,7 +51,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     private static final String LAUNCH_BOX_NAME = System.getProperty("elasticbox.jenkins.test.launchBox", "test-linux-box");
 
     public void testConfigRoundtrip() throws Exception {
-        ElasticBoxCloud cloud = new ElasticBoxCloud("https://elasticbox.com", 2, 10, USER_NAME, PASSWORD);
+        ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD);
         jenkins.clouds.add(cloud);
         
         WebClient webClient = createWebClient();
@@ -118,11 +116,9 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         
         // make sure that a deployment request can be successfully submitted
         JSONObject profile = profiles.getJSONObject(0);
-        Map<String, String> variables = new HashMap<String, String>();
-        variables.put("JENKINS_URL", jenkins.getRootUrl().replace("localhost", PUBLIC_JENKINS_HOST));
-        variables.put("SLAVE_NAME", JENKINS_SLAVE_BOX_NAME);
         try {
-            client.deploy(profile.getString("id"), profile.getString("owner"), "test", 1, variables);
+            client.deploy(profile.getString("id"), profile.getString("owner"), "test", 1, 
+                    ElasticBoxSlaveHandler.createJenkinsVariables(jenkins.getRootUrl().replace("localhost", PUBLIC_JENKINS_HOST), JENKINS_SLAVE_BOX_NAME));
         } catch (ClientException ex) {
             assertEquals(ex.getMessage(), HttpStatus.SC_BAD_REQUEST, ex.getStatusCode());
             assertStringContains(ex.getMessage(), profile.getString("provider"));
@@ -136,7 +132,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         JSONObject profile = profiles.getJSONObject(0);
         
         // deploy a test instance for build steps
-        IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), "jenkins-plugin-instance-events", 1, Collections.EMPTY_MAP);
+        IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), "jenkins-plugin-instance-events", 1, new JSONArray());
         monitor.waitForDone(60);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         

@@ -69,6 +69,27 @@ var ElasticBoxUtils = (function() {
         getBuildStepId: function (buildStep) {
             var idInput = _.first(Dom.getElementsByClassName('eb-id', 'input', buildStep));
             return idInput ? idInput.value : null;
+        },
+        
+        getPriorDeployBoxSteps: function (buildStep) {
+            var buildSteps = Dom.getElementsBy(function (element) {
+                    return startsWith(Dom.getAttribute(element, 'descriptorid'), DescriptorIdPrefix);
+                }, 'div', document),
+                deployBoxStepElements = [];
+
+            _.some(buildSteps, function (step) {
+                if (step === buildStep) {
+                    return true;
+                }
+
+                if (Dom.getAttribute(step, 'descriptorid') === DeployBoxDescriptorId) {
+                    deployBoxStepElements.push(step);
+                }
+
+                return false;
+            });
+            
+            return this.getDeployBoxSteps(deployBoxStepElements);
         }
     };
 })();

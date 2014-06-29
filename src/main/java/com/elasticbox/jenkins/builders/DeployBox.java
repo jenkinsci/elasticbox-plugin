@@ -23,13 +23,14 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Project;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
@@ -43,7 +44,7 @@ import org.kohsuke.stapler.StaplerRequest;
  *
  * @author Phong Nguyen Le
  */
-public class DeployBox extends Builder {
+public class DeployBox extends Builder implements IInstanceProvider {
     private final String id;
     private final String workspace;
     private final String box;
@@ -67,18 +68,50 @@ public class DeployBox extends Builder {
         this.variables = variables;
     }
     
+    protected JSONArray resolveVariables(JSONArray variables, List<IInstanceProvider> instanceProviders) {
+        for (Object json : variables) {
+            JSONObject variable = (JSONObject) json;
+            String value = variable.getString("value");
+            if ("Binding".equals(variable.getString("type")) && value.startsWith("com.elasticbox.jenkins.builders.")) {
+                for (IInstanceProvider instanceProvider : instanceProviders) {
+                    if (value.equals(instanceProvider.getId())) {
+                        variable.put("value", instanceProvider.getInstanceId());
+                    }
+                }                
+            }
+        }
+        return variables;
+    }    
+    
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {       
         ElasticBoxCloud cloud = ElasticBoxCloud.getInstance();
         if (cloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
-        Map<String, String> vars = new HashMap<String, String>();
-        for (Object variable : JSONArray.fromObject(variables)) {
-            JSONObject json = (JSONObject) variable;
-            vars.put(json.getString("name"), json.getString("value"));
+        JSONArray jsonVariables = JSONArray.fromObject(variables);
+        List<IInstanceProvider> instanceProviders = new ArrayList<IInstanceProvider>();
+        for (Object builder : ((Project) build.getProject()).getBuilders()) {
+            if (builder instanceof IInstanceProvider) {
+                instanceProviders.add((IInstanceProvider) builder);
+            }
         }
-        IProgressMonitor monitor = cloud.createClient().deploy(profile, workspace, environment, instances, vars);
+        for (Object json : jsonVariables) {
+            JSONObject variable = (JSONObject) json;
+            String value = variable.getString("value");
+            if ("Binding".equals(variable.getString("type")) && value.startsWith("com.elasticbox.jenkins.builders.")) {
+                for (IInstanceProvider instanceProvider : instanceProviders) {
+                    if (value.equals(instanceProvider.getId())) {
+                        variable.put("value", instanceProvider.getInstanceId());
+                    }
+                }                
+            }
+            
+            if (variable.getString("scope").isEmpty()) {
+                variable.remove("scope");
+            }
+        }        
+        IProgressMonitor monitor = cloud.createClient().deploy(profile, workspace, environment, instances, jsonVariables);
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Deploying box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the deployment of the box instance {0} to finish", instancePageUrl));

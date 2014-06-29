@@ -44,7 +44,7 @@ public class TerminateBox extends InstanceBuildStep {
         if (cloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
-        IProgressMonitor monitor = cloud.createClient().terminate(instance);
+        IProgressMonitor monitor = cloud.createClient().terminate(getInstanceId(build));
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Terminating box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));

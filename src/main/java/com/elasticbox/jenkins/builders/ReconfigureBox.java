@@ -49,7 +49,7 @@ public class ReconfigureBox extends InstanceBuildStep {
         if (cloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
-        IProgressMonitor monitor = cloud.createClient().reconfigure(instance, JSONArray.fromObject(variables));
+        IProgressMonitor monitor = cloud.createClient().reconfigure(getInstanceId(build), JSONArray.fromObject(variables));
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to be reconfigured", instancePageUrl));

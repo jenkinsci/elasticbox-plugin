@@ -13,19 +13,23 @@
 package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.jenkins.ElasticBoxItemProvider;
+import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Project;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.ListBoxModel;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
  * @author Phong Nguyen Le
  */
 public abstract class InstanceBuildStep extends Builder {
-    protected final String instance;
-    protected final String workspace;
+    private final String instance;
+    private final String workspace;
     private final String buildStep;
     
     public InstanceBuildStep(String workspace, String instance, String buildStep) {
@@ -46,6 +50,23 @@ public abstract class InstanceBuildStep extends Builder {
         return buildStep;
     }
     
+    protected String getInstanceId(AbstractBuild build) {
+        if (instance != null && !instance.isEmpty()) {
+            return instance;
+        }
+        
+        for (Object builder : ((Project) build.getProject()).getBuilders()) {
+            if (builder instanceof IInstanceProvider) {
+                IInstanceProvider instanceProvider = (IInstanceProvider) builder;
+                if (buildStep.equals(instanceProvider.getId())) {
+                    return instanceProvider.getInstanceId();
+                }
+            }
+        }
+        
+        return null;
+    }
+        
     public static abstract class Descriptor extends BuildStepDescriptor<Builder> {
         protected final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
 
@@ -54,13 +75,27 @@ public abstract class InstanceBuildStep extends Builder {
             return true;
         }
 
+        @Override
+        public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            if (formData.containsKey("instanceType")) {
+                if ("eb-existing-instance".equals(formData.getString("instanceType"))) {
+                    formData.remove("buildStep");
+                } else {
+                    formData.remove("workspace");
+                    formData.remove("instance");
+                }
+            }
+            
+            return super.newInstance(req, formData);
+        }               
+
         public ListBoxModel doFillWorkspaceItems() {
             return itemProvider.getWorkspaces();
         }
         
         public ListBoxModel doFillBoxItems(@QueryParameter String workspace) {
             ListBoxModel boxes = itemProvider.getBoxes(workspace);
-            boxes.add(0, new ListBoxModel.Option("Any Box", ""));
+            boxes.add(0, new ListBoxModel.Option("Any Box", "AnyBox"));
             return boxes;
         }
         

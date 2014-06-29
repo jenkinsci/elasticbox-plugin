@@ -96,7 +96,7 @@ public class ElasticBoxItemProvider {
 
     public ListBoxModel getProfiles(String workspace, String box) {
         ListBoxModel profiles = new ListBoxModel();
-        if (box.trim().length() == 0) {
+        if (workspace.isEmpty() || box.trim().length() == 0) {
             return profiles;
         }
 
@@ -210,7 +210,8 @@ public class ElasticBoxItemProvider {
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
                 if (instanceFilter.accept(json)) {
-                    json.put("name", MessageFormat.format("{0} - {1}", json.getString("name"), json.getString("environment")));
+                    json.put("name", MessageFormat.format("{0} - {1} - {2}", json.getString("name"), 
+                            json.getString("environment"), json.getJSONObject("service").getString("id")));
                     instances.add(json);
                 }
             }
@@ -229,10 +230,12 @@ public class ElasticBoxItemProvider {
     
     public ListBoxModel getInstances(String workspace, String box) {
         ListBoxModel instances = new ListBoxModel();
-        JSONArray instanceArray = getInstancesAsJSONArrayResponse(workspace, box).getJsonArray();
-        for (Object instance : instanceArray) {
-            JSONObject json = (JSONObject) instance;
-                instances.add(MessageFormat.format("{0} - {1}", json.getString("name"), json.getString("environment")), json.getString("id"));
+        if (!workspace.isEmpty() && !box.isEmpty()) {
+            JSONArray instanceArray = getInstancesAsJSONArrayResponse(workspace, box).getJsonArray();
+            for (Object instance : instanceArray) {
+                JSONObject json = (JSONObject) instance;
+                instances.add(json.getString("name"), json.getString("id"));
+            }
         }
         return instances;
     }
