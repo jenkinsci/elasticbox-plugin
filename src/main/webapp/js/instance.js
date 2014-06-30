@@ -60,10 +60,10 @@
                 
                     descriptorId = Dom.getAttribute(buildStep, 'descriptorid'),
                     buildStepSelect = _.first(Dom.getElementsByClassName('eb-buildstep', 'select', buildStep)),
+                    selectedBuildStepId = buildStepSelect && buildStepSelect.value || null,
             
-                    updateOptions = function () {
-                            var currentValue = buildStepSelect.value,
-                                selectedOption;
+                    updateOptions = function (currentValue) {
+                            var selectedOption;
 
                             buildStepSelect.innerHTML = getOptions();
                             selectedOption = Dom.getElementBy(function (option) {
@@ -75,10 +75,20 @@
                             buildStepSelect.selectedIndex = selectedOption ? Dom.getChildren(buildStepSelect).indexOf(selectedOption) : 0;                        
                         },
                         
+                    populateOptions = function () {
+                        var firstOption = Dom.getFirstChild(buildStepSelect);
+                        
+                        if (firstOption && Dom.getAttribute(firstOption, "value") === 'loading') {
+                            updateOptions(selectedBuildStepId);
+                        } else {
+                            setTimeout(populateOptions, 500);
+                        }
+                    },
+                        
                     priorBuildStepRadio, existingInstanceRadio, existingInstanceStartRow, priorBuildStepStartRow;
                 
                 if (buildStepSelect) {
-                    if (populate && buildStepSelect.value) {
+                    if (populate && selectedBuildStepId) {
                         priorBuildStepRadio = Dom.getElementBy(function (element) {
                             return Dom.getAttribute(element, 'value') === 'eb-instance-from-prior-buildstep';
                         }, 'input', buildStep);
@@ -95,13 +105,13 @@
                         }
                     }
 
-                    updateOptions();
-
+                    populateOptions();
+                    
                     if (!_.some(Event.getListeners(buildStepSelect, 'focus'), function (listener) {
                         return listener.obj === descriptorId;
                     })) {
                         Event.addListener(buildStepSelect, 'focus', function () {
-                            updateOptions();
+                            updateOptions(this.value);
                         }, descriptorId);
                     }
                 }

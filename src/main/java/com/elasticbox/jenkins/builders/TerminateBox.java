@@ -32,10 +32,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @author Phong Nguyen Le
  */
 public class TerminateBox extends InstanceBuildStep {
+    private final boolean delete;
     
     @DataBoundConstructor
-    public TerminateBox(String workspace, String instance, String buildStep) {
+    public TerminateBox(String workspace, String instance, String buildStep, boolean delete) {
         super(workspace, instance, buildStep);
+        this.delete = delete;
     }
 
     @Override
@@ -44,20 +46,31 @@ public class TerminateBox extends InstanceBuildStep {
         if (cloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
-        IProgressMonitor monitor = cloud.createClient().terminate(getInstanceId(build));
+        
+        Client client = cloud.createClient();
+        String instanceId = getInstanceId(build);
+        IProgressMonitor monitor = client.terminate(instanceId);
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Terminating box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));
         try {
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
             listener.getLogger().println(MessageFormat.format("The box instance {0} has been terminated successfully ", instancePageUrl));
+            if (delete) {
+                client.delete(instanceId);
+            }
+            
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
             Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
             listener.error("Failed to terminate box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
-    }    
+    }  
+
+    public boolean isDelete() {
+        return delete;
+    }
     
     @Extension
     public static final class DescriptorImpl extends Descriptor {

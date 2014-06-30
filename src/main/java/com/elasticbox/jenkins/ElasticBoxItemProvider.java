@@ -185,6 +185,10 @@ public class ElasticBoxItemProvider {
         }
         
         public boolean accept(JSONObject instance) {
+            if (Client.TERMINATE_OPERATIONS.contains(instance.getString("operation"))) {
+                return false;
+            }
+            
             if (boxId == null || boxId.isEmpty() || boxId.equals("AnyBox")) {
                 return true;
             }

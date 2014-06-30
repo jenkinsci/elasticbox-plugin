@@ -23,6 +23,7 @@ import net.sf.json.JSONObject;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+
 /**
  *
  * @author Phong Nguyen Le
@@ -102,6 +103,12 @@ public abstract class InstanceBuildStep extends Builder {
         public ListBoxModel doFillInstanceItems(@QueryParameter String workspace, @QueryParameter String box) {                
             ListBoxModel instances = itemProvider.getInstances(workspace, box);
             return instances;
+        }
+        
+        public ListBoxModel doFillBuildStepItems() {
+            ListBoxModel buildSteps = new ListBoxModel();
+            buildSteps.add("Loading...", "loading");
+            return buildSteps;
         }
         
     }
