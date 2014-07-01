@@ -17,20 +17,18 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxItemProvider;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Project;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
@@ -68,48 +66,17 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.variables = variables;
     }
     
-    protected JSONArray resolveVariables(JSONArray variables, List<IInstanceProvider> instanceProviders) {
-        for (Object json : variables) {
-            JSONObject variable = (JSONObject) json;
-            String value = variable.getString("value");
-            if ("Binding".equals(variable.getString("type")) && value.startsWith("com.elasticbox.jenkins.builders.")) {
-                for (IInstanceProvider instanceProvider : instanceProviders) {
-                    if (value.equals(instanceProvider.getId())) {
-                        variable.put("value", instanceProvider.getInstanceId());
-                    }
-                }                
-            }
-        }
-        return variables;
-    }    
-    
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {       
         ElasticBoxCloud cloud = ElasticBoxCloud.getInstance();
         if (cloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
+
+        VariableResolver resolver = new VariableResolver(build);
         JSONArray jsonVariables = JSONArray.fromObject(variables);
-        List<IInstanceProvider> instanceProviders = new ArrayList<IInstanceProvider>();
-        for (Object builder : ((Project) build.getProject()).getBuilders()) {
-            if (builder instanceof IInstanceProvider) {
-                instanceProviders.add((IInstanceProvider) builder);
-            }
-        }
-        for (Object json : jsonVariables) {
-            JSONObject variable = (JSONObject) json;
-            String value = variable.getString("value");
-            if ("Binding".equals(variable.getString("type")) && value.startsWith("com.elasticbox.jenkins.builders.")) {
-                for (IInstanceProvider instanceProvider : instanceProviders) {
-                    if (value.equals(instanceProvider.getId())) {
-                        variable.put("value", instanceProvider.getInstanceId());
-                    }
-                }                
-            }
-            
-            if (variable.getString("scope").isEmpty()) {
-                variable.remove("scope");
-            }
+        for (Object variable : jsonVariables) {
+            resolver.resolve((JSONObject) variable);
         }        
         IProgressMonitor monitor = cloud.createClient().deploy(profile, workspace, environment, instances, jsonVariables);
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());

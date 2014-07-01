@@ -432,11 +432,11 @@ public class Client {
 
     private JSONObject findVariable(JSONObject variable, JSONArray variables) {
         String name = variable.getString("name");
-        String scope = variable.getString("scope");
+        String scope = variable.containsKey("scope") ? variable.getString("scope") : null;
         for (Object var : variables) {
             JSONObject json = (JSONObject) var;
             if (json.getString("name").equals(name) && 
-                    ((scope.isEmpty() && !json.containsKey("scope")) || scope.equals(json.getString("scope")))) {
+                    ((scope == null && !json.containsKey("scope")) || scope.equals(json.getString("scope")))) {
                 return json;
             }
         }

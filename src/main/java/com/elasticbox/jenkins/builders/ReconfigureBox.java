@@ -17,6 +17,7 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxItemProvider;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
@@ -27,6 +28,7 @@ import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -38,8 +40,8 @@ public class ReconfigureBox extends InstanceBuildStep {
     private final String variables;
     
     @DataBoundConstructor
-    public ReconfigureBox(String workspace, String instance, String variables) {
-        super(workspace, instance, null);
+    public ReconfigureBox(String workspace, String box, String instance, String variables) {
+        super(workspace, box, instance, null);
         this.variables = variables;
     }
 
@@ -49,7 +51,14 @@ public class ReconfigureBox extends InstanceBuildStep {
         if (cloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
-        IProgressMonitor monitor = cloud.createClient().reconfigure(getInstanceId(build), JSONArray.fromObject(variables));
+        
+        VariableResolver resolver = new VariableResolver(build);
+        JSONArray jsonVariables = JSONArray.fromObject(variables);
+        for (Object variable : jsonVariables) {
+            resolver.resolve((JSONObject) variable);
+        }        
+        
+        IProgressMonitor monitor = cloud.createClient().reconfigure(getInstanceId(build), jsonVariables);
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to be reconfigured", instancePageUrl));

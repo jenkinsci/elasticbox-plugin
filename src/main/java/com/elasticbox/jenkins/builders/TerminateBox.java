@@ -35,8 +35,8 @@ public class TerminateBox extends InstanceBuildStep {
     private final boolean delete;
     
     @DataBoundConstructor
-    public TerminateBox(String workspace, String instance, String buildStep, boolean delete) {
-        super(workspace, instance, buildStep);
+    public TerminateBox(String workspace, String box, String instance, String buildStep, boolean delete) {
+        super(workspace, box, instance, buildStep);
         this.delete = delete;
     }
 

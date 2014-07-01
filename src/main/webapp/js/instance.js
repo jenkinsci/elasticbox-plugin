@@ -53,22 +53,31 @@
             
             _.each(buildSteps, function (buildStep) {
                 var getOptions = function () {
-                            return _.map(ElasticBoxUtils.getPriorDeployBoxSteps(buildStep), function (step) {
+                            var options = ElasticBoxUtils.getPriorDeployBoxSteps(buildStep);
+                            
+                            if (options.length === 0) {
+                                options.push({ id: '', name: 'Not available' });
+                            }
+                            
+                            return _.map(options, function (step) {
                                 return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
                             }).join(' ');
                         },
                 
                     descriptorId = Dom.getAttribute(buildStep, 'descriptorid'),
                     buildStepSelect = _.first(Dom.getElementsByClassName('eb-buildstep', 'select', buildStep)),
-                    selectedBuildStepId = buildStepSelect && buildStepSelect.value || null,
+                    selectedBuildStepId = buildStepSelect && Dom.getAttribute(buildStepSelect, "value") || null,
             
                     updateOptions = function (currentValue) {
                             var selectedOption;
 
                             buildStepSelect.innerHTML = getOptions();
-                            selectedOption = Dom.getElementBy(function (option) {
-                                return Dom.getAttribute(option, 'value') === currentValue;
-                            }, 'option', buildStepSelect);
+                            if (currentValue) {
+                                selectedOption = Dom.getElementBy(function (option) {
+                                    return Dom.getAttribute(option, 'value') === currentValue;
+                                }, 'option', buildStepSelect);
+                            }
+                            
                             if (!selectedOption) {
                                 selectedOption = _.first(Dom.getChildren(buildStepSelect));
                             }
@@ -76,33 +85,42 @@
                         },
                         
                     populateOptions = function () {
-                        var firstOption = Dom.getFirstChild(buildStepSelect);
+                        var firstOption = Dom.getFirstChild(buildStepSelect),
+                            value = firstOption ? Dom.getAttribute(firstOption, "value") : null;
                         
-                        if (firstOption && Dom.getAttribute(firstOption, "value") === 'loading') {
+                        if (value && value !== 'loading' && value !== firstOption.innerText) {
+                            return;
+                        }
+                        
+                        if (Dom.getAttribute(firstOption, "value") === 'loading') {
                             updateOptions(selectedBuildStepId);
                         } else {
                             setTimeout(populateOptions, 500);
-                        }
+                        } 
                     },
+                    
+                    toggleInstanceType = function (existing) {
+                        var priorBuildStepRadio = Dom.getElementBy(function (element) {
+                                    return Dom.getAttribute(element, 'value') === 'eb-instance-from-prior-buildstep';
+                                }, 'input', buildStep), 
+                            existingInstanceRadio = Dom.getElementBy(function (element) {
+                                    return Dom.getAttribute(element, 'value') === 'eb-existing-instance';
+                                }, 'input', buildStep),                        
+                            existingInstanceStartRow = Dom.getAncestorByTagName(existingInstanceRadio, 'tr'),
+                            priorBuildStepStartRow = Dom.getAncestorByTagName(priorBuildStepRadio, 'tr');
                         
-                    priorBuildStepRadio, existingInstanceRadio, existingInstanceStartRow, priorBuildStepStartRow;
+                        existingInstanceRadio.checked = existing;
+                        priorBuildStepRadio.checked = !existing;                    
+                        Dom.setAttribute(Dom.getAncestorByTagName(buildStepSelect, 'tr'), 'style', existing ? 'display: none;' : '');                        
+
+                        for (var sibling = Dom.getNextSibling(existingInstanceStartRow); sibling && sibling !== priorBuildStepStartRow; sibling = Dom.getNextSibling(sibling)) {
+                            Dom.setAttribute(sibling, 'style', existing ? '' : 'display: none;');
+                        }                        
+                    };
                 
                 if (buildStepSelect) {
-                    if (populate && selectedBuildStepId) {
-                        priorBuildStepRadio = Dom.getElementBy(function (element) {
-                            return Dom.getAttribute(element, 'value') === 'eb-instance-from-prior-buildstep';
-                        }, 'input', buildStep);
-                        priorBuildStepRadio.checked = true;
-                        Dom.setAttribute(Dom.getAncestorByTagName(buildStepSelect, 'tr'), 'style', '');
-                        
-                        existingInstanceRadio = Dom.getElementBy(function (element) {
-                            return Dom.getAttribute(element, 'value') === 'eb-existing-instance';
-                        }, 'input', buildStep);                        
-                        existingInstanceStartRow = Dom.getAncestorByTagName(existingInstanceRadio, 'tr');
-                        priorBuildStepStartRow = Dom.getAncestorByTagName(priorBuildStepRadio, 'tr');
-                        for (var sibling = Dom.getNextSibling(existingInstanceStartRow); sibling && sibling !== priorBuildStepStartRow; sibling = Dom.getNextSibling(sibling)) {
-                            Dom.setAttribute(sibling, 'style', 'display: none;');
-                        }
+                    if (populate) {
+                        toggleInstanceType(!selectedBuildStepId)
                     }
 
                     populateOptions();

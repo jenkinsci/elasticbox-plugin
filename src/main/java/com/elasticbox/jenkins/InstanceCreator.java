@@ -22,7 +22,6 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
-import java.util.logging.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -31,20 +30,22 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Phong Nguyen Le
  */
 public class InstanceCreator extends BuildWrapper {
-    private static final Logger LOGGER = Logger.getLogger(InstanceCreator.class.getName());
 
     private final String workspace;
     private final String box;
     private final String profile;
+    private final String variables;
+
     private transient ElasticBoxSlave ebSlave;
 
     
     @DataBoundConstructor
-    public InstanceCreator(String workspace, String box, String profile) {
+    public InstanceCreator(String workspace, String box, String profile, String variables) {
         super();
         this.workspace = workspace;
         this.box = box;
         this.profile = profile;
+        this.variables = variables;        
     }
     
     @Override
@@ -86,6 +87,10 @@ public class InstanceCreator extends BuildWrapper {
         return profile;
     }
 
+    public String getVariables() {
+        return variables;
+    }
+
     @Extension
     public static class DescriptorImpl extends BuildWrapperDescriptor {
         private final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
@@ -113,5 +118,14 @@ public class InstanceCreator extends BuildWrapper {
             
             return instances;
         }
+
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String profile) {
+            return itemProvider.getProfileBoxStack(profile);
+        }
+
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, @QueryParameter String box) {
+            return itemProvider.getInstancesAsJSONArrayResponse(workspace, box);
+        }
+        
     }
 }

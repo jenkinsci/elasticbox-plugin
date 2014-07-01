@@ -34,8 +34,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class StopBox extends InstanceBuildStep {
 
     @DataBoundConstructor
-    public StopBox(String workspace, String instance, String buildStep) {
-        super(workspace, instance, buildStep);
+    public StopBox(String workspace, String box, String instance, String buildStep) {
+        super(workspace, box, instance, buildStep);
     }
 
     @Override

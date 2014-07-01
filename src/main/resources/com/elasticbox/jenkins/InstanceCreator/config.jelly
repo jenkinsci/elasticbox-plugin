@@ -1,12 +1,32 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-	<f:entry title="${%Workspace}" field="workspace">
-            <f:select clazz="required" />
-	</f:entry>
-	<f:entry title="${%Box}" field="box">
-            <f:select clazz="required" />
-	</f:entry>
-	<f:entry title="${%Deployment Profile}" field="profile">
-            <f:select clazz="required" />
-	</f:entry>
+    <f:entry title="${%Workspace}" field="workspace">
+        <f:select clazz="required eb-workspace" />
+    </f:entry>
+    <f:entry title="${%Box}" field="box">
+        <f:select clazz="required eb-box" />
+    </f:entry>
+    <f:entry title="${%Deployment Profile}" field="profile">
+        <f:select clazz="required eb-profile" />
+    </f:entry>
+    <f:entry field="variables">
+        <f:textbox clazz="eb-variables help"/>
+    </f:entry>
+    <f:entry>
+        <f:block>
+            <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
+                <tbody class="eb-variable-inputs">
+                    <tr>
+                        <td class="setting-leftspace">
+                            <div><b>Variables</b></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
+            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
+        </f:block>
+    </f:entry>
 </j:jelly>

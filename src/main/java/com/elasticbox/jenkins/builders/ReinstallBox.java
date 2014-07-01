@@ -34,8 +34,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ReinstallBox extends InstanceBuildStep {
 
     @DataBoundConstructor
-    public ReinstallBox(String workspace, String instance, String buildStep) {
-        super(workspace, instance, buildStep);
+    public ReinstallBox(String workspace, String box, String instance, String buildStep) {
+        super(workspace, box, instance, buildStep);
     }
     
     @Override

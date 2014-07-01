@@ -17,7 +17,7 @@
             <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
                 <tbody class="eb-variable-inputs">
                     <tr>
-                        <td class="setting-leftspace" colspan="3">
+                        <td class="setting-leftspace">
                             <div><b>Variables</b></div>
                         </td>
                     </tr>

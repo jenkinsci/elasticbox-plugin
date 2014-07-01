@@ -32,9 +32,11 @@ public abstract class InstanceBuildStep extends Builder {
     private final String instance;
     private final String workspace;
     private final String buildStep;
+    private String box;
     
-    public InstanceBuildStep(String workspace, String instance, String buildStep) {
+    public InstanceBuildStep(String workspace, String box, String instance, String buildStep) {
         this.workspace = workspace;
+        this.box = box;
         this.instance = instance;
         this.buildStep = buildStep;
     }
@@ -42,6 +44,10 @@ public abstract class InstanceBuildStep extends Builder {
     public String getWorkspace() {
         return workspace;
     }
+
+    public String getBox() {
+        return box;
+    }        
 
     public String getInstance() {
         return instance;
@@ -83,6 +89,7 @@ public abstract class InstanceBuildStep extends Builder {
                     formData.remove("buildStep");
                 } else {
                     formData.remove("workspace");
+                    formData.remove("box");
                     formData.remove("instance");
                 }
             }

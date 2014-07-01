@@ -36,7 +36,7 @@
             };
         },
         
-        createVariableRow = function (variable, savedVariable, varTextBox, buildStep) {
+        createVariableRow = function (variable, savedVariable, variableHolder) {
             var saveVariable = function (name, value, scope, type, varTextBox) {
                     var savedVariables = Dom.getAttribute(varTextBox, 'value').evalJSON(),
                         modifiedVariable;
@@ -69,7 +69,7 @@
                     
                         updateBindingOptions = function (currentValue) {
                             var scope = Dom.getAttribute(variableInput, 'data-scope'),
-                                deployBoxSteps = ElasticBoxUtils.getPriorDeployBoxSteps(buildStep),
+                                deployBoxSteps = variableHolder.getPriorDeployBoxSteps(),
                                 selectedOption;
                             
                             if (!currentValue) {
@@ -92,15 +92,15 @@
                             }, 'option', variableInput);
                             if (!selectedOption) {
                                 selectedOption = _.first(Dom.getChildren(variableInput));
-                                saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type, varTextBox);
+                                saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type, variableHolder.varTextBox);
                             }
                             variableInput.selectedIndex = selectedOption ? Dom.getChildren(variableInput).indexOf(selectedOption) : 0;
                         },
                         
-                        getInstancesUrl, workspaceSelect, fillUrl, savedValue;
+                        getInstancesUrl, fillUrl, savedValue;
                             
                     Event.addListener(variableInput, 'change', function () {
-                        saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, varTextBox)
+                        saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, variableHolder.varTextBox)
                     });
                     if (variable.type === 'Binding') {
                         variableInput.innerHTML = '<option value="loading">Loading...</option>'
@@ -109,11 +109,10 @@
                             updateBindingOptions(this.value);
                         });
                         
-                        workspaceSelect = _.first(Dom.getElementsByClassName('eb-workspace', 'select', buildStep));
-                        if (workspaceSelect.value) {
-                            fillUrl = Dom.getAttribute(workspaceSelect, 'fillurl'),
+                        if (variableHolder.workspaceSelect.value) {
+                            fillUrl = Dom.getAttribute(variableHolder.workspaceSelect, 'fillurl'),
                             getInstancesUrl = ElasticBoxUtils.format('{0}/getInstances?workspace={1}&box={2}', fillUrl.substring(0, fillUrl.lastIndexOf('/')), 
-                                workspaceSelect.value, Dom.getAttribute(variableInput, 'data-original-value')); 
+                                variableHolder.workspaceSelect.value, Dom.getAttribute(variableInput, 'data-original-value')); 
                             Connect.asyncRequest('GET', getInstancesUrl, {
                                 success: function (response) {
                                     variableInput.innerHTML = '';
@@ -142,9 +141,10 @@
             return row;
         },
         
-        addVariables = function (boxes, varTBodyElement, varTextBox, savedVariables, buildStep) {
+        addVariables = function (boxes, savedVariables, variableHolder) {
             _.each(boxes, function (box) {
                 var varTableRow = document.createElement('tr'),
+                    varTBodyElement = new Element(variableHolder.varTBody),
                     varTableBody, scope;
 
                 if (box.variables.length > 0) {
@@ -155,7 +155,7 @@
                     varTableBody = Dom.getElementBy(function() { return true; }, 'tbody', varTableRow);
                     _.each(box.variables, function (variable) {
                         var savedVariable = savedVariables && _.findWhere(savedVariables, { name: variable.name,  scope: variable.scope }) || null,                
-                            row = createVariableRow(variable, savedVariable, varTextBox, buildStep);
+                            row = createVariableRow(variable, savedVariable, variableHolder);
 
                         if (row) {
                             varTableBody.appendChild(row);
@@ -165,84 +165,146 @@
             });
         },
         
-        refreshVariables = function (variableHolderSelect, varTBody, varTextBox, variableHolderType, buildStep, populate) {
-            var varHeader = _.first(Dom.getChildren(varTBody)),
-                varTBodyElement = new Element(varTBody),
-                fillUrl = Dom.getAttribute(variableHolderSelect, 'fillurl'),
-                variableHolderId = variableHolderSelect.value,
+        refreshVariables = function (variableHolder, populate) {
+            var varHeader = _.first(Dom.getChildren(variableHolder.varTBody)),
+                varTBodyElement = new Element(variableHolder.varTBody),
+                fillUrl = Dom.getAttribute(variableHolder.select, 'fillurl'),
+                variableHolderId = variableHolder.select.value,
+                
+                clearVariables = function () {
+                    _.each(_.rest(Dom.getChildren(variableHolder.varTBody)), function (row) {
+                        varTBodyElement.removeChild(row);
+                    });
+                    Dom.setAttribute(variableHolder.varTextBox, 'value', '[]');
+                },
+                
                 varUrl, descriptorUrl;
 
             Dom.addClass(varHeader, 'eb-header');
 
-            if (!Dom.getAttribute(varTextBox, 'value')) {
-                Dom.setAttribute(varTextBox, 'value', '[]');
+            if (!Dom.getAttribute(variableHolder.varTextBox, 'value')) {
+                Dom.setAttribute(variableHolder.varTextBox, 'value', '[]');
             }
             
-            if (variableHolderId !== null) {
+            if (variableHolderId) {
                 descriptorUrl = fillUrl.substring(0, fillUrl.lastIndexOf('/'));
-                varUrl = ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}', descriptorUrl, variableHolderType, variableHolderId);
+                varUrl = ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}', descriptorUrl, variableHolder.info.type, variableHolderId);
                 Connect.asyncRequest('GET', varUrl, {
                     success: function (response) {
-                        var savedVariables = populate ? Dom.getAttribute(varTextBox, 'value').evalJSON() : null;
+                        var savedVariables = populate ? Dom.getAttribute(variableHolder.varTextBox, 'value').evalJSON() : null;
 
                         if (!populate) {
-                            _.each(_.rest(Dom.getChildren(varTBody)), function (row) {
-                                varTBodyElement.removeChild(row);
-                            });
+                            clearVariables();
                         }
                         
-                        addVariables(response.responseText.evalJSON(), varTBodyElement, varTextBox, savedVariables, buildStep);
+                        addVariables(response.responseText.evalJSON(), savedVariables, variableHolder);
                     },
 
                     failure: function (response) {
                         //TODO: report error
                     }
                 });   
+            } else {
+                clearVariables();
             }
         },
         
-        populateVariables = function (variableHolderSelect, varTBody, varTextBox, variableHolderType, buildStep) {
-            var varHeader = _.first(Dom.getChildren(varTBody));
+        populateVariables = function (variableHolder) {
+            var varHeader = _.first(Dom.getChildren(variableHolder.varTBody));
             
             
-            if (!variableHolderSelect.value || Dom.hasClass(varHeader, 'eb-header')) {
+            if (!variableHolder.select.value || Dom.hasClass(varHeader, 'eb-header')) {
                 return;
             }
             
-            refreshVariables(variableHolderSelect, varTBody, varTextBox, variableHolderType, buildStep, true);
+            refreshVariables(variableHolder, true);
         },
         
         initialize = function () {
-            Dom.getElementsByClassName('eb-variable-inputs', 'tbody', document, 
-                function (tbody) {
-                    var builder = Dom.getAncestorBy(tbody, function (element) {
-                            var descriptorId = Dom.getAttribute(element, 'descriptorid');
-                            return  descriptorId === ElasticBoxUtils.DeployBoxDescriptorId || 
-                                    descriptorId === 'com.elasticbox.jenkins.builders.ReconfigureBox';
-                        }),
-                        builderElement = new Element(builder),                    
-                        varTBody = _.first(builderElement.getElementsByClassName('eb-variable-inputs', 'tbody')),
-                        varTextBox = _.first(builderElement.getElementsByClassName('eb-variables', 'input')),
-                        variableHolderInfo = getVariableHolderInfo(builder),
-                        varTR;
-
-                    if (varTBody && varTextBox) {
-                        varTR = Dom.getAncestorByTagName(varTextBox, 'tr');
-                        Dom.setAttribute(Dom.getAncestorByTagName(varTextBox, 'tr'), 'style', 'display:none');
-                        Dom.getElementsByClassName(variableHolderInfo.class, 'select', builder, function (element) {
-                            populateVariables(element, varTBody, varTextBox, variableHolderInfo.type, builder);
+            var getVariableHolders = function () {
+                var variableHolders = [],
+                    
+                    getVariableHolderInfo = function (type) {
+                        return {
+                            type: type,
+                            class: 'eb-' + type,
+                            changeListenerType: 'eb-' + type + '-change-listener'
+                        };
+                    };
+            
+                Dom.getElementsByClassName('eb-variable-inputs', 'tbody', document, 
+                    function (tbody) {
+                        var variableHolderElement = Dom.getAncestorBy(tbody, function (element) {
+                                var descriptorId = Dom.getAttribute(element, 'descriptorid');
+                                return  descriptorId === ElasticBoxUtils.DeployBoxDescriptorId || 
+                                        descriptorId === 'com.elasticbox.jenkins.builders.ReconfigureBox';
+                            }),
                             
-                            if (!_.some(Event.getListeners(element, 'change'), function (listener) {
-                                return listener.obj === variableHolderInfo.changeListenerType;
-                            })) {
-                                Event.addListener(element, 'change', function () {
-                                    refreshVariables(this, varTBody, varTextBox, variableHolderInfo.type, builder);
-                                }, variableHolderInfo.changeListenerType);
+                            varTextBox, select, workspaceSelect, type, variableHolderInfo;
+                        
+                        if (variableHolderElement) {
+                            varTextBox = _.first(Dom.getElementsByClassName('eb-variables', 'input', variableHolderElement));   
+                            if (varTextBox) {
+                                type = Dom.getAttribute(variableHolderElement, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId && 'profile' || 'instance';                             
+                                variableHolderInfo = getVariableHolderInfo(type);
+                            
+                                //TODO: make variable holder a widget instead of exposing the HTML elements
+                                variableHolders.push({
+                                    info: variableHolderInfo,
+                                    varTBody: tbody,
+                                    varTextBox: varTextBox,
+                                    select: _.first(Dom.getElementsByClassName(variableHolderInfo.class, 'select', variableHolderElement)),
+                                    workspaceSelect: _.first(Dom.getElementsByClassName('eb-workspace', 'select', variableHolderElement)),
+                                    getPriorDeployBoxSteps: function () {
+                                        return ElasticBoxUtils.getPriorDeployBoxSteps(variableHolderElement);
+                                    }
+                                });
+                            }
+                        } else {
+                            // variable holder is an InstanceCreator build wrapper
+                            variableHolderElement = Dom.getAncestorByTagName(tbody, 'tr');
+                            variableHolderElement = Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                varTextBox = _.first(Dom.getElementsByClassName('eb-variables', 'input', element));
+                                return !_.isUndefined(varTextBox);
+                            });
+                            if (varTextBox) {
+                                variableHolderInfo = getVariableHolderInfo('profile');
+                                variableHolderElement = Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                    select = _.first(Dom.getElementsByClassName(variableHolderInfo.class, 'select', element));
+                                    return !_.isUndefined(select);
+                                });
+                                Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                    workspaceSelect = _.first(Dom.getElementsByClassName('eb-workspace', 'select', element));
+                                    return !_.isUndefined(workspaceSelect);
+                                });
+                                variableHolders.push({
+                                    info: variableHolderInfo,
+                                    varTBody: tbody,
+                                    varTextBox: varTextBox,
+                                    select: select,
+                                    workspaceSelect: workspaceSelect,
+                                    getPriorDeployBoxSteps: function () { return []; }
+                                });
+                            }
+                        }                                                   
+                    });
 
-                            }                            
-                        });
-                    }
-                });            
+                return variableHolders;
+            };
+                    
+            _.each(getVariableHolders(), function (variableHolder) {
+                Dom.setAttribute(Dom.getAncestorByTagName(variableHolder.varTextBox, 'tr'), 'style', 'display:none');
+                populateVariables(variableHolder);
+
+                if (!_.some(Event.getListeners(variableHolder.select, 'change'), function (listener) {
+                    return listener.obj === variableHolder.info.changeListenerType;
+                })) {
+                    Event.addListener(variableHolder.select, 'change', function () {
+                        refreshVariables(variableHolder);
+                    }, variableHolder.info.changeListenerType);
+
+                }                            
+            });
         };
 
     setTimeout(initialize, 500);
