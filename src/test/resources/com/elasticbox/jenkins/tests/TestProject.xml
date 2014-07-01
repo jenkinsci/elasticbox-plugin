@@ -12,31 +12,47 @@
   <triggers class="vector"/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
-    <com.elasticbox.jenkins.builders.ReconfigureBox plugin="elasticbox@{version}">
-      <instance>{intanceId}</instance>
-      <workspace>{workspaceId}</workspace>
-      <variables>[]</variables>
-    </com.elasticbox.jenkins.builders.ReconfigureBox>
-    <com.elasticbox.jenkins.builders.StopBox plugin="elasticbox@{version}">
-      <instance>{intanceId}</instance>
-      <workspace>{workspaceId}</workspace>
-    </com.elasticbox.jenkins.builders.StopBox>
-    <com.elasticbox.jenkins.builders.StartBox plugin="elasticbox@{version}">
-      <instance>{intanceId}</instance>
-      <workspace>{workspaceId}</workspace>
-    </com.elasticbox.jenkins.builders.StartBox>
-    <com.elasticbox.jenkins.builders.TerminateBox plugin="elasticbox@{version}">
-      <instance>{intanceId}</instance>
-      <workspace>{workspaceId}</workspace>
-    </com.elasticbox.jenkins.builders.TerminateBox>
-    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@{version}">
-      <workspace>{workspaceId}</workspace>
-      <box>{LaunchBox.boxId}</box>
-      <profile>{LaunchBox.profileId}</profile>
-      <environment>jenkins-plugin-launch-box</environment>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.7.5-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-81839549-0eff-4d4c-bb47-2fe6b5e7c861</id>
+      <workspace>tphongio</workspace>
+      <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+      <profile>c49744ed-9cb8-40e9-9a83-652d37e604e2</profile>
+      <environment>jenkins-plugin-test-buildsteps</environment>
       <instances>1</instances>
-      <variables>[]</variables>
+      <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;i-9oewhy&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;HTTP&quot;, &quot;value&quot;: &quot;8080&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Port&quot;}]</variables>
     </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.7.5-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</id>
+      <workspace>tphongio</workspace>
+      <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+      <profile>c49744ed-9cb8-40e9-9a83-652d37e604e2</profile>
+      <environment>jenkins-plugin-test-buildsteps</environment>
+      <instances>1</instances>
+      <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;com.elasticbox.jenkins.builders.DeployBox-81839549-0eff-4d4c-bb47-2fe6b5e7c861&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;HTTP&quot;, &quot;value&quot;: &quot;8080&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Port&quot;}]</variables>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.ReinstallBox plugin="elasticbox@0.7.5-SNAPSHOT">
+      <buildStep>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</buildStep>
+    </com.elasticbox.jenkins.builders.ReinstallBox>
+    <com.elasticbox.jenkins.builders.StopBox plugin="elasticbox@0.7.5-SNAPSHOT">
+      <buildStep>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</buildStep>
+    </com.elasticbox.jenkins.builders.StopBox>
+    <com.elasticbox.jenkins.builders.StartBox plugin="elasticbox@0.7.5-SNAPSHOT">
+      <buildStep>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</buildStep>
+    </com.elasticbox.jenkins.builders.StartBox>
+    <com.elasticbox.jenkins.builders.TerminateBox plugin="elasticbox@0.7.5-SNAPSHOT">
+      <buildStep>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</buildStep>
+      <delete>true</delete>
+    </com.elasticbox.jenkins.builders.TerminateBox>
+    <com.elasticbox.jenkins.builders.TerminateBox plugin="elasticbox@0.7.5-SNAPSHOT">
+      <buildStep>com.elasticbox.jenkins.builders.DeployBox-81839549-0eff-4d4c-bb47-2fe6b5e7c861</buildStep>
+      <delete>true</delete>
+    </com.elasticbox.jenkins.builders.TerminateBox>
+    <com.elasticbox.jenkins.builders.ReconfigureBox plugin="elasticbox@0.7.5-SNAPSHOT">
+      <instance>i-9oewhy</instance>
+      <workspace>tphongio</workspace>
+      <box>AnyBox</box>
+      <variables>[{&quot;name&quot;: &quot;CONNECTION&quot;, &quot;value&quot;: &quot;${connection}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}, {&quot;name&quot;: &quot;HTTPS&quot;, &quot;value&quot;: &quot;${https_port}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Port&quot;}]</variables>
+    </com.elasticbox.jenkins.builders.ReconfigureBox>
   </builders>
   <publishers/>
   <buildWrappers>

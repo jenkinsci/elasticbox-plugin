@@ -36,6 +36,7 @@ import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.test.HudsonTestCase;
+import hudson.model.Result;
 
 /**
  *
@@ -44,11 +45,10 @@ import org.jvnet.hudson.test.HudsonTestCase;
 public class ElasticBoxCloudTest extends HudsonTestCase {
     private static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
     private static final String PUBLIC_JENKINS_HOST = "localhost";
-    private static final boolean TEST_BUILD = Boolean.getBoolean("elasticbox.jenkins.test.build");
+    private static final boolean TEST_BUILD = true; //Boolean.getBoolean("elasticbox.jenkins.test.build");
     private static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://catapult.elasticbox.com");
     private static final String USER_NAME = System.getProperty("elasticbox.jenkins.test.username", Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"));
     private static final String PASSWORD = System.getProperty("elasticbox.jenkins.test.password", Scrambler.descramble("dHBob25naW8="));
-    private static final String LAUNCH_BOX_NAME = System.getProperty("elasticbox.jenkins.test.launchBox", "test-linux-box");
 
     public void testConfigRoundtrip() throws Exception {
         ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD);
@@ -116,38 +116,34 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         
         // make sure that a deployment request can be successfully submitted
         JSONObject profile = profiles.getJSONObject(0);
+        IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), "jenkins-plugin-unit-test", 1, 
+                ElasticBoxSlaveHandler.createJenkinsVariables(jenkins.getRootUrl().replace("localhost", PUBLIC_JENKINS_HOST), JENKINS_SLAVE_BOX_NAME));
         try {
-            client.deploy(profile.getString("id"), profile.getString("owner"), "test", 1, 
-                    ElasticBoxSlaveHandler.createJenkinsVariables(jenkins.getRootUrl().replace("localhost", PUBLIC_JENKINS_HOST), JENKINS_SLAVE_BOX_NAME));
+            monitor.waitForDone(60);
+        } catch (IProgressMonitor.IncompleteException ex) {
+            
+        }
+        
+        String instanceId = Client.getResourceId(monitor.getResourceUrl());
+        monitor = client.terminate(instanceId);
+        monitor.waitForDone(60);
+        client.delete(instanceId);
+        try {
+            client.getInstance(instanceId);
+            throw new Exception(MessageFormat.format("Instance {0} was not deleted", instanceId));
         } catch (ClientException ex) {
-            assertEquals(ex.getMessage(), HttpStatus.SC_BAD_REQUEST, ex.getStatusCode());
-            assertStringContains(ex.getMessage(), profile.getString("provider"));
-        }        
+            assertEquals(ex.getStatusCode(), HttpStatus.SC_NOT_FOUND);
+        }
     }
     
-    private void testBuildWithSteps(ElasticBoxCloud cloud) throws Exception {        
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", LAUNCH_BOX_NAME), true);
-        assertTrue(MessageFormat.format("No profile is found for box {0} for {1}", LAUNCH_BOX_NAME, ElasticBoxCloud.getInstance().name), profiles.size() > 0);
-        JSONObject profile = profiles.getJSONObject(0);
-        
-        // deploy a test instance for build steps
-        IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), "jenkins-plugin-instance-events", 1, new JSONArray());
-        monitor.waitForDone(60);
-        String instanceId = Client.getResourceId(monitor.getResourceUrl());
-        
+    private void testBuildWithSteps(ElasticBoxCloud cloud) throws Exception {    
         String projectXml = IOUtils.toString((InputStream) getClass().getResource("TestProject.xml").getContent());
-        projectXml = projectXml.replace("{workspaceId}", profile.getString("owner")).
-                replace("{LaunchBox.boxId}", profile.getJSONObject("box").getString("version")).
-                replace("{LaunchBox.profileId}", profile.getString("id")).
-                replace("{instanceId}", instanceId);
-        
         FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML("test", new ByteArrayInputStream(projectXml.getBytes()));
         QueueTaskFuture future = project.scheduleBuild2(0);
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
         FreeStyleBuild result = (FreeStyleBuild) future.get(60, TimeUnit.MINUTES);
-        System.out.println(result.getTestResultAction().getResult());
+        assertEquals(result.getResult(), Result.SUCCESS);
     }
     
     private void testBuildWithSlave(ElasticBoxCloud cloud) throws Exception {
