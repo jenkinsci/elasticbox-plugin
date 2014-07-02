@@ -73,12 +73,12 @@ public class DeployBox extends Builder implements IInstanceProvider {
             throw new IOException("No ElasticBox cloud is configured.");
         }
 
-        VariableResolver resolver = new VariableResolver(build);
+        VariableResolver resolver = new VariableResolver(build, listener);
         JSONArray jsonVariables = JSONArray.fromObject(variables);
         for (Object variable : jsonVariables) {
             resolver.resolve((JSONObject) variable);
         }        
-        IProgressMonitor monitor = cloud.createClient().deploy(profile, workspace, environment, instances, jsonVariables);
+        IProgressMonitor monitor = cloud.createClient().deploy(profile, workspace, resolver.resolve(this.environment), instances, jsonVariables);
         String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Deploying box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the deployment of the box instance {0} to finish", instancePageUrl));

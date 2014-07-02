@@ -52,7 +52,7 @@ public class ReconfigureBox extends InstanceBuildStep {
             throw new IOException("No ElasticBox cloud is configured.");
         }
         
-        VariableResolver resolver = new VariableResolver(build);
+        VariableResolver resolver = new VariableResolver(build, listener);
         JSONArray jsonVariables = JSONArray.fromObject(variables);
         for (Object variable : jsonVariables) {
             resolver.resolve((JSONObject) variable);

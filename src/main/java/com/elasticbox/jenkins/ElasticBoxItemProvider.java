@@ -193,8 +193,7 @@ public class ElasticBoxItemProvider {
                 return true;
             }
             
-            JSONObject mainBox = (JSONObject) instance.getJSONArray("boxes").get(0);
-            return mainBox.getString("id").equals(boxId);
+            return new BoxStack(boxId, instance.getJSONArray("boxes"), null).findBox(boxId) != null;
         }
     }
     

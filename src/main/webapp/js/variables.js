@@ -27,15 +27,6 @@
         Event = YAHOO.util.Event,
         Connect = YAHOO.util.Connect,
         
-        getVariableHolderInfo = function (buildStepElement) {
-            var type = Dom.getAttribute(buildStepElement, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId && 'profile' || 'instance'; 
-            return {
-                type: type,
-                class: 'eb-' + type,
-                changeListenerType: 'eb-' + type + '-change-listener'
-            };
-        },
-        
         createVariableRow = function (variable, savedVariable, variableHolder) {
             var saveVariable = function (name, value, scope, type, varTextBox) {
                     var savedVariables = Dom.getAttribute(varTextBox, 'value').evalJSON(),
@@ -60,100 +51,97 @@
                 row = document.createElement('tr'),
                 variableTemplate;
 
-            if (_.contains(['Text', 'Port', 'Password', 'Number', 'Binding'], variable.type)) {
-                
-                variableTemplate = variable.type === 'Binding' ? BINDING_VARIABLE_TEMPLATE : TEXT_VARIABLE_TEMPLATE;
-                row.innerHTML = ElasticBoxUtils.format(variableTemplate, variable.name, 'eb.' + variable.name, savedVariable && savedVariable.value || variable.value, variable.value, variable.scope);
-                Dom.getElementsByClassName('eb-variable', variable.type === 'Binding' && 'select' || 'input', row, function (variableInput) {
-                    var savedValue = Dom.getAttribute(variableInput, 'value'),
-                    
-                        updateBindingOptions = function (currentValue) {
-                            var scope = Dom.getAttribute(variableInput, 'data-scope'),
-                                deployBoxSteps = variableHolder.getPriorDeployBoxSteps(),
-                                selectedOption;
-                            
-                            if (!currentValue) {
-                                currentValue = variableInput.value;
-                            }
-                            
-                            // remove existing options for deploy box steps
-                            for (var child = Dom.getFirstChild(variableInput); 
-                                    child !== null && ElasticBoxUtils.startsWith(child.getAttribute('value'), ElasticBoxUtils.DeployBoxDescriptorId); 
-                                    child = Dom.getFirstChild(variableInput)) {
-                                variableInput.removeChild(child);
-                            } 
-                            
-                            variableInput.innerHTML = _.map(deployBoxSteps, function (step) {
-                                        return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
-                                    }).join(' ') + variableInput.innerHTML;
-                                    
-                            selectedOption = Dom.getElementBy(function (option) {
-                                return Dom.getAttribute(option, 'value') === currentValue;
-                            }, 'option', variableInput);
-                            if (!selectedOption) {
-                                selectedOption = _.first(Dom.getChildren(variableInput));
-                                saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type, variableHolder.varTextBox);
-                            }
-                            variableInput.selectedIndex = selectedOption ? Dom.getChildren(variableInput).indexOf(selectedOption) : 0;
-                        },
-                        
-                        getInstancesUrl, fillUrl, savedValue;
-                            
-                    Event.addListener(variableInput, 'change', function () {
-                        saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, variableHolder.varTextBox)
-                    });
-                    if (variable.type === 'Binding') {
-                        variableInput.innerHTML = '<option value="loading">Loading...</option>'
-                        
-                        Event.addListener(variableInput, 'focus', function () {
-                            updateBindingOptions(this.value);
-                        });
-                        
-                        if (variableHolder.workspaceSelect.value) {
-                            fillUrl = Dom.getAttribute(variableHolder.workspaceSelect, 'fillurl'),
-                            getInstancesUrl = ElasticBoxUtils.format('{0}/getInstances?workspace={1}&box={2}', fillUrl.substring(0, fillUrl.lastIndexOf('/')), 
-                                variableHolder.workspaceSelect.value, Dom.getAttribute(variableInput, 'data-original-value')); 
-                            Connect.asyncRequest('GET', getInstancesUrl, {
-                                success: function (response) {
-                                    variableInput.innerHTML = '';
-                                    _.each(response.responseText.evalJSON(), function (instance) {
-                                        var option = document.createElement('option');
-                                        
-                                        option.setAttribute("value", instance.id);
-                                        option.innerHTML = instance.name;
-                                        variableInput.appendChild(option);                                            
-                                    });
-                                    updateBindingOptions(savedValue);
-                                },
+            variableTemplate = variable.type === 'Binding' ? BINDING_VARIABLE_TEMPLATE : TEXT_VARIABLE_TEMPLATE;
+            row.innerHTML = ElasticBoxUtils.format(variableTemplate, variable.name, 'eb.' + variable.name, savedVariable && savedVariable.value || variable.value, variable.value, variable.scope);
+            Dom.getElementsByClassName('eb-variable', variable.type === 'Binding' && 'select' || 'input', row, function (variableInput) {
+                var savedValue = Dom.getAttribute(variableInput, 'value'),
 
-                                failure: function (response) {
+                    updateBindingOptions = function (currentValue) {
+                        var scope = Dom.getAttribute(variableInput, 'data-scope'),
+                            deployBoxSteps = variableHolder.getPriorDeployBoxSteps(),
+                            selectedOption;
 
-                                }
-                            });
+                        if (!currentValue) {
+                            currentValue = variableInput.value;
                         }
-                    }
-                    
+
+                        // remove existing options for deploy box steps
+                        for (var child = Dom.getFirstChild(variableInput); 
+                                child !== null && ElasticBoxUtils.startsWith(child.getAttribute('value'), ElasticBoxUtils.DeployBoxDescriptorId); 
+                                child = Dom.getFirstChild(variableInput)) {
+                            variableInput.removeChild(child);
+                        } 
+
+                        variableInput.innerHTML = _.map(deployBoxSteps, function (step) {
+                                    return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
+                                }).join(' ') + variableInput.innerHTML;
+
+                        selectedOption = Dom.getElementBy(function (option) {
+                            return Dom.getAttribute(option, 'value') === currentValue;
+                        }, 'option', variableInput);
+                        if (!selectedOption) {
+                            selectedOption = _.first(Dom.getChildren(variableInput));
+                            saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type, variableHolder.varTextBox);
+                        }
+                        variableInput.selectedIndex = selectedOption ? Dom.getChildren(variableInput).indexOf(selectedOption) : 0;
+                    },
+
+                    getInstancesUrl, fillUrl, savedValue;
+
+                Event.addListener(variableInput, 'change', function () {
+                    saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, variableHolder.varTextBox)
                 });
-            } else {
-                return null;
-            }
+                if (variable.type === 'Binding') {
+                    variableInput.innerHTML = '<option value="loading">Loading...</option>'
+
+                    Event.addListener(variableInput, 'focus', function () {
+                        updateBindingOptions(this.value);
+                    });
+
+                    if (variableHolder.workspaceSelect.value) {
+                        fillUrl = Dom.getAttribute(variableHolder.workspaceSelect, 'fillurl'),
+                        getInstancesUrl = ElasticBoxUtils.format('{0}/getInstances?workspace={1}&box={2}', fillUrl.substring(0, fillUrl.lastIndexOf('/')), 
+                            variableHolder.workspaceSelect.value, Dom.getAttribute(variableInput, 'data-original-value')); 
+                        Connect.asyncRequest('GET', getInstancesUrl, {
+                            success: function (response) {
+                                variableInput.innerHTML = '';
+                                _.each(response.responseText.evalJSON(), function (instance) {
+                                    var option = document.createElement('option');
+
+                                    option.setAttribute("value", instance.id);
+                                    option.innerHTML = instance.name;
+                                    variableInput.appendChild(option);                                            
+                                });
+                                updateBindingOptions(savedValue);
+                            },
+
+                            failure: function (response) {
+
+                            }
+                        });
+                    }
+                }
+
+            });
 
             return row;
         },
         
         addVariables = function (boxes, savedVariables, variableHolder) {
             _.each(boxes, function (box) {
-                var varTableRow = document.createElement('tr'),
-                    varTBodyElement = new Element(variableHolder.varTBody),
-                    varTableBody, scope;
+                var variables = _.reject(box.variables, function (variable) {
+                        return _.contains(['Box', 'File'], variable.type);
+                    }),
+                    varTableRow, varTableBody, scope;
 
-                if (box.variables.length > 0) {
+                if (variables.length > 0) {
+                    varTableRow = document.createElement('tr');
                     scope = _.first(box.variables).scope;
                     scope = scope ? '(' + scope + ')' : ' ';
                     varTableRow.innerHTML = ElasticBoxUtils.format(VARIABLE_TABLE_TEMPLATE, box.name, scope, box.icon);
-                    varTBodyElement.appendChild(varTableRow);
+                    variableHolder.varTBody.appendChild(varTableRow);
                     varTableBody = Dom.getElementBy(function() { return true; }, 'tbody', varTableRow);
-                    _.each(box.variables, function (variable) {
+                    _.each(variables, function (variable) {
                         var savedVariable = savedVariables && _.findWhere(savedVariables, { name: variable.name,  scope: variable.scope }) || null,                
                             row = createVariableRow(variable, savedVariable, variableHolder);
 

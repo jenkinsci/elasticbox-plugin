@@ -13,8 +13,11 @@
 package com.elasticbox.jenkins.util;
 
 import com.elasticbox.jenkins.builders.IInstanceProvider;
+import hudson.EnvVars;
 import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Project;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import net.sf.json.JSONObject;
@@ -26,8 +29,9 @@ import net.sf.json.JSONObject;
 public final class VariableResolver {
     private final List<IInstanceProvider> instanceProviders;
     private final hudson.util.VariableResolver<String> resolver;
+    private final EnvVars envVars;
 
-    public VariableResolver(AbstractBuild build) {
+    public VariableResolver(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
         instanceProviders = new ArrayList<IInstanceProvider>();
         for (Object builder : ((Project) build.getProject()).getBuilders()) {
             if (builder instanceof IInstanceProvider) {
@@ -35,17 +39,28 @@ public final class VariableResolver {
             }
         }
         resolver = build.getBuildVariableResolver();
+        envVars = build.getEnvironment(listener);
+    }
+    
+    public String resolve(String value) {
+        if (value.startsWith("${") && value.endsWith("}")) {
+            String varName = value.substring(2, value.length() - 1);
+            String resolvedValue = resolver.resolve(varName);
+            if (resolvedValue == null) {
+                resolvedValue = envVars.get(varName);
+            }
+            
+            if (resolvedValue != null) {
+                value = resolvedValue;
+            }
+        }
+        
+        return value;
     }
     
     public JSONObject resolve(JSONObject variable) {
-        String value = variable.getString("value");
-        if (value.startsWith("${") && value.endsWith("}")) {
-            String resolvedValue = resolver.resolve(value.substring(2, value.length() - 1));
-            if (resolvedValue != null) {
-                variable.put("value", resolvedValue);
-            }
-        }
-
+        String value = resolve(variable.getString("value"));
+        variable.put("value", value);
         if ("Binding".equals(variable.getString("type")) && value.startsWith("com.elasticbox.jenkins.builders.")) {
             for (IInstanceProvider instanceProvider : instanceProviders) {
                 if (value.equals(instanceProvider.getId())) {
