@@ -18,8 +18,10 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
+import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.ParametersAction;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.util.Scrambler;
 import java.io.ByteArrayInputStream;
@@ -37,6 +39,8 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.test.HudsonTestCase;
 import hudson.model.Result;
+import hudson.model.TextParameterValue;
+import java.util.UUID;
 
 /**
  *
@@ -139,11 +143,29 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     private void testBuildWithSteps(ElasticBoxCloud cloud) throws Exception {    
         String projectXml = IOUtils.toString((InputStream) getClass().getResource("TestProject.xml").getContent());
         FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML("test", new ByteArrayInputStream(projectXml.getBytes()));
-        QueueTaskFuture future = project.scheduleBuild2(0);
+        TextParameterValue buildParameter = new TextParameterValue("eb_test_build_parameter", UUID.randomUUID().toString());
+        QueueTaskFuture future = project.scheduleBuild2(0, new Cause.LegacyCodeCause(), new ParametersAction(buildParameter));
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
         FreeStyleBuild result = (FreeStyleBuild) future.get(60, TimeUnit.MINUTES);
         assertEquals(result.getResult(), Result.SUCCESS);
+        
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        JSONObject instance = client.getInstance("i-9oewhy");
+        JSONObject connectionVar = null;
+        JSONObject httpsVar = null;
+        for (Object json : instance.getJSONArray("variables")) {
+            JSONObject variable = (JSONObject) json;
+            String name = variable.getString("name");
+            if (name.equals("CONNECTION")) {
+                connectionVar = variable;                
+            } else if (name.equals("HTTPS")) {
+                httpsVar = variable;
+            }
+        }
+        
+        assertEquals(connectionVar.toString(), buildParameter.value, connectionVar.getString("value"));
+        assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
     }
     
     private void testBuildWithSlave(ElasticBoxCloud cloud) throws Exception {
