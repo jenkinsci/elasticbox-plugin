@@ -44,4 +44,26 @@ How To Use
   ![](https://wiki.jenkins-ci.org/download/attachments/72778254/instance-creation.png)
 
   Select ElasticBox Single-Use Slave if you want to create a new instance for every execution of the job. After the job finished and the retention time elapsed, the instance will be terminated.
+  
+  - Add ElasticBox build steps to deploy, reconfigure, reinstall, stop, or terminate a box instance
+    - **Deploy Box**
 
+      ![](https://wiki.jenkins-ci.org/download/attachments/72778254/deploy.png)
+
+      You can specify build parameters or build environment variables as value of the variables or environment of the box you select to deploy. In the above picture, the GitHub Pull Request build parameter ghprbSourceBranch is specified as value for the variable BRANCH to receive the Git source branch to be used during deployment of the box.
+    
+    - **Reconfigure Box**
+    
+      ![](https://wiki.jenkins-ci.org/download/attachments/72778254/reconfigure.png)
+    
+    - **Reinstall Box**
+    
+      ![](https://wiki.jenkins-ci.org/download/attachments/72778254/reinstall-existing.png)
+    
+    - **Start Box**: similarly to Reinstall Box, you can choose to start an existing box instance or an instance that will be deployed in one of the previous Deploy Box build step.
+    
+    - **Stop Box**: similarly to Reinstall Box, you can choose to start an existing box instance or an instance that will be deployed in one of the previous Deploy Box build step.
+    
+    - **Terminate Box**: similarly to Reinstall Box, you can choose to start an existing box instance or an instance that will be deployed in one of the previous Deploy Box build step. Additionally, you can select to delete the instance after its termination. 
+    
+      ![](https://wiki.jenkins-ci.org/download/attachments/72778254/terminate.png)
