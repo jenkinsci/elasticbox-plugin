@@ -148,7 +148,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
         FreeStyleBuild result = (FreeStyleBuild) future.get(60, TimeUnit.MINUTES);
-        assertEquals(result.getResult(), Result.SUCCESS);
+        assertEquals(Result.SUCCESS, result.getResult());
         
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONObject instance = client.getInstance("i-9oewhy");

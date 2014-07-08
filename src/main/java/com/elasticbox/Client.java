@@ -230,21 +230,31 @@ public class Client {
             long startTime = System.currentTimeMillis();
             long remainingTime = timeout * 60000;
             String state = null;
-            JSONObject instance = (JSONObject) doGet(instanceUrl, false);
-            while(remainingTime > 0 && 
-                (!states.contains((state = instance.getString("state"))) || (operations != null && !operations.contains(instance.getString("operation"))))
-            ) {
+            do {
+                JSONObject instance = (JSONObject) doGet(instanceUrl, false);
+                state = instance.getString("state");
+                if (states.contains(state)) {
+                    if (operations == null) {
+                        break;
+                    }
+
+                    String operation = instance.getString("operation");
+                    if (TERMINATE_OPERATIONS.contains(operation) || operations.contains(operation)) {
+                        break;
+                    }
+                }
+                
                 synchronized(waitLock) {
                     try {
                         waitLock.wait(1000);
                     } catch (InterruptedException ex) {
                     }
                 }
-                instance = (JSONObject) doGet(instanceUrl, false);
                 long currentTime = System.currentTimeMillis();
                 remainingTime =  remainingTime - (currentTime - startTime);
                 startTime = currentTime;                
-            }
+            } while (remainingTime > 0);
+            
             return state;
         }
 
