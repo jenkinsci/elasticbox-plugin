@@ -1,0 +1,88 @@
+<!--
+ElasticBox Confidential
+Copyright (c) 2014 All Right Reserved, ElasticBox Inc.
+
+NOTICE:  All information contained herein is, and remains the property
+of ElasticBox. The intellectual and technical concepts contained herein are
+proprietary and may be covered by U.S. and Foreign Patents, patents in process,
+and are protected by trade secret or copyright law. Dissemination of this
+information or reproduction of this material is strictly forbidden unless prior
+written permission is obtained from ElasticBox.
+-->
+
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" >
+  <table width="100%">
+
+    <f:entry title="${%Description}" help="/help/system-config/master-slave/description.html" field="description">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="${%Workspace}" field="workspace">
+        <f:select clazz="required eb-workspace" />
+    </f:entry>
+    <f:entry title="${%Box}" field="box">
+        <f:select clazz="required eb-box" />
+    </f:entry>
+    <f:entry title="${%Version}" field="boxVersion">
+        <f:select clazz="required eb-boxVersion" />
+    </f:entry>
+    <f:entry title="${%Deployment Profile}" field="profile">
+        <f:select clazz="required eb-profile" />
+    </f:entry>
+    <f:entry title="${%Max. No. of Instances}" field="maxInstances">
+        <f:textbox clazz="required number" default="1"/>
+    </f:entry>
+    <f:entry title="${%Environment}" field="environment">
+        <f:textbox clazz="required"/>
+    </f:entry>
+    <f:entry title="${%Labels}" field="labels">
+      <f:textbox />
+    </f:entry>
+    <f:entry field="variables">
+        <f:textbox clazz="eb-variables help"/>
+    </f:entry>
+    <f:entry>
+        <f:block>
+            <table style="width:100%">
+                <tbody class="eb-variable-inputs">
+                    <tr>
+                        <td>
+                            <div class="section-header">Variables</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </f:block>
+    </f:entry>
+
+    <f:advanced>
+        <f:section title="Advanced Configuration" />
+
+        <f:entry title="${%Remote FS root}" field="remoteFS">
+          <f:textbox />
+        </f:entry>
+
+        <f:slave-mode name="mode" node="${instance}" />
+
+        <f:entry title="${%Idle Termination Time}" field="idleTerminationTime">
+          <f:textbox clazz="required number" default="30" />
+        </f:entry>  
+
+        <f:entry title="${%Number of Executors}" field="executors">
+          <f:textbox clazz="required number" default="1"/>
+        </f:entry>
+
+        <f:entry title="${%Launch Timeout}" field="launchTimeout">
+          <f:textbox clazz="required number" default="60"/>
+        </f:entry>
+
+    </f:advanced>
+
+    <f:entry title="">
+      <div align="right">
+        <f:repeatableDeleteButton />
+      </div>
+    </f:entry>
+
+  </table>
+</j:jelly>

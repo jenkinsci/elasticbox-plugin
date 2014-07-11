@@ -1,3 +1,15 @@
+<!--
+ElasticBox Confidential
+Copyright (c) 2014 All Right Reserved, ElasticBox Inc.
+
+NOTICE:  All information contained herein is, and remains the property
+of ElasticBox. The intellectual and technical concepts contained herein are
+proprietary and may be covered by U.S. and Foreign Patents, patents in process,
+and are protected by trade secret or copyright law. Dissemination of this
+information or reproduction of this material is strictly forbidden unless prior
+written permission is obtained from ElasticBox.
+-->
+
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <!--
     This jelly script is used for per-project configuration.
@@ -20,4 +32,16 @@
     <f:password clazz="required" />
   </f:entry>
   <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="endpointUrl,username,password" />
+
+  <f:entry title="${%Slave Configurations}" description="${%Configuration of boxes to be launched as slaves}">
+    <f:repeatable field="slaveConfigurations">
+      <st:include page="config.jelly" class="${descriptor.clazz}" />
+    </f:repeatable>
+
+    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
+    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
+    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
+    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/slave-config.js" />
+  </f:entry>
 </j:jelly>

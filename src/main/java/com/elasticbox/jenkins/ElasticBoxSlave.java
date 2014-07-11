@@ -30,12 +30,14 @@ import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
 
 
@@ -63,13 +65,15 @@ public class ElasticBoxSlave extends Slave {
     }
     
     private String profileId;
-    private boolean singleUse;
+    private final boolean singleUse;
     private String instanceUrl;
     private String instanceStatusMessage;
     private long idleStartTime;
+    private final long retentionTime;
 
     private transient boolean inUse;
     private transient ElasticBoxCloud cloud;
+    private final transient int launchTimeout;
 
     public ElasticBoxSlave(String profileId, boolean singleUse, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
         super(UUID.randomUUID().toString(), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", new JNLPLauncher(), RetentionStrategy.INSTANCE);
@@ -77,6 +81,21 @@ public class ElasticBoxSlave extends Slave {
         this.singleUse = singleUse;
         this.idleStartTime = System.currentTimeMillis();
         this.cloud = cloud;
+        this.retentionTime = cloud.getRetentionTime() * 60000;
+        this.launchTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
+    }
+    
+    public ElasticBoxSlave(SlaveConfiguration config, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
+        super(UUID.randomUUID().toString(), config.getDescription(), 
+            StringUtils.isBlank(config.getRemoteFS()) ? getRemoteFS(config.getProfile(), cloud) : config.getRemoteFS(), 
+            config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), 
+            RetentionStrategy.INSTANCE, Collections.EMPTY_LIST);
+        this.singleUse = false;
+        this.profileId = config.getProfile();
+        this.idleStartTime = System.currentTimeMillis();
+        this.cloud = cloud;
+        this.retentionTime = config.getIdleTerminationTime();
+        this.launchTimeout = config.getLaunchTimeout();
     }
 
     @Override
@@ -139,12 +158,20 @@ public class ElasticBoxSlave extends Slave {
     public void setProfileId(String profileId) {
         this.profileId = profileId;
     }
+
+    public int getLaunchTimeout() {
+        return launchTimeout;
+    }
     
     public boolean canTerminate() throws IOException {
+        if (retentionTime == 0) {
+            return false;
+        }
+        
         ElasticBoxCloud ebCloud = getCloud();
         boolean canTerminate = ebCloud != null && instanceUrl != null &&
             instanceUrl.startsWith(ebCloud.getEndpointUrl()) &&
-            (System.currentTimeMillis() - idleStartTime) > (ebCloud.getRetentionTime() * 60000);
+            (System.currentTimeMillis() - idleStartTime) > retentionTime;
         
         if (canTerminate) {
             SlaveComputer computer = getComputer();

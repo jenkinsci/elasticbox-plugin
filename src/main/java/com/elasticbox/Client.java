@@ -129,6 +129,10 @@ public class Client {
         return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl, URLEncoder.encode(workspaceId, UTF_8)), true);
     }
     
+    public JSONArray getBoxVersions(String boxId) throws IOException {
+        return (JSONArray) doGet(MessageFormat.format("{0}/services/boxes/{1}/versions", endpointUrl, boxId), true);
+    }
+    
     public JSONArray getProfiles(String workspaceId, String boxId) throws IOException {
         return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles?box_version={2}", endpointUrl, URLEncoder.encode(workspaceId, UTF_8), boxId), true);
     }
@@ -253,7 +257,7 @@ public class Client {
                 long currentTime = System.currentTimeMillis();
                 remainingTime =  remainingTime - (currentTime - startTime);
                 startTime = currentTime;                
-            } while (remainingTime > 0);
+            } while (timeout == 0 || remainingTime > 0);
             
             return state;
         }

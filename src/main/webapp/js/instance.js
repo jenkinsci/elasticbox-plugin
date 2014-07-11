@@ -53,36 +53,36 @@
             
             _.each(buildSteps, function (buildStep) {
                 var getOptions = function () {
-                            var options = ElasticBoxUtils.getPriorDeployBoxSteps(buildStep);
-                            
-                            if (options.length === 0) {
-                                options.push({ id: '', name: 'Not available' });
-                            }
-                            
-                            return _.map(options, function (step) {
-                                return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
-                            }).join(' ');
-                        },
+                        var options = ElasticBoxUtils.getPriorDeployBoxSteps(buildStep);
+
+                        if (options.length === 0) {
+                            options.push({ id: '', name: 'Not available' });
+                        }
+
+                        return _.map(options, function (step) {
+                            return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
+                        }).join(' ');
+                    },
                 
                     descriptorId = Dom.getAttribute(buildStep, 'descriptorid'),
                     buildStepSelect = _.first(Dom.getElementsByClassName('eb-buildstep', 'select', buildStep)),
                     selectedBuildStepId = buildStepSelect && Dom.getAttribute(buildStepSelect, "value") || null,
             
                     updateOptions = function (currentValue) {
-                            var selectedOption;
+                        var selectedOption;
 
-                            buildStepSelect.innerHTML = getOptions();
-                            if (currentValue) {
-                                selectedOption = Dom.getElementBy(function (option) {
-                                    return Dom.getAttribute(option, 'value') === currentValue;
-                                }, 'option', buildStepSelect);
-                            }
-                            
-                            if (!selectedOption) {
-                                selectedOption = _.first(Dom.getChildren(buildStepSelect));
-                            }
-                            buildStepSelect.selectedIndex = selectedOption ? Dom.getChildren(buildStepSelect).indexOf(selectedOption) : 0;                        
-                        },
+                        buildStepSelect.innerHTML = getOptions();
+                        if (currentValue) {
+                            selectedOption = Dom.getElementBy(function (option) {
+                                return Dom.getAttribute(option, 'value') === currentValue;
+                            }, 'option', buildStepSelect);
+                        }
+
+                        if (!selectedOption) {
+                            selectedOption = _.first(Dom.getChildren(buildStepSelect));
+                        }
+                        buildStepSelect.selectedIndex = selectedOption ? Dom.getChildren(buildStepSelect).indexOf(selectedOption) : 0;                        
+                    },
                         
                     populateOptions = function () {
                         var firstOption = Dom.getFirstChild(buildStepSelect),

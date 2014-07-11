@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONArray;
 import javax.servlet.ServletException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.kohsuke.stapler.HttpResponse;
@@ -75,7 +76,7 @@ public class ElasticBoxItemProvider {
 
     public ListBoxModel getBoxes(String workspace) {
         ListBoxModel boxes = new ListBoxModel();
-        if (workspace.trim().length() == 0) {
+        if (StringUtils.isBlank(workspace)) {
             return boxes;
         }
 
@@ -93,10 +94,31 @@ public class ElasticBoxItemProvider {
 
         return sort(boxes);        
     }
+    
+    public ListBoxModel getBoxVersions(String box) {
+        ListBoxModel boxVersions = new ListBoxModel();
+        if (StringUtils.isBlank(box)) {
+            return boxVersions;
+        }
+        
+        try {
+            Client client = createClient();
+            if (client != null) {
+                for (Object json : client.getBoxVersions(box)) {
+                    JSONObject boxVersion = (JSONObject) json;
+                    boxVersions.add(boxVersion.getJSONObject("version").getString("description"), boxVersion.getString("id"));
+                }
+            }
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, "Error fetching box versions", ex);
+        }
+        
+        return boxVersions;
+    }
 
     public ListBoxModel getProfiles(String workspace, String box) {
         ListBoxModel profiles = new ListBoxModel();
-        if (workspace.isEmpty() || box.trim().length() == 0) {
+        if (StringUtils.isBlank(workspace) || StringUtils.isBlank(box)) {
             return profiles;
         }
 
@@ -115,8 +137,22 @@ public class ElasticBoxItemProvider {
         return sort(profiles);        
     }
     
+    public JSONArrayResponse getBoxStack(String boxId) {
+        if (StringUtils.isNotBlank(boxId)) {
+            try {
+                Client client = createClient();
+                return new JSONArrayResponse(new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray());
+                
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for box {0}", boxId), ex);
+            }
+        }
+        
+        return new JSONArrayResponse(new JSONArray());        
+    }
+    
     public JSONArrayResponse getProfileBoxStack(String profile) {
-        if (profile != null && profile.trim().length() > 0) {
+        if (StringUtils.isNotBlank(profile)) {
             try {
                 Client client = createClient();
                 JSONObject profileJson = client.getProfile(profile);
@@ -132,7 +168,7 @@ public class ElasticBoxItemProvider {
     }
 
     public JSONArrayResponse getInstanceBoxStack(String instance) {
-        if (instance != null && instance.trim().length() > 0) {
+        if (!StringUtils.isBlank(instance)) {
             try {
                 Client client = createClient();
                 JSONObject instanceJson = client.getInstance(instance);
@@ -154,7 +190,7 @@ public class ElasticBoxItemProvider {
      * @return 
      */
     public JSONArrayResponse getInstanceVariables(String instance) {
-        if (instance != null && instance.trim().length() > 0) {
+        if (StringUtils.isBlank(instance)) {
             try {
                 JSONObject json = createClient().getInstance(instance);
                 JSONArray variables = json.getJSONArray("boxes").getJSONObject(0).getJSONArray("variables");

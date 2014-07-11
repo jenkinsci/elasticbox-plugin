@@ -40,6 +40,7 @@ import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.test.HudsonTestCase;
 import hudson.model.Result;
 import hudson.model.TextParameterValue;
+import java.util.Collections;
 import java.util.UUID;
 
 /**
@@ -55,7 +56,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     private static final String PASSWORD = System.getProperty("elasticbox.jenkins.test.password", Scrambler.descramble("dHBob25naW8="));
 
     public void testConfigRoundtrip() throws Exception {
-        ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD);
+        ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD, Collections.EMPTY_LIST);
         jenkins.clouds.add(cloud);
         
         WebClient webClient = createWebClient();
@@ -83,7 +84,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     
     public void testBuild() throws Exception { 
         if (TEST_BUILD) {
-            ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD);
+            ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD, Collections.EMPTY_LIST);
             jenkins.clouds.add(cloud);
             testBuildWithSteps(cloud);
         }
