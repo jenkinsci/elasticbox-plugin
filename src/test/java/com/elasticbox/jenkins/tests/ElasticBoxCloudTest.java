@@ -40,8 +40,10 @@ import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.test.HudsonTestCase;
 import hudson.model.Result;
 import hudson.model.TextParameterValue;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
+import org.apache.commons.lang.StringUtils;
 
 /**
  *
@@ -50,47 +52,33 @@ import java.util.UUID;
 public class ElasticBoxCloudTest extends HudsonTestCase {
     private static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
     private static final String PUBLIC_JENKINS_HOST = "localhost";
-    private static final boolean TEST_BUILD = true; //Boolean.getBoolean("elasticbox.jenkins.test.build");
     private static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://catapult.elasticbox.com");
     private static final String USER_NAME = System.getProperty("elasticbox.jenkins.test.username", Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"));
     private static final String PASSWORD = System.getProperty("elasticbox.jenkins.test.password", Scrambler.descramble("dHBob25naW8="));
 
-    public void testConfigRoundtrip() throws Exception {
-        ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD, Collections.EMPTY_LIST);
-        jenkins.clouds.add(cloud);
+    public void testClient() throws Exception {
+        ElasticBoxCloud cloud = createCloud();
+        String jenkinsUrl = jenkins.getRootUrl();
+        if (StringUtils.isBlank(jenkinsUrl)) {
+            jenkinsUrl = createWebClient().getContextPath();
+        }
         
-        WebClient webClient = createWebClient();
-        HtmlForm configForm = webClient.goTo("configure").getFormByName("config");
-        submit(webClient.goTo("configure").getFormByName("config"));        
-        assertEqualBeans(cloud, jenkins.clouds.iterator().next(), "endpointUrl,maxInstances,retentionTime,username,password");
-        
-        configForm.submit(configForm.getButtonByCaption("Test Connection"));
-
-        // test connection
-        PostMethod post = new PostMethod(MessageFormat.format("{0}descriptorByName/{1}/testConnection?.crumb=test", jenkins.getRootUrl(), ElasticBoxCloud.class.getName()));        
-        post.setRequestBody(Arrays.asList(new NameValuePair("endpointUrl", cloud.getEndpointUrl()),
-                new NameValuePair("username", cloud.getUsername()),
-                new NameValuePair("password", cloud.getPassword())).toArray(new NameValuePair[0]));
-        HttpClient httpClient = new HttpClient();
-        int status = httpClient.executeMethod(post);
-        String content = post.getResponseBodyAsString();
-        assertEquals(HttpStatus.SC_OK, status);
-        assertStringContains(content, content, MessageFormat.format("Connection to {0} was successful.", cloud.getEndpointUrl()));
-        
-        jenkins.createProjectFromXML("test", getClass().getResourceAsStream("TestProject.xml"));
-        
-        testClient(cloud);   
+        jenkinsUrl = jenkinsUrl.replace("localhost", PUBLIC_JENKINS_HOST);
+        testClient(cloud, jenkinsUrl);   
     }
     
     public void testBuild() throws Exception { 
-        if (TEST_BUILD) {
-            ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD, Collections.EMPTY_LIST);
-            jenkins.clouds.add(cloud);
-            testBuildWithSteps(cloud);
-        }
+        ElasticBoxCloud cloud = createCloud();
+        testBuildWithSteps(cloud);
     }
     
-    private void testClient(ElasticBoxCloud cloud) throws Exception {
+    private ElasticBoxCloud createCloud() throws IOException {
+        ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD, Collections.EMPTY_LIST);
+        jenkins.clouds.add(cloud);
+        return cloud;
+    }
+    
+    private void testClient(ElasticBoxCloud cloud, String jenkinsUrl) throws Exception {
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         client.connect();
         JSONArray workspaces = client.getWorkspaces();
@@ -122,7 +110,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         // make sure that a deployment request can be successfully submitted
         JSONObject profile = profiles.getJSONObject(0);
         IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), "jenkins-plugin-unit-test", 1, 
-                ElasticBoxSlaveHandler.createJenkinsVariables(jenkins.getRootUrl().replace("localhost", PUBLIC_JENKINS_HOST), JENKINS_SLAVE_BOX_NAME));
+                ElasticBoxSlaveHandler.createJenkinsVariables(jenkinsUrl, JENKINS_SLAVE_BOX_NAME));
         try {
             monitor.waitForDone(60);
         } catch (IProgressMonitor.IncompleteException ex) {
@@ -185,4 +173,25 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         startCondition.get(60, TimeUnit.MINUTES);
         Object result = future.get(60, TimeUnit.MINUTES);        
     }
+    
+    private void testConfigRoundtrip(ElasticBoxCloud cloud) throws Exception {
+        WebClient webClient = createWebClient();
+        HtmlForm configForm = webClient.goTo("configure").getFormByName("config");
+        submit(webClient.goTo("configure").getFormByName("config"));        
+        assertEqualBeans(cloud, jenkins.clouds.iterator().next(), "endpointUrl,maxInstances,retentionTime,username,password");
+        
+        configForm.submit(configForm.getButtonByCaption("Test Connection"));
+        
+        // test connection
+        PostMethod post = new PostMethod(MessageFormat.format("{0}descriptorByName/{1}/testConnection?.crumb=test", jenkins.getRootUrl(), ElasticBoxCloud.class.getName()));        
+        post.setRequestBody(Arrays.asList(new NameValuePair("endpointUrl", cloud.getEndpointUrl()),
+                new NameValuePair("username", cloud.getUsername()),
+                new NameValuePair("password", cloud.getPassword())).toArray(new NameValuePair[0]));
+        HttpClient httpClient = new HttpClient();
+        int status = httpClient.executeMethod(post);
+        String content = post.getResponseBodyAsString();
+        assertEquals(HttpStatus.SC_OK, status);
+        assertStringContains(content, content, MessageFormat.format("Connection to {0} was successful.", cloud.getEndpointUrl()));
+    }
+    
 }
