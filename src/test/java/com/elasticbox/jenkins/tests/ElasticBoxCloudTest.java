@@ -279,7 +279,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         }
     }
     
-    public void testBuildWithWindowsSlave() throws Exception {
+    public void buildWithWindowsSlave() throws Exception {
         if (System.getProperty(OPS_PASSWORD_PROPERTY) != null) {
             testBuildWithSlave("Windows Jenkins Slave");        
         }
@@ -312,10 +312,10 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
                 MessageFormat.format("Build with {0}", slaveBoxName));
         project.setAssignedLabel(jenkins.getLabel(label));
         QueueTaskFuture future = project.scheduleBuild2(0);
-        Object scheduleResult = getResult(future.getStartCondition(), 30);
-        assertNotNull("30 minutes after job scheduling but no result returned", scheduleResult);
-        FreeStyleBuild result = (FreeStyleBuild) getResult(future, 60);      
-        assertNotNull("60 minutes after job start but no result returned", result);
+        Object scheduleResult = getResult(future.getStartCondition(), 60);
+        assertNotNull("60 minutes after job scheduling but no result returned", scheduleResult);
+        FreeStyleBuild result = (FreeStyleBuild) getResult(future, 30);      
+        assertNotNull("30 minutes after job start but no result returned", result);
         assertEquals(Result.SUCCESS, result.getResult());
     }
     

@@ -12,14 +12,19 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.Client;
 import hudson.Extension;
+import hudson.RelativePath;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import hudson.util.ListBoxModel;
+import java.io.IOException;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -30,6 +35,7 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Phong Nguyen Le
  */
 public class SlaveConfiguration implements Describable<SlaveConfiguration> {
+    private static final Logger LOGGER = Logger.getLogger(SlaveConfiguration.class.getName());
 
     private final String workspace;
     private final String box;
@@ -141,15 +147,26 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     
     @Extension
     public static final class DescriptorImpl extends Descriptor<SlaveConfiguration> {
-        private final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
+        private ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
 
         @Override
         public String getDisplayName() {
             return null;
         }
 
-        public ListBoxModel doFillWorkspaceItems() {
-            return itemProvider.getWorkspaces();
+        public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password) {
+            try {
+                Client client = new Client(endpointUrl, username, password);
+                client.connect();
+                itemProvider = new ElasticBoxItemProvider(client);
+                return itemProvider.getWorkspaces();
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
+            
+            return new ListBoxModel();
         }
         
         public ListBoxModel doFillBoxItems(@QueryParameter String workspace) {

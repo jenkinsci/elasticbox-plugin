@@ -38,6 +38,7 @@ import org.kohsuke.stapler.StaplerResponse;
  */
 public class ElasticBoxItemProvider {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxItemProvider.class.getName());
+    private final Client client;
     
     public static class JSONArrayResponse implements HttpResponse {
         private final JSONArray jsonArray;
@@ -57,10 +58,18 @@ public class ElasticBoxItemProvider {
         
     }
     
+    public ElasticBoxItemProvider() {
+        this(null);
+    }
+    
+    public ElasticBoxItemProvider(Client client) {
+        this.client = client;
+    }
+    
     public ListBoxModel getWorkspaces() {
         ListBoxModel workspaces = new ListBoxModel();
         try {
-            Client ebClient = createClient();
+            Client ebClient = getClient();
             if (ebClient != null) {
                 for (Object workspace : ebClient.getWorkspaces()) {
                     JSONObject json = (JSONObject) workspace;
@@ -81,7 +90,7 @@ public class ElasticBoxItemProvider {
         }
 
         try {
-            Client ebClient = createClient();
+            Client ebClient = getClient();
             if (ebClient != null) {
                 for (Object box : ebClient.getBoxes(workspace)) {
                     JSONObject json = (JSONObject) box;
@@ -102,7 +111,7 @@ public class ElasticBoxItemProvider {
         }
         
         try {
-            Client client = createClient();
+            Client client = getClient();
             if (client != null) {
                 for (Object json : client.getBoxVersions(box)) {
                     JSONObject boxVersion = (JSONObject) json;
@@ -123,7 +132,7 @@ public class ElasticBoxItemProvider {
         }
 
         try {
-            Client ebClient = createClient();
+            Client ebClient = getClient();
             if (ebClient != null) {
                 for (Object profile : ebClient.getProfiles(workspace, box)) {
                     JSONObject json = (JSONObject) profile;
@@ -140,7 +149,7 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getBoxStack(String boxId) {
         if (StringUtils.isNotBlank(boxId)) {
             try {
-                Client client = createClient();
+                Client client = getClient();
                 return new JSONArrayResponse(new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray());
                 
             } catch (IOException ex) {
@@ -154,7 +163,7 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getProfileBoxStack(String profile) {
         if (StringUtils.isNotBlank(profile)) {
             try {
-                Client client = createClient();
+                Client client = getClient();
                 JSONObject profileJson = client.getProfile(profile);
                 String boxId = profileJson.getJSONObject("box").getString("version");
                 return new JSONArrayResponse(new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray());
@@ -170,7 +179,7 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getInstanceBoxStack(String instance) {
         if (!StringUtils.isBlank(instance)) {
             try {
-                Client client = createClient();
+                Client client = getClient();
                 JSONObject instanceJson = client.getInstance(instance);
                 JSONArray boxes = instanceJson.getJSONArray("boxes");
                 return new JSONArrayResponse(new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, client).toJSONArray());
@@ -192,7 +201,7 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getInstanceVariables(String instance) {
         if (StringUtils.isBlank(instance)) {
             try {
-                JSONObject json = createClient().getInstance(instance);
+                JSONObject json = getClient().getInstance(instance);
                 JSONArray variables = json.getJSONArray("boxes").getJSONObject(0).getJSONArray("variables");
                 for (Object modifiedVariable : json.getJSONArray("variables")) {
                     JSONObject modifiedVariableJson = (JSONObject) modifiedVariable;
@@ -236,7 +245,7 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getInstancesAsJSONArrayResponse(String workspace, String box) {
         JSONArray instances = new JSONArray();
         try {
-            Client client = createClient();
+            Client client = getClient();
             JSONArray instanceArray = client.getInstances(workspace);
             if (!instanceArray.isEmpty() && !instanceArray.getJSONObject(0).getJSONArray("boxes").getJSONObject(0).containsKey("id")) {
                 List<String> instanceIDs = new ArrayList<String>();
@@ -288,11 +297,16 @@ public class ElasticBoxItemProvider {
         return model;
     }
 
-    private Client createClient() throws IOException {
+    private Client getClient() throws IOException {
+        if (client != null) {
+            return client;
+        }
+        
         ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
         if (ebCloud != null) {
             return ebCloud.createClient();
         }
+        
         return null;
     }
     
