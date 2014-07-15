@@ -16,11 +16,14 @@ import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.SlaveConfiguration;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.Node;
 import hudson.model.ParametersAction;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.util.Scrambler;
@@ -41,8 +44,17 @@ import org.jvnet.hudson.test.HudsonTestCase;
 import hudson.model.Result;
 import hudson.model.TextParameterValue;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import jenkins.model.JenkinsLocationConfiguration;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -50,21 +62,74 @@ import org.apache.commons.lang.StringUtils;
  * @author Phong Nguyen Le
  */
 public class ElasticBoxCloudTest extends HudsonTestCase {
+    private static final String OPS_USER_NAME_PROPERTY = "elasticbox.jenkins.test.opsUsername";
+    private static final String OPS_PASSWORD_PROPERTY = "elasticbox.jenkins.test.opsPassword";
     private static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
-    private static final String PUBLIC_JENKINS_HOST = "localhost";
+    private static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost" ,"localhost");
     private static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://catapult.elasticbox.com");
     private static final String USER_NAME = System.getProperty("elasticbox.jenkins.test.username", Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"));
     private static final String PASSWORD = System.getProperty("elasticbox.jenkins.test.password", Scrambler.descramble("dHBob25naW8="));
+    
+    private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloudTest.class.getName());
 
-    public void testClient() throws Exception {
-        ElasticBoxCloud cloud = createCloud();
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        
         String jenkinsUrl = jenkins.getRootUrl();
         if (StringUtils.isBlank(jenkinsUrl)) {
             jenkinsUrl = createWebClient().getContextPath();
         }
         
-        jenkinsUrl = jenkinsUrl.replace("localhost", PUBLIC_JENKINS_HOST);
-        testClient(cloud, jenkinsUrl);   
+        jenkinsUrl = jenkinsUrl.replace("localhost", JENKINS_PUBLIC_HOST);
+        JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+    }
+    
+    
+
+    @Override
+    protected void tearDown() throws Exception {
+        List<ElasticBoxSlave> slaves = new ArrayList<ElasticBoxSlave>();
+        for (Node node : jenkins.getNodes()) {
+            if (node instanceof ElasticBoxSlave) {
+                ElasticBoxSlave slave = (ElasticBoxSlave) node;
+                if (slave.getInstanceId() != null) {
+                    try {
+                        slave.terminate();
+                        slaves.add(slave);
+                    } catch (IOException ex) {
+                        LOGGER.log(Level.SEVERE, "Error terminating slave", ex);
+                    }
+                }
+            }
+        }
+        
+        long maxWaitTime = 600000;
+        long waitStart = System.currentTimeMillis();
+        do {
+            Thread.sleep(5000);
+            for (Iterator<ElasticBoxSlave> iter = slaves.iterator(); iter.hasNext();) {
+                ElasticBoxSlave slave = iter.next();
+                JSONObject instance = slave.getInstance();
+                if (Client.FINISH_STATES.contains(instance.getString("state")) || 
+                        System.currentTimeMillis() - waitStart > maxWaitTime) {
+                    try {
+                        slave.delete();
+                    } catch (IOException ex) {
+                        LOGGER.log(Level.SEVERE, "Error deleting slave", ex);
+                    }
+                    iter.remove();
+                }
+            }
+        } while (!slaves.isEmpty());
+        
+        super.tearDown();
+    }
+
+    
+    public void testClient() throws Exception {
+        ElasticBoxCloud cloud = createCloud();
+        testClient(cloud);   
     }
     
     public void testBuild() throws Exception { 
@@ -73,12 +138,16 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     }
     
     private ElasticBoxCloud createCloud() throws IOException {
-        ElasticBoxCloud cloud = new ElasticBoxCloud(ELASTICBOX_URL, 2, 10, USER_NAME, PASSWORD, Collections.EMPTY_LIST);
-        jenkins.clouds.add(cloud);
-        return cloud;
+        return createCloud(ELASTICBOX_URL, USER_NAME, PASSWORD);
     }
     
-    private void testClient(ElasticBoxCloud cloud, String jenkinsUrl) throws Exception {
+    private ElasticBoxCloud createCloud(String endpointUrl, String username, String password) throws IOException {
+        ElasticBoxCloud cloud = new ElasticBoxCloud(endpointUrl, 2, 10, username, password, Collections.EMPTY_LIST);
+        jenkins.clouds.add(cloud);
+        return cloud;        
+    }
+    
+    private void testClient(ElasticBoxCloud cloud) throws Exception {
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         client.connect();
         JSONArray workspaces = client.getWorkspaces();
@@ -110,7 +179,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         // make sure that a deployment request can be successfully submitted
         JSONObject profile = profiles.getJSONObject(0);
         IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), "jenkins-plugin-unit-test", 1, 
-                ElasticBoxSlaveHandler.createJenkinsVariables(jenkinsUrl, JENKINS_SLAVE_BOX_NAME));
+                ElasticBoxSlaveHandler.createJenkinsVariables(jenkins.getRootUrl(), JENKINS_SLAVE_BOX_NAME));
         try {
             monitor.waitForDone(60);
         } catch (IProgressMonitor.IncompleteException ex) {
@@ -169,9 +238,11 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
                 replace("{version}", "0.7.5-SNAPSHOT");   
         FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML("test", new ByteArrayInputStream(projectXml.getBytes()));
         QueueTaskFuture future = project.scheduleBuild2(0);
-        Future startCondition = future.getStartCondition();
-        startCondition.get(60, TimeUnit.MINUTES);
-        Object result = future.get(60, TimeUnit.MINUTES);        
+        Object scheduleResult = getResult(future.getStartCondition(), 30);
+        assertNotNull("30 minutes after job scheduling but no result returned", scheduleResult);
+        FreeStyleBuild result = (FreeStyleBuild) getResult(future, 60);      
+        assertNotNull("60 minutes after job start but no result returned", result);
+        assertEquals(Result.SUCCESS, result.getResult());
     }
     
     private void testConfigRoundtrip(ElasticBoxCloud cloud) throws Exception {
@@ -192,6 +263,70 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         String content = post.getResponseBodyAsString();
         assertEquals(HttpStatus.SC_OK, status);
         assertStringContains(content, content, MessageFormat.format("Connection to {0} was successful.", cloud.getEndpointUrl()));
+    }
+    
+    public void testBuildWithLinuxSlave() throws Exception {
+        if (System.getProperty(OPS_USER_NAME_PROPERTY) != null) {
+            testBuildWithSlave(JENKINS_SLAVE_BOX_NAME);
+        }
+    }
+    
+    public void testBuildWithWindowsSlave() throws Exception {
+        if (System.getProperty(OPS_PASSWORD_PROPERTY) != null) {
+            testBuildWithSlave("Windows Jenkins Slave");        
+        }
+    }
+    
+    private void testBuildWithSlave(String slaveBoxName) throws Exception {  
+        LOGGER.info(MessageFormat.format("Testing build with slave {0}", slaveBoxName));
+        
+        String username = System.getProperty(OPS_USER_NAME_PROPERTY);
+        String password = System.getProperty(OPS_PASSWORD_PROPERTY);
+        assertNotNull(MessageFormat.format("System property {0} must be specified to run this test", OPS_USER_NAME_PROPERTY), username);
+        assertNotNull(MessageFormat.format("System property {0} must be specified to run this test", OPS_PASSWORD_PROPERTY), password);
+        ElasticBoxCloud cloud = createCloud(ELASTICBOX_URL, username, password);        
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", 
+                URLEncoder.encode(slaveBoxName, "UTF-8")), true);
+        assertTrue(MessageFormat.format("No profile is found for box {0} for {1}", slaveBoxName, 
+                ElasticBoxCloud.getInstance().name), profiles.size() > 0);
+        JSONObject profile = profiles.getJSONObject(0);        
+        String workspace = profile.getString("owner");
+        String box = profile.getJSONObject("box").getString("version");
+        String label = UUID.randomUUID().toString();
+        SlaveConfiguration slaveConfig = new SlaveConfiguration(workspace, box, box, profile.getString("id"), 1, 
+                slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, 1, 60);
+        ElasticBoxCloud newCloud = new ElasticBoxCloud(cloud.getEndpointUrl(), cloud.getMaxInstances(), 
+                cloud.getRetentionTime(), cloud.getUsername(), cloud.getPassword(), Collections.singletonList(slaveConfig));
+        jenkins.clouds.remove(cloud);
+        jenkins.clouds.add(newCloud);
+        FreeStyleProject project = jenkins.createProject(FreeStyleProject.class, 
+                MessageFormat.format("Build with {0}", slaveBoxName));
+        project.setAssignedLabel(jenkins.getLabel(label));
+        QueueTaskFuture future = project.scheduleBuild2(0);
+        Object scheduleResult = getResult(future.getStartCondition(), 30);
+        assertNotNull("30 minutes after job scheduling but no result returned", scheduleResult);
+        FreeStyleBuild result = (FreeStyleBuild) getResult(future, 60);      
+        assertNotNull("60 minutes after job start but no result returned", result);
+        assertEquals(Result.SUCCESS, result.getResult());
+    }
+    
+    private Object getResult(Future<?> future, int waitMinutes) throws ExecutionException {
+        Object result = null;
+        long maxWaitTime = waitMinutes * 60000;
+        long waitTime = 0;
+        do {
+            long waitStart = System.currentTimeMillis();
+            try {
+                result = future.get(maxWaitTime - waitTime, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+            } catch (TimeoutException ex) {
+                break;
+            }
+            waitTime += (System.currentTimeMillis() - waitStart);
+        } while (result == null && waitTime < maxWaitTime);
+        
+        return result;
     }
     
 }
