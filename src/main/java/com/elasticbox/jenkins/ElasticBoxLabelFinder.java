@@ -20,6 +20,7 @@ import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Collections;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 
 /**
  *
@@ -45,7 +46,7 @@ public class ElasticBoxLabelFinder extends LabelFinder {
                 if (slave.getComputer() != null && slave.getComputer().getBuilds().isEmpty()) {
                     return Collections.singleton(getLabel(slave.getProfileId(), true));                    
                 }
-            } else {
+            } else if (StringUtils.isBlank(slave.getLabelString())) {
                 return Collections.singleton(getLabel(slave.getProfileId(), false));
             }
         }

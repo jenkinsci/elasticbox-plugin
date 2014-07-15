@@ -46,7 +46,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     private final int executors;
     private final int launchTimeout;
     
-    private final transient Set<LabelAtom> labelSet;
+    private transient Set<LabelAtom> labelSet;
 
     @DataBoundConstructor
     public SlaveConfiguration(String workspace, String box, String boxVersion, String profile, int maxInstances, 
@@ -68,7 +68,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
         this.executors = executors;
         this.launchTimeout = launchTimeout;
         
-        this.labelSet = Label.parse(labels);
+        this.labelSet = getLabelSet();
     }    
     
     public Descriptor<SlaveConfiguration> getDescriptor() {
@@ -132,6 +132,10 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     }
 
     public Set<LabelAtom> getLabelSet() {
+        if (labelSet == null) {
+            labelSet = Label.parse(labels);
+        }
+        
         return labelSet;
     }
     

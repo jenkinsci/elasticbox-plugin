@@ -109,9 +109,17 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         do {
             Thread.sleep(5000);
             for (Iterator<ElasticBoxSlave> iter = slaves.iterator(); iter.hasNext();) {
-                ElasticBoxSlave slave = iter.next();
-                JSONObject instance = slave.getInstance();
-                if (Client.FINISH_STATES.contains(instance.getString("state")) || 
+                ElasticBoxSlave slave = iter.next();               
+                JSONObject instance = null;
+                try {
+                    instance = slave.getInstance();
+                } catch (IOException ex) {
+                    LOGGER.log(Level.SEVERE, "Error fetching slave instance", ex);
+                    iter.remove();
+                    continue;
+                }
+                
+                if ((instance != null && Client.FINISH_STATES.contains(instance.getString("state"))) || 
                         System.currentTimeMillis() - waitStart > maxWaitTime) {
                     try {
                         slave.delete();

@@ -5,4 +5,33 @@
         <f:readOnlyTextbox />
     </f:entry>
 
+    <f:entry title="${%Description}" help="/help/system-config/master-slave/description.html">
+        <f:textbox field="nodeDescription"/>
+    </f:entry>
+
+    <f:entry title="${%No. of Executors}" field="numExecutors">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry title="${%Remote FS root}" field="remoteFS">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry title="${%Labels}" field="labelString">
+        <f:textbox/>
+    </f:entry>
+
+    <f:slave-mode name="mode" node="${it}"/>
+
+    <f:entry title="${%Single Use}" field="singleUse">
+        <f:checkbox />
+    </f:entry>
+
+    <f:entry title="${%Retention Time}" field="retentionTime">
+        <f:textbox clazz="number"/>
+    </f:entry>    
+
+    <f:descriptorList title="${%Node Properties}" descriptors="${h.getNodePropertyDescriptors(descriptor.clazz)}"
+                      field="nodeProperties"/>
+
 </j:jelly>

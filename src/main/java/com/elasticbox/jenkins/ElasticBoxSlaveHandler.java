@@ -404,14 +404,10 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private void deployInstance(InstanceCreationRequest request) throws IOException {
         ElasticBoxCloud cloud = request.slave.getCloud();        
         Client ebClient = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        String environment = request.slave.getNodeName();
-        if (environment.length() > 30) {
-            environment = environment.substring(0, 30);
-        }
-        
         JSONObject profile = ebClient.getProfile(request.slave.getProfileId());
-        IProgressMonitor monitor = ebClient.deploy(request.slave.getProfileId(), profile.getString("owner"), environment
-                , 1, createJenkinsVariables(Jenkins.getInstance().getRootUrl(), request.slave.getNodeName()));
+        IProgressMonitor monitor = ebClient.deploy(request.slave.getProfileId(), profile.getString("owner"), 
+                request.slave.getEnvironment(), 1, createJenkinsVariables(Jenkins.getInstance().getRootUrl(), 
+                request.slave.getNodeName()));
         request.slave.setInstanceUrl(monitor.getResourceUrl());
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance {0}", 
                 request.slave.getInstancePageUrl()));

@@ -74,6 +74,7 @@ public class ElasticBoxSlave extends Slave {
     private transient boolean inUse;
     private transient ElasticBoxCloud cloud;
     private final transient int launchTimeout;
+    private final transient String environment;
 
     public ElasticBoxSlave(String profileId, boolean singleUse, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
         super(UUID.randomUUID().toString(), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", new JNLPLauncher(), RetentionStrategy.INSTANCE);
@@ -83,6 +84,7 @@ public class ElasticBoxSlave extends Slave {
         this.cloud = cloud;
         this.retentionTime = cloud.getRetentionTime() * 60000;
         this.launchTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
+        this.environment = getNodeName().substring(0, 30);
     }
     
     public ElasticBoxSlave(SlaveConfiguration config, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
@@ -96,6 +98,7 @@ public class ElasticBoxSlave extends Slave {
         this.cloud = cloud;
         this.retentionTime = config.getIdleTerminationTime();
         this.launchTimeout = config.getLaunchTimeout();
+        this.environment = config.getEnvironment();
     }
 
     @Override
@@ -161,6 +164,10 @@ public class ElasticBoxSlave extends Slave {
 
     public int getLaunchTimeout() {
         return launchTimeout;
+    }
+
+    public String getEnvironment() {
+        return environment;
     }
     
     public boolean canTerminate() throws IOException {
@@ -313,7 +320,11 @@ public class ElasticBoxSlave extends Slave {
 
         @Override
         public Node newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            throw new FormException("This slave cannot be updated.", "");
+            if (formData.getBoolean("singleUse")) {
+                throw new FormException("This slave cannot be updated.", "");
+            }
+            
+            return super.newInstance(req, formData);
         }
                 
     }

@@ -136,8 +136,10 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 excessWorkload -= slave.getNumExecutors();
             } catch (Descriptor.FormException ex) {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                break;
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                break;
             }
         }
         return plannedNodes;
