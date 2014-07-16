@@ -48,6 +48,10 @@ import org.kohsuke.stapler.StaplerRequest;
 public class ElasticBoxSlave extends Slave {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlave.class.getName());
     
+    private static final String SINGLE_USE_TYPE = "Single-use";
+    private static final String PER_PROJECT_TYPE = "Per project configured";
+    private static final String GLOBAL_TYPE = "Glocally configured";
+    
     private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONObject profile = client.getProfile(profileId);
@@ -69,7 +73,7 @@ public class ElasticBoxSlave extends Slave {
     private String instanceUrl;
     private String instanceStatusMessage;
     private long idleStartTime;
-    private final long retentionTime;
+    private final int retentionTime;
 
     private transient boolean inUse;
     private transient ElasticBoxCloud cloud;
@@ -82,7 +86,7 @@ public class ElasticBoxSlave extends Slave {
         this.singleUse = singleUse;
         this.idleStartTime = System.currentTimeMillis();
         this.cloud = cloud;
-        this.retentionTime = cloud.getRetentionTime() * 60000;
+        this.retentionTime = cloud.getRetentionTime();
         this.launchTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
         this.environment = getNodeName().substring(0, 30);
     }
@@ -96,7 +100,7 @@ public class ElasticBoxSlave extends Slave {
         this.profileId = config.getProfile();
         this.idleStartTime = System.currentTimeMillis();
         this.cloud = cloud;
-        this.retentionTime = config.getIdleTerminationTime();
+        this.retentionTime = config.getRetentionTime();
         this.launchTimeout = config.getLaunchTimeout();
         this.environment = config.getEnvironment();
     }
@@ -153,6 +157,16 @@ public class ElasticBoxSlave extends Slave {
     public String getInstanceStatusMessage() {
         return instanceStatusMessage;
     }
+    
+    public String getType() {
+        if (isSingleUse()) {
+            return SINGLE_USE_TYPE;
+        } else if (StringUtils.isBlank(getLabelString())) {
+            return PER_PROJECT_TYPE;
+        } else {
+            return GLOBAL_TYPE;
+        }
+    }
 
     public String getProfileId() {
         return profileId;
@@ -169,6 +183,10 @@ public class ElasticBoxSlave extends Slave {
     public String getEnvironment() {
         return environment;
     }
+
+    public int getRetentionTime() {
+        return retentionTime;
+    }
     
     public boolean canTerminate() throws IOException {
         if (retentionTime == 0) {
@@ -178,7 +196,7 @@ public class ElasticBoxSlave extends Slave {
         ElasticBoxCloud ebCloud = getCloud();
         boolean canTerminate = ebCloud != null && instanceUrl != null &&
             instanceUrl.startsWith(ebCloud.getEndpointUrl()) &&
-            (System.currentTimeMillis() - idleStartTime) > retentionTime;
+            (System.currentTimeMillis() - idleStartTime) > (retentionTime * 60000);
         
         if (canTerminate) {
             SlaveComputer computer = getComputer();
@@ -320,11 +338,7 @@ public class ElasticBoxSlave extends Slave {
 
         @Override
         public Node newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            if (formData.getBoolean("singleUse")) {
-                throw new FormException("This slave cannot be updated.", "");
-            }
-            
-            return super.newInstance(req, formData);
+            throw new FormException("This slave cannot be updated.", "");
         }
                 
     }

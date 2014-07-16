@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
@@ -267,19 +266,6 @@ public class Client {
         }
     }
     
-    public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, Map<String, String> variables) throws IOException {
-        JSONArray variableArray = new JSONArray();
-        for (Map.Entry<String, String> entry : variables.entrySet()) {            
-            JSONObject jsonVar = new JSONObject();
-            jsonVar.put("name", entry.getKey());
-            jsonVar.put("type", "Text");
-            jsonVar.put("value", entry.getValue());
-            variableArray.add(jsonVar);
-        }
-        
-        return deploy(profileId, workspaceId, environment, instances, variableArray);
-    }
-        
     public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {        
         JSONObject profile = (JSONObject) doGet(MessageFormat.format("/services/profiles/{0}", profileId), false);
         JSONObject deployRequest = new JSONObject();
@@ -300,7 +286,7 @@ public class Client {
                 JSONObject variable = (JSONObject) json;
                 JSONObject jsonVar = findVariable(variable, jsonVars);
                 if (jsonVar == null) {
-                    jsonVar = variable;
+                    jsonVars.add(variable);
                 } else {
                     jsonVar.put("value", variable.getString("value"));
                 }

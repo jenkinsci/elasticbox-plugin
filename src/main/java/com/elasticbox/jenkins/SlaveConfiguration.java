@@ -23,6 +23,7 @@ import hudson.model.labels.LabelAtom;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -48,7 +49,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     private final String remoteFS;
     private final String description;
     private final Node.Mode mode;
-    private final int idleTerminationTime;
+    private final int retentionTime;
     private final int executors;
     private final int launchTimeout;
     
@@ -57,7 +58,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     @DataBoundConstructor
     public SlaveConfiguration(String workspace, String box, String boxVersion, String profile, int maxInstances, 
             String environment, String variables, String labels, String description, String remoteFS, Node.Mode mode, 
-            int idleTerminationTime, int executors, int launchTimeout) {
+            int retentionTime, int executors, int launchTimeout) {
         super();
         this.workspace = workspace;
         this.box = box;
@@ -70,7 +71,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
         this.description = description;
         this.remoteFS = remoteFS;
         this.mode = mode;
-        this.idleTerminationTime = idleTerminationTime;
+        this.retentionTime = retentionTime;
         this.executors = executors;
         this.launchTimeout = launchTimeout;
         
@@ -80,7 +81,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     public Descriptor<SlaveConfiguration> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
     }
-    
+
     public String getWorkspace() {
         return workspace;
     }
@@ -121,8 +122,8 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
         return executors;
     }
 
-    public int getIdleTerminationTime() {
-        return idleTerminationTime;
+    public int getRetentionTime() {
+        return retentionTime;
     }
 
     public int getLaunchTimeout() {

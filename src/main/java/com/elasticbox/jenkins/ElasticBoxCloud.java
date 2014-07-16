@@ -296,13 +296,22 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
             
             Object slaveConfigurations = formData.get("slaveConfigurations");
+            int slaveMaxInstances = 0;
             if (slaveConfigurations instanceof JSONObject) {
-                validateSlaveConfiguration((JSONObject) slaveConfigurations);
+                JSONObject config = (JSONObject) slaveConfigurations;
+                validateSlaveConfiguration(config);
+                slaveMaxInstances += config.getInt("maxInstances");
             } else if (slaveConfigurations instanceof JSONArray) {
-                for (Object slaveConfig : (JSONArray) slaveConfigurations) {
-                    validateSlaveConfiguration((JSONObject) slaveConfig);
+                for (Object json : (JSONArray) slaveConfigurations) {
+                    JSONObject config = (JSONObject) json;
+                    validateSlaveConfiguration(config);
+                    slaveMaxInstances += config.getInt("maxInstances");
                 }
             }
+            
+            if (slaveMaxInstances > formData.getInt("maxInstances")) {
+                formData.put("maxInstances", slaveMaxInstances);
+            }            
             
             return super.newInstance(req, formData);
         }
@@ -343,7 +352,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             
             if (slaveConfig.getInt("executors") < 1) {
                 slaveConfig.put("executors", 1);
-            }            
+            }               
         }
     }
     

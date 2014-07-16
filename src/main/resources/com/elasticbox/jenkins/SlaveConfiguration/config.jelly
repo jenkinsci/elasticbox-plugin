@@ -64,7 +64,7 @@ written permission is obtained from ElasticBox.
 
         <f:slave-mode name="mode" node="${instance}" />
 
-        <f:entry title="${%Idle Termination Time}" field="idleTerminationTime">
+        <f:entry title="${%Retention Time}" field="retentionTime">
           <f:textbox clazz="required number" default="30" />
         </f:entry>  
 
