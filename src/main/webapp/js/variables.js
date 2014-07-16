@@ -12,8 +12,10 @@
 
 var ElasticBoxVariables = (function () {
     var VARIABLE_TABLE_TEMPLATE = '<td><table style="width:100%; margin-left: 15px;"><tbody>' +
-                '<tr><td class="setting-leftspace"><img height="16" width="16" src="{2}"></td>' + 
-                '<td class="setting-leftspace" colspan="2"><div><b>{0} {1}</b></div></td></tr>' +
+                '<tr style="background-image: linear-gradient(to bottom, #ffffff, #eef0f2); ">' + 
+                '<td class="setting-leftspace" colspan="3"><span style="cursor: pointer; ">&nbsp;' + 
+                '<img src="{3}/expanded.png">&nbsp;' +
+                '<img height="16" width="16" src="{2}">&nbsp;<b>{0} {1}</b></span></td></tr>' +
                 '</tbody></table></td>',
         TEXT_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
                 '<td class="setting-main"><input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="text"></td>' +
@@ -26,6 +28,28 @@ var ElasticBoxVariables = (function () {
         Element = YAHOO.util.Element,
         Event = YAHOO.util.Event,
         Connect = YAHOO.util.Connect,
+        
+        imageFolder = null,
+        
+        getImageFolder = function () {
+            var scriptElement, srcPath;
+            
+            if (imageFolder) {
+                return imageFolder;
+            }
+            
+            scriptElement = Dom.getElementBy(function (element) {
+                var srcPath = Dom.getAttribute(element, "src");
+                
+                return srcPath && srcPath.indexOf('/plugin/elasticbox/js/') !== -1;
+            }, 'script', document);
+            if (scriptElement) {
+                srcPath = Dom.getAttribute(scriptElement, "src");
+                imageFolder = srcPath.substring(0, srcPath.indexOf('/plugin/elasticbox/js/')) + '/plugin/elasticbox/images';
+            }
+    
+            return imageFolder;
+        },
         
         createVariableRow = function (variable, savedVariable, variableHolder) {
             var saveVariable = function (name, value, scope, type, varTextBox) {
@@ -52,6 +76,10 @@ var ElasticBoxVariables = (function () {
                 variableTemplate;
 
             variableTemplate = variable.type === 'Binding' ? BINDING_VARIABLE_TEMPLATE : TEXT_VARIABLE_TEMPLATE;
+            if (_.isNull(variable.value) || _.isUndefined(variable.value)) {
+                variable.value = '';
+            }
+            
             row.innerHTML = ElasticBoxUtils.format(variableTemplate, variable.name, 'eb.' + variable.name, savedVariable && savedVariable.value || variable.value, variable.value, variable.scope);
             Dom.getElementsByClassName('eb-variable', variable.type === 'Binding' && 'select' || 'input', row, function (variableInput) {
                 var savedValue = Dom.getAttribute(variableInput, 'value'),
@@ -128,18 +156,36 @@ var ElasticBoxVariables = (function () {
         },
         
         addVariables = function (boxes, savedVariables, variableHolder) {
+            var toggleVarTable = function (varTableRow) {
+                    var varTableHeader = Dom.getElementBy(function() { return true; }, 'span', varTableRow),
+                        stateImageElement = Dom.getFirstChild(varTableHeader),
+                        expanded = Dom.getAttribute(stateImageElement, 'src').indexOf('/plugin/elasticbox/images/expanded.png') !== -1,
+                        headerRow = Dom.getAncestorByTagName(varTableHeader, 'tr');
+
+                    Dom.setAttribute(stateImageElement, 'src', expanded ? getImageFolder() + '/collapsed.png' : getImageFolder() + '/expanded.png');              
+                    for (var row = Dom.getNextSibling(headerRow); row; row = Dom.getNextSibling(row)) {
+                        Dom.setAttribute(row, 'style', expanded ? 'display: none' : '');
+                    }
+                },
+            
+                varTableRows = [];
+            
             _.each(boxes, function (box) {
                 var variables = _.reject(box.variables, function (variable) {
                         return _.contains(['Box', 'File'], variable.type);
                     }),
-                    varTableRow, varTableBody, scope;
+                    varTableRow, varTableHeader, varTableBody, scope;
 
                 if (variables.length > 0) {
                     varTableRow = document.createElement('tr');
                     scope = _.first(box.variables).scope;
                     scope = scope ? '(' + scope + ')' : ' ';
-                    varTableRow.innerHTML = ElasticBoxUtils.format(VARIABLE_TABLE_TEMPLATE, box.name, scope, box.icon);
+                    varTableRow.innerHTML = ElasticBoxUtils.format(VARIABLE_TABLE_TEMPLATE, box.name, scope, box.icon, getImageFolder());
                     variableHolder.varTBody.appendChild(varTableRow);
+                    varTableHeader = Dom.getElementBy(function() { return true; }, 'span', varTableRow);
+                    Event.addListener(varTableHeader, 'click', function () {
+                        toggleVarTable(varTableRow);
+                    });
                     varTableBody = Dom.getElementBy(function() { return true; }, 'tbody', varTableRow);
                     _.each(variables, function (variable) {
                         var savedVariable = savedVariables && _.findWhere(savedVariables, { name: variable.name,  scope: variable.scope }) || null,                
@@ -149,7 +195,12 @@ var ElasticBoxVariables = (function () {
                             varTableBody.appendChild(row);
                         }
                     });
+                    varTableRows.push(varTableRow);
                 }                
+            });
+            
+            _.each(_.rest(varTableRows), function (varTableRow) {
+                toggleVarTable(varTableRow);
             });
         },
         

@@ -233,8 +233,20 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         assertEquals(connectionVar.toString(), buildParameter.value, connectionVar.getString("value"));
         assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
     }
+
+    public void testBuildWithLinuxSlave() throws Exception {
+        if (System.getProperty(OPS_USER_NAME_PROPERTY) != null) {
+            testBuildWithSlave(JENKINS_SLAVE_BOX_NAME);
+        }
+    }
     
-    private void testBuildWithSlave(ElasticBoxCloud cloud) throws Exception {
+    public void testBuildWithWindowsSlave() throws Exception {
+        if (System.getProperty(OPS_PASSWORD_PROPERTY) != null) {
+            testBuildWithSlave("Windows Jenkins Slave");        
+        }
+    }
+        
+    private void testBuildWithProjectSpecificSlave(ElasticBoxCloud cloud) throws Exception {
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", JENKINS_SLAVE_BOX_NAME), true);
         assertTrue(MessageFormat.format("No profile is found for box {0} for {1}", JENKINS_SLAVE_BOX_NAME, ElasticBoxCloud.getInstance().name), profiles.size() > 0);
@@ -271,18 +283,6 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         String content = post.getResponseBodyAsString();
         assertEquals(HttpStatus.SC_OK, status);
         assertStringContains(content, content, MessageFormat.format("Connection to {0} was successful.", cloud.getEndpointUrl()));
-    }
-    
-    public void testBuildWithLinuxSlave() throws Exception {
-        if (System.getProperty(OPS_USER_NAME_PROPERTY) != null) {
-            testBuildWithSlave(JENKINS_SLAVE_BOX_NAME);
-        }
-    }
-    
-    public void buildWithWindowsSlave() throws Exception {
-        if (System.getProperty(OPS_PASSWORD_PROPERTY) != null) {
-            testBuildWithSlave("Windows Jenkins Slave");        
-        }
     }
     
     private void testBuildWithSlave(String slaveBoxName) throws Exception {  
