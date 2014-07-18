@@ -24,12 +24,21 @@ How To Use
 
   ![](https://wiki.jenkins-ci.org/download/attachments/72778254/elasticbox-cloud.png)
 
-  - Create a Jenkins Slave box in ElasticBox (you can sign up at http://elasticbox.com and use it right away if you don't have an ElasticBox account yet). The box must have required variables `JENKINS_URL` and `SLAVE_NAME`. ElasticBox CI plugin will set the value of `JENKINS_URL` variable to the URL configured for this Jenkins server, value of `SLAVE_NAME` to an auto-generated slave name. The box instance will use these variables in the start event scripts to start the slave agent as following:
+  - Create a Jenkins Slave box in ElasticBox (you can sign up at http://elasticbox.com and use it right away if you don't have an ElasticBox account yet). The box must have required variables `JENKINS_URL` and `JNLP_SLAVE_OPTIONS`. ElasticBox CI plugin will set the value of `JENKINS_URL` variable to the URL configured for this Jenkins server and fill the value of `JNLP_SLAVE_OPTIONS` automatically. Those variable are needed to download the slave agent from Jenkins server and start it from within the slave instance as shown in the following scripts. 
+  
+  Install event script
   ```sh
   #!/bin/bash
 
-  # Execute the agent and save the PID
-  nohup java -jar slave.jar -jnlpUrl $JENKINS_URL/computer/$SLAVE_NAME/slave-agent.jnlp > /dev/null 2>&1 &
+  # Download the slave agent from Jenkins server
+  wget $JENKINS_URL/jnlpJars/slave.jar -O slave.jar  
+  ```
+  Start event script
+  ```sh
+  #!/bin/bash
+
+  # Execute the slave agent and save the PID
+  nohup java -jar slave.jar $JNLP_SLAVE_OPTIONS > /dev/null 2>&1 &
   echo \$! > slave.pid
   ```
   You also need to add the following command in the stop event script of the Jenkins Slave box to kill the slave agent process when the instance is shutting down
@@ -39,7 +48,14 @@ How To Use
   # Stop the agent
   kill -9 $(cat slave.pid)
   ```
-  - Configure your Jenkins project or job to use ElasticBox-managed slaves as following:
+  
+  - Configure slave to be provisioned on demand by clicking on Add button next to Slave Configurations in the ElasticBox cloud form.
+  
+  ![](https://wiki.jenkins-ci.org/download/attachments/72778254/slave-config.png)  
+
+  Specify labels for the slave that any job can use to tie with slaves deployed with the configuration. The Environment is required and must be unique among slave configurations of the same ElasticBox cloud.
+
+  - You also can configure your Jenkins project or job to use ElasticBox-managed slaves as following:
   
   ![](https://wiki.jenkins-ci.org/download/attachments/72778254/instance-creation.png)
 
