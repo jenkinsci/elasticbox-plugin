@@ -20,6 +20,7 @@ import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Label;
 import hudson.model.Node;
+import hudson.model.Queue;
 import hudson.slaves.AbstractCloudImpl;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
@@ -32,7 +33,10 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -80,42 +84,96 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
     @Override
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+        JSONArray activeInstances;
+        try {
+            activeInstances = ElasticBoxSlaveHandler.getActiveInstances();
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, "Error fetching active instances", ex);
+            return Collections.EMPTY_LIST;
+        }
+        
+        if (activeInstances.size() >= maxInstances) {
+            LOGGER.log(Level.WARNING, MessageFormat.format("Cannot provision slave for label \"{0}\" because the maxinum number of ElasticBox instances has been reached.", label.getName()));
+            return Collections.EMPTY_LIST;
+        }
+
         // readjust the excess work load by considering the instances that are being deployed or already deployed but not yet connected with Jenkins
+        List<ElasticBoxSlave> pendingSlaves = new ArrayList<ElasticBoxSlave>();
+        List<ElasticBoxSlave> offlineSlaves = new ArrayList<ElasticBoxSlave>();
         for (Node node : Jenkins.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
-                if (ElasticBoxSlaveHandler.isSubmitted(slave)) {
-                    excessWorkload -= slave.getNumExecutors();
-                } else if (label.matches(slave) && slave.getComputer().isOffline() && slave.getInstanceId() != null) {
-                    try {
-                        JSONObject instance = slave.getInstance();
-                        String state = instance.getString("state");
-                        String operation = instance.getString("operation");
-                        if (Client.ON_OPERATIONS.contains(operation) &&
-                                (Client.InstanceState.PROCESSING.equals(state) || Client.InstanceState.DONE.equals(state))) {
-                            excessWorkload -= slave.getNumExecutors();
-                        }
-                    } catch (IOException ex) {
-                        LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                if (label.matches(slave)) {
+                    if (ElasticBoxSlaveHandler.isSubmitted(slave)) {
+                        pendingSlaves.add(slave);
+                    }
+                    
+                    if (slave.getInstanceUrl() != null && slave.getComputer().isOffline()) {
+                        offlineSlaves.add(slave);
                     }
                 }
             }
         }
         
-        List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<NodeProvisioner.PlannedNode>();
-        while (excessWorkload > 0) {
-            try {
-                if (ElasticBoxSlaveHandler.countInstances() >= maxInstances) {
-                    LOGGER.log(Level.WARNING, "Max number of ElasticBox instances has been reached");
-                    break;
+        if (!offlineSlaves.isEmpty() && !activeInstances.isEmpty()) {            
+            Map<String, JSONObject> idToInstanceMap = new HashMap<String, JSONObject>(activeInstances.size());
+            for (Object json : activeInstances) {
+                JSONObject instance = (JSONObject) json;
+                idToInstanceMap.put(instance.getString("id"), instance);
+            }
+            
+            for (ElasticBoxSlave slave : offlineSlaves) {
+                JSONObject instance = idToInstanceMap.get(slave.getInstanceId());
+                if (instance != null) {
+                    String state = instance.getString("state");
+                    String operation = instance.getString("operation");
+                    if (Client.ON_OPERATIONS.contains(operation) && (Client.InstanceState.PROCESSING.equals(state) || 
+                            Client.InstanceState.DONE.equals(state))) {
+                        pendingSlaves.add(slave);
+                    }
                 }
-                
+            }
+        }
+        
+        if (!pendingSlaves.isEmpty()) {
+            Map<ElasticBoxSlave, Integer> slaveToNumOfAvailableExecutorsMap = new HashMap<ElasticBoxSlave, Integer>(pendingSlaves.size());
+            for (ElasticBoxSlave slave : pendingSlaves) {
+                slaveToNumOfAvailableExecutorsMap.put(slave, slave.getNumExecutors());
+            }
+            
+            for (Queue.BuildableItem buildableItem : Queue.getInstance().getBuildableItems()) {
+                for (Iterator<ElasticBoxSlave> iter = slaveToNumOfAvailableExecutorsMap.keySet().iterator(); 
+                        iter.hasNext() && !slaveToNumOfAvailableExecutorsMap.isEmpty();) {
+                    ElasticBoxSlave slave = iter.next();
+                    if (slave.canTake(buildableItem) == null) {
+                        int numOfAvailabelExecutors = slaveToNumOfAvailableExecutorsMap.get(slave);
+                        numOfAvailabelExecutors--;
+                        if (numOfAvailabelExecutors == 0) {
+                            iter.remove();;
+                        }
+                        break;
+                    }
+                }
+            };
+            
+            excessWorkload -= slaveToNumOfAvailableExecutorsMap.size();
+        }
+         
+        List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<NodeProvisioner.PlannedNode>();        
+        while (excessWorkload > 0) {
+            try {                
                 ElasticBoxSlave newSlave;
                 if (isLabelForReusableSlave(label)) {
                     String profileId = label.getName().substring(ElasticBoxLabelFinder.REUSE_PREFIX.length());
                     newSlave = new ElasticBoxSlave(profileId, false, this);
                 } else {
-                    newSlave = new ElasticBoxSlave(getSlaveConfiguration(label), this);
+                    SlaveConfiguration slaveConfig = findSlaveConfiguration(label, activeInstances);
+                    if (slaveConfig == null) {
+                        LOGGER.log(Level.WARNING, MessageFormat.format("Cannot provision slave for label \"{0}\" because the maxinum number of ElasticBox instances of all matching slave configurations has been reached.", label.getName()));
+                        break;                        
+                    }
+                    
+                    newSlave = new ElasticBoxSlave(slaveConfig, this);
                 }
                 final ElasticBoxSlave slave = newSlave;
                 plannedNodes.add(new NodeProvisioner.PlannedNode(slave.getDisplayName(),
@@ -192,6 +250,27 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         for (SlaveConfiguration slaveConfig : getSlaveConfigurations()) {
             if (label.matches(slaveConfig.getLabelSet())) {
                 return slaveConfig;
+            }
+        }
+        
+        return null;
+    }
+    
+    private SlaveConfiguration findSlaveConfiguration(Label label, JSONArray activeInstances) {
+        Map<String, Integer> environmentToInstanceCountMap = new HashMap<String, Integer>();
+        for (Object json : activeInstances) {
+            JSONObject instance = (JSONObject) json;
+            String environment = instance.getString("environment");
+            Integer instanceCount = environmentToInstanceCountMap.get(environment);
+            environmentToInstanceCountMap.put(environment, instanceCount == null ? 1 : instanceCount++);
+        }
+        
+        for (SlaveConfiguration slaveConfig : getSlaveConfigurations()) {
+            if (label.matches(slaveConfig.getLabelSet())) {
+                Integer instanceCount = environmentToInstanceCountMap.get(slaveConfig.getEnvironment());
+                if (instanceCount == null || instanceCount < slaveConfig.getMaxInstances()) {
+                    return slaveConfig;
+                }
             }
         }
         

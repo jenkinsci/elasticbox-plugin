@@ -33,11 +33,13 @@ import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
 
@@ -52,27 +54,10 @@ public class ElasticBoxSlave extends Slave {
     private static final String PER_PROJECT_TYPE = "Per project configured";
     private static final String GLOBAL_TYPE = "Glocally configured";
     
-    private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        JSONObject profile = client.getProfile(profileId);
-        String boxId = profile.getJSONObject("box").getString("version");
-        JSONObject box = (JSONObject) client.doGet(MessageFormat.format("/services/boxes/{0}", boxId), false);
-        String service = box.getString("service");
-        if ("Linux Compute".equals(service)) {
-            return "/var/jenkins";
-        } else if ("Windows Compute".equals(service)) {
-            return "C:\\Jenkins";
-        } else {
-            throw new IOException(MessageFormat.format("Cannot create slave for profile '{0}' that belongs to box '{1}' with service '{2}'.",
-                    profile.getString("name"), box.getString("name"), service));
-        }
-    }
-    
     private String profileId;
     private final boolean singleUse;
     private String instanceUrl;
     private String instanceStatusMessage;
-    private long idleStartTime;
     private final int retentionTime;
 
     private transient boolean inUse;
@@ -81,10 +66,10 @@ public class ElasticBoxSlave extends Slave {
     private final transient String environment;
 
     public ElasticBoxSlave(String profileId, boolean singleUse, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
-        super(UUID.randomUUID().toString(), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", new JNLPLauncher(), RetentionStrategy.INSTANCE);
+        super(UUID.randomUUID().toString(), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", 
+                new JNLPLauncher(), new RetentionStrategyImpl(cloud.getRetentionTime()));
         this.profileId = profileId;
         this.singleUse = singleUse;
-        this.idleStartTime = System.currentTimeMillis();
         this.cloud = cloud;
         this.retentionTime = cloud.getRetentionTime();
         this.launchTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
@@ -98,7 +83,6 @@ public class ElasticBoxSlave extends Slave {
             RetentionStrategy.INSTANCE, Collections.EMPTY_LIST);
         this.singleUse = false;
         this.profileId = config.getProfile();
-        this.idleStartTime = System.currentTimeMillis();
         this.cloud = cloud;
         this.retentionTime = config.getRetentionTime();
         this.launchTimeout = config.getLaunchTimeout();
@@ -107,7 +91,7 @@ public class ElasticBoxSlave extends Slave {
 
     @Override
     public Computer createComputer() {
-        return new ElasticBoxComputer();
+        return new ElasticBoxComputer(this);
     }
 
     public void setInstanceUrl(String instanceUrl) {
@@ -133,9 +117,6 @@ public class ElasticBoxSlave extends Slave {
 
     public void setInUse(boolean inUse) {
         this.inUse = inUse;
-        if (!inUse) {
-            this.idleStartTime = System.currentTimeMillis();
-        }
     }
 
     public boolean isInUse() {
@@ -196,7 +177,7 @@ public class ElasticBoxSlave extends Slave {
         ElasticBoxCloud ebCloud = getCloud();
         boolean canTerminate = ebCloud != null && instanceUrl != null &&
             instanceUrl.startsWith(ebCloud.getEndpointUrl()) &&
-            (System.currentTimeMillis() - idleStartTime) > (retentionTime * 60000);
+            ((ElasticBoxComputer) getComputer()).getIdleTime() > TimeUnit.MINUTES.toMillis(retentionTime);
         
         if (canTerminate) {
             SlaveComputer computer = getComputer();
@@ -258,11 +239,27 @@ public class ElasticBoxSlave extends Slave {
         }        
     }
     
-    private final class ElasticBoxComputer extends SlaveComputer {
+    private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        JSONObject profile = client.getProfile(profileId);
+        String boxId = profile.getJSONObject("box").getString("version");
+        JSONObject box = (JSONObject) client.doGet(MessageFormat.format("/services/boxes/{0}", boxId), false);
+        String service = box.getString("service");
+        if ("Linux Compute".equals(service)) {
+            return "/var/jenkins";
+        } else if ("Windows Compute".equals(service)) {
+            return "C:\\Jenkins";
+        } else {
+            throw new IOException(MessageFormat.format("Cannot create slave for profile '{0}' that belongs to box '{1}' with service '{2}'.",
+                    profile.getString("name"), box.getString("name"), service));
+        }
+    }
+        
+    private static final class ElasticBoxComputer extends SlaveComputer {
         private boolean terminateOnOffline = false;
 
-        public ElasticBoxComputer() {
-            super(ElasticBoxSlave.this);
+        public ElasticBoxComputer(ElasticBoxSlave slave) {
+            super(slave);
         }
 
         @Override
@@ -272,10 +269,11 @@ public class ElasticBoxSlave extends Slave {
 
             if (cause instanceof OfflineCause.SimpleOfflineCause && 
                     ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString())) {
+                ElasticBoxSlave slave = getNode();
                 // remove any pending launches
-                for (LabelAtom label : ElasticBoxLabelFinder.INSTANCE.findLabels(ElasticBoxSlave.this)) {
+                for (LabelAtom label : ElasticBoxLabelFinder.INSTANCE.findLabels(slave)) {
                     for (NodeProvisioner.PlannedNode plannedNode : label.nodeProvisioner.getPendingLaunches()) {
-                        if (plannedNode.displayName.equals(ElasticBoxSlave.this.getNodeName())) {
+                        if (plannedNode.displayName.equals(slave.getNodeName())) {
                             plannedNode.future.cancel(false);
                         }
                     }
@@ -289,12 +287,22 @@ public class ElasticBoxSlave extends Slave {
 
             return future;
         }
+
+        @Override
+        public ElasticBoxSlave getNode() {
+            return (ElasticBoxSlave) super.getNode();
+        }
+        
+        public long getIdleTime() {
+            return isIdle() && isOnline() ? System.currentTimeMillis() - getIdleStartMilliseconds() : 0;
+        }
         
         private void terminate() {
             try {
-                checkInstanceReachable();
+                ElasticBoxSlave slave = getNode();
+                slave.checkInstanceReachable();
                 try {
-                    ElasticBoxSlave.this.terminate();
+                    slave.terminate();
                 } catch (ClientException ex) {
                     if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
                         LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
@@ -307,7 +315,33 @@ public class ElasticBoxSlave extends Slave {
         }
         
     }
+
+    private static final class RetentionStrategyImpl extends RetentionStrategy<ElasticBoxComputer> {
+        private final int retentionTime;
+
+        @DataBoundConstructor
+        public RetentionStrategyImpl(int retentionTime) {
+            this.retentionTime = retentionTime;
+        }
+        
+        @Override
+        public synchronized long check(ElasticBoxComputer c) {
+            if (retentionTime == 0) {
+                // retention time 0 means being retained forever
+                return 1;
+            }
+            
+            if (c.getIdleTime() > TimeUnit.MINUTES.toMillis(retentionTime)) {
+                LOGGER.info(MessageFormat.format("Retention time of {0} minutes is elapsed for computer {1}. The computer is terminating", retentionTime, c.getName()));
+                c.terminate();
+            }
+            
+            return 1;
+        }
+
+    }
     
+
     @Extension
     public static final class ComputerListenerImpl extends ComputerListener {
 

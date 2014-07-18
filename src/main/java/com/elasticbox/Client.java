@@ -19,6 +19,7 @@ import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -160,6 +161,29 @@ public class Client {
             start = end;
         }
 
+        return instances;
+    }
+    
+    public JSONArray getInstances(List<String> instanceIDs) throws IOException {
+        JSONArray instances = new JSONArray();
+        Set<String> fetchedInstanceIDs = new HashSet<String>();
+        JSONArray workspaces = getWorkspaces();
+        for (Object workspace : workspaces) {
+            JSONArray workspaceInstances = getInstances(((JSONObject) workspace).getString("id"), instanceIDs);            
+            for (Object instance : workspaceInstances) {
+                String instanceId = ((JSONObject) instance).getString("id");
+                instanceIDs.remove(instanceId);
+                if (!fetchedInstanceIDs.contains(instanceId)) {
+                    instances.add(instance);
+                    fetchedInstanceIDs.add(instanceId);
+                }
+            }
+            
+            if (instanceIDs.isEmpty()) {
+                break;
+            }
+        }
+        
         return instances;
     }
     
