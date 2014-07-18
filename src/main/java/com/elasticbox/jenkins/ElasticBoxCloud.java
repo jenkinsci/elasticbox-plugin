@@ -366,24 +366,25 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             
             invalidNumber = false;
             try {
-                invalidNumber = formData.getInt("retentionTime") <= 0;
+                invalidNumber = formData.getInt("retentionTime") < 0;
             } catch (JSONException ex) {
                 invalidNumber = true;
             } 
             if (invalidNumber) {
-                throw new FormException("Invalid Retention Time, it must be a positive whole number.", "retentionTime");
+                throw new FormException("Invalid Retention Time, it must be a non-negative whole number.", "retentionTime");
             }
             
             Object slaveConfigurations = formData.get("slaveConfigurations");
             int slaveMaxInstances = 0;
             if (slaveConfigurations instanceof JSONObject) {
                 JSONObject config = (JSONObject) slaveConfigurations;
-                validateSlaveConfiguration(config);
+                validateSlaveConfiguration(config, new JSONArray());
                 slaveMaxInstances += config.getInt("maxInstances");
             } else if (slaveConfigurations instanceof JSONArray) {
-                for (Object json : (JSONArray) slaveConfigurations) {
+                JSONArray slaveConfigs = (JSONArray) slaveConfigurations;
+                for (Object json : slaveConfigs) {
                     JSONObject config = (JSONObject) json;
-                    validateSlaveConfiguration(config);
+                    validateSlaveConfiguration(config, slaveConfigs);
                     slaveMaxInstances += config.getInt("maxInstances");
                 }
             }
@@ -407,31 +408,48 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
             return FormValidation.ok(MessageFormat.format("Connection to {0} was successful.", endpointUrl));
         }
-
-        private void validateSlaveConfiguration(JSONObject slaveConfig) throws FormException {
+        
+        private void validateSlaveConfiguration(JSONObject slaveConfig, JSONArray slaveConfigurations) throws FormException {
             if (StringUtils.isBlank(slaveConfig.getString("workspace"))) {
-                throw new FormException("No workspace is selected for the slave configuration", "workspace");
+                throw new FormException("No workspace is selected for slave configuration", "slaveConfigurations");
             }
 
             if (StringUtils.isBlank(slaveConfig.getString("box"))) {
-                throw new FormException("No Box is selected for the slave configuration", "box");
+                throw new FormException("No Box is selected for slave configuration", "slaveConfigurations");
             }
 
             if (StringUtils.isBlank(slaveConfig.getString("boxVersion"))) {
-                throw new FormException("No Version is selected for the selected box in slave configuration", "boxVersion");
+                throw new FormException("No Version is selected for the selected box in slave configuration", "slaveConfigurations");
             }
 
             if (StringUtils.isBlank(slaveConfig.getString("profile"))) {
-                throw new FormException("No Deployment Profile is selected for the slave configuration", "profile");
+                throw new FormException("No Deployment Profile is selected for slave configuration", "slaveConfigurations");
             }
 
-            if (StringUtils.isBlank(slaveConfig.getString("environment"))) {
-                throw new FormException("No Environment is specified for the slave configuration", "environment");
+            String environment = slaveConfig.getString("environment");
+            if (StringUtils.isBlank(environment)) {
+                throw new FormException("No Environment is specified for slave configuration", "slaveConfigurations");
+            }
+            
+            environment = environment.trim();
+            if (environment.length() > 30) {
+                throw new FormException("Environment cannot be longer than 30 characters.", "slaveConfigurations");
+            }
+            
+            slaveConfig.put("environment", environment);
+            for (Object json : slaveConfigurations) {
+                JSONObject config = (JSONObject) json;
+                if (config != slaveConfig) {
+                    String env = config.getString("environment");
+                    if (env != null && environment.equals(env.trim())) {
+                        throw new FormException("Duplicate Environment specified for slave configurations", "slaveConfigurations");
+                    }
+                }
             }
             
             if (slaveConfig.getInt("executors") < 1) {
                 slaveConfig.put("executors", 1);
-            }               
+            }     
         }
     }
     
