@@ -294,16 +294,24 @@ var ElasticBoxVariables = (function () {
                     if (variableHolderElement) {
                         varTextBox = _.first(Dom.getElementsByClassName('eb-variables', 'input', variableHolderElement));   
                         if (varTextBox) {
-                            type = Dom.getAttribute(variableHolderElement, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId && 'profile' || 'instance';                             
-                            variableHolderInfo = getVariableHolderInfo(type);
+                            select = _.first(Dom.getElementsByClassName('eb-boxVersion', 'select', variableHolderElement));
+                            if (select) {
+                                variableHolderInfo = getVariableHolderInfo('boxVersion');
+                            } else {
+                                type = Dom.getAttribute(variableHolderElement, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId && 'profile' || 'instance';                             
+                                variableHolderInfo = getVariableHolderInfo(type);    
+                                select = _.first(Dom.getElementsByClassName(variableHolderInfo.class, 'select', variableHolderElement))
+                            }
 
                             //TODO: make variable holder a widget instead of exposing the HTML elements
                             variableHolders.push({
                                 info: variableHolderInfo,
                                 varTBody: tbody,
                                 varTextBox: varTextBox,
-                                select: _.first(Dom.getElementsByClassName(variableHolderInfo.class, 'select', variableHolderElement)),
+                                select: select,
                                 workspaceSelect: _.first(Dom.getElementsByClassName('eb-workspace', 'select', variableHolderElement)),
+                                boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', variableHolderElement)),
+                                profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', variableHolderElement)),
                                 getPriorDeployBoxSteps: function () {
                                     return ElasticBoxUtils.getPriorDeployBoxSteps(variableHolderElement);
                                 }

@@ -22,6 +22,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -35,15 +36,17 @@ public class InstanceCreator extends BuildWrapper {
     private final String box;
     private final String profile;
     private final String variables;
+    private final String boxVersion;
 
     private transient ElasticBoxSlave ebSlave;
 
     
     @DataBoundConstructor
-    public InstanceCreator(String workspace, String box, String profile, String variables) {
+    public InstanceCreator(String workspace, String box, String boxVersion, String profile, String variables) {
         super();
         this.workspace = workspace;
         this.box = box;
+        this.boxVersion = boxVersion;
         this.profile = profile;
         this.variables = variables;        
     }
@@ -83,6 +86,10 @@ public class InstanceCreator extends BuildWrapper {
         return box;
     }
 
+    public String getBoxVersion() {
+        return boxVersion;
+    }
+    
     public String getProfile() {
         return profile;
     }
@@ -113,18 +120,25 @@ public class InstanceCreator extends BuildWrapper {
             return itemProvider.getBoxes(workspace);
         }
 
+        public ListBoxModel doFillBoxVersionItems(@QueryParameter String box) {
+            return itemProvider.getBoxVersions(box);
+        }
+
         public ListBoxModel doFillProfileItems(@QueryParameter String workspace, @QueryParameter String box) {                
             ListBoxModel instances = itemProvider.getProfiles(workspace, box);
             
             return instances;
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String profile) {
-            return itemProvider.getProfileBoxStack(profile);
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String box, 
+                @QueryParameter String boxVersion) {
+            return itemProvider.getBoxStack(StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, @QueryParameter String box) {
-            return itemProvider.getInstancesAsJSONArrayResponse(workspace, box);
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, 
+                @QueryParameter String box, @QueryParameter String boxVersion) {
+            return itemProvider.getInstancesAsJSONArrayResponse(workspace, 
+                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
         
     }

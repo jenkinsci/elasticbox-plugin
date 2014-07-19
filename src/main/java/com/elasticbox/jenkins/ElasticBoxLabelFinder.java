@@ -16,7 +16,6 @@ import hudson.Extension;
 import hudson.model.LabelFinder;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
-import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Collections;
 import jenkins.model.Jenkins;
@@ -32,9 +31,12 @@ public class ElasticBoxLabelFinder extends LabelFinder {
     public static final String REUSE_PREFIX = "elasticbox-reuse-";
     public static final ElasticBoxLabelFinder INSTANCE = new ElasticBoxLabelFinder();
 
-    public static final LabelAtom getLabel(String profileId, boolean singleUse) {
-        String pattern = singleUse ? SINGLE_USE_PREFIX + "{0}" : REUSE_PREFIX + "{0}";
-        String labelName = MessageFormat.format(pattern, profileId);
+    public static final LabelAtom getLabel(String profileId, String boxVersion, boolean singleUse) {
+        String labelName = singleUse ? SINGLE_USE_PREFIX : REUSE_PREFIX;
+        labelName += profileId;
+        if (boxVersion != null) {
+            labelName = labelName + '.' + boxVersion;
+        }
         return Jenkins.getInstance().getLabelAtom(labelName);
     }
 
@@ -44,10 +46,10 @@ public class ElasticBoxLabelFinder extends LabelFinder {
             ElasticBoxSlave slave = (ElasticBoxSlave) node;
             if (slave.isSingleUse()) {
                 if (slave.getComputer() != null && slave.getComputer().getBuilds().isEmpty()) {
-                    return Collections.singleton(getLabel(slave.getProfileId(), true));                    
+                    return Collections.singleton(getLabel(slave.getProfileId(), slave.getBoxVersion(), true));                    
                 }
             } else if (StringUtils.isBlank(slave.getLabelString())) {
-                return Collections.singleton(getLabel(slave.getProfileId(), false));
+                return Collections.singleton(getLabel(slave.getProfileId(), slave.getBoxVersion(), false));
             }
         }
         

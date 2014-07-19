@@ -54,6 +54,7 @@ public class ElasticBoxSlave extends Slave {
     private static final String PER_PROJECT_TYPE = "Per project configured";
     private static final String GLOBAL_TYPE = "Glocally configured";
     
+    private final String boxVersion;
     private String profileId;
     private final boolean singleUse;
     private String instanceUrl;
@@ -65,9 +66,10 @@ public class ElasticBoxSlave extends Slave {
     private final transient int launchTimeout;
     private final transient String environment;
 
-    public ElasticBoxSlave(String profileId, boolean singleUse, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
+    public ElasticBoxSlave(String profileId, String boxVersion, boolean singleUse, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
         super(UUID.randomUUID().toString(), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", 
                 new JNLPLauncher(), new RetentionStrategyImpl(cloud.getRetentionTime()));
+        this.boxVersion = boxVersion;
         this.profileId = profileId;
         this.singleUse = singleUse;
         this.cloud = cloud;
@@ -81,8 +83,9 @@ public class ElasticBoxSlave extends Slave {
             StringUtils.isBlank(config.getRemoteFS()) ? getRemoteFS(config.getProfile(), cloud) : config.getRemoteFS(), 
             config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), 
             RetentionStrategy.INSTANCE, Collections.EMPTY_LIST);
-        this.singleUse = false;
+        this.boxVersion = config.getBoxVersion();
         this.profileId = config.getProfile();
+        this.singleUse = false;
         this.cloud = cloud;
         this.retentionTime = config.getRetentionTime();
         this.launchTimeout = config.getLaunchTimeout();
@@ -167,6 +170,10 @@ public class ElasticBoxSlave extends Slave {
 
     public int getRetentionTime() {
         return retentionTime;
+    }
+
+    public String getBoxVersion() {
+        return boxVersion;
     }
     
     public boolean canTerminate() throws IOException {

@@ -6,6 +6,9 @@
     <f:entry title="${%Box}" field="box">
         <f:select clazz="required eb-box" />
     </f:entry>
+    <f:entry title="${%Version}" field="boxVersion">
+        <f:select clazz="required eb-boxVersion" />
+    </f:entry>
     <f:entry title="${%Deployment Profile}" field="profile">
         <f:select clazz="required eb-profile" />
     </f:entry>

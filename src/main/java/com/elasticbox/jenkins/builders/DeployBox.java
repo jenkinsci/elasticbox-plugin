@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -46,6 +47,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String id;
     private final String workspace;
     private final String box;
+    private final String boxVersion;
     private final String profile;
     private final String environment;
     private final int instances;
@@ -54,12 +56,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private transient String instanceId;
 
     @DataBoundConstructor
-    public DeployBox(String id, String workspace, String box, String profile, int instances, String environment, String variables) {
+    public DeployBox(String id, String workspace, String box, String boxVersion, String profile, int instances, String environment, String variables) {
         super();
         assert id != null && id.startsWith(DeployBox.class.getName() + '-');
         this.id = id;
         this.workspace = workspace;
         this.box = box;
+        this.boxVersion = boxVersion;
         this.profile = profile;
         this.instances = instances;
         this.environment = environment;
@@ -104,6 +107,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     public String getBox() {
         return box;
+    }
+
+    public String getBoxVersion() {
+        return boxVersion;
     }
 
     public String getProfile() {
@@ -170,16 +177,23 @@ public class DeployBox extends Builder implements IInstanceProvider {
             return itemProvider.getBoxes(workspace);
         }
 
+        public ListBoxModel doFillBoxVersionItems(@QueryParameter String box) {
+            return itemProvider.getBoxVersions(box);
+        }
+
         public ListBoxModel doFillProfileItems(@QueryParameter String workspace, @QueryParameter String box) {                
             return itemProvider.getProfiles(workspace, box);
         }
         
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String profile) {
-            return itemProvider.getProfileBoxStack(profile);
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String box, 
+                @QueryParameter String boxVersion) {
+            return itemProvider.getBoxStack(StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
-        
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, @QueryParameter String box) {
-            return itemProvider.getInstancesAsJSONArrayResponse(workspace, box);
+
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, 
+                @QueryParameter String box, @QueryParameter String boxVersion) {
+            return itemProvider.getInstancesAsJSONArrayResponse(workspace, 
+                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
     }
 }

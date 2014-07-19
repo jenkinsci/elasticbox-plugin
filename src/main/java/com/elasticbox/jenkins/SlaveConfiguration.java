@@ -184,12 +184,15 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
             return instances;
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String boxVersion, @QueryParameter String box) {
-            return StringUtils.isBlank(boxVersion) ? itemProvider.getBoxStack(box) : itemProvider.getBoxStack(boxVersion);
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String box, 
+                @QueryParameter String boxVersion) {
+            return itemProvider.getBoxStack(StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, @QueryParameter String boxVersion) {
-            return itemProvider.getInstancesAsJSONArrayResponse(workspace, boxVersion);
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, 
+                @QueryParameter String box, @QueryParameter String boxVersion) {
+            return itemProvider.getInstancesAsJSONArrayResponse(workspace, 
+                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
         
     }

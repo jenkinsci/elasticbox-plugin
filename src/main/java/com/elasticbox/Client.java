@@ -290,13 +290,21 @@ public class Client {
         }
     }
     
-    public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {        
+    public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {
+        return deploy(null, profileId, workspaceId, environment, instances, variables);
+    }
+    
+    public IProgressMonitor deploy(String boxVersion, String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {        
         JSONObject profile = (JSONObject) doGet(MessageFormat.format("/services/profiles/{0}", profileId), false);
         JSONObject deployRequest = new JSONObject();
         
         String profileSchema = profile.getString("schema");
         String schemaVersion = getSchemaVersion(profileSchema);
         if (schemaVersion.compareTo("2014-05-23") > 0) {
+            if (boxVersion != null) {
+                profile.getJSONObject("box").put("version", boxVersion);
+            }
+            
             JSONObject serviceProfile = profile.getJSONObject("profile");
             if (serviceProfile.containsKey("instances")) {
                 serviceProfile.put("instances", instances);

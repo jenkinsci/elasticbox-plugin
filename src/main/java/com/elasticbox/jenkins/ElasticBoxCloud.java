@@ -164,8 +164,14 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             try {                
                 ElasticBoxSlave newSlave;
                 if (isLabelForReusableSlave(label)) {
-                    String profileId = label.getName().substring(ElasticBoxLabelFinder.REUSE_PREFIX.length());
-                    newSlave = new ElasticBoxSlave(profileId, false, this);
+                    String[] ids = label.getName().substring(ElasticBoxLabelFinder.REUSE_PREFIX.length()).split("\\.");
+                    String profileId = ids[0];
+                    String boxVersion = null;
+                    if (ids.length > 1) {
+                        boxVersion = ids[1];
+                    }
+
+                    newSlave = new ElasticBoxSlave(profileId, boxVersion, false, this);
                 } else {
                     SlaveConfiguration slaveConfig = findSlaveConfiguration(label, activeInstances);
                     if (slaveConfig == null) {

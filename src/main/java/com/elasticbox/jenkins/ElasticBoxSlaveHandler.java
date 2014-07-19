@@ -439,8 +439,9 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         ElasticBoxCloud cloud = request.slave.getCloud();        
         Client ebClient = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONObject profile = ebClient.getProfile(request.slave.getProfileId());
-        IProgressMonitor monitor = ebClient.deploy(request.slave.getProfileId(), profile.getString("owner"), 
-                request.slave.getEnvironment(), 1, createJenkinsVariables(Jenkins.getInstance().getRootUrl(), request.slave));
+        JSONArray variables = createJenkinsVariables(Jenkins.getInstance().getRootUrl(), request.slave);
+        IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), 
+                profile.getString("owner"), request.slave.getEnvironment(), 1, variables);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance {0}", 
                 request.slave.getInstancePageUrl()));
