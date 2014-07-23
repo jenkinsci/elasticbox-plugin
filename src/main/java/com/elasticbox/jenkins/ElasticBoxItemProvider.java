@@ -110,10 +110,11 @@ public class ElasticBoxItemProvider {
             return boxVersions;
         }
         
+        boxVersions.add("Latest", box);
         try {
-            Client client = getClient();
-            if (client != null) {
-                for (Object json : client.getBoxVersions(box)) {
+            Client ebClient = getClient();
+            if (ebClient != null) {
+                for (Object json : ebClient.getBoxVersions(box)) {
                     JSONObject boxVersion = (JSONObject) json;
                     boxVersions.add(boxVersion.getJSONObject("version").getString("description"), boxVersion.getString("id"));
                 }
@@ -149,8 +150,8 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getBoxStack(String boxId) {
         if (StringUtils.isNotBlank(boxId)) {
             try {
-                Client client = getClient();
-                return new JSONArrayResponse(new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray());
+                Client ebClient = getClient();
+                return new JSONArrayResponse(new BoxStack(boxId, ebClient.getBoxStack(boxId), ebClient).toJSONArray());
                 
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for box {0}", boxId), ex);
@@ -163,10 +164,10 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getProfileBoxStack(String profile) {
         if (StringUtils.isNotBlank(profile)) {
             try {
-                Client client = getClient();
-                JSONObject profileJson = client.getProfile(profile);
+                Client ebClient = getClient();
+                JSONObject profileJson = ebClient.getProfile(profile);
                 String boxId = profileJson.getJSONObject("box").getString("version");
-                return new JSONArrayResponse(new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray());
+                return new JSONArrayResponse(new BoxStack(boxId, ebClient.getBoxStack(boxId), ebClient).toJSONArray());
                 
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for profile {0}", profile), ex);
@@ -179,10 +180,10 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getInstanceBoxStack(String instance) {
         if (!StringUtils.isBlank(instance)) {
             try {
-                Client client = getClient();
-                JSONObject instanceJson = client.getInstance(instance);
+                Client ebClient = getClient();
+                JSONObject instanceJson = ebClient.getInstance(instance);
                 JSONArray boxes = instanceJson.getJSONArray("boxes");
-                return new JSONArrayResponse(new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, client).toJSONArray());
+                return new JSONArrayResponse(new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, ebClient).toJSONArray());
                 
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for profile {0}", instance), ex);
@@ -245,14 +246,14 @@ public class ElasticBoxItemProvider {
     public JSONArrayResponse getInstancesAsJSONArrayResponse(String workspace, String box) {
         JSONArray instances = new JSONArray();
         try {
-            Client client = getClient();
-            JSONArray instanceArray = client.getInstances(workspace);
+            Client ebClient = getClient();
+            JSONArray instanceArray = ebClient.getInstances(workspace);
             if (!instanceArray.isEmpty() && !instanceArray.getJSONObject(0).getJSONArray("boxes").getJSONObject(0).containsKey("id")) {
                 List<String> instanceIDs = new ArrayList<String>();
                 for (int i = 0; i < instanceArray.size(); i++) {
                     instanceIDs.add(instanceArray.getJSONObject(i).getString("id"));
                 }
-                instanceArray = client.getInstances(workspace, instanceIDs);
+                instanceArray = ebClient.getInstances(workspace, instanceIDs);
             }
             InstanceFilter instanceFilter = new InstanceFilter(box);
             for (Object instance : instanceArray) {

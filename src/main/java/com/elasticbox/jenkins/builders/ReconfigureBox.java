@@ -23,6 +23,7 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.tasks.Builder;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
@@ -31,18 +32,26 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
  * @author Phong Nguyen Le
  */
-public class ReconfigureBox extends InstanceBuildStep {
+public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvider {
+    private final String id;
     private final String variables;
+    private final String buildStepVariables;
+
+    private transient String instanceId;
     
     @DataBoundConstructor
-    public ReconfigureBox(String workspace, String box, String instance, String variables) {
-        super(workspace, box, instance, null);
+    public ReconfigureBox(String id, String workspace, String box, String instance, String variables, String buildStep, String buildStepVariables) {
+        super(workspace, box, instance, buildStep);
+        assert id != null && id.startsWith(getClass().getName() + '-');
+        this.id = id;
         this.variables = variables;
+        this.buildStepVariables = buildStepVariables;
     }
 
     @Override
@@ -53,7 +62,7 @@ public class ReconfigureBox extends InstanceBuildStep {
         }
         
         VariableResolver resolver = new VariableResolver(build, listener);
-        JSONArray jsonVariables = JSONArray.fromObject(variables);
+        JSONArray jsonVariables = JSONArray.fromObject(getBuildStep() == null ? variables : buildStepVariables);
         for (Object variable : jsonVariables) {
             resolver.resolve((JSONObject) variable);
         }        
@@ -65,6 +74,7 @@ public class ReconfigureBox extends InstanceBuildStep {
         try {
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
             listener.getLogger().println(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
+            instanceId = Client.getResourceId(monitor.getResourceUrl());
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
             Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
@@ -73,8 +83,20 @@ public class ReconfigureBox extends InstanceBuildStep {
         }
     }    
 
+    public String getId() {
+        return id;
+    }
+
     public String getVariables() {
         return variables;
+    }
+
+    public String getBuildStepVariables() {
+        return buildStepVariables;
+    }
+    
+    public String getInstanceId() {
+        return instanceId;
     }
     
     @Extension
@@ -82,6 +104,17 @@ public class ReconfigureBox extends InstanceBuildStep {
         @Override
         public String getDisplayName() {
             return "ElasticBox - Reconfigure Box";
+        }
+
+        @Override
+        public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            if (isPreviousBuildStepSelected(formData)) {
+                formData.remove("variables");
+            } else {
+                formData.remove("buildStepVariables");
+            }
+
+            return super.newInstance(req, formData);
         }
 
         public ElasticBoxItemProvider.JSONArrayResponse doGetVariables(@QueryParameter String instance) {

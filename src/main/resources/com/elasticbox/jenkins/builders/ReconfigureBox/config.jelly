@@ -1,32 +1,63 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="${%Workspace}" field="workspace">
-        <f:select clazz="required eb-workspace" />
+    <f:entry field="id">
+        <f:textbox clazz="eb-id help"/>
     </f:entry>
-    <f:entry title="${%Box}" field="box">
-        <f:select clazz="required" />
-    </f:entry>
-    <f:entry title="${%Instance}" field="instance">
-        <f:select clazz="required eb-instance" />
-    </f:entry>
-    <f:entry field="variables">
-        <f:textbox clazz="eb-variables help"/>
-    </f:entry>
-    <f:entry>
-        <f:block>
-            <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
-                <tbody class="eb-variable-inputs">
-                    <tr>
-                        <td class="setting-leftspace">
-                            <div><b>Variables</b></div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+    <f:radioBlock name="instanceType" checked="true" inline="true" title="Existing instance" value="eb-existing-instance">
+        <f:entry title="${%Workspace}" field="workspace">
+            <f:select clazz="required eb-workspace" />
+        </f:entry>
+        <f:entry title="${%Box}" field="box">
+            <f:select clazz="required" />
+        </f:entry>
+        <f:entry title="${%Instance}" field="instance">
+            <f:select clazz="required eb-instance" />
+        </f:entry>
+        <f:entry field="variables">
+            <f:textbox clazz="eb-variables help"/>
+        </f:entry>
+        <f:entry>
+            <f:block>
+                <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
+                    <tbody class="eb-variable-inputs">
+                        <tr>
+                            <td class="setting-leftspace">
+                                <div><b>Variables</b></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
-        </f:block>
-    </f:entry>
+                <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+                <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
+                <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
+            </f:block>
+        </f:entry>
+    </f:radioBlock>
+    <f:radioBlock name="instanceType" checked="false" inline="true" title="Instance deployed by prior build step" value="eb-instance-from-prior-buildstep">
+        <f:entry title="${%Build Step}" field="buildStep">
+            <f:select clazz="eb-buildstep" />
+        </f:entry>
+        <f:entry field="buildStepVariables">
+            <f:textbox clazz="eb-variables help"/>
+        </f:entry>
+        <f:entry>
+            <f:block>
+                <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
+                    <tbody class="eb-variable-inputs">
+                        <tr>
+                            <td class="setting-leftspace">
+                                <div><b>Variables</b></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+                <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
+                <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
+                <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
+            </f:block>
+        </f:entry>
+    </f:radioBlock>
 </j:jelly>

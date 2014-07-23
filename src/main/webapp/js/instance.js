@@ -17,7 +17,8 @@
         refresh = function (populate) {
             var deployBoxIndex = 1,
                 buildSteps;
-        
+
+            ElasticBoxUtils.initializeBuildSteps();
             Dom.getElementsBy(function (element) {
                 return Dom.getAttribute(element, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId;
             }, 'div', document, function (builder) {
@@ -36,14 +37,6 @@
                     }, ElasticBoxUtils.DeployBoxDescriptorId);
 
                 }                            
-
-                Dom.getElementsByClassName('eb-id', 'input', builder, function (input) {
-                    Dom.setAttribute(Dom.getAncestorByTagName(input, 'tr'), 'style', 'display:none');
-                    if (!Dom.getAttribute(input, 'value')) {
-                        Dom.setAttribute(input, 'value', ElasticBoxUtils.DeployBoxDescriptorId + '-' + ElasticBoxUtils.uuid());
-                    }
-                });
-
             });
                      
             buildSteps = Dom.getElementsBy(function (element) {
@@ -81,9 +74,17 @@
                         if (!selectedOption) {
                             selectedOption = _.first(Dom.getChildren(buildStepSelect));
                         }
-                        buildStepSelect.selectedIndex = selectedOption ? Dom.getChildren(buildStepSelect).indexOf(selectedOption) : 0;                        
-                    },
                         
+                        buildStepSelect.value = selectedOption ? Dom.getAttribute(selectedOption, 'value') : null; 
+                        if (currentValue !== buildStepSelect.value) {
+                            fireEvent(buildStepSelect, 'change');
+                        } 
+                    },
+                    
+                    /**
+                     * Waits for the UI load and fill the options for build step (which is a single placeholder option 'loading')
+                     * before updating the drop-down combo with valid build steps
+                     */
                     populateOptions = function () {
                         var firstOption = Dom.getFirstChild(buildStepSelect),
                             value = firstOption ? Dom.getAttribute(firstOption, "value") : null;
@@ -107,11 +108,15 @@
                                     return Dom.getAttribute(element, 'value') === 'eb-existing-instance';
                                 }, 'input', buildStep),                        
                             existingInstanceStartRow = Dom.getAncestorByTagName(existingInstanceRadio, 'tr'),
-                            priorBuildStepStartRow = Dom.getAncestorByTagName(priorBuildStepRadio, 'tr');
+                            priorBuildStepStartRow = Dom.getAncestorByTagName(priorBuildStepRadio, 'tr'),
+                            priorBuildStepStyle = existing ? 'display: none;' : '';
                         
                         existingInstanceRadio.checked = existing;
                         priorBuildStepRadio.checked = !existing;                    
-                        Dom.setAttribute(Dom.getAncestorByTagName(buildStepSelect, 'tr'), 'style', existing ? 'display: none;' : '');                        
+                        Dom.setAttribute(Dom.getAncestorByTagName(buildStepSelect, 'tr'), 'style', priorBuildStepStyle);     
+                        Dom.setAttribute(Dom.getNextSiblingBy(priorBuildStepStartRow, function (row) {
+                            return Dom.getElementsByClassName('eb-variable-inputs', 'tbody', row).length > 0;
+                        }), 'style', priorBuildStepStyle);
 
                         for (var sibling = Dom.getNextSibling(existingInstanceStartRow); sibling && sibling !== priorBuildStepStartRow; sibling = Dom.getNextSibling(sibling)) {
                             Dom.setAttribute(sibling, 'style', existing ? '' : 'display: none;');

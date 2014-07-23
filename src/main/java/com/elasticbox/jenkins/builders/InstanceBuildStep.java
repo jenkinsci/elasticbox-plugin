@@ -81,17 +81,19 @@ public abstract class InstanceBuildStep extends Builder {
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
         }
+        
+        protected boolean isPreviousBuildStepSelected(JSONObject formData) {
+            return formData.containsKey("instanceType") && "eb-instance-from-prior-buildstep".equals(formData.getString("instanceType"));
+        }
 
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            if (formData.containsKey("instanceType")) {
-                if ("eb-existing-instance".equals(formData.getString("instanceType"))) {
-                    formData.remove("buildStep");
-                } else {
-                    formData.remove("workspace");
-                    formData.remove("box");
-                    formData.remove("instance");
-                }
+            if (isPreviousBuildStepSelected(formData)) {
+                formData.remove("workspace");
+                formData.remove("box");
+                formData.remove("instance");
+            } else {
+                formData.remove("buildStep");
             }
             
             return super.newInstance(req, formData);

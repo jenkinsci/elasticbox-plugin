@@ -14,6 +14,7 @@ var ElasticBoxUtils = (function() {
     var DescriptorIdPrefix = 'com.elasticbox.jenkins.builders.',
         DeployBoxDescriptorId = DescriptorIdPrefix + 'DeployBox',
         DeployBoxBuildStepName = 'ElasticBox - Deploy Box',
+        ReconfigureBoxDescriptorId = DescriptorIdPrefix + 'ReconfigureBox',
 
         Dom = YAHOO.util.Dom,
         
@@ -48,6 +49,7 @@ var ElasticBoxUtils = (function() {
         DescriptorIdPrefix: DescriptorIdPrefix,
         DeployBoxDescriptorId: DeployBoxDescriptorId,
         DeployBoxBuildStepName: DeployBoxBuildStepName,
+        ReconfigureBoxDescriptorId: ReconfigureBoxDescriptorId,
         
         getDeployBoxSteps: function (deployBoxStepElements) {
             if (!deployBoxStepElements) {
@@ -66,9 +68,28 @@ var ElasticBoxUtils = (function() {
             });
         },
         
-        getBuildStepId: function (buildStep) {
-            var idInput = _.first(Dom.getElementsByClassName('eb-id', 'input', buildStep));
+        getBuildStepId: function (buildStepElement) {
+            var idInput = _.first(Dom.getElementsByClassName('eb-id', 'input', buildStepElement));
             return idInput ? idInput.value : null;
+        },
+        
+        setBuildStepId: function (buildStepElement) {
+            var idInput = _.first(Dom.getElementsByClassName('eb-id', 'input', buildStepElement));
+            if(idInput && !idInput.value) {
+                Dom.setAttribute(idInput, 'value', this.format('{0}-{1}', Dom.getAttribute(buildStepElement, 'descriptorid'), this.uuid()));
+            }            
+        },
+        
+        initializeBuildSteps: function () {
+            Dom.getElementsBy(function (element) {
+                var descriptorId = Dom.getAttribute(element, "descriptorid");
+                return descriptorId && ElasticBoxUtils.startsWith(descriptorId, ElasticBoxUtils.DescriptorIdPrefix);
+            }, 'div', document, function (buildStepElement) {
+                Dom.getElementsByClassName('eb-id', 'input', buildStepElement, function (input) {
+                    Dom.setAttribute(Dom.getAncestorByTagName(input, 'tr'), 'style', 'display:none');
+                });                
+                ElasticBoxUtils.setBuildStepId(buildStepElement);
+            });            
         },
         
         getPriorDeployBoxSteps: function (buildStep) {

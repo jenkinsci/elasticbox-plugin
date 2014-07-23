@@ -58,7 +58,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     @DataBoundConstructor
     public DeployBox(String id, String workspace, String box, String boxVersion, String profile, int instances, String environment, String variables) {
         super();
-        assert id != null && id.startsWith(DeployBox.class.getName() + '-');
+        assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
         this.workspace = workspace;
         this.box = box;
