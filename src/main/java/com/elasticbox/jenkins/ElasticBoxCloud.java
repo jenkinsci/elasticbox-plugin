@@ -34,9 +34,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -62,6 +65,7 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class ElasticBoxCloud extends AbstractCloudImpl {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloud.class.getName());
+    private static final String NAME_PREFIX = "elasticbox-";
     
     private final String endpointUrl;
     private final int maxInstances;
@@ -71,9 +75,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     private final List<? extends SlaveConfiguration> slaveConfigurations;
     
     @DataBoundConstructor
-    public ElasticBoxCloud(String endpointUrl, int maxInstances, int retentionTime, String username, String password,
+    public ElasticBoxCloud(String name, String endpointUrl, int maxInstances, int retentionTime, String username, String password,
             List<? extends SlaveConfiguration> slaveConfigurations) {
-        super(username + "@" + endpointUrl, String.valueOf(maxInstances));
+        super(name, String.valueOf(maxInstances));
         this.endpointUrl = endpointUrl;
         this.maxInstances = maxInstances;
         this.retentionTime = retentionTime;
@@ -83,10 +87,15 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     }
 
     @Override
+    public String getDisplayName() {
+        return username + '@' + endpointUrl;
+    }
+    
+    @Override
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
         JSONArray activeInstances;
         try {
-            activeInstances = ElasticBoxSlaveHandler.getActiveInstances();
+            activeInstances = ElasticBoxSlaveHandler.getActiveInstances(this);
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "Error fetching active instances", ex);
             return Collections.EMPTY_LIST;
@@ -329,30 +338,6 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
         @Override
         public Cloud newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            JSONArray clouds;
-            try {
-                Object json = req.getSubmittedForm().get("cloud");
-                if (json instanceof JSONArray) {
-                    clouds = (JSONArray) json;
-                } else {
-                    clouds = new JSONArray();
-                    clouds.add(json);
-                }
-            } catch (ServletException ex) {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-                throw new RuntimeException(ex);
-            }
-            int ebCloudCount = 0;
-            for (Object cloud : clouds) {
-                JSONObject json = (JSONObject) cloud;
-                if (ElasticBoxCloud.class.getName().equals(json.getString("kind"))) {
-                    ebCloudCount++;
-                }
-                if (ebCloudCount > 1) {
-                    throw new FormException("You cannot have more than 2 ElasticBox clouds.", "");
-                }
-            }
-            
             String endpointUrl = formData.getString("endpointUrl");
             try {
                 new URL(endpointUrl);
@@ -380,6 +365,29 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 throw new FormException("Invalid Retention Time, it must be a non-negative whole number.", "retentionTime");
             }
             
+            if (StringUtils.isBlank(formData.getString("username"))) {
+                throw new FormException("Username is required", "username");
+            }
+            
+            if (StringUtils.isBlank(formData.getString("password"))) {
+                throw new FormException("Password is required", "password");
+            }            
+            
+            JSONArray clouds;
+            try {
+                Object json = req.getSubmittedForm().get("cloud");
+                if (json instanceof JSONArray) {
+                    clouds = (JSONArray) json;
+                } else {
+                    clouds = new JSONArray();
+                    clouds.add(json);
+                }
+            } catch (ServletException ex) {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                throw new RuntimeException(ex);
+            }
+            validateClouds(clouds);
+
             Object slaveConfigurations = formData.get("slaveConfigurations");
             int slaveMaxInstances = 0;
             if (slaveConfigurations instanceof JSONObject) {
@@ -397,7 +405,11 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             
             if (slaveMaxInstances > formData.getInt("maxInstances")) {
                 formData.put("maxInstances", slaveMaxInstances);
-            }            
+            }          
+            
+            if (StringUtils.isBlank(formData.getString("name"))) {
+                formData.put("name", NAME_PREFIX + UUID.randomUUID().toString());
+            }
             
             return super.newInstance(req, formData);
         }
@@ -413,6 +425,66 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 return FormValidation.error(ex.getMessage());
             }
             return FormValidation.ok(MessageFormat.format("Connection to {0} was successful.", endpointUrl));
+        }
+
+        private String getNewName(Set<String> takenNames) {
+            for (int i = 1; true; i++) {
+                String newName = NAME_PREFIX + i;
+                if (!takenNames.contains(newName)) {
+                    takenNames.add(newName);
+                    return newName;
+                }
+            }
+        }
+            
+        private void validateClouds(JSONArray clouds) throws FormException {
+            Set<String> takenNames = new HashSet<String>();
+            Set<String> takenLogins = new HashSet<String>();
+            List<JSONObject> ebClouds = new ArrayList<JSONObject>();
+            for (Object cloud : clouds) {
+                JSONObject json = (JSONObject) cloud;
+                if (ElasticBoxCloud.class.getName().equals(json.getString("kind"))) {
+                    String username = json.getString("username");
+                    String endpointUrl = json.getString("endpointUrl");
+                    String login = username + '@' + endpointUrl;
+                    if (takenLogins.contains(login)) {
+                        throw new FormException(MessageFormat.format("There are more than one ElasticBox clouds with the same End Point URL ({0}) and Username ({1}).", endpointUrl, username), null);
+                    } else {
+                        takenLogins.add(login);
+                    }
+                    
+                    ebClouds.add(json);
+                    String name = json.getString("name");
+                    if (!StringUtils.isBlank(name)) {
+                        takenNames.add(name);
+                    }                                        
+                }
+            }
+            Set<ElasticBoxCloud> cloudsWithSlaves = new HashSet<ElasticBoxCloud>();
+            for (Node node : Jenkins.getInstance().getNodes()) {
+                if (node instanceof ElasticBoxSlave) {
+                    try {
+                        cloudsWithSlaves.add(((ElasticBoxSlave) node).getCloud());
+                    } catch (IOException ex) {
+                        LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                    }
+                }
+            }
+            Set<ElasticBoxCloud> deletedClouds = new HashSet<ElasticBoxCloud>();
+            for (Cloud cloud : Jenkins.getInstance().clouds) {
+                if (cloud instanceof ElasticBoxCloud && !takenNames.contains(cloud.name)) {
+                    deletedClouds.add((ElasticBoxCloud) cloud);
+                }
+            }
+            cloudsWithSlaves.retainAll(deletedClouds);
+            if (!cloudsWithSlaves.isEmpty()) {
+                List<String> names = new ArrayList<String>();
+                for (ElasticBoxCloud cloud : cloudsWithSlaves) {
+                    names.add(cloud.getDisplayName());
+                }
+                throw new FormException(MessageFormat.format("You want to delete following ElasticBox clouds that still have one or many slaves: {0}. Please delete the slaves and try again.", 
+                        StringUtils.join(names, ", ")), null);
+            }
         }
         
         private void validateSlaveConfiguration(JSONObject slaveConfig, JSONArray slaveConfigurations) throws FormException {
@@ -461,17 +533,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     
     public static final ElasticBoxCloud getInstance() {
         for (Cloud cloud : Hudson.getInstance().clouds) {
-            if (cloud instanceof ElasticBoxCloud) {
-                return (ElasticBoxCloud) cloud;
-            }
-        }   
-        
-        return null;
-    }
-
-    public static final ElasticBoxCloud getInstance(String name) {
-        for (Cloud cloud : Hudson.getInstance().clouds) {
-            if (cloud instanceof ElasticBoxCloud && cloud.name.equals(name)) {
+            if (cloud instanceof ElasticBoxCloud && cloud.name.indexOf('@') != -1) {
                 return (ElasticBoxCloud) cloud;
             }
         }   

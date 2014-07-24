@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
@@ -45,6 +46,7 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class DeployBox extends Builder implements IInstanceProvider {
     private final String id;
+    private String cloud;
     private final String workspace;
     private final String box;
     private final String boxVersion;
@@ -56,10 +58,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private transient String instanceId;
 
     @DataBoundConstructor
-    public DeployBox(String id, String workspace, String box, String boxVersion, String profile, int instances, String environment, String variables) {
+    public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, int instances, String environment, String variables) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
+        this.cloud = cloud;
         this.workspace = workspace;
         this.box = box;
         this.boxVersion = boxVersion;
@@ -71,8 +74,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {       
-        ElasticBoxCloud cloud = ElasticBoxCloud.getInstance();
-        if (cloud == null) {
+        ElasticBoxCloud ebCloud = (ElasticBoxCloud) Jenkins.getInstance().getCloud(getCloud());
+        if (ebCloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
 
@@ -81,8 +84,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
         for (Object variable : jsonVariables) {
             resolver.resolve((JSONObject) variable);
         }        
-        IProgressMonitor monitor = cloud.createClient().deploy(profile, workspace, resolver.resolve(this.environment), instances, jsonVariables);
-        String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
+        IProgressMonitor monitor = ebCloud.createClient().deploy(profile, workspace, resolver.resolve(this.environment), instances, jsonVariables);
+        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Deploying box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the deployment of the box instance {0} to finish", instancePageUrl));
         try {
@@ -99,6 +102,21 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     public String getId() {
         return id;
+    }
+
+    protected Object readResolve() {
+        if (cloud == null) {
+            ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
+            if (ebCloud != null) {
+                cloud = ebCloud.name;
+            }
+        }
+        
+        return this;
+    }
+
+    public String getCloud() {
+        return cloud;
     }
 
     public String getWorkspace() {
@@ -132,10 +150,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
     public String getInstanceId() {
         return instanceId;
     }
+
+    public ElasticBoxCloud getElasticBoxCloud() {
+        return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloud);
+    }
     
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        private final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
@@ -169,30 +190,35 @@ public class DeployBox extends Builder implements IInstanceProvider {
             return super.newInstance(req, formData);
         }                
 
-        public ListBoxModel doFillWorkspaceItems() {
-            return itemProvider.getWorkspaces();
+        public ListBoxModel doFillCloudItems() {
+            return ElasticBoxItemProvider.getClouds();
+        }
+
+        public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
+            return ElasticBoxItemProvider.getWorkspaces(cloud);
         }
         
-        public ListBoxModel doFillBoxItems(@QueryParameter String workspace) {
-            return itemProvider.getBoxes(workspace);
+        public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
+            return ElasticBoxItemProvider.getBoxes(cloud, workspace);
         }
 
-        public ListBoxModel doFillBoxVersionItems(@QueryParameter String box) {
-            return itemProvider.getBoxVersions(box);
+        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String box) {
+            return ElasticBoxItemProvider.getBoxVersions(cloud, box);
         }
 
-        public ListBoxModel doFillProfileItems(@QueryParameter String workspace, @QueryParameter String box) {                
-            return itemProvider.getProfiles(workspace, box);
-        }
-        
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String box, 
-                @QueryParameter String boxVersion) {
-            return itemProvider.getBoxStack(StringUtils.isBlank(boxVersion) ? box : boxVersion);
+        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 
+                @QueryParameter String box) {                
+            return ElasticBoxItemProvider.getProfiles(cloud, workspace, box);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, 
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
                 @QueryParameter String box, @QueryParameter String boxVersion) {
-            return itemProvider.getInstancesAsJSONArrayResponse(workspace, 
+            return ElasticBoxItemProvider.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
+        }
+
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
+                @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
+            return ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(cloud, workspace, 
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
     }

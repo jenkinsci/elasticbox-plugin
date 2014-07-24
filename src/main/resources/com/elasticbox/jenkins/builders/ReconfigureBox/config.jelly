@@ -4,11 +4,14 @@
         <f:textbox clazz="eb-id help"/>
     </f:entry>
     <f:radioBlock name="instanceType" checked="true" inline="true" title="Existing instance" value="eb-existing-instance">
+        <f:entry title="${%Cloud}" field="cloud">
+            <f:select clazz="required eb-cloud" />
+        </f:entry>    
         <f:entry title="${%Workspace}" field="workspace">
             <f:select clazz="required eb-workspace" />
         </f:entry>
         <f:entry title="${%Box}" field="box">
-            <f:select clazz="required" />
+            <f:select clazz="required eb-box" />
         </f:entry>
         <f:entry title="${%Instance}" field="instance">
             <f:select clazz="required eb-instance" />

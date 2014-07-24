@@ -121,6 +121,12 @@ var ElasticBoxVariables = (function () {
             
             return variableHolder;
         },
+        
+        getCloudParameters = function (variableHolder) {
+            return variableHolder.cloudSelect ? 'cloud=' + variableHolder.cloudSelect.value :
+                ElasticBoxUtils.format('endpointUrl={0}&username={1}&password={2}', 
+                    variableHolder.endpointUrlInput.value, variableHolder.usernameInput.value, variableHolder.passwordInput.value)
+        },
 
         getBoxStackUrl = function (variableHolder) {
             var variableHolderId = variableHolder.select.value,
@@ -139,9 +145,11 @@ var ElasticBoxVariables = (function () {
             descriptorUrl = fillUrl.substring(0, fillUrl.lastIndexOf('/'));
             
             if (variableHolder.info.type === 'boxVersion') {
-                return ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}&box={3}', descriptorUrl, variableHolder.info.type, variableHolderId, variableHolder.boxSelect.value);
+                return ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}&box={3}&{4}', descriptorUrl, 
+                    variableHolder.info.type, variableHolderId, variableHolder.boxSelect.value, getCloudParameters(variableHolder));
             } else {
-                return ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}', descriptorUrl, variableHolder.info.type, variableHolderId);
+                return ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}&{3}', descriptorUrl, 
+                    variableHolder.info.type, variableHolderId, getCloudParameters(variableHolder));
             }
         },
                 
@@ -155,8 +163,11 @@ var ElasticBoxVariables = (function () {
             
             if (variableHolder.workspaceSelect && variableHolder.workspaceSelect.value) {
                 fillUrl = Dom.getAttribute(variableHolder.workspaceSelect, 'fillurl');
-                return ElasticBoxUtils.format('{0}/getInstances?workspace={1}&box={2}', fillUrl.substring(0, fillUrl.lastIndexOf('/')), 
-                    variableHolder.workspaceSelect.value, Dom.getAttribute(variableInput, 'data-original-value')); 
+                return ElasticBoxUtils.format('{0}/getInstances?workspace={1}&box={2}&{3}', 
+                    fillUrl.substring(0, fillUrl.lastIndexOf('/')), 
+                    variableHolder.workspaceSelect.value, 
+                    Dom.getAttribute(variableInput, 'data-original-value'),
+                    getCloudParameters(variableHolder)); 
             }
             
             return null;
@@ -203,7 +214,14 @@ var ElasticBoxVariables = (function () {
                         if (!currentValue) {
                             currentValue = variableInput.value;
                         }
-
+                        
+                        if (variable.value !== 'AnyBox') {
+                            deployBoxSteps = _.filter(deployBoxSteps, function (step) {
+                                var boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', step.element));
+                                return boxSelect && boxSelect.value === variable.value;
+                            });
+                        }
+                        
                         // remove existing options for deploy box steps
                         for (var child = Dom.getFirstChild(variableInput); 
                                 child !== null && ElasticBoxUtils.startsWith(child.getAttribute('value'), ElasticBoxUtils.DeployBoxDescriptorId); 
@@ -397,11 +415,13 @@ var ElasticBoxVariables = (function () {
                     varTBody: varTBody,
                     varTextBox: varTextBox,
                     select: select,
+                    cloudSelect: _.first(Dom.getElementsByClassName('eb-cloud', 'select', buildStepElement)),
                     workspaceSelect: _.first(Dom.getElementsByClassName('eb-workspace', 'select', buildStepElement)),
                     boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', buildStepElement)),
                     profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', buildStepElement)),
                     getPriorDeployBoxSteps: function () {
-                        return ElasticBoxUtils.getPriorDeployBoxSteps(buildStepElement);
+                        var cloudName = this.cloudSelect ? this.cloudSelect.value : undefined;
+                        return ElasticBoxUtils.getPriorDeployBoxSteps(buildStepElement, cloudName);
                     }
                 });
 
@@ -432,58 +452,68 @@ var ElasticBoxVariables = (function () {
                             return  descriptorId === ElasticBoxUtils.DeployBoxDescriptorId || 
                                     descriptorId === ElasticBoxUtils.ReconfigureBoxDescriptorId;
                         }),
-
-                        varTextBox, select, workspaceSelect, variableHolderInfo, profileSelect, boxSelect;
+                                
+                        variableHolder = { 
+                            varTBody: tbody,
+                            getPriorDeployBoxSteps: function () { return []; }
+                        },
+                                
+                        descriptorElement;
 
                     if (variableHolderElement) {
-                        _.each(getBuildStepVariableHolders(variableHolderElement, tbody), function (variableHolder) {
-                            if (!_.findWhere(_variableHolders, { select: variableHolder.select })) {
-                                _variableHolders.push(variableHolder);
+                        _.each(getBuildStepVariableHolders(variableHolderElement, tbody), function (varHolder) {
+                            if (!_.findWhere(_variableHolders, { select: varHolder.select })) {
+                                _variableHolders.push(varHolder);
                             }
                         });
                     } else {
                         // variable holder is an InstanceCreator build wrapper or Slave Configuration
                         variableHolderElement = Dom.getAncestorByTagName(tbody, 'tr');
                         variableHolderElement = Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
-                            varTextBox = _.first(Dom.getElementsByClassName('eb-variables', 'input', element));
-                            return !_.isUndefined(varTextBox);
+                            variableHolder.varTextBox = _.first(Dom.getElementsByClassName('eb-variables', 'input', element));
+                            return !_.isUndefined(variableHolder.varTextBox);
                         });
-                        if (varTextBox) {
+                        if (variableHolder.varTextBox) {
                             Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
-                                select = _.first(Dom.getElementsByClassName('eb-boxVersion', 'select', element));
-                                return !_.isUndefined(select);
+                                variableHolder.select = _.first(Dom.getElementsByClassName('eb-boxVersion', 'select', element));
+                                return !_.isUndefined(variableHolder.select);
                             });
-                            if (select) {
-                                variableHolderInfo = getVariableHolderInfo('boxVersion');
+                            if (variableHolder.select) {
+                                variableHolder.info = getVariableHolderInfo('boxVersion');
                             } else {
-                                variableHolderInfo = getVariableHolderInfo('profile');
+                                variableHolder.info = getVariableHolderInfo('profile');
                                 variableHolderElement = Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
-                                    select = _.first(Dom.getElementsByClassName(variableHolderInfo.class, 'select', element));
-                                    return !_.isUndefined(select);
+                                    variableHolder.select = _.first(Dom.getElementsByClassName(variableHolderInfo.class, 'select', element));
+                                    return !_.isUndefined(variableHolder.select);
                                 });
                             }
+                            descriptorElement = Dom.getAncestorBy(variableHolderElement, function (element) {
+                                return Dom.getAttribute(element, 'descriptorid');
+                            });
+                            if (descriptorElement && Dom.getAttribute(descriptorElement, 'descriptorid') === ElasticBoxUtils.ElasticBoxCloudDescriptorId) {
+                                variableHolder.endpointUrlInput = _.first(Dom.getElementsByClassName('eb-endpointUrl', 'input', descriptorElement));
+                                variableHolder.usernameInput = _.first(Dom.getElementsByClassName('eb-username', 'input', descriptorElement));
+                                variableHolder.passwordInput = _.first(Dom.getElementsByClassName('eb-password', 'input', descriptorElement));
+                            } else {
+                                Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                    variableHolder.cloudSelect = _.first(Dom.getElementsByClassName('eb-cloud', 'select', element));
+                                    return !_.isUndefined(variableHolder.cloudSelect);
+                                });                                
+                            }
                             Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
-                                workspaceSelect = _.first(Dom.getElementsByClassName('eb-workspace', 'select', element));
-                                return !_.isUndefined(workspaceSelect);
+                                variableHolder.workspaceSelect = _.first(Dom.getElementsByClassName('eb-workspace', 'select', element));
+                                return !_.isUndefined(variableHolder.workspaceSelect);
                             });
                             Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
-                                profileSelect = _.first(Dom.getElementsByClassName('eb-profile', 'select', element));
-                                return !_.isUndefined(profileSelect);
+                                variableHolder.profileSelect = _.first(Dom.getElementsByClassName('eb-profile', 'select', element));
+                                return !_.isUndefined(variableHolder.profileSelect);
                             });
                             Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
-                                boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', element));
-                                return !_.isUndefined(boxSelect);
-                            });                            
-                            _variableHolders.push({
-                                info: variableHolderInfo,
-                                varTBody: tbody,
-                                varTextBox: varTextBox,
-                                select: select,
-                                workspaceSelect: workspaceSelect,
-                                boxSelect: boxSelect,
-                                profileSelect: profileSelect,
-                                getPriorDeployBoxSteps: function () { return []; }
-                            });
+                                variableHolder.boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', element));
+                                return !_.isUndefined(variableHolder.boxSelect);
+                            }); 
+                           
+                            _variableHolders.push(variableHolder);
                         }
                     }                                                   
                 });

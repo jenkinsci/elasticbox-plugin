@@ -35,22 +35,23 @@ public class TerminateBox extends InstanceBuildStep {
     private final boolean delete;
     
     @DataBoundConstructor
-    public TerminateBox(String workspace, String box, String instance, String buildStep, boolean delete) {
-        super(workspace, box, instance, buildStep);
+    public TerminateBox(String cloud, String workspace, String box, String instance, String buildStep, boolean delete) {
+        super(cloud, workspace, box, instance, buildStep);
         this.delete = delete;
     }
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        ElasticBoxCloud cloud = ElasticBoxCloud.getInstance();
-        if (cloud == null) {
-            throw new IOException("No ElasticBox cloud is configured.");
+        IInstanceProvider instanceProvider = getInstanceProvider(build);
+        if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
+            throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
         
-        Client client = cloud.createClient();
-        String instanceId = getInstanceId(build);
+        ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();        
+        Client client = ebCloud.createClient();
+        String instanceId = instanceProvider.getInstanceId();
         IProgressMonitor monitor = client.terminate(instanceId);
-        String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
+        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Terminating box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));
         try {

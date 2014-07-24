@@ -22,6 +22,7 @@ import hudson.model.Messages;
 import hudson.model.Node;
 import hudson.model.Slave;
 import hudson.model.labels.LabelAtom;
+import hudson.slaves.Cloud;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProvisioner;
@@ -36,6 +37,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
@@ -60,6 +62,7 @@ public class ElasticBoxSlave extends Slave {
     private String instanceUrl;
     private String instanceStatusMessage;
     private final int retentionTime;
+    private final String cloudName;
 
     private transient boolean inUse;
     private transient ElasticBoxCloud cloud;
@@ -73,6 +76,7 @@ public class ElasticBoxSlave extends Slave {
         this.profileId = profileId;
         this.singleUse = singleUse;
         this.cloud = cloud;
+        this.cloudName = cloud.name;
         this.retentionTime = cloud.getRetentionTime();
         this.launchTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
         this.environment = getNodeName().substring(0, 30);
@@ -87,6 +91,7 @@ public class ElasticBoxSlave extends Slave {
         this.profileId = config.getProfile();
         this.singleUse = false;
         this.cloud = cloud;
+        this.cloudName = cloud.name;
         this.retentionTime = config.getRetentionTime();
         this.launchTimeout = config.getLaunchTimeout();
         this.environment = config.getEnvironment();
@@ -126,12 +131,19 @@ public class ElasticBoxSlave extends Slave {
         return inUse;
     }
 
-    public void setCloud(ElasticBoxCloud cloud) {
-        this.cloud = cloud;
-    }
-
-    public ElasticBoxCloud getCloud() {
-        return cloud != null ? cloud : ElasticBoxCloud.getInstance();
+    public ElasticBoxCloud getCloud() throws IOException {
+        if (cloud != null) {
+            return cloud;
+        }
+        
+        if (cloudName != null) {
+            Cloud _cloud = Jenkins.getInstance().getCloud(cloudName);
+            if (!(_cloud instanceof ElasticBoxCloud)) {
+                throw new IOException(MessageFormat.format("Cannot find any ElasticBox cloud with name ''{0}''", cloudName));
+            }
+        }
+        
+        return ElasticBoxCloud.getInstance();
     }        
 
     public void setInstanceStatusMessage(String message) {
@@ -228,7 +240,7 @@ public class ElasticBoxSlave extends Slave {
         return (JSONObject) createClient().doGet(MessageFormat.format("{0}/services/profiles/{1}", getCloud().getEndpointUrl(), getProfileId()), false);
     }  
     
-    private Client createClient() {
+    private Client createClient() throws IOException {
         ElasticBoxCloud ebCloud = getCloud();
         return new Client(ebCloud.getEndpointUrl(), ebCloud.getUsername(), ebCloud.getPassword());        
     }

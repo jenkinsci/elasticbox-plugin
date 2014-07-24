@@ -12,6 +12,8 @@
 
 package com.elasticbox.jenkins.builders;
 
+import com.elasticbox.jenkins.ElasticBoxCloud;
+
 /**
  * Interface for build step to implements to provide instance to subsequent build steps.
  * 
@@ -32,4 +34,6 @@ public interface IInstanceProvider {
      * @return the ID of an existing instance or <code>null</code>
      */
     String getInstanceId();
+    
+    ElasticBoxCloud getElasticBoxCloud();
 }

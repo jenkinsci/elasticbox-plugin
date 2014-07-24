@@ -43,6 +43,7 @@ import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.test.HudsonTestCase;
 import hudson.model.Result;
 import hudson.model.TextParameterValue;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.JenkinsLocationConfiguration;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.plexus.util.StringOutputStream;
 
 /**
  *
@@ -150,7 +152,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     }
     
     private ElasticBoxCloud createCloud(String endpointUrl, String username, String password) throws IOException {
-        ElasticBoxCloud cloud = new ElasticBoxCloud(endpointUrl, 2, 10, username, password, Collections.EMPTY_LIST);
+        ElasticBoxCloud cloud = new ElasticBoxCloud("elasticbox", endpointUrl, 2, 10, username, password, Collections.EMPTY_LIST);
         jenkins.clouds.add(cloud);
         return cloud;        
     }
@@ -186,8 +188,14 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         
         // make sure that a deployment request can be successfully submitted
         JSONObject profile = profiles.getJSONObject(0);
-        IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), "jenkins-plugin-unit-test", 1, 
-                ElasticBoxSlaveHandler.createJenkinsVariables(jenkins.getRootUrl(), JENKINS_SLAVE_BOX_NAME));
+        JSONArray variables = ElasticBoxSlaveHandler.createJenkinsVariables(jenkins.getRootUrl(), JENKINS_SLAVE_BOX_NAME);
+        JSONObject variable = new JSONObject();
+        variable.put("name", "JNLP_SLAVE_OPTIONS");
+        variable.put("type", "Text");
+        variable.put("value", MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp", JENKINS_SLAVE_BOX_NAME));
+        variables.add(variable);                        
+        IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), 
+                "jenkins-plugin-unit-test", 1, variables);
         try {
             monitor.waitForDone(60);
         } catch (IProgressMonitor.IncompleteException ex) {
@@ -214,7 +222,9 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
         FreeStyleBuild result = (FreeStyleBuild) future.get(60, TimeUnit.MINUTES);
-        assertEquals(Result.SUCCESS, result.getResult());
+        ByteArrayOutputStream log = new ByteArrayOutputStream();
+        result.getLogText().writeLogTo(0, log);
+        assertEquals(log.toString(), Result.SUCCESS, result.getResult());
         
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONObject instance = client.getInstance("i-9oewhy");
@@ -249,7 +259,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     private void testBuildWithProjectSpecificSlave(ElasticBoxCloud cloud) throws Exception {
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", JENKINS_SLAVE_BOX_NAME), true);
-        assertTrue(MessageFormat.format("No profile is found for box {0} for {1}", JENKINS_SLAVE_BOX_NAME, ElasticBoxCloud.getInstance().name), profiles.size() > 0);
+        assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", JENKINS_SLAVE_BOX_NAME, cloud.getDisplayName()), profiles.size() > 0);
         JSONObject profile = profiles.getJSONObject(0);        
         String projectXml = IOUtils.toString((InputStream) getClass().getResource("TestProjectWithSlave.xml").getContent());
         projectXml = projectXml.replace("{workspaceId}", profile.getString("owner")).
@@ -296,15 +306,15 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", 
                 URLEncoder.encode(slaveBoxName, "UTF-8")), true);
-        assertTrue(MessageFormat.format("No profile is found for box {0} for {1}", slaveBoxName, 
-                ElasticBoxCloud.getInstance().name), profiles.size() > 0);
+        assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, 
+                cloud.getDisplayName()), profiles.size() > 0);
         JSONObject profile = profiles.getJSONObject(0);        
         String workspace = profile.getString("owner");
         String box = profile.getJSONObject("box").getString("version");
         String label = UUID.randomUUID().toString();
         SlaveConfiguration slaveConfig = new SlaveConfiguration(workspace, box, box, profile.getString("id"), 1, 
                 slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, 1, 60);
-        ElasticBoxCloud newCloud = new ElasticBoxCloud(cloud.getEndpointUrl(), cloud.getMaxInstances(), 
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox", cloud.getEndpointUrl(), cloud.getMaxInstances(), 
                 cloud.getRetentionTime(), cloud.getUsername(), cloud.getPassword(), Collections.singletonList(slaveConfig));
         jenkins.clouds.remove(cloud);
         jenkins.clouds.add(newCloud);

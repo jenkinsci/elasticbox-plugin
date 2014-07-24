@@ -23,7 +23,6 @@ import hudson.model.labels.LabelAtom;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -148,51 +147,77 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     
     @Extension
     public static final class DescriptorImpl extends Descriptor<SlaveConfiguration> {
-        private ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
 
         @Override
         public String getDisplayName() {
             return null;
         }
+        
+        private Client createClient(String endpointUrl, String username, String password) {
+            if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
+                return null;
+            }
+            
+            Client client = ElasticBoxItemProvider.getClient(endpointUrl, username, password);
+            if (client == null) {
+                client = new Client(endpointUrl, username, password);
+                try {  
+                    client.connect();
+                } catch (IOException ex) {
+                    client = null;
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                }
+            }
+            
+            return client;
+        }
 
         public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password) {
-            try {
-                Client client = new Client(endpointUrl, username, password);
-                client.connect();
-                itemProvider = new ElasticBoxItemProvider(client);
-                return itemProvider.getWorkspaces();
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-            }
-            
-            return new ListBoxModel();
+            return ElasticBoxItemProvider.getWorkspaces(createClient(endpointUrl, username, password));
         }
         
-        public ListBoxModel doFillBoxItems(@QueryParameter String workspace) {
-            return itemProvider.getBoxes(workspace);
+        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String endpointUrl, 
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password, 
+                @QueryParameter String workspace) {
+            return ElasticBoxItemProvider.getBoxes(createClient(endpointUrl, username, password), workspace);
         }
 
-        public ListBoxModel doFillBoxVersionItems(@QueryParameter String box) {
-            return itemProvider.getBoxVersions(box);
+        public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String endpointUrl, 
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password, 
+                @QueryParameter String box) {
+            return ElasticBoxItemProvider.getBoxVersions(createClient(endpointUrl, username, password), box);
         }
 
-        public ListBoxModel doFillProfileItems(@QueryParameter String workspace, @QueryParameter String box) {                
-            ListBoxModel instances = itemProvider.getProfiles(workspace, box);
-            
-            return instances;
+        public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl, 
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password, 
+                @QueryParameter String workspace, @QueryParameter String box) {                
+            return ElasticBoxItemProvider.getProfiles(createClient(endpointUrl, username, password), workspace, box);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String box, 
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(
+                @RelativePath("..") @QueryParameter String endpointUrl, 
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password, 
+                @QueryParameter String box, 
                 @QueryParameter String boxVersion) {
-            return itemProvider.getBoxStack(StringUtils.isBlank(boxVersion) ? box : boxVersion);
+            return ElasticBoxItemProvider.getBoxStack(createClient(endpointUrl, username, password),
+                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, 
-                @QueryParameter String box, @QueryParameter String boxVersion) {
-            return itemProvider.getInstancesAsJSONArrayResponse(workspace, 
-                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(
+                @RelativePath("..") @QueryParameter String endpointUrl, 
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password, 
+                @QueryParameter String workspace, 
+                @QueryParameter String box, 
+                @QueryParameter String boxVersion) {
+            return ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(createClient(endpointUrl, username, password),
+                    workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
         
     }

@@ -50,6 +50,7 @@ var ElasticBoxUtils = (function() {
         DeployBoxDescriptorId: DeployBoxDescriptorId,
         DeployBoxBuildStepName: DeployBoxBuildStepName,
         ReconfigureBoxDescriptorId: ReconfigureBoxDescriptorId,
+        ElasticBoxCloudDescriptorId: 'com.elasticbox.jenkins.ElasticBoxCloud',
         
         getDeployBoxSteps: function (deployBoxStepElements) {
             if (!deployBoxStepElements) {
@@ -63,7 +64,8 @@ var ElasticBoxUtils = (function() {
                     id: Dom.getAttribute(_.first(Dom.getElementsByClassName('eb-id', 'input', step)), 'value'),
                     name: Dom.getElementBy(function (element) {
                         return startsWith(element.innerHTML, DeployBoxBuildStepName);
-                    }, null, step).innerHTML
+                    }, null, step).innerHTML,
+                    element: step
                 };
             });
         },
@@ -92,19 +94,24 @@ var ElasticBoxUtils = (function() {
             });            
         },
         
-        getPriorDeployBoxSteps: function (buildStep) {
-            var buildSteps = Dom.getElementsBy(function (element) {
+        getPriorDeployBoxSteps: function (buildStepElement, cloudName) {
+            var buildStepElements = Dom.getElementsBy(function (element) {
                     return startsWith(Dom.getAttribute(element, 'descriptorid'), DescriptorIdPrefix);
                 }, 'div', document),
                 deployBoxStepElements = [];
 
-            _.some(buildSteps, function (step) {
-                if (step === buildStep) {
+            _.some(buildStepElements, function (element) {
+                var cloudSelect;
+                
+                if (element === buildStepElement) {
                     return true;
                 }
 
-                if (Dom.getAttribute(step, 'descriptorid') === DeployBoxDescriptorId) {
-                    deployBoxStepElements.push(step);
+                if (Dom.getAttribute(element, 'descriptorid') === DeployBoxDescriptorId) {
+                    cloudSelect = _.first(Dom.getElementsByClassName('eb-cloud', 'select', element));
+                    if (_.isUndefined(cloudName) || (cloudSelect && cloudSelect.value === cloudName)) {
+                        deployBoxStepElements.push(element);
+                    }
                 }
 
                 return false;

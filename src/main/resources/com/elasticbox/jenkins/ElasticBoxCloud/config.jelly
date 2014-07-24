@@ -11,37 +11,35 @@ written permission is obtained from ElasticBox.
 -->
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <!--
-    This jelly script is used for per-project configuration.
+    <f:entry title="${%End Point URL}" field="endpointUrl">
+        <f:textbox clazz="required eb-endpointUrl" default="https://elasticbox.com"/>
+    </f:entry>
+    <f:entry title="${%Max. No. of Instances}" field="maxInstances">
+        <f:textbox clazz="required number" />
+    </f:entry>
+    <f:entry title="${%Retention Time}" field="retentionTime">
+        <f:textbox clazz="required number" default="30"/>
+    </f:entry>
+    <f:entry title="${%Username}" field="username">
+        <f:textbox clazz="required eb-username" />
+    </f:entry>
+    <f:entry title="${%Password}" field="password">
+        <f:password clazz="required eb-password" />
+    </f:entry>
+    <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="endpointUrl,username,password" />
+    <f:entry field="name">
+        <f:readOnlyTextbox clazz="help" />
+    </f:entry>
 
-    See global.jelly for a general discussion about jelly script.
-  -->
-  <f:entry title="${%End Point URL}" field="endpointUrl">
-    <f:textbox clazz="required" default="https://elasticbox.com"/>
-  </f:entry>
-  <f:entry title="${%Max. No. of Instances}" field="maxInstances">
-    <f:textbox clazz="required number" />
-  </f:entry>
-  <f:entry title="${%Retention Time}" field="retentionTime">
-    <f:textbox clazz="required number" default="30"/>
-  </f:entry>
-  <f:entry title="${%Username}" field="username">
-    <f:textbox clazz="required" />
-  </f:entry>
-  <f:entry title="${%Password}" field="password">
-    <f:password clazz="required" />
-  </f:entry>
-  <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="endpointUrl,username,password" />
+    <f:entry title="${%Slave Configurations}" description="${%Configuration of boxes to be launched as slaves}">
+      <f:repeatable field="slaveConfigurations">
+            <st:include page="config.jelly" class="${descriptor.clazz}" />
+      </f:repeatable>
 
-  <f:entry title="${%Slave Configurations}" description="${%Configuration of boxes to be launched as slaves}">
-    <f:repeatable field="slaveConfigurations">
-      <st:include page="config.jelly" class="${descriptor.clazz}" />
-    </f:repeatable>
-
-    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
-    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
-    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
-    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
-    <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/slave-config.js" />
-  </f:entry>
+      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
+      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
+      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
+      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/slave-config.js" />
+    </f:entry>
 </j:jelly>

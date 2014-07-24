@@ -34,18 +34,20 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ReinstallBox extends InstanceBuildStep {
 
     @DataBoundConstructor
-    public ReinstallBox(String workspace, String box, String instance, String buildStep) {
-        super(workspace, box, instance, buildStep);
+    public ReinstallBox(String cloud, String workspace, String box, String instance, String buildStep) {
+        super(cloud, workspace, box, instance, buildStep);
     }
     
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        ElasticBoxCloud cloud = ElasticBoxCloud.getInstance();
-        if (cloud == null) {
-            throw new IOException("No ElasticBox cloud is configured.");
+        IInstanceProvider instanceProvider = getInstanceProvider(build);
+        if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
+            throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
-        IProgressMonitor monitor = cloud.createClient().reinstall(getInstanceId(build));
-        String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), monitor.getResourceUrl());
+        
+        ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
+        IProgressMonitor monitor = ebCloud.createClient().reinstall(instanceProvider.getInstanceId());
+        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to finish reinstall", instancePageUrl));
         try {

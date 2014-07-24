@@ -13,32 +13,37 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import hudson.slaves.Cloud;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.ServletException;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONArray;
-import javax.servlet.ServletException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
-
 /**
  *
  * @author Phong Nguyen Le
  */
 public class ElasticBoxItemProvider {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxItemProvider.class.getName());
-    private final Client client;
+    private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<String, Client>();
+    
+    public static final String ANY_BOX = "AnyBox";
     
     public static class JSONArrayResponse implements HttpResponse {
         private final JSONArray jsonArray;
@@ -58,24 +63,32 @@ public class ElasticBoxItemProvider {
         
     }
     
-    public ElasticBoxItemProvider() {
-        this(null);
-    }
-    
-    public ElasticBoxItemProvider(Client client) {
-        this.client = client;
-    }
-    
-    public ListBoxModel getWorkspaces() {
-        ListBoxModel workspaces = new ListBoxModel();
-        try {
-            Client ebClient = getClient();
-            if (ebClient != null) {
-                for (Object workspace : ebClient.getWorkspaces()) {
-                    JSONObject json = (JSONObject) workspace;
-                    workspaces.add(json.getString("name"), json.getString("id"));
-                }                    
+    public static ListBoxModel getClouds() {
+        ListBoxModel clouds = new ListBoxModel();
+        for (Cloud cloud : Jenkins.getInstance().clouds) {
+            if (cloud instanceof ElasticBoxCloud) {
+                clouds.add(cloud.getDisplayName(), cloud.name);
             }
+        }
+        
+        return clouds;
+    }
+        
+    public static ListBoxModel getWorkspaces(String cloud) {
+        return getWorkspaces(getClient(cloud));
+    }
+    
+    public static ListBoxModel getWorkspaces(Client client) {
+        ListBoxModel workspaces = new ListBoxModel();
+        if (client == null) {
+            return workspaces;
+        }
+        
+        try {
+            for (Object workspace : client.getWorkspaces()) {
+                JSONObject json = (JSONObject) workspace;
+                workspaces.add(json.getString("name"), json.getString("id"));
+            }                    
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "Error fetching workspaces", ex);
         }
@@ -83,41 +96,39 @@ public class ElasticBoxItemProvider {
         return sort(workspaces);        
     }
 
-    public ListBoxModel getBoxes(String workspace) {
+    public static ListBoxModel getBoxes(Client client, String workspace) {
         ListBoxModel boxes = new ListBoxModel();
-        if (StringUtils.isBlank(workspace)) {
+        if (StringUtils.isBlank(workspace) || client == null) {
             return boxes;
         }
 
         try {
-            Client ebClient = getClient();
-            if (ebClient != null) {
-                for (Object box : ebClient.getBoxes(workspace)) {
-                    JSONObject json = (JSONObject) box;
-                    boxes.add(json.getString("name"), json.getString("id"));
-                }                    
-            }
+            for (Object box : client.getBoxes(workspace)) {
+                JSONObject json = (JSONObject) box;
+                boxes.add(json.getString("name"), json.getString("id"));
+            }                    
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "Error fetching boxes", ex);
         }                
 
         return sort(boxes);        
     }
+
+    public static ListBoxModel getBoxes(String cloud, String workspace) {
+        return getBoxes(getClient(cloud), workspace);
+    }
     
-    public ListBoxModel getBoxVersions(String box) {
+    public static ListBoxModel getBoxVersions(Client client, String box) {
         ListBoxModel boxVersions = new ListBoxModel();
-        if (StringUtils.isBlank(box)) {
+        if (StringUtils.isBlank(box) || client == null) {
             return boxVersions;
         }
         
         boxVersions.add("Latest", box);
         try {
-            Client ebClient = getClient();
-            if (ebClient != null) {
-                for (Object json : ebClient.getBoxVersions(box)) {
-                    JSONObject boxVersion = (JSONObject) json;
-                    boxVersions.add(boxVersion.getJSONObject("version").getString("description"), boxVersion.getString("id"));
-                }
+            for (Object json : client.getBoxVersions(box)) {
+                JSONObject boxVersion = (JSONObject) json;
+                boxVersions.add(boxVersion.getJSONObject("version").getString("description"), boxVersion.getString("id"));
             }
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "Error fetching box versions", ex);
@@ -125,21 +136,22 @@ public class ElasticBoxItemProvider {
         
         return boxVersions;
     }
+    
+    public static ListBoxModel getBoxVersions(String cloud, String box) {
+        return getBoxVersions(getClient(cloud), box);
+    }
 
-    public ListBoxModel getProfiles(String workspace, String box) {
+    public static ListBoxModel getProfiles(Client client, String workspace, String box) {
         ListBoxModel profiles = new ListBoxModel();
-        if (StringUtils.isBlank(workspace) || StringUtils.isBlank(box)) {
+        if (StringUtils.isBlank(workspace) || StringUtils.isBlank(box) || client == null) {
             return profiles;
         }
 
         try {
-            Client ebClient = getClient();
-            if (ebClient != null) {
-                for (Object profile : ebClient.getProfiles(workspace, box)) {
-                    JSONObject json = (JSONObject) profile;
-                    profiles.add(json.getString("name"), json.getString("id"));
-                }                    
-            }
+            for (Object profile : client.getProfiles(workspace, box)) {
+                JSONObject json = (JSONObject) profile;
+                profiles.add(json.getString("name"), json.getString("id"));
+            }                    
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "Error fetching profiles", ex);
         }
@@ -147,11 +159,14 @@ public class ElasticBoxItemProvider {
         return sort(profiles);        
     }
     
-    public JSONArrayResponse getBoxStack(String boxId) {
-        if (StringUtils.isNotBlank(boxId)) {
+    public static ListBoxModel getProfiles(String cloud, String workspace, String box) {
+        return getProfiles(getClient(cloud), workspace, box);
+    }
+    
+    public static JSONArrayResponse getBoxStack(Client client, String boxId) {
+        if (client != null && StringUtils.isNotBlank(boxId)) {
             try {
-                Client ebClient = getClient();
-                return new JSONArrayResponse(new BoxStack(boxId, ebClient.getBoxStack(boxId), ebClient).toJSONArray());
+                return new JSONArrayResponse(new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray());
                 
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for box {0}", boxId), ex);
@@ -161,29 +176,16 @@ public class ElasticBoxItemProvider {
         return new JSONArrayResponse(new JSONArray());        
     }
     
-    public JSONArrayResponse getProfileBoxStack(String profile) {
-        if (StringUtils.isNotBlank(profile)) {
-            try {
-                Client ebClient = getClient();
-                JSONObject profileJson = ebClient.getProfile(profile);
-                String boxId = profileJson.getJSONObject("box").getString("version");
-                return new JSONArrayResponse(new BoxStack(boxId, ebClient.getBoxStack(boxId), ebClient).toJSONArray());
-                
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for profile {0}", profile), ex);
-            }
-        }
-        
-        return new JSONArrayResponse(new JSONArray());
+    public static JSONArrayResponse getBoxStack(String cloud, String boxId) {
+        return getBoxStack(getClient(cloud), boxId);
     }
-
-    public JSONArrayResponse getInstanceBoxStack(String instance) {
-        if (!StringUtils.isBlank(instance)) {
+    
+    public static JSONArrayResponse getInstanceBoxStack(Client client, String instance) {
+        if (client != null && StringUtils.isNotBlank(instance)) {
             try {
-                Client ebClient = getClient();
-                JSONObject instanceJson = ebClient.getInstance(instance);
+                JSONObject instanceJson = client.getInstance(instance);
                 JSONArray boxes = instanceJson.getJSONArray("boxes");
-                return new JSONArrayResponse(new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, ebClient).toJSONArray());
+                return new JSONArrayResponse(new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, client).toJSONArray());
                 
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for profile {0}", instance), ex);
@@ -192,17 +194,23 @@ public class ElasticBoxItemProvider {
         
         return new JSONArrayResponse(new JSONArray());
     }
+    
+    public static JSONArrayResponse getInstanceBoxStack(String cloud, String instance) {
+        return getInstanceBoxStack(getClient(cloud), instance);
+    }
 
     /**
      * Returns only the variables of main box for now.
      * 
+     * @param cloud
      * @param instance
      * @return 
      */
-    public JSONArrayResponse getInstanceVariables(String instance) {
-        if (StringUtils.isBlank(instance)) {
+    public static JSONArrayResponse getInstanceVariables(String cloud, String instance) {
+        Client client = getClient(cloud);
+        if (client != null && StringUtils.isNotBlank(instance)) {
             try {
-                JSONObject json = getClient().getInstance(instance);
+                JSONObject json = client.getInstance(instance);
                 JSONArray variables = json.getJSONArray("boxes").getJSONObject(0).getJSONArray("variables");
                 for (Object modifiedVariable : json.getJSONArray("variables")) {
                     JSONObject modifiedVariableJson = (JSONObject) modifiedVariable;
@@ -235,7 +243,7 @@ public class ElasticBoxItemProvider {
                 return false;
             }
             
-            if (boxId == null || boxId.isEmpty() || boxId.equals("AnyBox")) {
+            if (boxId == null || boxId.isEmpty() || boxId.equals(ANY_BOX)) {
                 return true;
             }
             
@@ -243,17 +251,20 @@ public class ElasticBoxItemProvider {
         }
     }
     
-    public JSONArrayResponse getInstancesAsJSONArrayResponse(String workspace, String box) {
+    public static JSONArrayResponse getInstancesAsJSONArrayResponse(Client client, String workspace, String box) {
         JSONArray instances = new JSONArray();
+        if (client == null || StringUtils.isBlank(workspace) || StringUtils.isBlank(box)) {
+            return new JSONArrayResponse(instances);
+        }
+
         try {
-            Client ebClient = getClient();
-            JSONArray instanceArray = ebClient.getInstances(workspace);
+            JSONArray instanceArray = client.getInstances(workspace);
             if (!instanceArray.isEmpty() && !instanceArray.getJSONObject(0).getJSONArray("boxes").getJSONObject(0).containsKey("id")) {
                 List<String> instanceIDs = new ArrayList<String>();
                 for (int i = 0; i < instanceArray.size(); i++) {
                     instanceIDs.add(instanceArray.getJSONObject(i).getString("id"));
                 }
-                instanceArray = ebClient.getInstances(workspace, instanceIDs);
+                instanceArray = client.getInstances(workspace, instanceIDs);
             }
             InstanceFilter instanceFilter = new InstanceFilter(box);
             for (Object instance : instanceArray) {
@@ -277,19 +288,39 @@ public class ElasticBoxItemProvider {
         return new JSONArrayResponse(instances);
     }
     
-    public ListBoxModel getInstances(String workspace, String box) {
+    public static JSONArrayResponse getInstancesAsJSONArrayResponse(String cloud, String workspace, String box) {
+        return getInstancesAsJSONArrayResponse(getClient(cloud), workspace, box);
+    }
+    
+    public static ListBoxModel getInstances(Client client, String workspace, String box) {
         ListBoxModel instances = new ListBoxModel();
-        if (!workspace.isEmpty() && !box.isEmpty()) {
-            JSONArray instanceArray = getInstancesAsJSONArrayResponse(workspace, box).getJsonArray();
-            for (Object instance : instanceArray) {
-                JSONObject json = (JSONObject) instance;
-                instances.add(json.getString("name"), json.getString("id"));
-            }
+        JSONArray instanceArray = getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
+        for (Object instance : instanceArray) {
+            JSONObject json = (JSONObject) instance;
+            instances.add(json.getString("name"), json.getString("id"));
         }
         return instances;
     }
     
-    private ListBoxModel sort(ListBoxModel model) {
+    public static ListBoxModel getInstances(String cloud, String workspace, String box) {
+        return getInstances(getClient(cloud), workspace, box);
+    }
+    
+    public static Client getClient(String endpointUrl, String username, String password) {
+        for (Cloud cloud : Jenkins.getInstance().clouds) {
+            if (cloud instanceof ElasticBoxCloud) {
+                ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
+                if (ebCloud.getEndpointUrl().equals(endpointUrl) && ebCloud.getUsername().equals(username) &&
+                        ebCloud.getPassword().equals(password)) {
+                    return getClient(ebCloud.name);
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    private static ListBoxModel sort(ListBoxModel model) {
         Collections.sort(model, new Comparator<ListBoxModel.Option> () {
             public int compare(ListBoxModel.Option o1, ListBoxModel.Option o2) {
                 return o1.name.compareTo(o2.name);
@@ -298,17 +329,35 @@ public class ElasticBoxItemProvider {
         return model;
     }
 
-    private Client getClient() throws IOException {
+    private static Client getClient(String cloudName) {
+        Client client = clientCache.get(cloudName);
         if (client != null) {
             return client;
         }
         
-        ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
-        if (ebCloud != null) {
-            return ebCloud.createClient();
+        synchronized (clientCache) {
+            // remove clients of deleted clouds
+            for (Iterator<String> iter = clientCache.keySet().iterator(); iter.hasNext();) {
+                String name = iter.next();
+                if (Jenkins.getInstance().getCloud(name) == null) {
+                    iter.remove();
+                }
+            }
+            
+            Cloud cloud = Jenkins.getInstance().getCloud(cloudName);        
+            if (cloud instanceof ElasticBoxCloud) {
+                try {
+                    client = ((ElasticBoxCloud) cloud).createClient();
+                    clientCache.put(cloudName, client);
+                } catch (IOException ex) {
+                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error creating client for ElasticBox cloud {0}", cloudName), ex);
+                }
+            } else if (StringUtils.isNotBlank(cloudName)) {
+                LOGGER.log(Level.WARNING, MessageFormat.format("Invalid cloud name ''{0}''", cloudName));
+            }
         }
         
-        return null;
+        return client;
     }
     
     private static class BoxStack {

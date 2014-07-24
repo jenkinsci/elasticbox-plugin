@@ -67,7 +67,7 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                 LabelAtom label = ElasticBoxLabelFinder.getLabel(instanceCreator.getProfile(), instanceCreator.getBoxVersion(), singleUse);
                 if (singleUse) {
                     try {
-                        ElasticBoxSlave slave = new ElasticBoxSlave(instanceCreator.getProfile(), instanceCreator.getBoxVersion(), singleUse, ElasticBoxCloud.getInstance());
+                        ElasticBoxSlave slave = new ElasticBoxSlave(instanceCreator.getProfile(), instanceCreator.getBoxVersion(), singleUse, (ElasticBoxCloud) Jenkins.getInstance().getCloud(instanceCreator.getCloud()));
                         slave.setInUse(true);
                         Jenkins.getInstance().addNode(slave);
                         ElasticBoxSlaveHandler.submit(slave);

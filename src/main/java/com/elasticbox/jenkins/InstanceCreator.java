@@ -32,6 +32,7 @@ import org.kohsuke.stapler.QueryParameter;
  */
 public class InstanceCreator extends BuildWrapper {
 
+    private String cloud;
     private final String workspace;
     private final String box;
     private final String profile;
@@ -42,8 +43,9 @@ public class InstanceCreator extends BuildWrapper {
 
     
     @DataBoundConstructor
-    public InstanceCreator(String workspace, String box, String boxVersion, String profile, String variables) {
+    public InstanceCreator(String cloud, String workspace, String box, String boxVersion, String profile, String variables) {
         super();
+        this.cloud = cloud;
         this.workspace = workspace;
         this.box = box;
         this.boxVersion = boxVersion;
@@ -68,7 +70,6 @@ public class InstanceCreator extends BuildWrapper {
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
                 ebSlave.setInUse(false);
-                ebSlave.setCloud(null);
                 if (ebSlave.isSingleUse()) {
                     ebSlave.getComputer().setAcceptingTasks(false);
                 }                        
@@ -76,6 +77,22 @@ public class InstanceCreator extends BuildWrapper {
                 return true;
             }
         };
+    }
+    
+    protected Object readResolve() {
+        if (cloud == null) {
+            ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
+            if (ebCloud != null) {
+                cloud = ebCloud.name;
+                getDescriptor().save();
+            }
+        }
+        
+        return this;
+    }
+
+    public String getCloud() {
+        return cloud;
     }
 
     public String getWorkspace() {
@@ -100,7 +117,6 @@ public class InstanceCreator extends BuildWrapper {
 
     @Extension
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        private final ElasticBoxItemProvider itemProvider = new ElasticBoxItemProvider();
         
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
@@ -112,32 +128,35 @@ public class InstanceCreator extends BuildWrapper {
             return "ElasticBox Instance Creation";
         }
         
-        public ListBoxModel doFillWorkspaceItems() {
-            return itemProvider.getWorkspaces();
+        public ListBoxModel doFillCloudItems() {
+            return ElasticBoxItemProvider.getClouds();
+        }
+
+        public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
+            return ElasticBoxItemProvider.getWorkspaces(cloud);
         }
         
-        public ListBoxModel doFillBoxItems(@QueryParameter String workspace) {
-            return itemProvider.getBoxes(workspace);
+        public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
+            return ElasticBoxItemProvider.getBoxes(cloud, workspace);
         }
 
-        public ListBoxModel doFillBoxVersionItems(@QueryParameter String box) {
-            return itemProvider.getBoxVersions(box);
+        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String box) {
+            return ElasticBoxItemProvider.getBoxVersions(cloud, box);
         }
 
-        public ListBoxModel doFillProfileItems(@QueryParameter String workspace, @QueryParameter String box) {                
-            ListBoxModel instances = itemProvider.getProfiles(workspace, box);
-            
-            return instances;
+        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 
+                @QueryParameter String box) {                
+            return ElasticBoxItemProvider.getProfiles(cloud, workspace, box);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String box, 
-                @QueryParameter String boxVersion) {
-            return itemProvider.getBoxStack(StringUtils.isBlank(boxVersion) ? box : boxVersion);
-        }
-
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String workspace, 
+        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
                 @QueryParameter String box, @QueryParameter String boxVersion) {
-            return itemProvider.getInstancesAsJSONArrayResponse(workspace, 
+            return ElasticBoxItemProvider.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
+        }
+
+        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
+                @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
+            return ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(cloud, workspace, 
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
         
