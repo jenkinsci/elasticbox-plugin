@@ -61,7 +61,7 @@
                     buildStepSelect = _.first(Dom.getElementsByClassName('eb-buildstep', 'select', buildStep)),
                     selectedBuildStepId = buildStepSelect && Dom.getAttribute(buildStepSelect, "value") || null,
             
-                    updateOptions = function (currentValue) {
+                    updateOptions = function (currentValue, populate) {
                         var selectedOption;
 
                         buildStepSelect.innerHTML = getOptions();
@@ -76,7 +76,7 @@
                         }
                         
                         buildStepSelect.value = selectedOption ? Dom.getAttribute(selectedOption, 'value') : null; 
-                        if (currentValue !== buildStepSelect.value) {
+                        if (populate || currentValue !== buildStepSelect.value) {
                             fireEvent(buildStepSelect, 'change');
                         } 
                     },
@@ -94,9 +94,9 @@
                         }
                         
                         if (Dom.getAttribute(firstOption, "value") === 'loading') {
-                            updateOptions(selectedBuildStepId);
+                            updateOptions(selectedBuildStepId, true);
                         } else {
-                            setTimeout(populateOptions, 500);
+                            setTimeout(populateOptions, 100);
                         } 
                     },
                     

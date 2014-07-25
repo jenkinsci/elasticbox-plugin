@@ -100,7 +100,7 @@ public class Client {
         this.username = username;
         this.password = password;
     }
-
+    
     public String getEndpointUrl() {
         return endpointUrl;
     }
@@ -498,7 +498,7 @@ public class Client {
         return entity != null ? EntityUtils.toString(entity) : null;
     }
     
-    private HttpResponse execute(HttpRequestBase request) throws IOException {
+    protected HttpResponse execute(HttpRequestBase request) throws IOException {
         if (token == null) {
             connect();
         }

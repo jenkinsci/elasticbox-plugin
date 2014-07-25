@@ -14,6 +14,7 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -64,6 +65,10 @@ import org.kohsuke.stapler.StaplerRequest;
  * @author Phong Nguyen Le
  */
 public class ElasticBoxCloud extends AbstractCloudImpl {
+    public static final String ENDPOINT_URL = "endpointUrl";
+    public static final String USER_NAME = "username";
+    public static final String PASSWORD = "password";
+    
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloud.class.getName());
     private static final String NAME_PREFIX = "elasticbox-";
     
@@ -386,7 +391,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 throw new RuntimeException(ex);
             }
-            validateClouds(clouds);
+            List<ElasticBoxCloud> cloudsToRemoveCachedClient = validateClouds(clouds);
 
             Object slaveConfigurations = formData.get("slaveConfigurations");
             int slaveMaxInstances = 0;
@@ -411,7 +416,13 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 formData.put("name", NAME_PREFIX + UUID.randomUUID().toString());
             }
             
-            return super.newInstance(req, formData);
+            Cloud newCloud = super.newInstance(req, formData);
+            
+            for (ElasticBoxCloud cloud : cloudsToRemoveCachedClient) {
+                ClientCache.removeClient(cloud);
+            }
+            
+            return newCloud;
         }
 
         public FormValidation doTestConnection(
@@ -437,10 +448,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
         }
             
-        private void validateClouds(JSONArray clouds) throws FormException {
-            Set<String> takenNames = new HashSet<String>();
+        private List<ElasticBoxCloud> validateClouds(JSONArray clouds) throws FormException {
             Set<String> takenLogins = new HashSet<String>();
-            List<JSONObject> ebClouds = new ArrayList<JSONObject>();
+            Map<String, JSONObject> nameToExistingCloudMap = new HashMap<String, JSONObject>();
             for (Object cloud : clouds) {
                 JSONObject json = (JSONObject) cloud;
                 if (ElasticBoxCloud.class.getName().equals(json.getString("kind"))) {
@@ -453,10 +463,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         takenLogins.add(login);
                     }
                     
-                    ebClouds.add(json);
                     String name = json.getString("name");
                     if (!StringUtils.isBlank(name)) {
-                        takenNames.add(name);
+                        nameToExistingCloudMap.put(name, json);
                     }                                        
                 }
             }
@@ -471,9 +480,21 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 }
             }
             Set<ElasticBoxCloud> deletedClouds = new HashSet<ElasticBoxCloud>();
+            List<ElasticBoxCloud> cloudsToRemoveCachedClient = new ArrayList<ElasticBoxCloud>();
             for (Cloud cloud : Jenkins.getInstance().clouds) {
-                if (cloud instanceof ElasticBoxCloud && !takenNames.contains(cloud.name)) {
-                    deletedClouds.add((ElasticBoxCloud) cloud);
+                if (cloud instanceof ElasticBoxCloud) {
+                    ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
+                    JSONObject json = nameToExistingCloudMap.get(ebCloud.name);                    
+                    if (json == null) {
+                        deletedClouds.add(ebCloud);
+                        cloudsToRemoveCachedClient.add(ebCloud);
+                    } else {
+                        if (!ebCloud.getEndpointUrl().equalsIgnoreCase(json.getString(ENDPOINT_URL)) || 
+                                !ebCloud.getUsername().equals(json.getString(USER_NAME)) || 
+                                !ebCloud.getPassword().equals(json.getString(PASSWORD))) {
+                            cloudsToRemoveCachedClient.add(ebCloud);
+                        }
+                    }                    
                 }
             }
             cloudsWithSlaves.retainAll(deletedClouds);
@@ -485,6 +506,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 throw new FormException(MessageFormat.format("You want to delete following ElasticBox clouds that still have one or many slaves: {0}. Please delete the slaves and try again.", 
                         StringUtils.join(names, ", ")), null);
             }
+            
+            return cloudsToRemoveCachedClient;
         }
         
         private void validateSlaveConfiguration(JSONObject slaveConfig, JSONArray slaveConfigurations) throws FormException {

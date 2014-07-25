@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Describable;
@@ -158,7 +159,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
                 return null;
             }
             
-            Client client = ElasticBoxItemProvider.getClient(endpointUrl, username, password);
+            Client client = ClientCache.getClient(endpointUrl, username, password);
             if (client == null) {
                 client = new Client(endpointUrl, username, password);
                 try {  

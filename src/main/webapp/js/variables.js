@@ -271,7 +271,7 @@ var ElasticBoxVariables = (function () {
                             },
 
                             failure: function (response) {
-
+                                variableInput.innerHTML = ElasticBoxUtils.format('<option style="color: red;">Error {0}: {1}</option>', response.status, response.statusText);
                             }
                         });
                     }
@@ -340,8 +340,9 @@ var ElasticBoxVariables = (function () {
                     _.each(_.rest(Dom.getChildren(variableHolder.varTBody)), function (row) {
                         varTBodyElement.removeChild(row);
                     });
-                    Dom.setAttribute(variableHolder.varTextBox, 'value', '[]');
-                };
+                },
+                        
+                messageRow = document.createElement('tr');
 
             Dom.addClass(varHeader, 'eb-header');
 
@@ -349,20 +350,26 @@ var ElasticBoxVariables = (function () {
                 Dom.setAttribute(variableHolder.varTextBox, 'value', '[]');
             }
             
-            if (boxStackUrl) {
+            if (boxStackUrl) {                
+                clearVariables();
+                messageRow.innerHTML = '<td>Loading...</td>';                
+                variableHolder.varTBody.appendChild(messageRow);
                 Connect.asyncRequest('GET', boxStackUrl, {
                     success: function (response) {
-                        var savedVariables = populate ? Dom.getAttribute(variableHolder.varTextBox, 'value').evalJSON() : null;
-
-                        if (!populate) {
-                            clearVariables();
+                        var savedVariables = null;
+                        
+                        if (populate) {
+                            savedVariables = Dom.getAttribute(variableHolder.varTextBox, 'value').evalJSON();
+                        } else {
+                            Dom.setAttribute(variableHolder.varTextBox, 'value', '[]');
                         }
-
+                        
+                        clearVariables();
                         addVariables(response.responseText.evalJSON(), savedVariables, variableHolder);
                     },
 
                     failure: function (response) {
-                        //TODO: report error
+                        messageRow.innerHTML = ElasticBoxUtils.format('<td style="color: red;">Error {0}: {1}</td>', response.status, response.statusText);
                     }
                 });
             } else {

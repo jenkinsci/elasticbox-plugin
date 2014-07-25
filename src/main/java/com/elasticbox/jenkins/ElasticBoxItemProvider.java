@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.util.ClientCache;
 import hudson.slaves.Cloud;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
@@ -20,9 +21,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
@@ -41,7 +40,6 @@ import org.kohsuke.stapler.StaplerResponse;
  */
 public class ElasticBoxItemProvider {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxItemProvider.class.getName());
-    private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<String, Client>();
     
     public static final String ANY_BOX = "AnyBox";
     
@@ -75,7 +73,7 @@ public class ElasticBoxItemProvider {
     }
         
     public static ListBoxModel getWorkspaces(String cloud) {
-        return getWorkspaces(getClient(cloud));
+        return getWorkspaces(ClientCache.getClient(cloud));
     }
     
     public static ListBoxModel getWorkspaces(Client client) {
@@ -115,7 +113,7 @@ public class ElasticBoxItemProvider {
     }
 
     public static ListBoxModel getBoxes(String cloud, String workspace) {
-        return getBoxes(getClient(cloud), workspace);
+        return getBoxes(ClientCache.getClient(cloud), workspace);
     }
     
     public static ListBoxModel getBoxVersions(Client client, String box) {
@@ -138,7 +136,7 @@ public class ElasticBoxItemProvider {
     }
     
     public static ListBoxModel getBoxVersions(String cloud, String box) {
-        return getBoxVersions(getClient(cloud), box);
+        return getBoxVersions(ClientCache.getClient(cloud), box);
     }
 
     public static ListBoxModel getProfiles(Client client, String workspace, String box) {
@@ -160,7 +158,7 @@ public class ElasticBoxItemProvider {
     }
     
     public static ListBoxModel getProfiles(String cloud, String workspace, String box) {
-        return getProfiles(getClient(cloud), workspace, box);
+        return getProfiles(ClientCache.getClient(cloud), workspace, box);
     }
     
     public static JSONArrayResponse getBoxStack(Client client, String boxId) {
@@ -177,7 +175,7 @@ public class ElasticBoxItemProvider {
     }
     
     public static JSONArrayResponse getBoxStack(String cloud, String boxId) {
-        return getBoxStack(getClient(cloud), boxId);
+        return getBoxStack(ClientCache.getClient(cloud), boxId);
     }
     
     public static JSONArrayResponse getInstanceBoxStack(Client client, String instance) {
@@ -196,7 +194,7 @@ public class ElasticBoxItemProvider {
     }
     
     public static JSONArrayResponse getInstanceBoxStack(String cloud, String instance) {
-        return getInstanceBoxStack(getClient(cloud), instance);
+        return getInstanceBoxStack(ClientCache.getClient(cloud), instance);
     }
 
     /**
@@ -207,7 +205,7 @@ public class ElasticBoxItemProvider {
      * @return 
      */
     public static JSONArrayResponse getInstanceVariables(String cloud, String instance) {
-        Client client = getClient(cloud);
+        Client client = ClientCache.getClient(cloud);
         if (client != null && StringUtils.isNotBlank(instance)) {
             try {
                 JSONObject json = client.getInstance(instance);
@@ -289,7 +287,7 @@ public class ElasticBoxItemProvider {
     }
     
     public static JSONArrayResponse getInstancesAsJSONArrayResponse(String cloud, String workspace, String box) {
-        return getInstancesAsJSONArrayResponse(getClient(cloud), workspace, box);
+        return getInstancesAsJSONArrayResponse(ClientCache.getClient(cloud), workspace, box);
     }
     
     public static ListBoxModel getInstances(Client client, String workspace, String box) {
@@ -303,21 +301,7 @@ public class ElasticBoxItemProvider {
     }
     
     public static ListBoxModel getInstances(String cloud, String workspace, String box) {
-        return getInstances(getClient(cloud), workspace, box);
-    }
-    
-    public static Client getClient(String endpointUrl, String username, String password) {
-        for (Cloud cloud : Jenkins.getInstance().clouds) {
-            if (cloud instanceof ElasticBoxCloud) {
-                ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
-                if (ebCloud.getEndpointUrl().equals(endpointUrl) && ebCloud.getUsername().equals(username) &&
-                        ebCloud.getPassword().equals(password)) {
-                    return getClient(ebCloud.name);
-                }
-            }
-        }
-        
-        return null;
+        return getInstances(ClientCache.getClient(cloud), workspace, box);
     }
     
     private static ListBoxModel sort(ListBoxModel model) {
@@ -329,37 +313,6 @@ public class ElasticBoxItemProvider {
         return model;
     }
 
-    private static Client getClient(String cloudName) {
-        Client client = clientCache.get(cloudName);
-        if (client != null) {
-            return client;
-        }
-        
-        synchronized (clientCache) {
-            // remove clients of deleted clouds
-            for (Iterator<String> iter = clientCache.keySet().iterator(); iter.hasNext();) {
-                String name = iter.next();
-                if (Jenkins.getInstance().getCloud(name) == null) {
-                    iter.remove();
-                }
-            }
-            
-            Cloud cloud = Jenkins.getInstance().getCloud(cloudName);        
-            if (cloud instanceof ElasticBoxCloud) {
-                try {
-                    client = ((ElasticBoxCloud) cloud).createClient();
-                    clientCache.put(cloudName, client);
-                } catch (IOException ex) {
-                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error creating client for ElasticBox cloud {0}", cloudName), ex);
-                }
-            } else if (StringUtils.isNotBlank(cloudName)) {
-                LOGGER.log(Level.WARNING, MessageFormat.format("Invalid cloud name ''{0}''", cloudName));
-            }
-        }
-        
-        return client;
-    }
-    
     private static class BoxStack {
         private final List<JSONObject> overriddenVariables;
         private final JSONArray boxes;
