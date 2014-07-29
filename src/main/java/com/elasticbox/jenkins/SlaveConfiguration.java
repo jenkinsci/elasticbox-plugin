@@ -44,13 +44,13 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     private final String variables;
     private final String boxVersion;
     private final int maxInstances;
-    private final String environment;
+    private String environment;
     private final String labels;
     private final String remoteFS;
     private final String description;
     private final Node.Mode mode;
     private final int retentionTime;
-    private final int executors;
+    private int executors;
     private final int launchTimeout;
     
     private transient Set<LabelAtom> labelSet;
@@ -106,6 +106,10 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
         return environment;
     }
 
+    void setEnvironment(String environment) {
+        this.environment = environment;
+    }
+    
     public String getLabels() {
         return labels;
     }
@@ -122,6 +126,10 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
         return executors;
     }
 
+    void setExecutors(int executors) {
+        this.executors = executors;
+    }
+        
     public int getRetentionTime() {
         return retentionTime;
     }
@@ -145,7 +153,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
         
         return labelSet;
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends Descriptor<SlaveConfiguration> {
 

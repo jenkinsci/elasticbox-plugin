@@ -138,12 +138,14 @@ public class ElasticBoxSlave extends Slave {
         
         if (cloudName != null) {
             Cloud _cloud = Jenkins.getInstance().getCloud(cloudName);
-            if (!(_cloud instanceof ElasticBoxCloud)) {
+            if (_cloud instanceof ElasticBoxCloud) {
+                cloud = (ElasticBoxCloud) _cloud;
+            } else {
                 throw new IOException(MessageFormat.format("Cannot find any ElasticBox cloud with name ''{0}''", cloudName));
             }
         }
         
-        return ElasticBoxCloud.getInstance();
+        return cloud != null ? cloud : ElasticBoxCloud.getInstance();
     }        
 
     public void setInstanceStatusMessage(String message) {
