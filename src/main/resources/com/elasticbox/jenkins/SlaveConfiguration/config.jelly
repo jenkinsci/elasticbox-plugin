@@ -38,9 +38,9 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Labels}" field="labels">
       <f:textbox />
     </f:entry>
-    <f:entry field="variables">
-        <f:textbox clazz="eb-variables help"/>
-    </f:entry>
+    <f:invisibleEntry>
+        <f:textbox clazz="eb-variables help" field="variables"/>
+    </f:invisibleEntry>
     <f:entry>
         <f:block>
             <table style="width:100%">

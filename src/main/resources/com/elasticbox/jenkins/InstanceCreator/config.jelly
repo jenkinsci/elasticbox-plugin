@@ -15,9 +15,9 @@
     <f:entry title="${%Deployment Profile}" field="profile">
         <f:select clazz="required eb-profile" />
     </f:entry>
-    <f:entry field="variables">
-        <f:textbox clazz="eb-variables help"/>
-    </f:entry>
+    <f:invisibleEntry>
+        <f:textbox clazz="eb-variables help" field="variables" />
+    </f:invisibleEntry>
     <f:entry>
         <f:block>
             <table style="width:100%; margin-left: 15px;" class="setting-leftspace">

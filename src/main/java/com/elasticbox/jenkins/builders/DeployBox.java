@@ -54,11 +54,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String environment;
     private final int instances;
     private final String variables;
+    private final boolean skipIfExisting;
     
     private transient String instanceId;
 
     @DataBoundConstructor
-    public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, int instances, String environment, String variables) {
+    public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
+            int instances, String environment, String variables, boolean skipIfExisting) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -70,6 +72,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.instances = instances;
         this.environment = environment;
         this.variables = variables;
+        this.skipIfExisting = skipIfExisting;
     }
     
     @Override
@@ -79,12 +82,24 @@ public class DeployBox extends Builder implements IInstanceProvider {
             throw new IOException("No ElasticBox cloud is configured.");
         }
 
+        Client client = ebCloud.createClient();
+        if (isSkipIfExisting()) {
+            JSONArray instanceArray = ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
+            for (Object instance : instanceArray) {
+                JSONObject json = (JSONObject) instance;
+                if (json.getString("environment").equals(getEnvironment())) {
+                    instanceId = json.getString("id");
+                    return true;
+                }
+            }
+        }
+        
         VariableResolver resolver = new VariableResolver(build, listener);
         JSONArray jsonVariables = JSONArray.fromObject(variables);
         for (Object variable : jsonVariables) {
             resolver.resolve((JSONObject) variable);
         }        
-        IProgressMonitor monitor = ebCloud.createClient().deploy(profile, workspace, resolver.resolve(this.environment), instances, jsonVariables);
+        IProgressMonitor monitor = client.deploy(profile, workspace, resolver.resolve(this.environment), instances, jsonVariables);
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         listener.getLogger().println(MessageFormat.format("Deploying box instance {0}", instancePageUrl));
         listener.getLogger().println(MessageFormat.format("Waiting for the deployment of the box instance {0} to finish", instancePageUrl));
@@ -147,6 +162,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return variables;
     }
 
+    public boolean isSkipIfExisting() {
+        return skipIfExisting;
+    }
+    
     public String getInstanceId() {
         return instanceId;
     }

@@ -87,9 +87,6 @@ var ElasticBoxUtils = (function() {
                 var descriptorId = Dom.getAttribute(element, "descriptorid");
                 return descriptorId && ElasticBoxUtils.startsWith(descriptorId, ElasticBoxUtils.DescriptorIdPrefix);
             }, 'div', document, function (buildStepElement) {
-                Dom.getElementsByClassName('eb-id', 'input', buildStepElement, function (input) {
-                    Dom.setAttribute(Dom.getAncestorByTagName(input, 'tr'), 'style', 'display:none');
-                });                
                 ElasticBoxUtils.setBuildStepId(buildStepElement);
             });            
         },

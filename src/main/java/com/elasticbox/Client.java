@@ -75,12 +75,13 @@ public class Client {
         String SHUTDOWN_SERVICE = "shutdown_service";
         String TERMINATE = "terminate";
         String TERMINATE_SERVICE = "terminate_service";
+        String SNAPSHOT = "snapshot";
     }
     
     public static final Set FINISH_STATES = new HashSet(Arrays.asList(InstanceState.DONE, InstanceState.UNAVAILABLE));
     public static final Set SHUTDOWN_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.SHUTDOWN, InstanceOperation.SHUTDOWN_SERVICE));
     public static final Set TERMINATE_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.TERMINATE, InstanceOperation.TERMINATE_SERVICE));
-    public static final Set ON_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.DEPLOY, InstanceOperation.POWERON, InstanceOperation.REINSTALL, InstanceOperation.RECONFIGURE));
+    public static final Set ON_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.DEPLOY, InstanceOperation.POWERON, InstanceOperation.REINSTALL, InstanceOperation.RECONFIGURE, InstanceOperation.SNAPSHOT));
     public static final Set OFF_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.SHUTDOWN, InstanceOperation.SHUTDOWN_SERVICE, InstanceOperation.TERMINATE, InstanceOperation.TERMINATE_SERVICE));
     
     private static HttpClient httpClient = null;
@@ -378,18 +379,29 @@ public class Client {
         }
     }
     
-    public IProgressMonitor terminate(String instanceId) throws IOException {
-        String instanceUrl = getInstanceUrl(instanceId);
-        ProgressMonitor monitor = new ProgressMonitor(instanceUrl, TERMINATE_OPERATIONS);        
-        String state = monitor.getState();
-        String operation = state.equals(InstanceState.DONE) ? "terminate" : "force_terminate";
+    private IProgressMonitor doTerminate(String instanceUrl, String operation) throws IOException {
         HttpDelete delete = new HttpDelete(MessageFormat.format("{0}?operation={1}", instanceUrl, operation));
         try {
             execute(delete);
-            return monitor;
+            return new ProgressMonitor(instanceUrl, TERMINATE_OPERATIONS);
         } finally {
             delete.reset();
-        }
+        }        
+    }
+    
+    public IProgressMonitor terminate(String instanceId) throws IOException {
+        String instanceUrl = getInstanceUrl(instanceId);
+        JSONObject instance = (JSONObject) doGet(instanceUrl, false);
+        String state = instance.getString("state");  
+        String operation = instance.getString("operation");
+        String terminateOperation = (state.equals(InstanceState.DONE) && ON_OPERATIONS.contains(operation)) ||
+                (state.equals(InstanceState.UNAVAILABLE) && operation.equals(InstanceOperation.TERMINATE))? 
+                "terminate" : "force_terminate";
+        return doTerminate(instanceUrl, terminateOperation);
+    }
+    
+    public IProgressMonitor forceTerminate(String instanceId) throws IOException {
+        return doTerminate(getInstanceUrl(instanceId), "force_terminate");
     }
     
     public IProgressMonitor poweron(String instanceId) throws IOException {

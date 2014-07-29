@@ -215,35 +215,38 @@ public class ElasticBoxSlave extends Slave {
 
     public void terminate() throws IOException {
         checkInstanceReachable();
-        createClient().terminate(getInstanceId());
+        Client client = getCloud().createClient();
+        String instanceId = getInstanceId();
+        try {
+            client.terminate(instanceId);
+        } catch (ClientException ex) {
+            if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
+                client.forceTerminate(instanceId);
+            }
+        }
         ElasticBoxSlaveHandler.addToTerminatedQueue(this);
     }
     
     public void delete() throws IOException {
         checkInstanceReachable();
-        createClient().delete(getInstanceId());
+        getCloud().createClient().delete(getInstanceId());
     }
     
     public boolean isTerminated() throws IOException {
         checkInstanceReachable();
-        JSONObject instance = createClient().getInstance(getInstanceId());
+        JSONObject instance = getCloud().createClient().getInstance(getInstanceId());
         return Client.InstanceState.DONE.equals(instance.get("state")) && Client.TERMINATE_OPERATIONS.contains(instance.get("operation"));
     }
     
     public JSONObject getInstance() throws IOException {
         checkInstanceReachable();
-        return createClient().getInstance(getInstanceId());
+        return getCloud().createClient().getInstance(getInstanceId());
     }
     
     public JSONObject getProfile() throws IOException {
         checkInstanceReachable();
-        return (JSONObject) createClient().doGet(MessageFormat.format("{0}/services/profiles/{1}", getCloud().getEndpointUrl(), getProfileId()), false);
+        return getCloud().createClient().getProfile(getProfileId());
     }  
-    
-    private Client createClient() throws IOException {
-        ElasticBoxCloud ebCloud = getCloud();
-        return new Client(ebCloud.getEndpointUrl(), ebCloud.getUsername(), ebCloud.getPassword());        
-    }
     
     private void checkInstanceReachable() throws IOException {
         ElasticBoxCloud ebCloud = getCloud();
@@ -276,9 +279,11 @@ public class ElasticBoxSlave extends Slave {
         
     private static final class ElasticBoxComputer extends SlaveComputer {
         private boolean terminateOnOffline = false;
+        private final ElasticBoxSlave slave;
 
         public ElasticBoxComputer(ElasticBoxSlave slave) {
             super(slave);
+            this.slave = slave;
         }
 
         @Override
@@ -288,7 +293,6 @@ public class ElasticBoxSlave extends Slave {
 
             if (cause instanceof OfflineCause.SimpleOfflineCause && 
                     ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString())) {
-                ElasticBoxSlave slave = getNode();
                 // remove any pending launches
                 for (LabelAtom label : ElasticBoxLabelFinder.INSTANCE.findLabels(slave)) {
                     for (NodeProvisioner.PlannedNode plannedNode : label.nodeProvisioner.getPendingLaunches()) {
@@ -307,28 +311,53 @@ public class ElasticBoxSlave extends Slave {
             return future;
         }
 
-        @Override
-        public ElasticBoxSlave getNode() {
-            return (ElasticBoxSlave) super.getNode();
-        }
-        
         public long getIdleTime() {
             return isIdle() && isOnline() ? System.currentTimeMillis() - getIdleStartMilliseconds() : 0;
         }
         
         private void terminate() {
+            if (slave.getInstanceUrl() == null) {
+                return;
+            }
+            
             try {
-                ElasticBoxSlave slave = getNode();
                 slave.checkInstanceReachable();
+                boolean retry = false;
                 try {
                     slave.terminate();
                 } catch (ClientException ex) {
                     if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
-                        LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
+                        retry = true;
+                        LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slave.getDisplayName()), ex);
                     }
                 } catch (IOException ex) {
-                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", getDisplayName()), ex);
-                }                        
+                    retry = true;
+                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slave.getDisplayName()), ex);
+                }                
+                
+                if (retry) {
+                    Computer.threadPoolForRemoting.submit(new Runnable() {
+
+                        public void run() {
+                            for (int i = 0; i < 3; i++) {
+                                try {
+                                    slave.terminate();
+                                    return;
+                                } catch (IOException ex) {
+                                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slave.getDisplayName()), ex);
+                                }
+                            }
+                            String instanceLocation = slave.getInstanceUrl();
+                            try {
+                                instanceLocation = Client.getPageUrl(slave.getCloud().getEndpointUrl(), instanceLocation);
+                            } catch (IOException ex) {
+                                Logger.getLogger(ElasticBoxSlave.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                            }
+                            LOGGER.log(Level.SEVERE, MessageFormat.format("Cannot termininate ElasticBox slave {0} after several retries. Please terminate it manually at {1}", 
+                                    slave.getDisplayName(), instanceLocation));
+                        }
+                    });
+                }
             } catch (IOException ex) {                    
             }                
         }

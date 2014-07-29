@@ -1,8 +1,8 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry field="id">
-        <f:textbox clazz="eb-id help"/>
-    </f:entry>
+    <f:invisibleEntry>
+        <f:textbox clazz="eb-id help" field="id"/>
+    </f:invisibleEntry>
     <f:radioBlock name="instanceType" checked="true" inline="true" title="Existing instance" value="eb-existing-instance">
         <f:entry title="${%Cloud}" field="cloud">
             <f:select clazz="required eb-cloud" />
@@ -16,9 +16,9 @@
         <f:entry title="${%Instance}" field="instance">
             <f:select clazz="required eb-instance" />
         </f:entry>
-        <f:entry field="variables">
-            <f:textbox clazz="eb-variables help"/>
-        </f:entry>
+        <f:invisibleEntry>
+            <f:textbox clazz="eb-variables help" field="variables"/>
+        </f:invisibleEntry>
         <f:entry>
             <f:block>
                 <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
@@ -41,9 +41,9 @@
         <f:entry title="${%Build Step}" field="buildStep">
             <f:select clazz="eb-buildstep" />
         </f:entry>
-        <f:entry field="buildStepVariables">
-            <f:textbox clazz="eb-variables help"/>
-        </f:entry>
+        <f:invisibleEntry>
+            <f:textbox clazz="eb-variables help" field="buildStepVariables"/>
+        </f:invisibleEntry>
         <f:entry>
             <f:block>
                 <table style="width:100%; margin-left: 15px;" class="setting-leftspace">

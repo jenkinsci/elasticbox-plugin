@@ -27,9 +27,9 @@ written permission is obtained from ElasticBox.
         <f:password clazz="required eb-password" />
     </f:entry>
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection" with="endpointUrl,username,password" />
-    <f:entry field="name">
-        <f:readOnlyTextbox clazz="help" />
-    </f:entry>
+    <f:invisibleEntry>
+        <f:readOnlyTextbox clazz="help" field="name" />
+    </f:invisibleEntry>
 
     <f:entry title="${%Slave Configurations}" description="${%Configuration of boxes to be launched as slaves}">
       <f:repeatable field="slaveConfigurations">

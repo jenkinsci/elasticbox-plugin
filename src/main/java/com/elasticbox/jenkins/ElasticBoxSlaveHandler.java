@@ -20,6 +20,7 @@ import hudson.model.AsyncPeriodicWork;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
+import hudson.slaves.SlaveComputer;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -155,7 +156,8 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                     wait(new Callable<Boolean>() {
                         
                         public Boolean call() throws Exception {
-                            return slave.getComputer().isOffline();
+                            SlaveComputer computer = slave.getComputer();
+                            return computer != null && computer.isOffline();
                         }
                     }, remainingTime);
                 } catch (Exception ex) {
@@ -394,7 +396,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         iter.remove();
                     } else if (Client.InstanceState.UNAVAILABLE.equals(state) || (slave.canTerminate() && !isSlaveInQueue(slave, submittedQueue)) ) {
                         Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, 
-                                MessageFormat.format("Unavailable instance {0} will be terminated.", slave.getInstancePageUrl()));
+                                MessageFormat.format("The instance {0} is either unavailable or its idle time exceeded the retention time, it will be terminated.", slave.getInstancePageUrl()));
                         slavesToRemove.add(slave);
                         iter.remove();
                     }                      

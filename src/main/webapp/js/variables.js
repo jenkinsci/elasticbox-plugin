@@ -291,7 +291,7 @@ var ElasticBoxVariables = (function () {
 
                     Dom.setAttribute(stateImageElement, 'src', expanded ? getImageFolder() + '/collapsed.png' : getImageFolder() + '/expanded.png');              
                     for (var row = Dom.getNextSibling(headerRow); row; row = Dom.getNextSibling(row)) {
-                        Dom.setAttribute(row, 'style', expanded ? 'display: none' : '');
+                        Dom.setAttribute(row, 'style', expanded ? 'display: none;' : '');
                     }
                 },
             
@@ -533,7 +533,6 @@ var ElasticBoxVariables = (function () {
             ElasticBoxUtils.initializeBuildSteps();
             variableHolders = getVariableHolders();
             _.each(variableHolders, function (variableHolder) {
-                Dom.setAttribute(Dom.getAncestorByTagName(variableHolder.varTextBox, 'tr'), 'style', 'display: none;');
                 populateVariables(variableHolder);
                 addListeners(variableHolder);
             });
