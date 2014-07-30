@@ -291,8 +291,7 @@ public class ElasticBoxSlave extends Slave {
         @Override
         public Future<?> disconnect(OfflineCause cause) {
             boolean online = isOnline();
-            Future<?> future = super.disconnect(cause);
-
+            boolean terminateNow = false;
             if (cause instanceof OfflineCause.SimpleOfflineCause && 
                     ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString())) {
                 // remove any pending launches
@@ -306,10 +305,15 @@ public class ElasticBoxSlave extends Slave {
                 if (online) {
                     terminateOnOffline = true;
                 } else {
-                    terminate();
+                    terminateNow = true;
                 }
             }
 
+            Future<?> future = super.disconnect(cause);
+            if (terminateNow) {
+                terminate();
+            }
+            
             return future;
         }
 
