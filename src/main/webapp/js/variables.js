@@ -18,7 +18,7 @@ var ElasticBoxVariables = (function () {
                 '<img height="16" width="16" src="{2}">&nbsp;<b>{0} {1}</b></span></td></tr>' +
                 '</tbody></table></td>',
         TEXT_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
-                '<td class="setting-main"><input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="text"></td>' +
+                '<td class="setting-main"><input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="{5}"></td>' +
                 '<td>&nbsp;</td></tr>',
         BINDING_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
                 '<td class="setting-main"><select name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input select eb-variable"></select></td>' +
@@ -195,14 +195,20 @@ var ElasticBoxVariables = (function () {
                 },
                 
                 row = document.createElement('tr'),
-                variableTemplate;
+                savedValue;
 
-            variableTemplate = variable.type === 'Binding' ? BINDING_VARIABLE_TEMPLATE : TEXT_VARIABLE_TEMPLATE;
             if (_.isNull(variable.value) || _.isUndefined(variable.value)) {
                 variable.value = '';
             }
             
-            row.innerHTML = ElasticBoxUtils.format(variableTemplate, variable.name, '_' + variable.name, savedVariable && savedVariable.value || variable.value, variable.value, variable.scope);
+            savedValue = savedVariable && savedVariable.value || variable.value;
+            if (variable.type === 'Binding') {
+                row.innerHTML = ElasticBoxUtils.format(BINDING_VARIABLE_TEMPLATE, 
+                    variable.name, '_' + variable.name, savedValue, variable.value, variable.scope);
+            } else {
+                row.innerHTML = ElasticBoxUtils.format(TEXT_VARIABLE_TEMPLATE, variable.name, '_' + variable.name, 
+                    savedValue, variable.value, variable.scope, variable.type === 'Password' ? 'password' : 'text');
+            }
             Dom.getElementsByClassName('eb-variable', variable.type === 'Binding' && 'select' || 'input', row, function (variableInput) {
                 var savedValue = Dom.getAttribute(variableInput, 'value'),
 
