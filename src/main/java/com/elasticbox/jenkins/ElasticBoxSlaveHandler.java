@@ -15,6 +15,7 @@ package com.elasticbox.jenkins;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.util.SlaveInstance;
 import hudson.Extension;
 import hudson.model.AsyncPeriodicWork;
 import hudson.model.Node;
@@ -24,11 +25,14 @@ import hudson.slaves.SlaveComputer;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
@@ -171,35 +175,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private static final Queue<InstanceCreationRequest> incomingQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<InstanceCreationRequest> submittedQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<ElasticBoxSlave> terminatedSlaves = new ConcurrentLinkedQueue<ElasticBoxSlave>();
-    
-    public static JSONArray createJenkinsVariables(String jenkinsUrl, String slaveName) {
-        JSONArray variables = new JSONArray();
-
-        JSONObject variable = new JSONObject();
-        variable.put("name", "JENKINS_URL");
-        variable.put("type", "Text");
-        variable.put("value", jenkinsUrl);
-        variables.add(variable);
-
-        variable = new JSONObject();
-        variable.put("name", "SLAVE_NAME");
-        variable.put("type", "Text");
-        variable.put("value", slaveName);
-        variables.add(variable);
-
-        return variables;
-    }
-    
-    public static JSONArray createJenkinsVariables(String jenkinsUrl, ElasticBoxSlave slave) {
-        JSONArray variables = createJenkinsVariables(jenkinsUrl, slave.getNodeName());
-        String options = MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp -secret {2}", jenkinsUrl, slave.getNodeName(), slave.getComputer().getJnlpMac());
-        JSONObject variable = new JSONObject();
-        variable.put("name", "JNLP_SLAVE_OPTIONS");
-        variable.put("type", "Text");
-        variable.put("value", options);
-        variables.add(variable);        
-        return variables;
-    }
     
     public static final IProgressMonitor submit(ElasticBoxSlave slave) {
         InstanceCreationRequest request = new InstanceCreationRequest(slave);
@@ -346,19 +321,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         for (Node node : Jenkins.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave && !isSlaveInQueue((ElasticBoxSlave) node, incomingQueue)) {
                 final ElasticBoxSlave slave = (ElasticBoxSlave) node;
-                if (slave.isSingleUse() && slave.canTerminate() && slave.getComputer() != null) {
-                    boolean remove = true;
-                    for (hudson.model.Queue.BuildableItem item : Jenkins.getInstance().getQueue().getBuildableItems(slave.getComputer())) {
-                        if (!item.getFuture().isCancelled()) {
-                            remove = false;
-                            break;
-                        }
-                    }
-                    if (remove) {
-                        slavesToRemove.add(slave);
-                        break;
-                    }
-                }
                 if (slave.getInstanceUrl() != null) {
                     instanceIdToSlaveMap.put(slave.getInstanceId(), slave);
                 } else if (!slave.isInUse()) {
@@ -394,9 +356,9 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                     if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getString("operation"))) {
                         addToTerminatedQueue(slave);
                         iter.remove();
-                    } else if (Client.InstanceState.UNAVAILABLE.equals(state) || (slave.canTerminate() && !isSlaveInQueue(slave, submittedQueue)) ) {
+                    } else if (Client.InstanceState.UNAVAILABLE.equals(state)) {
                         Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, 
-                                MessageFormat.format("The instance {0} is either unavailable or its idle time exceeded the retention time, it will be terminated.", slave.getInstancePageUrl()));
+                                MessageFormat.format("The instance {0} is unavailable, it will be terminated.", slave.getInstancePageUrl()));
                         slavesToRemove.add(slave);
                         iter.remove();
                     }                      
@@ -463,8 +425,19 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private void deployInstance(InstanceCreationRequest request) throws IOException {
         ElasticBoxCloud cloud = request.slave.getCloud();        
         Client ebClient = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        JSONObject profile = ebClient.getProfile(request.slave.getProfileId());
-        JSONArray variables = createJenkinsVariables(Jenkins.getInstance().getRootUrl(), request.slave);
+        JSONObject profile = ebClient.getProfile(request.slave.getProfileId());     
+        JSONArray variables = SlaveInstance.createJenkinsVariables(ebClient, Jenkins.getInstance().getRootUrl(), request.slave);
+        String scope = variables.getJSONObject(0).getString("scope");
+        SlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
+        if (slaveConfig != null) {
+            JSONArray configuredVariables = JSONArray.fromObject(slaveConfig.getVariables());
+            for (int i = 0; i < configuredVariables.size(); i++) {
+                JSONObject variable = configuredVariables.getJSONObject(i);
+                if (!scope.equals(variable.getString("scope")) || !SlaveInstance.REQUIRED_VARIABLES.contains(variable.getString("name"))) {
+                    variables.add(variable);
+                }
+            }
+        }
         IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), 
                 profile.getString("owner"), request.slave.getEnvironment(), 1, variables);
         request.slave.setInstanceUrl(monitor.getResourceUrl());

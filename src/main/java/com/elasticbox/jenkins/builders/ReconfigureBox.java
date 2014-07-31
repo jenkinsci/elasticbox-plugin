@@ -15,7 +15,7 @@ package com.elasticbox.jenkins.builders;
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.ElasticBoxItemProvider;
+import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
@@ -125,19 +125,19 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
             return super.newInstance(req, formData);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetVariables(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetVariables(@QueryParameter String cloud, 
                 @QueryParameter String instance) {
-            return ElasticBoxItemProvider.getInstanceVariables(cloud, instance);
+            return DescriptorHelper.getInstanceVariables(cloud, instance);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
                 @QueryParameter String instance) {
-            return ElasticBoxItemProvider.getInstanceBoxStack(cloud, instance);
+            return DescriptorHelper.getInstanceBoxStack(cloud, instance);
         }
         
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
                 @QueryParameter String workspace, @QueryParameter String box) {
-            return ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(cloud, workspace, box);
+            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, box);
         }
         
     }

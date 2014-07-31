@@ -17,8 +17,8 @@ import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
-import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.SlaveConfiguration;
+import com.elasticbox.jenkins.util.SlaveInstance;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
@@ -57,7 +57,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.JenkinsLocationConfiguration;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.plexus.util.StringOutputStream;
 
 /**
  *
@@ -188,7 +187,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         
         // make sure that a deployment request can be successfully submitted
         JSONObject profile = profiles.getJSONObject(0);
-        JSONArray variables = ElasticBoxSlaveHandler.createJenkinsVariables(jenkins.getRootUrl(), JENKINS_SLAVE_BOX_NAME);
+        JSONArray variables = SlaveInstance.createJenkinsVariables(jenkins.getRootUrl(), JENKINS_SLAVE_BOX_NAME);
         JSONObject variable = new JSONObject();
         variable.put("name", "JNLP_SLAVE_OPTIONS");
         variable.put("type", "Text");
@@ -312,8 +311,8 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         String workspace = profile.getString("owner");
         String box = profile.getJSONObject("box").getString("version");
         String label = UUID.randomUUID().toString();
-        SlaveConfiguration slaveConfig = new SlaveConfiguration(workspace, box, box, profile.getString("id"), 1, 
-                slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, 1, 60);
+        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, box, box, 
+                profile.getString("id"), 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, 1, 60);
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox", cloud.getEndpointUrl(), cloud.getMaxInstances(), 
                 cloud.getRetentionTime(), cloud.getUsername(), cloud.getPassword(), Collections.singletonList(slaveConfig));
         jenkins.clouds.remove(cloud);

@@ -15,24 +15,4 @@
     <f:entry title="${%Deployment Profile}" field="profile">
         <f:select clazz="required eb-profile" />
     </f:entry>
-    <f:invisibleEntry>
-        <f:textbox clazz="eb-variables help" field="variables" />
-    </f:invisibleEntry>
-    <f:entry>
-        <f:block>
-            <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
-                <tbody class="eb-variable-inputs">
-                    <tr>
-                        <td class="setting-leftspace">
-                            <div><b>Variables</b></div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
-        </f:block>
-    </f:entry>
 </j:jelly>

@@ -12,6 +12,9 @@ written permission is obtained from ElasticBox.
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" >
   <table width="100%">
+    <f:invisibleEntry>
+        <f:textbox clazz="help" field="id"/>
+    </f:invisibleEntry>
 
     <f:entry title="${%Description}" help="/help/system-config/master-slave/description.html" field="description">
       <f:textbox />
@@ -28,6 +31,9 @@ written permission is obtained from ElasticBox.
     </f:entry>
     <f:entry title="${%Deployment Profile}" field="profile">
         <f:select clazz="required eb-profile" />
+    </f:entry>
+    <f:entry title="${%Min. No. of Instances}" field="minInstances">
+        <f:textbox clazz="number" default="0"/>
     </f:entry>
     <f:entry title="${%Max. No. of Instances}" field="maxInstances">
         <f:textbox clazz="required number" default="1"/>

@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -20,11 +21,14 @@ import hudson.model.BuildListener;
 import hudson.model.Node;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
@@ -127,38 +131,54 @@ public class InstanceCreator extends BuildWrapper {
         public String getDisplayName() {
             return "ElasticBox Instance Creation";
         }
+
+        @Override
+        public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            InstanceCreator instanceCreator = (InstanceCreator) super.newInstance(req, formData);
+            FormValidation result = doCheckBoxVersion(instanceCreator.getBoxVersion(), instanceCreator.getCloud(), 
+                    instanceCreator.getBox());
+            if (result.kind == FormValidation.Kind.ERROR) {
+                throw new FormException(result.getMessage(), "boxVersion");
+            }
+            
+            return instanceCreator;
+        }
+        
         
         public ListBoxModel doFillCloudItems() {
-            return ElasticBoxItemProvider.getClouds();
+            return DescriptorHelper.getClouds();
         }
 
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
-            return ElasticBoxItemProvider.getWorkspaces(cloud);
+            return DescriptorHelper.getWorkspaces(cloud);
         }
         
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
-            return ElasticBoxItemProvider.getBoxes(cloud, workspace);
+            return DescriptorHelper.getBoxes(cloud, workspace);
         }
 
         public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String box) {
-            return ElasticBoxItemProvider.getBoxVersions(cloud, box);
+            return DescriptorHelper.getBoxVersions(cloud, box);
         }
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 
                 @QueryParameter String box) {                
-            return ElasticBoxItemProvider.getProfiles(cloud, workspace, box);
+            return DescriptorHelper.getProfiles(cloud, workspace, box);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
                 @QueryParameter String box, @QueryParameter String boxVersion) {
-            return ElasticBoxItemProvider.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
+            return DescriptorHelper.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
                 @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
-            return ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(cloud, workspace, 
+            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, 
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
         
+        public FormValidation doCheckBoxVersion(@QueryParameter String value, @QueryParameter String cloud, @QueryParameter String box) {
+            return DescriptorHelper.checkSlaveBox(ClientCache.getClient(cloud), StringUtils.isBlank(value) ? box : value);
+        }
     }
 }

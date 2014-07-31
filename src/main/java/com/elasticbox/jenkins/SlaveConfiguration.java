@@ -21,6 +21,7 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.util.Set;
@@ -36,13 +37,17 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Phong Nguyen Le
  */
 public class SlaveConfiguration implements Describable<SlaveConfiguration> {
+    public static final String SLAVE_CONFIGURATIONS = "slaveConfigurations";
+    
     private static final Logger LOGGER = Logger.getLogger(SlaveConfiguration.class.getName());
 
+    private String id;
     private final String workspace;
     private final String box;
     private final String profile;
     private final String variables;
     private final String boxVersion;
+    private final int minInstances;
     private final int maxInstances;
     private String environment;
     private final String labels;
@@ -56,14 +61,16 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     private transient Set<LabelAtom> labelSet;
 
     @DataBoundConstructor
-    public SlaveConfiguration(String workspace, String box, String boxVersion, String profile, int maxInstances, 
-            String environment, String variables, String labels, String description, String remoteFS, Node.Mode mode, 
-            int retentionTime, int executors, int launchTimeout) {
+    public SlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, int minInstances,
+            int maxInstances, String environment, String variables, String labels, String description, String remoteFS, 
+            Node.Mode mode, int retentionTime, int executors, int launchTimeout) {
         super();
+        this.id = id;
         this.workspace = workspace;
         this.box = box;
         this.boxVersion = boxVersion;
         this.profile = profile;
+        this.minInstances = minInstances;
         this.maxInstances = maxInstances;
         this.environment = environment;
         this.variables = variables;    
@@ -80,6 +87,14 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     
     public Descriptor<SlaveConfiguration> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    void setId(String id) {
+        this.id = id;
     }
 
     public String getWorkspace() {
@@ -112,6 +127,10 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
     
     public String getLabels() {
         return labels;
+    }
+
+    public int getMinInstances() {
+        return minInstances;
     }
 
     public int getMaxInstances() {
@@ -161,7 +180,7 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
         public String getDisplayName() {
             return null;
         }
-        
+
         private Client createClient(String endpointUrl, String username, String password) {
             if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
                 return null;
@@ -184,48 +203,57 @@ public class SlaveConfiguration implements Describable<SlaveConfiguration> {
         public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password) {
-            return ElasticBoxItemProvider.getWorkspaces(createClient(endpointUrl, username, password));
+            return DescriptorHelper.getWorkspaces(createClient(endpointUrl, username, password));
         }
         
         public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
                 @QueryParameter String workspace) {
-            return ElasticBoxItemProvider.getBoxes(createClient(endpointUrl, username, password), workspace);
+            return DescriptorHelper.getBoxes(createClient(endpointUrl, username, password), workspace);
         }
 
         public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
                 @QueryParameter String box) {
-            return ElasticBoxItemProvider.getBoxVersions(createClient(endpointUrl, username, password), box);
+            return DescriptorHelper.getBoxVersions(createClient(endpointUrl, username, password), box);
+        }
+        
+        public FormValidation doCheckBoxVersion(@QueryParameter String value,
+                @RelativePath("..") @QueryParameter String endpointUrl, 
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password, 
+                @QueryParameter String box) {
+            return DescriptorHelper.checkSlaveBox(createClient(endpointUrl, username, password), 
+                    StringUtils.isBlank(value) ? box : value);
         }
 
         public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
                 @QueryParameter String workspace, @QueryParameter String box) {                
-            return ElasticBoxItemProvider.getProfiles(createClient(endpointUrl, username, password), workspace, box);
+            return DescriptorHelper.getProfiles(createClient(endpointUrl, username, password), workspace, box);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(
                 @RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
                 @QueryParameter String box, 
                 @QueryParameter String boxVersion) {
-            return ElasticBoxItemProvider.getBoxStack(createClient(endpointUrl, username, password),
+            return DescriptorHelper.getBoxStack(createClient(endpointUrl, username, password),
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(
+        public DescriptorHelper.JSONArrayResponse doGetInstances(
                 @RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
                 @QueryParameter String workspace, 
                 @QueryParameter String box, 
                 @QueryParameter String boxVersion) {
-            return ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(createClient(endpointUrl, username, password),
+            return DescriptorHelper.getInstancesAsJSONArrayResponse(createClient(endpointUrl, username, password),
                     workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
         

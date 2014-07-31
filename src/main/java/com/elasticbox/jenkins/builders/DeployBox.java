@@ -15,7 +15,7 @@ package com.elasticbox.jenkins.builders;
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.ElasticBoxItemProvider;
+import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
@@ -84,7 +84,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         Client client = ebCloud.createClient();
         if (isSkipIfExisting()) {
-            JSONArray instanceArray = ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
+            JSONArray instanceArray = DescriptorHelper.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
                 if (json.getString("environment").equals(getEnvironment())) {
@@ -210,34 +210,34 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }                
 
         public ListBoxModel doFillCloudItems() {
-            return ElasticBoxItemProvider.getClouds();
+            return DescriptorHelper.getClouds();
         }
 
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
-            return ElasticBoxItemProvider.getWorkspaces(cloud);
+            return DescriptorHelper.getWorkspaces(cloud);
         }
         
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
-            return ElasticBoxItemProvider.getBoxes(cloud, workspace);
+            return DescriptorHelper.getBoxes(cloud, workspace);
         }
 
         public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String box) {
-            return ElasticBoxItemProvider.getBoxVersions(cloud, box);
+            return DescriptorHelper.getBoxVersions(cloud, box);
         }
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 
                 @QueryParameter String box) {                
-            return ElasticBoxItemProvider.getProfiles(cloud, workspace, box);
+            return DescriptorHelper.getProfiles(cloud, workspace, box);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
                 @QueryParameter String box, @QueryParameter String boxVersion) {
-            return ElasticBoxItemProvider.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
+            return DescriptorHelper.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public ElasticBoxItemProvider.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
                 @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
-            return ElasticBoxItemProvider.getInstancesAsJSONArrayResponse(cloud, workspace, 
+            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, 
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
     }

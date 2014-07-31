@@ -13,7 +13,7 @@
 package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.ElasticBoxItemProvider;
+import com.elasticbox.jenkins.DescriptorHelper;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Project;
@@ -132,22 +132,22 @@ public abstract class InstanceBuildStep extends Builder {
         }               
 
         public ListBoxModel doFillCloudItems() {
-            return ElasticBoxItemProvider.getClouds();
+            return DescriptorHelper.getClouds();
         }
 
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
-            return ElasticBoxItemProvider.getWorkspaces(cloud);
+            return DescriptorHelper.getWorkspaces(cloud);
         }
         
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
-            ListBoxModel boxes = ElasticBoxItemProvider.getBoxes(cloud, workspace);
-            boxes.add(0, new ListBoxModel.Option("Any Box", ElasticBoxItemProvider.ANY_BOX));
+            ListBoxModel boxes = DescriptorHelper.getBoxes(cloud, workspace);
+            boxes.add(0, new ListBoxModel.Option("Any Box", DescriptorHelper.ANY_BOX));
             return boxes;
         }
         
         public ListBoxModel doFillInstanceItems(@QueryParameter String cloud, @QueryParameter String workspace, 
                 @QueryParameter String box) {                
-            return ElasticBoxItemProvider.getInstances(cloud, workspace, box);
+            return DescriptorHelper.getInstances(cloud, workspace, box);
         }
         
         public ListBoxModel doFillBuildStepItems() {

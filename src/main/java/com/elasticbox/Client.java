@@ -310,6 +310,12 @@ public class Client {
                 serviceProfile.put("instances", instances);
             }            
             deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + '/' + DEPLOYMENT_REQUEST_SCHEMA_NAME);
+            for (Object json : variables) {
+                JSONObject variable = (JSONObject) json;
+                if (variable.containsKey("scope") && variable.getString("scope").isEmpty()) {
+                    variable.remove("scope");
+                }
+            }
             deployRequest.put("variables", variables);
         } else {
             JSONObject mainInstance = (JSONObject) profile.getJSONArray("instances").get(0);

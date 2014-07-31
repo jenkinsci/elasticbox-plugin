@@ -107,7 +107,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         }
         
         if (activeInstances.size() >= maxInstances) {
-            LOGGER.log(Level.WARNING, MessageFormat.format("Cannot provision slave for label \"{0}\" because the maxinum number of ElasticBox instances has been reached.", label.getName()));
+            LOGGER.log(Level.WARNING, 
+                    MessageFormat.format("Cannot provision slave for label ''{0}'' because the maxinum number of instances has been reached for ElasticBox cloud {2}.", 
+                            label.getName(), getDisplayName()));
             return Collections.EMPTY_LIST;
         }
 
@@ -256,6 +258,16 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         Client client = new Client(getEndpointUrl(), getUsername(), getPassword());
         client.connect();
         return client;
+    }
+    
+    SlaveConfiguration getSlaveConfiguration(String configId) {
+        for (SlaveConfiguration config : getSlaveConfigurations()) {
+            if (configId.equals(config.getId())) {
+                return config;
+            }
+        }
+        
+        return null;
     }
     
     private boolean isLabelForReusableSlave(Label label) {
@@ -488,7 +500,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 for (ElasticBoxCloud cloud : cloudsWithSlaves) {
                     names.add(cloud.getDisplayName());
                 }
-                throw new FormException(MessageFormat.format("You want to delete following ElasticBox clouds that still have one or many slaves: {0}. Please delete the slaves and try again.", 
+                throw new FormException(MessageFormat.format("The following ElasticBox clouds cannot be deleted because they still have one or many slaves: {0}. Please delete the slaves and try again.", 
                         StringUtils.join(names, ", ")), null);
             }
             
@@ -497,41 +509,51 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         
         private void validateSlaveConfiguration(SlaveConfiguration slaveConfig, ElasticBoxCloud newCloud) throws FormException {
             if (StringUtils.isBlank(slaveConfig.getWorkspace())) {
-                throw new FormException(MessageFormat.format("No workspace is selected for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), "slaveConfigurations");
+                throw new FormException(MessageFormat.format("No workspace is selected for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             if (StringUtils.isBlank(slaveConfig.getBox())) {
-                throw new FormException(MessageFormat.format("No Box is selected for a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), "slaveConfigurations");
+                throw new FormException(MessageFormat.format("No Box is selected for a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             if (StringUtils.isBlank(slaveConfig.getBoxVersion())) {
-                throw new FormException(MessageFormat.format("No Version is selected for the selected box in a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), "slaveConfigurations");
+                throw new FormException(MessageFormat.format("No Version is selected for the selected box in a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             if (StringUtils.isBlank(slaveConfig.getProfile())) {
-                throw new FormException(MessageFormat.format("No Deployment Profile is selected for a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), "slaveConfigurations");
+                throw new FormException(MessageFormat.format("No Deployment Profile is selected for a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             String environment = slaveConfig.getEnvironment();
             if (StringUtils.isBlank(environment)) {
-                throw new FormException(MessageFormat.format("No Environment is specified for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), "slaveConfigurations");
+                throw new FormException(MessageFormat.format("No Environment is specified for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
             
             environment = environment.trim();
             if (environment.length() > 30) {
-                throw new FormException(MessageFormat.format("Environment of a slave configuration of ElasticBox cloud {0} is longer than 30 characters.", newCloud.getDisplayName()), "slaveConfigurations");
+                throw new FormException(MessageFormat.format("Environment of a slave configuration of ElasticBox cloud {0} is longer than 30 characters.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
             
             slaveConfig.setEnvironment(environment);
             for (SlaveConfiguration config : newCloud.getSlaveConfigurations()) {
                 if (config != slaveConfig && config.getEnvironment() != null && environment.equals(config.getEnvironment().trim())) {
-                    throw new FormException("Duplicate Environment specified for slave configurations", "slaveConfigurations");
+                    throw new FormException("Duplicate Environment specified for slave configurations", SlaveConfiguration.SLAVE_CONFIGURATIONS);
                 }
             }
             
             if (slaveConfig.getExecutors() < 1) {
                 slaveConfig.setExecutors(1);
-            }     
+            }  
+            
+            if (StringUtils.isBlank(slaveConfig.getId())) {
+                slaveConfig.setId(UUID.randomUUID().toString());
+            }
+            
+            FormValidation result = ((SlaveConfiguration.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(SlaveConfiguration.class)).doCheckBoxVersion(slaveConfig.getBoxVersion(), 
+                    newCloud.getEndpointUrl(), newCloud.getUsername(), newCloud.getPassword(), slaveConfig.getBox());
+            if (result.kind == FormValidation.Kind.ERROR) {
+                throw new FormException(result.getMessage(), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+            }
         }
 
         private void checkDeletedSlaveConfiguration(ElasticBoxCloud newCloud) throws FormException {
@@ -550,16 +572,25 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
                     }
                     if (cloud == existingCloud && StringUtils.isNotBlank(slave.getLabelString())) {
-                        Label label = null;
-                        try {
-                            label = Label.parseExpression(slave.getLabelString());
-                        } catch (ANTLRException ex) {
-                            Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
-                        }
-                        if (label != null && existingCloud.getSlaveConfiguration(label) != null && 
-                                newCloud.getSlaveConfiguration(label) == null) {
-                            throw new FormException(MessageFormat.format("Cannot remove slave configuration with labels ''{0}'' from ElasticBox cloud {1} because it is used by slave {2}.",
-                                    slave.getLabelString(), existingCloud.getDisplayName(), slave.getDisplayName()), "slaveConfigurations");
+                        SlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
+                        if (slaveConfig != null) {
+                            if (newCloud.getSlaveConfiguration(slaveConfig.getId()) == null) {
+                                throw new FormException(MessageFormat.format("Cannot remove slave configuration ''{0}'' from ElasticBox cloud {1} because it is used by slave {2}.", 
+                                        slaveConfig.getDescription(), existingCloud.getDisplayName(), slave.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                            }
+                        } else {
+                            // this is for backward compatibility with older slaves that are not associated with slave configuration via id
+                            Label label = null;
+                            try {
+                                label = Label.parseExpression(slave.getLabelString());
+                            } catch (ANTLRException ex) {
+                                Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                            }
+                            if (label != null && existingCloud.getSlaveConfiguration(label) != null && 
+                                    newCloud.getSlaveConfiguration(label) == null) {
+                                throw new FormException(MessageFormat.format("Cannot remove slave configuration with labels ''{0}'' from ElasticBox cloud {1} because it is used by slave {2}.",
+                                        slave.getLabelString(), existingCloud.getDisplayName(), slave.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                            }
                         }
                     }
                 }

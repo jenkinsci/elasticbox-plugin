@@ -14,7 +14,9 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.util.ClientCache;
+import com.elasticbox.jenkins.util.SlaveInstance;
 import hudson.slaves.Cloud;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -38,8 +40,8 @@ import org.kohsuke.stapler.StaplerResponse;
  *
  * @author Phong Nguyen Le
  */
-public class ElasticBoxItemProvider {
-    private static final Logger LOGGER = Logger.getLogger(ElasticBoxItemProvider.class.getName());
+public class DescriptorHelper {
+    private static final Logger LOGGER = Logger.getLogger(DescriptorHelper.class.getName());
     
     public static final String ANY_BOX = "AnyBox";
     
@@ -302,6 +304,36 @@ public class ElasticBoxItemProvider {
     
     public static ListBoxModel getInstances(String cloud, String workspace, String box) {
         return getInstances(ClientCache.getClient(cloud), workspace, box);
+    }
+    
+    public static FormValidation checkSlaveBox(Client client, String box) {
+        JSONArray stack = getBoxStack(client, box).getJsonArray();
+        if (stack.isEmpty()) {
+            return FormValidation.ok();
+        }
+        
+        String variableListStr = StringUtils.join(SlaveInstance.REQUIRED_VARIABLES, ", ");
+        if (SlaveInstance.isSlaveBox(stack.getJSONObject(0))) {
+            return FormValidation.ok();
+        } else if (stack.size() == 1) {
+            return FormValidation.error(MessageFormat.format("The selected box version does not have the following required variables: {0}", variableListStr));
+        }
+
+        JSONObject slaveBox = null;
+        for (int i = 1; i < stack.size(); i++) {
+            JSONObject stackBox = stack.getJSONObject(i);
+            if (SlaveInstance.isSlaveBox(stackBox)) {
+                slaveBox = stackBox;
+                break;
+            }
+        }
+
+        if (slaveBox != null) {
+            return FormValidation.ok(MessageFormat.format("The required variables {0} are detected in child box {1}. They will be set by Jenkins at deployment time.", variableListStr, slaveBox.getString("name")));
+        } else {
+            String message = MessageFormat.format("The selected box version and its child boxes do not have the following required variables: {0}", variableListStr);
+            return FormValidation.error(message);
+        }        
     }
     
     private static ListBoxModel sort(ListBoxModel model) {
