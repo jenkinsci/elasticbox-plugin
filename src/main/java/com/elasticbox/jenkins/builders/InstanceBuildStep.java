@@ -19,6 +19,7 @@ import hudson.model.AbstractProject;
 import hudson.model.Project;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -154,6 +155,10 @@ public abstract class InstanceBuildStep extends Builder {
             ListBoxModel buildSteps = new ListBoxModel();
             buildSteps.add("Loading...", "loading");
             return buildSteps;
+        }
+
+        public FormValidation doCheckCloud(@QueryParameter String value) {
+            return DescriptorHelper.checkCloud(value);
         }
         
     }

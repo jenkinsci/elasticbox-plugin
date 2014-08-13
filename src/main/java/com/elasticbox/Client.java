@@ -115,8 +115,8 @@ public class Client {
         HttpResponse response = httpClient.execute(post);
         int status = response.getStatusLine().getStatusCode();
         if (status != HttpStatus.SC_OK) {
-            throw new IOException(MessageFormat.format("Error {0} connecting to ElasticBox at {1}: {2}", status, this.endpointUrl,
-                    getErrorMessage(getResponseBodyAsString(response))));
+            throw new ClientException(MessageFormat.format("Error {0} connecting to ElasticBox at {1}: {2}", status, 
+                    this.endpointUrl, getErrorMessage(getResponseBodyAsString(response))), status);
         }
         token = getResponseBodyAsString(response);            
     }
@@ -133,8 +133,44 @@ public class Client {
         return (JSONArray) doGet(MessageFormat.format("{0}/services/boxes/{1}/versions", endpointUrl, boxId), true);
     }
     
+    private boolean canChange(String workspaceId, String boxId) throws IOException {
+        JSONObject box = (JSONObject) doGet(MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId), false);
+        if (workspaceId.equals(box.getString("owner"))) {
+            return true;
+        }
+        
+        for (Object json : box.getJSONArray("members")) {
+            JSONObject member = (JSONObject) json;
+            if (workspaceId.equals(member.getString("workspace")) && "collaborator".equals(member.getString("role"))) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     public JSONArray getProfiles(String workspaceId, String boxId) throws IOException {
-        return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles?box_version={2}", endpointUrl, URLEncoder.encode(workspaceId, UTF_8), boxId), true);
+        JSONArray profiles = (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles?box_version={2}", endpointUrl, URLEncoder.encode(workspaceId, UTF_8), boxId), true);
+        if (!canChange(workspaceId, boxId)) {
+            // this is a read-only box that could have profiles associated with the its versions
+            JSONArray versions = getBoxVersions(boxId);
+            if (!versions.isEmpty()) {
+                Set<String> versionIDs = new HashSet<String>();
+                for(Object version : versions) {
+                    versionIDs.add(((JSONObject) version).getString("id"));
+                }          
+
+                JSONArray allProfiles = (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles", endpointUrl, URLEncoder.encode(workspaceId, UTF_8), boxId), true);
+                for (Object json : allProfiles) {
+                    JSONObject profile = (JSONObject) json;
+                    if (versionIDs.contains(profile.getJSONObject("box").getString("version"))) {
+                        profiles.add(profile);
+                    }
+                }
+            }
+        }
+        
+        return profiles;
     }
     
     public JSONObject getInstance(String instanceId) throws IOException {

@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.util;
 
 import com.elasticbox.Client;
+import com.elasticbox.ClientException;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import hudson.slaves.Cloud;
 import java.io.IOException;
@@ -35,7 +36,7 @@ public class ClientCache {
     private static final Logger LOGGER = Logger.getLogger(ClientCache.class.getName());
     private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<String, Client>();
     
-    public static final Client getClient(String cloudName) {
+    public static final Client findOrCreateClient(String cloudName) throws ClientException, IOException {
         Client client = clientCache.get(cloudName);
         if (client != null) {
             return client;
@@ -52,19 +53,25 @@ public class ClientCache {
             
             Cloud cloud = Jenkins.getInstance().getCloud(cloudName);        
             if (cloud instanceof ElasticBoxCloud) {
-                try {
-                    client = new CachedClient((ElasticBoxCloud) cloud);
-                    client.connect();
-                    clientCache.put(cloudName, client);
-                } catch (IOException ex) {
-                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error creating client for ElasticBox cloud {0}", cloudName), ex);
-                }
+                client = new CachedClient((ElasticBoxCloud) cloud);
+                client.connect();
+                clientCache.put(cloudName, client);
             } else if (StringUtils.isNotBlank(cloudName)) {
-                LOGGER.log(Level.WARNING, MessageFormat.format("Invalid cloud name ''{0}''", cloudName));
+                throw new IOException(MessageFormat.format("Invalid cloud name ''{0}''", cloudName));
             }
         }
         
-        return client;
+        return client;        
+    }
+    
+    public static final Client getClient(String cloudName) {
+        try {
+            return findOrCreateClient(cloudName);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, MessageFormat.format("Error creating client for ElasticBox cloud {0}", cloudName), ex);
+        }
+        
+        return null;
     }
 
     public static Client getClient(String endpointUrl, String username, String password) {
@@ -92,6 +99,21 @@ public class ClientCache {
             super(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
             cloudName = cloud.name;
         }
+
+        @Override
+        public void connect() throws IOException {
+            try {
+                super.connect();
+            } catch (ClientException ex) {
+                if (ex.getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+                    clientCache.remove(cloudName);
+                }
+                
+                throw ex;
+            }
+        }
+        
+        
 
         @Override
         protected HttpResponse execute(HttpRequestBase request) throws IOException {

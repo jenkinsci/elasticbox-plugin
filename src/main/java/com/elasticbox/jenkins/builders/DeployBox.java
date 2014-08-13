@@ -26,6 +26,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -240,5 +241,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
             return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, 
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
+        
+        public FormValidation doCheckCloud(@QueryParameter String value) {
+            return DescriptorHelper.checkCloud(value);
+        }
+        
     }
 }

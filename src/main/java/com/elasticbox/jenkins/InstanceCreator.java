@@ -180,5 +180,9 @@ public class InstanceCreator extends BuildWrapper {
         public FormValidation doCheckBoxVersion(@QueryParameter String value, @QueryParameter String cloud, @QueryParameter String box) {
             return DescriptorHelper.checkSlaveBox(ClientCache.getClient(cloud), StringUtils.isBlank(value) ? box : value);
         }
+        
+        public FormValidation doCheckCloud(@QueryParameter String value) {
+            return DescriptorHelper.checkCloud(value);
+        }
     }
 }

@@ -336,6 +336,19 @@ public class DescriptorHelper {
         }        
     }
     
+    public static FormValidation checkCloud(String cloud) {
+        if (StringUtils.isBlank(cloud)) {
+            return FormValidation.error("Cloud is required");
+        }
+        
+        try {
+            ClientCache.findOrCreateClient(cloud);
+            return FormValidation.ok();
+        } catch (IOException ex) {
+            return FormValidation.error(ex.getMessage() != null ? ex.getMessage() : "Cannot connect to the cloud");
+        }
+    }
+    
     private static ListBoxModel sort(ListBoxModel model) {
         Collections.sort(model, new Comparator<ListBoxModel.Option> () {
             public int compare(ListBoxModel.Option o1, ListBoxModel.Option o2) {
