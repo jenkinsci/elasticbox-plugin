@@ -232,14 +232,12 @@ public class Client {
         private final long creationTime;
         private final Object waitLock = new Object();
         private final Set<String> operations;
+        private final String lastModified;
         
-        private ProgressMonitor(String instanceUrl) {
-            this(instanceUrl, null);
-        }
-
-        private ProgressMonitor(String instanceUrl, Set<String> operations) {
+        private ProgressMonitor(String instanceUrl, Set<String> operations, String lastModified) {
             this.instanceUrl = instanceUrl;
             this.operations = operations;
+            this.lastModified = lastModified;
             creationTime = System.currentTimeMillis();            
         }
         
@@ -295,8 +293,9 @@ public class Client {
             String state = null;
             do {
                 JSONObject instance = (JSONObject) doGet(instanceUrl, false);
+                String updated = instance.getString("updated");
                 state = instance.getString("state");
-                if (states.contains(state)) {
+                if (!lastModified.equals(updated) && states.contains(state)) {
                     if (operations == null) {
                         break;
                     }
@@ -312,7 +311,8 @@ public class Client {
                         waitLock.wait(1000);
                     } catch (InterruptedException ex) {
                     }
-                }
+                }            
+
                 long currentTime = System.currentTimeMillis();
                 remainingTime =  remainingTime - (currentTime - startTime);
                 startTime = currentTime;                
@@ -380,7 +380,8 @@ public class Client {
         try {
             HttpResponse response = execute(post);
             JSONObject instance = JSONObject.fromObject(getResponseBodyAsString(response));
-            return new ProgressMonitor(endpointUrl + instance.getString("uri"), Collections.singleton(InstanceOperation.DEPLOY));
+            return new ProgressMonitor(endpointUrl + instance.getString("uri"), 
+                    Collections.singleton(InstanceOperation.DEPLOY), instance.getString("updated"));
         } finally {
             post.reset();
         }
@@ -411,21 +412,24 @@ public class Client {
         HttpPut put = new HttpPut(instanceUrl);
         put.setEntity(new StringEntity(instance.toString(), ContentType.APPLICATION_JSON));
         try {
-            execute(put);
+            HttpResponse response = execute(put);
+            instance = JSONObject.fromObject(getResponseBodyAsString(response));
             put.reset();
             put = new HttpPut(MessageFormat.format("{0}/reconfigure", instanceUrl));
             execute(put);
-            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.RECONFIGURE));
+            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.RECONFIGURE),
+                instance.getString("updated"));
         } finally {
             put.reset();
         }
     }
     
     private IProgressMonitor doTerminate(String instanceUrl, String operation) throws IOException {
+        JSONObject instance = (JSONObject) doGet(instanceUrl, false);
         HttpDelete delete = new HttpDelete(MessageFormat.format("{0}?operation={1}", instanceUrl, operation));
         try {
             execute(delete);
-            return new ProgressMonitor(instanceUrl, TERMINATE_OPERATIONS);
+            return new ProgressMonitor(instanceUrl, TERMINATE_OPERATIONS, instance.getString("updated"));
         } finally {
             delete.reset();
         }        
@@ -448,10 +452,12 @@ public class Client {
     
     public IProgressMonitor poweron(String instanceId) throws IOException {
         String instanceUrl = getInstanceUrl(instanceId);
+        JSONObject instance = (JSONObject) doGet(instanceUrl, false);
         HttpPut put = new HttpPut(MessageFormat.format("{0}/poweron", instanceUrl));
         try {
             execute(put);
-            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.POWERON));
+            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.POWERON),
+                instance.getString("updated"));
         } finally {
             put.reset();
         }
@@ -459,10 +465,11 @@ public class Client {
 
     public IProgressMonitor shutdown(String instanceId) throws IOException {
         String instanceUrl = getInstanceUrl(instanceId);
+        JSONObject instance = (JSONObject) doGet(instanceUrl, false);
         HttpPut put = new HttpPut(MessageFormat.format("{0}/shutdown", instanceUrl));
         try {
             execute(put);
-            return new ProgressMonitor(instanceUrl, SHUTDOWN_OPERATIONS);
+            return new ProgressMonitor(instanceUrl, SHUTDOWN_OPERATIONS, instance.getString("updated"));
         } finally {
             put.reset();
         }
@@ -479,10 +486,12 @@ public class Client {
 
     public IProgressMonitor reinstall(String instanceId) throws IOException {
         String instanceUrl = getInstanceUrl(instanceId);
+        JSONObject instance = (JSONObject) doGet(instanceUrl, false);
         HttpPut put = new HttpPut(MessageFormat.format("{0}/reinstall", instanceUrl));
         try {
             execute(put);
-            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.REINSTALL));
+            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.REINSTALL),
+                instance.getString("updated"));
         } finally {
             put.reset();
         }
