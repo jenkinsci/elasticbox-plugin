@@ -85,7 +85,7 @@ public abstract class InstanceBuildStep extends Builder {
                     return null;
                 }
 
-                public String getInstanceId() {
+                public String getInstanceId(AbstractBuild build) {
                     return instance;
                 }
 

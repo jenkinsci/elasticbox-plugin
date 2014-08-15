@@ -30,6 +30,7 @@ public final class VariableResolver {
     private final List<IInstanceProvider> instanceProviders;
     private final hudson.util.VariableResolver<String> resolver;
     private final EnvVars envVars;
+    private final AbstractBuild build;
 
     public VariableResolver(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
         instanceProviders = new ArrayList<IInstanceProvider>();
@@ -40,6 +41,7 @@ public final class VariableResolver {
         }
         resolver = build.getBuildVariableResolver();
         envVars = build.getEnvironment(listener);
+        this.build = build;
     }
     
     public String resolve(String value) {
@@ -64,7 +66,7 @@ public final class VariableResolver {
         if ("Binding".equals(variable.getString("type")) && value.startsWith("com.elasticbox.jenkins.builders.")) {
             for (IInstanceProvider instanceProvider : instanceProviders) {
                 if (value.equals(instanceProvider.getId())) {
-                    variable.put("value", instanceProvider.getInstanceId());
+                    variable.put("value", instanceProvider.getInstanceId(build));
                 }
             }                
         }

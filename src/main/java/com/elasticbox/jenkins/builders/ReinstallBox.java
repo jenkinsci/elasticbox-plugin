@@ -16,13 +16,13 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.TaskLogger;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -40,23 +40,26 @@ public class ReinstallBox extends InstanceBuildStep {
     
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        TaskLogger logger = new TaskLogger(listener);
+        logger.info("Executing Reinstall Box build step");
+
         IInstanceProvider instanceProvider = getInstanceProvider(build);
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
-        IProgressMonitor monitor = ebCloud.createClient().reinstall(instanceProvider.getInstanceId());
+        IProgressMonitor monitor = ebCloud.createClient().reinstall(instanceProvider.getInstanceId(build));
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        listener.getLogger().println(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));
-        listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to finish reinstall", instancePageUrl));
+        logger.info("Reinstalling box instance {0}", instancePageUrl);
+        logger.info("Waiting for the box instance {0} to finish reinstall", instancePageUrl);
         try {
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            listener.getLogger().println(MessageFormat.format("The box instance {0} has been reinstalled successfully ", instancePageUrl));
+            logger.info("The box instance {0} has been reinstalled successfully ", instancePageUrl);
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-            listener.error("Failed to reinstall box instance %s: %s", instancePageUrl, ex.getMessage());
+            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+            logger.error("Failed to reinstall box instance {0}: {1}", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
     }    

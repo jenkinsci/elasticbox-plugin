@@ -17,6 +17,7 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
 import hudson.Extension;
@@ -43,7 +44,7 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
     private final String variables;
     private final String buildStepVariables;
 
-    private transient String instanceId;
+    private transient InstanceManager instanceManager;
     private transient ElasticBoxCloud ebCloud;
     
     @DataBoundConstructor
@@ -53,10 +54,15 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         this.id = id;
         this.variables = variables;
         this.buildStepVariables = buildStepVariables;
+        
+        readResolve();
     }
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        TaskLogger logger = new TaskLogger(listener);
+        logger.info("Executing Reconfigure Box build step");
+        
         IInstanceProvider instanceProvider = getInstanceProvider(build);
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
@@ -69,19 +75,19 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
             resolver.resolve((JSONObject) variable);
         }        
         
-        IProgressMonitor monitor = ebCloud.createClient().reconfigure(
-                instanceProvider.getInstanceId(), jsonVariables);
+        Client client = ebCloud.createClient();
+        IProgressMonitor monitor = client.reconfigure(instanceProvider.getInstanceId(build), jsonVariables);
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        listener.getLogger().println(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
-        listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to be reconfigured", instancePageUrl));
+        logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
+        logger.info(MessageFormat.format("Waiting for the box instance {0} to be reconfigured", instancePageUrl));
         try {
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            listener.getLogger().println(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
-            instanceId = Client.getResourceId(monitor.getResourceUrl());
+            logger.info(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
+            instanceManager.setInstance(build, client.getInstance(Client.getResourceId(monitor.getResourceUrl())));
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
             Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-            listener.error("Failed to reconfigure box instance %s: %s", instancePageUrl, ex.getMessage());
+            logger.error("Failed to reconfigure box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
     }    
@@ -98,13 +104,23 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         return buildStepVariables;
     }
     
-    public String getInstanceId() {
-        return instanceId;
+    public String getInstanceId(AbstractBuild build) {
+        JSONObject instance = instanceManager.getInstance(build);
+        return instance != null ? instance.getString("id") : null;
     }
-
+    
     @Override
     public ElasticBoxCloud getElasticBoxCloud() {
         return ebCloud;
+    }
+
+    @Override
+    protected Object readResolve() {
+        if (instanceManager == null) {
+            instanceManager = new InstanceManager();
+        }
+        
+        return super.readResolve();
     }
     
     @Extension

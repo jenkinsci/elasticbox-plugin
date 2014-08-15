@@ -16,6 +16,7 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.TaskLogger;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
@@ -42,6 +43,9 @@ public class TerminateBox extends InstanceBuildStep {
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        TaskLogger logger = new TaskLogger(listener);
+        logger.info("Executing Terminate Box build step");
+
         IInstanceProvider instanceProvider = getInstanceProvider(build);
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
@@ -49,14 +53,14 @@ public class TerminateBox extends InstanceBuildStep {
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();        
         Client client = ebCloud.createClient();
-        String instanceId = instanceProvider.getInstanceId();
+        String instanceId = instanceProvider.getInstanceId(build);
         IProgressMonitor monitor = client.terminate(instanceId);
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        listener.getLogger().println(MessageFormat.format("Terminating box instance {0}", instancePageUrl));
-        listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));
+        logger.info(MessageFormat.format("Terminating box instance {0}", instancePageUrl));
+        logger.info(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));
         try {
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            listener.getLogger().println(MessageFormat.format("The box instance {0} has been terminated successfully ", instancePageUrl));
+            logger.info(MessageFormat.format("The box instance {0} has been terminated successfully ", instancePageUrl));
             if (delete) {
                 client.delete(instanceId);
             }
@@ -64,7 +68,7 @@ public class TerminateBox extends InstanceBuildStep {
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
             Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-            listener.error("Failed to terminate box instance %s: %s", instancePageUrl, ex.getMessage());
+            logger.error("Failed to terminate box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
     }  

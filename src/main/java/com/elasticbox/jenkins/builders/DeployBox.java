@@ -17,6 +17,7 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
 import hudson.Extension;
@@ -29,7 +30,6 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -57,7 +57,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String variables;
     private final boolean skipIfExisting;
     
-    private transient String instanceId;
+    private transient InstanceManager instanceManager;
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
@@ -74,44 +74,53 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.environment = environment;
         this.variables = variables;
         this.skipIfExisting = skipIfExisting;
+        
+        readResolve();
     }
     
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {       
+        TaskLogger logger = new TaskLogger(listener);
+        logger.info("Executing Deploy Box build step");
+        
         ElasticBoxCloud ebCloud = (ElasticBoxCloud) Jenkins.getInstance().getCloud(getCloud());
         if (ebCloud == null) {
             throw new IOException("No ElasticBox cloud is configured.");
         }
 
+        VariableResolver resolver = new VariableResolver(build, listener);
+        String resolvedEnvironment = resolver.resolve(this.environment);
+        
         Client client = ebCloud.createClient();
         if (isSkipIfExisting()) {
             JSONArray instanceArray = DescriptorHelper.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
-                if (json.getString("environment").equals(getEnvironment())) {
-                    instanceId = json.getString("id");
+                if (json.getString("environment").equals(resolvedEnvironment)) {
+                    instanceManager.setInstance(build, json);
+                    String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), ebCloud.getEndpointUrl() + json.getString("uri"));
+                    logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
                     return true;
                 }
             }
         }
         
-        VariableResolver resolver = new VariableResolver(build, listener);
         JSONArray jsonVariables = JSONArray.fromObject(variables);
         for (Object variable : jsonVariables) {
             resolver.resolve((JSONObject) variable);
         }        
-        IProgressMonitor monitor = client.deploy(profile, workspace, resolver.resolve(this.environment), instances, jsonVariables);
+        IProgressMonitor monitor = client.deploy(profile, workspace, resolvedEnvironment, instances, jsonVariables);
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        listener.getLogger().println(MessageFormat.format("Deploying box instance {0}", instancePageUrl));
-        listener.getLogger().println(MessageFormat.format("Waiting for the deployment of the box instance {0} to finish", instancePageUrl));
+        logger.info("Deploying box instance {0}", instancePageUrl);
+        logger.info("Waiting for the deployment of the box instance {0} to finish", instancePageUrl);
         try {
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            listener.getLogger().println(MessageFormat.format("The box instance {0} has been deployed successfully ", instancePageUrl));
-            instanceId = Client.getResourceId(monitor.getResourceUrl());
+            logger.info("The box instance {0} has been deployed successfully ", instancePageUrl);
+            instanceManager.setInstance(build, client.getInstance(Client.getResourceId(monitor.getResourceUrl())));
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-            listener.error("Failed to deploy box instance %s: %s", instancePageUrl, ex.getMessage());
+            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+            logger.error("Failed to deploy box instance {0}: {1}", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
     }
@@ -126,6 +135,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
             if (ebCloud != null) {
                 cloud = ebCloud.name;
             }
+        }
+        
+        if (instanceManager == null) {
+            instanceManager = new InstanceManager();
         }
         
         return this;
@@ -167,8 +180,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return skipIfExisting;
     }
     
-    public String getInstanceId() {
-        return instanceId;
+    public String getInstanceId(AbstractBuild build) {
+        JSONObject instance = instanceManager.getInstance(build);
+        return instance != null ? instance.getString("id") : null;
     }
 
     public ElasticBoxCloud getElasticBoxCloud() {

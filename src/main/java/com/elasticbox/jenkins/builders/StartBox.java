@@ -16,6 +16,7 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.TaskLogger;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
@@ -40,23 +41,26 @@ public class StartBox extends InstanceBuildStep {
     
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        TaskLogger logger = new TaskLogger(listener);
+        logger.info("Executing Start Box build step");
+
         IInstanceProvider instanceProvider = getInstanceProvider(build);
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
-        IProgressMonitor monitor = ebCloud.createClient().poweron(instanceProvider.getInstanceId());
+        IProgressMonitor monitor = ebCloud.createClient().poweron(instanceProvider.getInstanceId(build));
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        listener.getLogger().println(MessageFormat.format("Starting box instance {0}", instancePageUrl));
-        listener.getLogger().println(MessageFormat.format("Waiting for the box instance {0} to start", instancePageUrl));
+        logger.info(MessageFormat.format("Starting box instance {0}", instancePageUrl));
+        logger.info(MessageFormat.format("Waiting for the box instance {0} to start", instancePageUrl));
         try {
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            listener.getLogger().println(MessageFormat.format("The box instance {0} has been started successfully ", instancePageUrl));
+            logger.info(MessageFormat.format("The box instance {0} has been started successfully ", instancePageUrl));
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
             Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-            listener.error("Failed to start box instance %s: %s", instancePageUrl, ex.getMessage());
+            logger.error("Failed to start box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
     }    
