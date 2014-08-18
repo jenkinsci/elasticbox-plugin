@@ -39,7 +39,7 @@ public class TerminateBox extends InstanceBuildStep {
     public TerminateBox(String cloud, String workspace, String box, String instance, String buildStep, boolean delete) {
         super(cloud, workspace, box, instance, buildStep);
         this.delete = delete;
-    }
+    }        
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
@@ -54,27 +54,31 @@ public class TerminateBox extends InstanceBuildStep {
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();        
         Client client = ebCloud.createClient();
         String instanceId = instanceProvider.getInstanceId(build);
+        terminate(instanceId, ebCloud, client, logger);
+        if (delete) {
+            client.delete(instanceId);
+        }
+            
+        return true;
+    }  
+
+    public boolean isDelete() {
+        return delete;
+    }
+    
+    static void terminate(String instanceId, ElasticBoxCloud ebCloud, Client client, TaskLogger logger) throws IOException {
         IProgressMonitor monitor = client.terminate(instanceId);
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         logger.info(MessageFormat.format("Terminating box instance {0}", instancePageUrl));
-        logger.info(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));
         try {
+            logger.info(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
             logger.info(MessageFormat.format("The box instance {0} has been terminated successfully ", instancePageUrl));
-            if (delete) {
-                client.delete(instanceId);
-            }
-            
-            return true;
         } catch (IProgressMonitor.IncompleteException ex) {
             Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
             logger.error("Failed to terminate box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
-    }  
-
-    public boolean isDelete() {
-        return delete;
     }
     
     @Extension

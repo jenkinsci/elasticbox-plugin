@@ -1,7 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:optionalBlock inline="true" title="${%Skip if instance already exists}" field="skipIfExisting">
-    </f:optionalBlock>
     <f:entry title="${%Cloud}" field="cloud">
         <f:select clazz="required eb-cloud" />
     </f:entry>    
@@ -34,8 +32,8 @@
             <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
                 <tbody class="eb-variable-inputs">
                     <tr>
-                        <td class="setting-leftspace">
-                            <div><b>Variables</b></div>
+                        <td>
+                            <div class="section-header">Variables</div>
                         </td>
                     </tr>
                 </tbody>
@@ -47,4 +45,13 @@
             <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
         </f:block>
     </f:entry>
+    <f:advanced>
+        <f:section title="Advanced" />
+        <f:entry title="${%If instance already exists}" field="alternateAction">
+            <f:select />
+        </f:entry>
+        <f:entry title="${%Wait for completion}" field="waitForCompletion">
+            <f:checkbox default="true" />
+        </f:entry>
+    </f:advanced>
 </j:jelly>

@@ -30,6 +30,7 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -45,7 +46,12 @@ import org.kohsuke.stapler.StaplerRequest;
  *
  * @author Phong Nguyen Le
  */
-public class DeployBox extends Builder implements IInstanceProvider {
+public class DeployBox extends Builder implements IInstanceProvider {    
+    private static final String ACTION_NONE = "none";
+    private static final String ACTION_SKIP = "skip";
+    private static final String ACTION_REINSTALL = Client.InstanceOperation.REINSTALL;
+    private static final String ACTION_DELETE_AND_DEPLOY = "deleteAndDeploy";
+    
     private final String id;
     private String cloud;
     private final String workspace;
@@ -55,13 +61,17 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String environment;
     private final int instances;
     private final String variables;
-    private final boolean skipIfExisting;
+    
+    @Deprecated
+    private boolean skipIfExisting;
+    private String alternateAction;
     
     private transient InstanceManager instanceManager;
+    private boolean waitForCompletion;
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
-            int instances, String environment, String variables, boolean skipIfExisting) {
+            int instances, String environment, String variables, String alternateAction, boolean waitForCompletion) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -73,9 +83,56 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.instances = instances;
         this.environment = environment;
         this.variables = variables;
-        this.skipIfExisting = skipIfExisting;
+        this.alternateAction = alternateAction;
+        this.waitForCompletion = waitForCompletion;
         
         readResolve();
+    }
+    
+    private JSONObject performAlternateAction(JSONObject existingInstance, ElasticBoxCloud ebCloud, Client client, 
+            VariableResolver resolver, TaskLogger logger) throws IOException {
+        JSONObject instance = existingInstance;
+        if (alternateAction.equals(ACTION_SKIP)) {
+            String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), 
+                    ebCloud.getEndpointUrl() + existingInstance.getString("uri"));
+            logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);        
+        } else if (alternateAction.equals(ACTION_REINSTALL)) {
+            ReinstallBox.reinstall(existingInstance.getString("id"), ebCloud, client, waitForCompletion, logger);
+        } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
+            String instanceId = existingInstance.getString("id");
+            TerminateBox.terminate(instanceId, ebCloud, client, logger);
+            client.delete(instanceId);
+            instanceId = deploy(ebCloud, client, resolver, logger);
+            instance = client.getInstance(instanceId);
+        } else {
+            throw new IOException(MessageFormat.format("Invalid alternate action: ''{0}''", alternateAction));
+        }
+        
+        return instance;
+    }
+    
+    private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) throws IOException {
+        String resolvedEnvironment = resolver.resolve(this.environment);
+        JSONArray jsonVariables = JSONArray.fromObject(variables);
+        for (Object variable : jsonVariables) {
+            resolver.resolve((JSONObject) variable);
+        }        
+        IProgressMonitor monitor = client.deploy(profile, workspace, resolvedEnvironment, instances, jsonVariables);
+        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
+        logger.info("Deploying box instance {0}", instancePageUrl);
+        if (waitForCompletion) {
+            try {
+                logger.info("Waiting for the deployment of the box instance {0} to finish", instancePageUrl);
+                monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
+                logger.info("The box instance {0} has been deployed successfully ", instancePageUrl);
+            } catch (IProgressMonitor.IncompleteException ex) {
+                Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                logger.error("Failed to deploy box instance {0}: {1}", instancePageUrl, ex.getMessage());
+                throw new AbortException(ex.getMessage());
+            }      
+        }
+        
+        return Client.getResourceId(monitor.getResourceUrl());
     }
     
     @Override
@@ -92,44 +149,39 @@ public class DeployBox extends Builder implements IInstanceProvider {
         String resolvedEnvironment = resolver.resolve(this.environment);
         
         Client client = ebCloud.createClient();
-        if (isSkipIfExisting()) {
+        if (!alternateAction.equals(ACTION_NONE)) {
             JSONArray instanceArray = DescriptorHelper.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
+            JSONObject existingInstance = null;
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
                 if (json.getString("environment").equals(resolvedEnvironment)) {
-                    instanceManager.setInstance(build, json);
-                    String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), ebCloud.getEndpointUrl() + json.getString("uri"));
-                    logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
-                    return true;
+                    existingInstance = json;
+                    break;
                 }
+            }
+            if (existingInstance != null) {
+                JSONObject instance = performAlternateAction(existingInstance, ebCloud, client, resolver, logger);
+                instanceManager.setInstance(build, instance);
+                return true;            
             }
         }
         
-        JSONArray jsonVariables = JSONArray.fromObject(variables);
-        for (Object variable : jsonVariables) {
-            resolver.resolve((JSONObject) variable);
-        }        
-        IProgressMonitor monitor = client.deploy(profile, workspace, resolvedEnvironment, instances, jsonVariables);
-        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        logger.info("Deploying box instance {0}", instancePageUrl);
-        logger.info("Waiting for the deployment of the box instance {0} to finish", instancePageUrl);
-        try {
-            monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            logger.info("The box instance {0} has been deployed successfully ", instancePageUrl);
-            instanceManager.setInstance(build, client.getInstance(Client.getResourceId(monitor.getResourceUrl())));
-            return true;
-        } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
-            logger.error("Failed to deploy box instance {0}: {1}", instancePageUrl, ex.getMessage());
-            throw new AbortException(ex.getMessage());
-        }
-    }
+        String instanceId = deploy(ebCloud, client, resolver, logger);
+        instanceManager.setInstance(build, client.getInstance(instanceId));
+        return true;
+        
+    }        
 
     public String getId() {
         return id;
     }
 
     protected Object readResolve() {
+        if (alternateAction == null) {
+            alternateAction = skipIfExisting ? ACTION_SKIP : ACTION_NONE;
+            waitForCompletion = true;
+        }
+            
         if (cloud == null) {
             ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
             if (ebCloud != null) {
@@ -176,10 +228,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return variables;
     }
 
-    public boolean isSkipIfExisting() {
-        return skipIfExisting;
+    public String getAlternateAction() {
+        return alternateAction;
     }
-    
+
+    public boolean isWaitForCompletion() {
+        return waitForCompletion;
+    }
+
     public String getInstanceId(AbstractBuild build) {
         JSONObject instance = instanceManager.getInstance(build);
         return instance != null ? instance.getString("id") : null;
@@ -191,6 +247,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+        private static final ListBoxModel alternateActionItems = new ListBoxModel();
+        static {
+            alternateActionItems.add("still perform deployment", ACTION_NONE);
+            alternateActionItems.add("skip deployment", ACTION_SKIP);
+            alternateActionItems.add("reinstall", ACTION_REINSTALL);
+            alternateActionItems.add("delete and deploy again", ACTION_DELETE_AND_DEPLOY);            
+        }
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
@@ -258,6 +321,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         
         public FormValidation doCheckCloud(@QueryParameter String value) {
             return DescriptorHelper.checkCloud(value);
+        }
+        
+        public ListBoxModel doFillAlternateActionItems() {
+            return alternateActionItems;
         }
         
     }

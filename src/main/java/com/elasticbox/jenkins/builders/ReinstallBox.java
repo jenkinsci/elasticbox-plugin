@@ -36,7 +36,7 @@ public class ReinstallBox extends InstanceBuildStep {
     @DataBoundConstructor
     public ReinstallBox(String cloud, String workspace, String box, String instance, String buildStep) {
         super(cloud, workspace, box, instance, buildStep);
-    }
+    }       
     
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
@@ -49,20 +49,27 @@ public class ReinstallBox extends InstanceBuildStep {
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
-        IProgressMonitor monitor = ebCloud.createClient().reinstall(instanceProvider.getInstanceId(build));
+        reinstall(instanceProvider.getInstanceId(build), ebCloud, ebCloud.createClient(), true, logger);
+        return true;
+    }   
+    
+    static void reinstall(String instanceId, ElasticBoxCloud ebCloud, Client client, boolean waitForCompletion, 
+            TaskLogger logger) throws IOException {
+        IProgressMonitor monitor = client.reinstall(instanceId);
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         logger.info("Reinstalling box instance {0}", instancePageUrl);
-        logger.info("Waiting for the box instance {0} to finish reinstall", instancePageUrl);
-        try {
-            monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            logger.info("The box instance {0} has been reinstalled successfully ", instancePageUrl);
-            return true;
-        } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
-            logger.error("Failed to reinstall box instance {0}: {1}", instancePageUrl, ex.getMessage());
-            throw new AbortException(ex.getMessage());
+        if (waitForCompletion) {
+            try {
+                logger.info("Waiting for the box instance {0} to finish reinstall", instancePageUrl);
+                monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
+                logger.info("The box instance {0} has been reinstalled successfully ", instancePageUrl);
+            } catch (IProgressMonitor.IncompleteException ex) {
+                Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                logger.error("Failed to reinstall box instance {0}: {1}", instancePageUrl, ex.getMessage());
+                throw new AbortException(ex.getMessage());
+            }   
         }
-    }    
+    }
 
     @Extension
     public static final class DescriptorImpl extends Descriptor {
