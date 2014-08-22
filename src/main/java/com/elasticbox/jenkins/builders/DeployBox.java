@@ -49,6 +49,7 @@ import org.kohsuke.stapler.StaplerRequest;
 public class DeployBox extends Builder implements IInstanceProvider {    
     private static final String ACTION_NONE = "none";
     private static final String ACTION_SKIP = "skip";
+    private static final String ACTION_RECONFIGURE = Client.InstanceOperation.RECONFIGURE;
     private static final String ACTION_REINSTALL = Client.InstanceOperation.REINSTALL;
     private static final String ACTION_DELETE_AND_DEPLOY = "deleteAndDeploy";
     
@@ -89,17 +90,27 @@ public class DeployBox extends Builder implements IInstanceProvider {
         readResolve();
     }
     
+    private JSONArray getResolvedVariables(VariableResolver resolver) {
+        JSONArray resolvedVariables = JSONArray.fromObject(variables);
+        for (Object variable : resolvedVariables) {
+            resolver.resolve((JSONObject) variable);
+        }        
+        return resolvedVariables;
+    }
+    
     private JSONObject performAlternateAction(JSONObject existingInstance, ElasticBoxCloud ebCloud, Client client, 
             VariableResolver resolver, TaskLogger logger) throws IOException {
         JSONObject instance = existingInstance;
+        String instanceId = existingInstance.getString("id");
         if (alternateAction.equals(ACTION_SKIP)) {
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), 
                     ebCloud.getEndpointUrl() + existingInstance.getString("uri"));
-            logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);        
+            logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
+        } else if (alternateAction.equals(ACTION_RECONFIGURE)) {
+            ReconfigureBox.reconfigure(instanceId, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_REINSTALL)) {
-            ReinstallBox.reinstall(existingInstance.getString("id"), ebCloud, client, waitForCompletion, logger);
+            ReinstallBox.reinstall(instanceId, ebCloud, client, waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
-            String instanceId = existingInstance.getString("id");
             TerminateBox.terminate(instanceId, ebCloud, client, logger);
             client.delete(instanceId);
             instanceId = deploy(ebCloud, client, resolver, logger);
@@ -113,11 +124,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) throws IOException {
         String resolvedEnvironment = resolver.resolve(this.environment);
-        JSONArray jsonVariables = JSONArray.fromObject(variables);
-        for (Object variable : jsonVariables) {
-            resolver.resolve((JSONObject) variable);
-        }        
-        IProgressMonitor monitor = client.deploy(profile, workspace, resolvedEnvironment, instances, jsonVariables);
+        IProgressMonitor monitor = client.deploy(profile, workspace, resolvedEnvironment, instances, getResolvedVariables(resolver));
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         logger.info("Deploying box instance {0}", instancePageUrl);
         if (waitForCompletion) {
@@ -154,7 +161,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
             JSONObject existingInstance = null;
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
-                if (json.getString("environment").equals(resolvedEnvironment)) {
+                if (json.getString("environment").equals(resolvedEnvironment) && 
+                        !Client.InstanceState.UNAVAILABLE.equals(json.getString("state")) &&
+                        !Client.TERMINATE_OPERATIONS.contains(json.getString("operation"))) {
                     existingInstance = json;
                     break;
                 }
@@ -251,6 +260,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         static {
             alternateActionItems.add("still perform deployment", ACTION_NONE);
             alternateActionItems.add("skip deployment", ACTION_SKIP);
+            alternateActionItems.add("reconfigure", ACTION_RECONFIGURE);
             alternateActionItems.add("reinstall", ACTION_REINSTALL);
             alternateActionItems.add("delete and deploy again", ACTION_DELETE_AND_DEPLOY);            
         }

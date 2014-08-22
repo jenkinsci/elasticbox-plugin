@@ -57,7 +57,27 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         
         readResolve();
     }
-
+    
+    static String reconfigure(String instanceId, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables, 
+            boolean waitForCompletion, TaskLogger logger) throws IOException {
+        IProgressMonitor monitor = client.reconfigure(instanceId, jsonVariables);
+        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
+        logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
+        if (waitForCompletion) {
+            logger.info(MessageFormat.format("Waiting for the box instance {0} to be reconfigured", instancePageUrl));
+            try {
+                monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
+                logger.info(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
+            } catch (IProgressMonitor.IncompleteException ex) {
+                Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
+                logger.error("Failed to reconfigure box instance %s: %s", instancePageUrl, ex.getMessage());
+                throw new AbortException(ex.getMessage());
+            }   
+        }
+        
+        return Client.getResourceId(monitor.getResourceUrl());
+    }   
+    
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
@@ -76,20 +96,9 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         }        
         
         Client client = ebCloud.createClient();
-        IProgressMonitor monitor = client.reconfigure(instanceProvider.getInstanceId(build), jsonVariables);
-        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
-        logger.info(MessageFormat.format("Waiting for the box instance {0} to be reconfigured", instancePageUrl));
-        try {
-            monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            logger.info(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
-            instanceManager.setInstance(build, client.getInstance(Client.getResourceId(monitor.getResourceUrl())));
-            return true;
-        } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-            logger.error("Failed to reconfigure box instance %s: %s", instancePageUrl, ex.getMessage());
-            throw new AbortException(ex.getMessage());
-        }
+        String instanceId = reconfigure(instanceProvider.getInstanceId(build), ebCloud, client, jsonVariables, true, logger);
+        instanceManager.setInstance(build, client.getInstance(instanceId));
+        return true;
     }    
 
     public String getId() {
