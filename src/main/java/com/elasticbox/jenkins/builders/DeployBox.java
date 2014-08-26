@@ -109,7 +109,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         } else if (alternateAction.equals(ACTION_RECONFIGURE)) {
             ReconfigureBox.reconfigure(instanceId, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_REINSTALL)) {
-            ReinstallBox.reinstall(instanceId, ebCloud, client, waitForCompletion, logger);
+            ReinstallBox.reinstall(instanceId, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
             TerminateBox.terminate(instanceId, ebCloud, client, logger);
             client.delete(instanceId);

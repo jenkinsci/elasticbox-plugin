@@ -25,6 +25,7 @@ import hudson.model.BuildListener;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.sf.json.JSONArray;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -49,13 +50,13 @@ public class ReinstallBox extends InstanceBuildStep {
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
-        reinstall(instanceProvider.getInstanceId(build), ebCloud, ebCloud.createClient(), true, logger);
+        reinstall(instanceProvider.getInstanceId(build), ebCloud, ebCloud.createClient(), null, true, logger);
         return true;
     }   
     
-    static void reinstall(String instanceId, ElasticBoxCloud ebCloud, Client client, boolean waitForCompletion, 
-            TaskLogger logger) throws IOException {
-        IProgressMonitor monitor = client.reinstall(instanceId);
+    static void reinstall(String instanceId, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables,
+            boolean waitForCompletion, TaskLogger logger) throws IOException {
+        IProgressMonitor monitor = client.reinstall(instanceId, jsonVariables);
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         logger.info("Reinstalling box instance {0}", instancePageUrl);
         if (waitForCompletion) {

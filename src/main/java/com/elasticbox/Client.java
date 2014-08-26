@@ -386,42 +386,54 @@ public class Client {
             post.reset();
         }
     }
-    
+
     public IProgressMonitor reconfigure(String instanceId, JSONArray variables) throws IOException {
+        JSONObject instance = doOperation(instanceId, InstanceOperation.RECONFIGURE, variables);
+        return new ProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.RECONFIGURE),
+                instance.getString("updated"));        
+    }
+        
+    private JSONObject doOperation(String instanceId, String operation, JSONArray variables) throws IOException {
         JSONObject instance = getInstance(instanceId);
-        JSONArray instanceVariables = instance.getJSONArray("variables");
-        JSONArray boxVariables = instance.getJSONArray("boxes").getJSONObject(0).getJSONArray("variables");
-        List<JSONObject> newVariables = new ArrayList<JSONObject>();
-        for (Object variable : variables) {
-            JSONObject variableJson = (JSONObject) variable;
-            JSONObject instanceVariable = findVariable(variableJson, instanceVariables);            
-            if (instanceVariable == null) {
-                JSONObject boxVariable = findVariable(variableJson, boxVariables);
-                if (boxVariable != null) {
-                    instanceVariable = JSONObject.fromObject(boxVariable);
-                    newVariables.add(instanceVariable);
+        String instanceUrl = getInstanceUrl(instanceId);
+        if (variables != null && !variables.isEmpty()) {
+            JSONArray instanceVariables = instance.getJSONArray("variables");
+            JSONArray boxVariables = instance.getJSONArray("boxes").getJSONObject(0).getJSONArray("variables");
+            List<JSONObject> newVariables = new ArrayList<JSONObject>();
+            for (Object variable : variables) {
+                JSONObject variableJson = (JSONObject) variable;
+                JSONObject instanceVariable = findVariable(variableJson, instanceVariables);            
+                if (instanceVariable == null) {
+                    JSONObject boxVariable = findVariable(variableJson, boxVariables);
+                    if (boxVariable != null) {
+                        instanceVariable = JSONObject.fromObject(boxVariable);
+                        newVariables.add(instanceVariable);
+                    }
+                }
+                if (instanceVariable != null) {
+                    instanceVariable.put("value", variableJson.getString("value"));
                 }
             }
-            if (instanceVariable != null) {
-                instanceVariable.put("value", variableJson.getString("value"));
+            instanceVariables.addAll(newVariables);
+            instance.put("variables", instanceVariables);
+            HttpPut put = new HttpPut(instanceUrl);
+            put.setEntity(new StringEntity(instance.toString(), ContentType.APPLICATION_JSON));
+            try {
+                HttpResponse response = execute(put);
+                instance = JSONObject.fromObject(getResponseBodyAsString(response));
+            } finally {
+                put.reset();
             }
         }
-        instanceVariables.addAll(newVariables);
-        instance.put("variables", instanceVariables);
-        String instanceUrl = getInstanceUrl(instanceId);
-        HttpPut put = new HttpPut(instanceUrl);
-        put.setEntity(new StringEntity(instance.toString(), ContentType.APPLICATION_JSON));
+        
+        HttpPut put = new HttpPut(MessageFormat.format("{0}/{1}", instanceUrl, operation));
         try {
-            HttpResponse response = execute(put);
-            instance = JSONObject.fromObject(getResponseBodyAsString(response));
-            put.reset();
-            put = new HttpPut(MessageFormat.format("{0}/reconfigure", instanceUrl));
             execute(put);
-            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.RECONFIGURE),
-                instance.getString("updated"));
+            return instance;
         } finally {
             put.reset();
         }
+        
     }
     
     private IProgressMonitor doTerminate(String instanceUrl, String operation) throws IOException {
@@ -451,28 +463,14 @@ public class Client {
     }
     
     public IProgressMonitor poweron(String instanceId) throws IOException {
-        String instanceUrl = getInstanceUrl(instanceId);
-        JSONObject instance = (JSONObject) doGet(instanceUrl, false);
-        HttpPut put = new HttpPut(MessageFormat.format("{0}/poweron", instanceUrl));
-        try {
-            execute(put);
-            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.POWERON),
-                instance.getString("updated"));
-        } finally {
-            put.reset();
-        }
+        JSONObject instance = doOperation(instanceId, InstanceOperation.POWERON, null);
+        return new ProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.POWERON),
+            instance.getString("updated"));
     }
 
     public IProgressMonitor shutdown(String instanceId) throws IOException {
-        String instanceUrl = getInstanceUrl(instanceId);
-        JSONObject instance = (JSONObject) doGet(instanceUrl, false);
-        HttpPut put = new HttpPut(MessageFormat.format("{0}/shutdown", instanceUrl));
-        try {
-            execute(put);
-            return new ProgressMonitor(instanceUrl, SHUTDOWN_OPERATIONS, instance.getString("updated"));
-        } finally {
-            put.reset();
-        }
+        JSONObject instance = doOperation(instanceId, InstanceOperation.SHUTDOWN, null);
+        return new ProgressMonitor(getInstanceUrl(instanceId), SHUTDOWN_OPERATIONS, instance.getString("updated"));
     }
 
     public void delete(String instanceId) throws IOException {
@@ -484,17 +482,10 @@ public class Client {
         }
     }
 
-    public IProgressMonitor reinstall(String instanceId) throws IOException {
-        String instanceUrl = getInstanceUrl(instanceId);
-        JSONObject instance = (JSONObject) doGet(instanceUrl, false);
-        HttpPut put = new HttpPut(MessageFormat.format("{0}/reinstall", instanceUrl));
-        try {
-            execute(put);
-            return new ProgressMonitor(instanceUrl, Collections.singleton(InstanceOperation.REINSTALL),
-                instance.getString("updated"));
-        } finally {
-            put.reset();
-        }
+    public IProgressMonitor reinstall(String instanceId, JSONArray variables) throws IOException {
+        JSONObject instance = doOperation(instanceId, InstanceOperation.REINSTALL, variables);
+        return new ProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.REINSTALL),
+            instance.getString("updated"));
     }
         
     public JSON doGet(String url, boolean isArray) throws IOException {
