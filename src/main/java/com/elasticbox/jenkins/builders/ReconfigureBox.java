@@ -150,11 +150,6 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
             return super.newInstance(req, formData);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetVariables(@QueryParameter String cloud, 
-                @QueryParameter String instance) {
-            return DescriptorHelper.getInstanceVariables(cloud, instance);
-        }
-
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
                 @QueryParameter String instance) {
             return DescriptorHelper.getInstanceBoxStack(cloud, instance);

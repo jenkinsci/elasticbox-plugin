@@ -18,11 +18,12 @@ var ElasticBoxVariables = (function () {
                 '<img height="16" width="16" src="{2}">&nbsp;<b>{0} {1}</b></span></td></tr>' +
                 '</tbody></table></td>',
         TEXT_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
-                '<td class="setting-main"><input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="{5}"></td>' +
-                '<td>&nbsp;</td></tr>',
+                '<td class="setting-main">' + 
+                '<input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="{5}" style="{6}"></td>' +
+                '<td>&nbsp;<a><img alt="Reset" src="{7}"></a></td></tr>',
         BINDING_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
                 '<td class="setting-main"><select name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input select eb-variable"></select></td>' +
-                '<td>&nbsp;</td></tr>',
+                '<td>&nbsp;<a><img alt="Reset" src="{5}"></a></td></tr>',
 
         Dom = YAHOO.util.Dom,
         Element = YAHOO.util.Element,
@@ -173,6 +174,11 @@ var ElasticBoxVariables = (function () {
             return null;
         },
         
+        showResetButton = function (variableRow, show) {
+            var img = Dom.getElementBy(function () { return true; }, 'img', variableRow);
+            Dom.setAttribute(img, 'src', getImageFolder() + '/' + (show ? 'reset.png' : 'none.png'));
+        },
+        
         createVariableRow = function (variable, savedVariable, variableHolder) {
             var saveVariable = function (name, value, scope, type, varTextBox) {
                     var savedVariables = Dom.getAttribute(varTextBox, 'value').evalJSON(),
@@ -191,23 +197,26 @@ var ElasticBoxVariables = (function () {
                         }
                     }
 
-                    Dom.setAttribute(varTextBox, 'value',  savedVariables.toJSON());
+                    Dom.setAttribute(varTextBox, 'value',  savedVariables.toJSON());                    
                 },
                 
                 row = document.createElement('tr'),
-                savedValue;
+                imageFolder = getImageFolder() + '/',
+                savedValue, imgSrc;
 
             if (_.isNull(variable.value) || _.isUndefined(variable.value)) {
                 variable.value = '';
             }
             
             savedValue = savedVariable && savedVariable.value || variable.value;
-            if (variable.type === 'Binding') {
+            imgSrc = imageFolder + (savedValue === variable.value ? 'none.png' : 'reset.png');
+            if (variable.type === 'Binding') {                
                 row.innerHTML = ElasticBoxUtils.format(BINDING_VARIABLE_TEMPLATE, 
-                    variable.name, '_' + variable.name, savedValue, variable.value, variable.scope);
+                    variable.name, '_' + variable.name, savedValue, variable.value, variable.scope, getImageFolder());
             } else {
                 row.innerHTML = ElasticBoxUtils.format(TEXT_VARIABLE_TEMPLATE, variable.name, '_' + variable.name, 
-                    savedValue, variable.value, variable.scope, variable.type === 'Password' ? 'password' : 'text');
+                    savedValue, variable.value, variable.scope, variable.type === 'Password' ? 'password' : 'text',
+                    savedValue === variable.value ? "color: gray;" : "", imgSrc);
             }
             Dom.getElementsByClassName('eb-variable', variable.type === 'Binding' && 'select' || 'input', row, function (variableInput) {
                 var savedValue = Dom.getAttribute(variableInput, 'value'),
@@ -253,6 +262,14 @@ var ElasticBoxVariables = (function () {
 
                 Event.addListener(variableInput, 'change', function () {
                     saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, variableHolder.varTextBox)
+                    
+                    if (this.value === Dom.getAttribute(variableInput, 'data-original-value')) {
+                        Dom.setAttribute(variableInput, "style", "color: gray;");
+                        showResetButton(Dom.getAncestorByTagName(variableInput, 'tr'), false);
+                    } else {
+                        Dom.setAttribute(variableInput, "style", "");
+                        showResetButton(Dom.getAncestorByTagName(variableInput, 'tr'), true);
+                    }
                 });
                 if (variable.type === 'Binding') {
                     variableInput.innerHTML = '<option value="loading">Loading...</option>'

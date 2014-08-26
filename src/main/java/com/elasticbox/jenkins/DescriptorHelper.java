@@ -185,7 +185,14 @@ public class DescriptorHelper {
             try {
                 JSONObject instanceJson = client.getInstance(instance);
                 JSONArray boxes = instanceJson.getJSONArray("boxes");
-                return new JSONArrayResponse(new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, client).toJSONArray());
+                List<JSONObject> variables = new ArrayList<JSONObject>();
+                if (instanceJson.containsKey("variables")) {
+                    for (Object variable : instanceJson.getJSONArray("variables")) {
+                        variables.add((JSONObject) variable);
+                    }
+                }
+                BoxStack boxStack = new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, client, variables);
+                return new JSONArrayResponse(boxStack.toJSONArray());
                 
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for profile {0}", instance), ex);
@@ -199,38 +206,6 @@ public class DescriptorHelper {
         return getInstanceBoxStack(ClientCache.getClient(cloud), instance);
     }
 
-    /**
-     * Returns only the variables of main box for now.
-     * 
-     * @param cloud
-     * @param instance
-     * @return 
-     */
-    public static JSONArrayResponse getInstanceVariables(String cloud, String instance) {
-        Client client = ClientCache.getClient(cloud);
-        if (client != null && StringUtils.isNotBlank(instance)) {
-            try {
-                JSONObject json = client.getInstance(instance);
-                JSONArray variables = json.getJSONArray("boxes").getJSONObject(0).getJSONArray("variables");
-                for (Object modifiedVariable : json.getJSONArray("variables")) {
-                    JSONObject modifiedVariableJson = (JSONObject) modifiedVariable;
-                    for (Object variable : variables) {
-                        JSONObject variableJson = (JSONObject) variable;
-                        if (variableJson.getString("name").equals(modifiedVariableJson.getString("name"))) {
-                            variableJson.put("value", modifiedVariableJson.getString("value"));
-                            break;
-                        }
-                    }
-                 }
-                return new JSONArrayResponse(variables);
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for instance {0}", instance), ex);
-            }
-        }
-        
-        return new JSONArrayResponse(new JSONArray());        
-    }
-    
     private static class InstanceFilter {
         private final String boxId;
 
@@ -365,10 +340,14 @@ public class DescriptorHelper {
         private final Client client;
         
         BoxStack(String boxId, JSONArray boxes, Client client) {
+            this(boxId, boxes, client, new ArrayList<JSONObject>());
+        }
+        
+        BoxStack(String boxId, JSONArray boxes, Client client, List<JSONObject> overridenVariables) {
             this.boxId = boxId;
             this.boxes = boxes;      
             this.client = client;
-            overriddenVariables = new ArrayList<JSONObject>();
+            this.overriddenVariables = overridenVariables;
         }
         
         public JSONArray toJSONArray() {
