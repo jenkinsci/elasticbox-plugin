@@ -124,7 +124,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) throws IOException {
         String resolvedEnvironment = resolver.resolve(this.environment);
-        IProgressMonitor monitor = client.deploy(profile, workspace, resolvedEnvironment, instances, getResolvedVariables(resolver));
+        IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, getResolvedVariables(resolver));
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         logger.info("Deploying box instance {0}", instancePageUrl);
         if (waitForCompletion) {
