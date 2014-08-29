@@ -27,6 +27,7 @@ import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -517,12 +518,14 @@ public class Client {
 
     private JSONObject findVariable(JSONObject variable, JSONArray variables) {
         String name = variable.getString("name");
-        String scope = variable.containsKey("scope") ? variable.getString("scope") : null;
+        String scope = variable.containsKey("scope") ? variable.getString("scope") : StringUtils.EMPTY;
         for (Object var : variables) {
             JSONObject json = (JSONObject) var;
-            if (json.getString("name").equals(name) && 
-                    ((scope == null && !json.containsKey("scope")) || scope.equals(json.getString("scope")))) {
-                return json;
+            if (json.getString("name").equals(name)) {
+                String varScope = json.containsKey("scope") ? json.getString("scope") : StringUtils.EMPTY;
+                if (scope.equals(varScope)) {
+                    return json;
+                } 
             }
         }
         return null;
