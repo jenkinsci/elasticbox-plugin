@@ -47,6 +47,9 @@
     </f:entry>
     <f:advanced>
         <f:section title="Advanced" />
+        <f:entry title="${%Tags}" field="tags">
+            <f:textbox />
+        </f:entry>
         <f:entry title="${%If instance already exists}" field="alternateAction">
             <f:select />
         </f:entry>

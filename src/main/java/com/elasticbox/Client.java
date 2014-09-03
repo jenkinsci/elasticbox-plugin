@@ -227,7 +227,18 @@ public class Client {
     public JSONArray getBoxStack(String boxId) throws IOException {
         return (JSONArray) doGet(MessageFormat.format("/services/boxes/{0}/stack", boxId), true);
     }
-    
+
+    public JSONObject updateInstance(JSONObject instance) throws IOException  {
+        HttpPut put = new HttpPut(getInstanceUrl(instance.getString("id")));
+        put.setEntity(new StringEntity(instance.toString(), ContentType.APPLICATION_JSON));
+        try {
+            HttpResponse response = execute(put);
+            return JSONObject.fromObject(getResponseBodyAsString(response));
+        } finally {
+            put.reset();
+        }        
+    }
+        
     protected class ProgressMonitor implements IProgressMonitor {
         private final String instanceUrl;
         private final long creationTime;

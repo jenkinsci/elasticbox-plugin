@@ -212,7 +212,7 @@ var ElasticBoxVariables = (function () {
             imgSrc = imageFolder + (savedValue === variable.value ? 'none.png' : 'reset.png');
             if (variable.type === 'Binding') {                
                 row.innerHTML = ElasticBoxUtils.format(BINDING_VARIABLE_TEMPLATE, 
-                    variable.name, '_' + variable.name, savedValue, variable.value, variable.scope, getImageFolder());
+                    variable.name, '_' + variable.name, savedValue, variable.value, variable.scope, imgSrc);
             } else {
                 row.innerHTML = ElasticBoxUtils.format(TEXT_VARIABLE_TEMPLATE, variable.name, '_' + variable.name, 
                     savedValue, variable.value, variable.scope, variable.type === 'Password' ? 'password' : 'text',

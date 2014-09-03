@@ -31,6 +31,8 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -66,13 +68,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
     @Deprecated
     private boolean skipIfExisting;
     private String alternateAction;
+    private boolean waitForCompletion;
+    private final String tags;
     
     private transient InstanceManager instanceManager;
-    private boolean waitForCompletion;
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
-            int instances, String environment, String variables, String alternateAction, boolean waitForCompletion) {
+            int instances, String environment, String tags, String variables, String alternateAction, boolean waitForCompletion) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -86,6 +89,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.variables = variables;
         this.alternateAction = alternateAction;
         this.waitForCompletion = waitForCompletion;
+        this.tags = tags;
         
         readResolve();
     }
@@ -97,6 +101,18 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }        
         return resolvedVariables;
     }
+    
+    private Set<String> getResolvedTags(VariableResolver resolver) {
+        Set<String> tagSet = new HashSet<String>();
+        if (StringUtils.isNotBlank(tags)) {
+            for (String tag : tags.split(",")) {
+                if (StringUtils.isNotBlank(tag)) {
+                    tagSet.add(resolver.resolve(tag.trim()));
+                }
+            }
+        }        
+        return tagSet;
+    } 
     
     private JSONObject performAlternateAction(JSONObject existingInstance, ElasticBoxCloud ebCloud, Client client, 
             VariableResolver resolver, TaskLogger logger) throws IOException {
@@ -153,15 +169,16 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
 
         VariableResolver resolver = new VariableResolver(build, listener);
-        String resolvedEnvironment = resolver.resolve(this.environment);
-        
         Client client = ebCloud.createClient();
         if (!alternateAction.equals(ACTION_NONE)) {
             JSONArray instanceArray = DescriptorHelper.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
             JSONObject existingInstance = null;
+            Set<String> tagSet = new HashSet<String>();
+            tagSet.add(resolver.resolve(environment));
+            tagSet.addAll(getResolvedTags(resolver));
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
-                if (json.getString("environment").equals(resolvedEnvironment) && 
+                if (json.getJSONArray("tags").containsAll(tagSet) && 
                         !Client.InstanceState.UNAVAILABLE.equals(json.getString("state")) &&
                         !Client.TERMINATE_OPERATIONS.contains(json.getString("operation"))) {
                     existingInstance = json;
@@ -176,7 +193,23 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
         
         String instanceId = deploy(ebCloud, client, resolver, logger);
-        instanceManager.setInstance(build, client.getInstance(instanceId));
+        JSONObject instance = client.getInstance(instanceId);
+        Set<String> resolvedTags = getResolvedTags(resolver);
+        if (waitForCompletion && !resolvedTags.isEmpty()) {
+            JSONArray instanceTags = instance.getJSONArray("tags");
+            int oldSize = instanceTags.size();
+            for (String tag : resolvedTags) {
+                if (!instanceTags.contains(tag)) {
+                    instanceTags.add(tag);
+                }
+            }
+            if (instanceTags.size() > oldSize) {
+                instance.put("tags", instanceTags);
+                instance = client.updateInstance(instance);
+            }
+        }
+        instanceManager.setInstance(build, instance);
+        
         return true;
         
     }        
@@ -233,6 +266,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return environment;
     }        
 
+    public String getTags() {
+        return tags;
+    }
+    
     public String getVariables() {
         return variables;
     }
@@ -292,7 +329,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             
             if (formData.getString("environment").trim().length() == 0) {
                 throw new FormException("Enviroment is required to launch a box in ElasticBox", "environment");
-            }                        
+            }     
             
             return super.newInstance(req, formData);
         }                
