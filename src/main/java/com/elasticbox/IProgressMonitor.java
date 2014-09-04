@@ -25,6 +25,12 @@ public interface IProgressMonitor {
         }
     }
     
+    public static class TimeoutException extends IncompleteException {
+        public TimeoutException(String message) {
+            super(message);
+        }
+    }
+    
     String getResourceUrl();
     
     boolean isDone() throws IncompleteException, IOException;

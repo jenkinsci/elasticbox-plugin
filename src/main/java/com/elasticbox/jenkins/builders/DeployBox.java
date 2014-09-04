@@ -31,7 +31,9 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -114,22 +116,28 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return tagSet;
     } 
     
-    private JSONObject performAlternateAction(JSONObject existingInstance, ElasticBoxCloud ebCloud, Client client, 
+    private JSONObject performAlternateAction(List<JSONObject> existingInstances, ElasticBoxCloud ebCloud, Client client, 
             VariableResolver resolver, TaskLogger logger) throws IOException {
-        JSONObject instance = existingInstance;
-        String instanceId = existingInstance.getString("id");
+        List<String> instanceIDs = new ArrayList<String>();
+        for (JSONObject instance : existingInstances) {
+            instanceIDs.add(instance.getString("id"));
+        }
+        JSONObject instance = existingInstances.get(0);
         if (alternateAction.equals(ACTION_SKIP)) {
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), 
-                    ebCloud.getEndpointUrl() + existingInstance.getString("uri"));
+                    ebCloud.getEndpointUrl() + instance.getString("uri"));
             logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
-        } else if (alternateAction.equals(ACTION_RECONFIGURE)) {
-            ReconfigureBox.reconfigure(instanceId, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
+        } else if (alternateAction.equals(ACTION_RECONFIGURE)) {            
+            ReconfigureBox.reconfigure(instanceIDs, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_REINSTALL)) {
-            ReinstallBox.reinstall(instanceId, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
+            ReinstallBox.reinstall(instanceIDs, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
-            TerminateBox.terminate(instanceId, ebCloud, client, logger);
-            client.delete(instanceId);
-            instanceId = deploy(ebCloud, client, resolver, logger);
+            for (JSONObject existingInstance : existingInstances) {
+                String instanceId = existingInstance.getString("id");
+                TerminateBox.terminate(instanceId, ebCloud, client, logger);
+                client.delete(instanceId);
+            }
+            String instanceId = deploy(ebCloud, client, resolver, logger);
             instance = client.getInstance(instanceId);
         } else {
             throw new IOException(MessageFormat.format("Invalid alternate action: ''{0}''", alternateAction));
@@ -172,21 +180,24 @@ public class DeployBox extends Builder implements IInstanceProvider {
         Client client = ebCloud.createClient();
         if (!alternateAction.equals(ACTION_NONE)) {
             JSONArray instanceArray = DescriptorHelper.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
-            JSONObject existingInstance = null;
             Set<String> tagSet = new HashSet<String>();
-            tagSet.add(resolver.resolve(environment));
-            tagSet.addAll(getResolvedTags(resolver));
+            Set<String> resolvedTags = getResolvedTags(resolver);
+            if (resolvedTags.isEmpty()) {
+                tagSet.add(resolver.resolve(environment));
+            } else {
+                tagSet.addAll(resolvedTags);
+            }
+            List<JSONObject> existingInstances = new ArrayList<JSONObject>();
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
                 if (json.getJSONArray("tags").containsAll(tagSet) && 
                         !Client.InstanceState.UNAVAILABLE.equals(json.getString("state")) &&
                         !Client.TERMINATE_OPERATIONS.contains(json.getString("operation"))) {
-                    existingInstance = json;
-                    break;
+                    existingInstances.add(json);
                 }
             }
-            if (existingInstance != null) {
-                JSONObject instance = performAlternateAction(existingInstance, ebCloud, client, resolver, logger);
+            if (!existingInstances.isEmpty()) {
+                JSONObject instance = performAlternateAction(existingInstances, ebCloud, client, resolver, logger);
                 instanceManager.setInstance(build, instance);
                 return true;            
             }

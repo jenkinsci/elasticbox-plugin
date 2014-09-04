@@ -278,10 +278,10 @@ public class Client {
         public void waitForDone(int timeout) throws IncompleteException, IOException {
             String state = waitFor(FINISH_STATES, timeout);
             if (state.equals(InstanceState.UNAVAILABLE)) {
-                throw new IncompleteException("The instance is unavailable");
+                throw new IncompleteException(MessageFormat.format("The instance at {0} is unavailable", instanceUrl));
             }
             else if (!state.equals(InstanceState.DONE)) {
-                throw new IncompleteException(
+                throw new TimeoutException(
                         MessageFormat.format("The instance at {0} is not in ready after waiting for {1} minutes. Current instance state: {2}",
                                 instanceUrl, timeout, state));
             }

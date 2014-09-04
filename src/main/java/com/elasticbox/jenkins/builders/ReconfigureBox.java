@@ -27,10 +27,15 @@ import hudson.model.BuildListener;
 import hudson.tasks.Builder;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -70,13 +75,59 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
                 logger.info(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
             } catch (IProgressMonitor.IncompleteException ex) {
                 Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-                logger.error("Failed to reconfigure box instance %s: %s", instancePageUrl, ex.getMessage());
+                logger.error("Failed to reconfigure box instance {0}: {1}", instancePageUrl, ex.getMessage());
                 throw new AbortException(ex.getMessage());
             }   
         }
         
         return Client.getResourceId(monitor.getResourceUrl());
     }   
+    
+    static void reconfigure(List<String> instanceIDs, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables, 
+            boolean waitForCompletion, TaskLogger logger) throws IOException {
+        List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
+        for (String instanceId : instanceIDs) {
+            IProgressMonitor monitor = client.reconfigure(instanceId, jsonVariables);
+            monitors.add(monitor);
+            String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
+            logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));            
+        }
+        if (waitForCompletion) {
+            logger.info(MessageFormat.format("Waiting for {0} to be reconfigured", instanceIDs.size() > 0 ? "the instances" : "the instance"));
+            long startWaitTime = System.currentTimeMillis();
+            List<IProgressMonitor> doneMonitors = new ArrayList<IProgressMonitor>();
+            final int waitInterval = 2;            
+            final int maxWaitCycles = (int) Math.ceil(ElasticBoxSlaveHandler.TIMEOUT_MINUTES / (waitInterval * instanceIDs.size())) + 1; 
+            for (int i = 0; i < maxWaitCycles && doneMonitors.size() < instanceIDs.size(); i++) {
+                for (Iterator<IProgressMonitor> iter = monitors.iterator(); iter.hasNext();) {
+                    IProgressMonitor monitor = iter.next();
+                    String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
+                    try {
+                        monitor.waitForDone(waitInterval);
+                        doneMonitors.add(monitor);
+                        iter.remove();
+                        logger.info(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
+                    } catch (IProgressMonitor.TimeoutException ex) {
+                        logger.info(ex.getMessage());
+                    } catch (IProgressMonitor.IncompleteException ex) {
+                        Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
+                        logger.error("Failed to reconfigure box instance {0}: {1}", instancePageUrl, ex.getMessage());
+                        throw new AbortException(ex.getMessage());
+                    }
+                }
+            }
+            if (!monitors.isEmpty()) {
+                List<String> instancePageURLs = new ArrayList<String>();
+                for (IProgressMonitor monitor : monitors) {
+                    instancePageURLs.add(Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl()));
+                }
+                String message = MessageFormat.format("The following instances still are not ready after waiting for {0} minutes: {1}", 
+                        TimeUnit.MINUTES.toMinutes(System.currentTimeMillis() - startWaitTime), StringUtils.join(instancePageURLs, ','));
+                logger.error(message);
+                throw new AbortException(message);
+            }
+        }
+    }
     
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
