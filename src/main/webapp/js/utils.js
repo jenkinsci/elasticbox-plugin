@@ -45,6 +45,10 @@ var ElasticBoxUtils = (function() {
                 return v.toString(16);
             });
         },
+        
+        getElementByTag: function (tag, root) {
+            return Dom.getElementBy(function () { return true; }, tag, root);
+        },
 
         DescriptorIdPrefix: DescriptorIdPrefix,
         DeployBoxDescriptorId: DeployBoxDescriptorId,

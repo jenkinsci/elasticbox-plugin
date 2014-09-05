@@ -117,7 +117,7 @@ public class ReinstallBox extends InstanceBuildStep {
                     instancePageURLs.add(Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl()));
                 }
                 String message = MessageFormat.format("The following instances still are not ready after waiting for {0} minutes: {1}", 
-                        TimeUnit.MINUTES.toMinutes(System.currentTimeMillis() - startWaitTime), StringUtils.join(instancePageURLs, ','));
+                        TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime), StringUtils.join(instancePageURLs, ','));
                 logger.error(message);
                 throw new AbortException(message);
             }

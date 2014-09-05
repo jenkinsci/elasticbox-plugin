@@ -19,11 +19,11 @@ var ElasticBoxVariables = (function () {
                 '</tbody></table></td>',
         TEXT_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
                 '<td class="setting-main">' + 
-                '<input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="{5}" style="{6}"></td>' +
-                '<td>&nbsp;<a><img alt="Reset" src="{7}"></a></td></tr>',
+                '<input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="{5}"></td>' +
+                '<td>&nbsp;<a><img></a></td></tr>',
         BINDING_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
                 '<td class="setting-main"><select name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input select eb-variable"></select></td>' +
-                '<td>&nbsp;<a><img alt="Reset" src="{5}"></a></td></tr>',
+                '<td>&nbsp;<a><img></a></td></tr>',
 
         Dom = YAHOO.util.Dom,
         Element = YAHOO.util.Element,
@@ -174,9 +174,25 @@ var ElasticBoxVariables = (function () {
             return null;
         },
         
-        showResetButton = function (variableRow, show) {
-            var img = Dom.getElementBy(function () { return true; }, 'img', variableRow);
-            Dom.setAttribute(img, 'src', getImageFolder() + '/' + (show ? 'reset.png' : 'none.png'));
+        toggleResetButton = function (variableRow) {
+            var img = ElasticBoxUtils.getElementByTag('img', variableRow),
+                variableInput = _.first(Dom.getElementsByClassName('eb-variable', undefined, variableRow)),
+                imageFolder = getImageFolder();                    
+            
+            if (variableInput.value !== Dom.getAttribute(variableInput, 'data-original-value')) {
+                Dom.setAttribute(variableInput, 'style', '');
+                Dom.setAttribute(img, 'src', imageFolder + '/reset.png');
+                Dom.setAttribute(img, 'style', 'cursor: pointer');
+                Event.addListener(img, 'click', function () {
+                    variableInput.value = Dom.getAttribute(variableInput, 'data-original-value');
+                    fireEvent(variableInput, 'change');
+                });
+            } else {
+                Dom.setAttribute(variableInput, 'style', 'color: gray');
+                Dom.setAttribute(img, 'src', getImageFolder() + '/none.png');
+                Dom.setAttribute(img, 'style', '');
+                Event.removeListener(img, 'click');                
+            }
         },
         
         createVariableRow = function (variable, savedVariable, variableHolder) {
@@ -201,22 +217,19 @@ var ElasticBoxVariables = (function () {
                 },
                 
                 row = document.createElement('tr'),
-                imageFolder = getImageFolder() + '/',
-                savedValue, imgSrc;
+                savedValue;
 
             if (_.isNull(variable.value) || _.isUndefined(variable.value)) {
                 variable.value = '';
             }
             
             savedValue = savedVariable && savedVariable.value || variable.value;
-            imgSrc = imageFolder + (savedValue === variable.value ? 'none.png' : 'reset.png');
             if (variable.type === 'Binding') {                
                 row.innerHTML = ElasticBoxUtils.format(BINDING_VARIABLE_TEMPLATE, 
-                    variable.name, '_' + variable.name, savedValue, variable.value, variable.scope, imgSrc);
+                    variable.name, '_' + variable.name, savedValue, variable.value, variable.scope);
             } else {
                 row.innerHTML = ElasticBoxUtils.format(TEXT_VARIABLE_TEMPLATE, variable.name, '_' + variable.name, 
-                    savedValue, variable.value, variable.scope, variable.type === 'Password' ? 'password' : 'text',
-                    savedValue === variable.value ? "color: gray;" : "", imgSrc);
+                    savedValue, variable.value, variable.scope, variable.type === 'Password' ? 'password' : 'text');
             }
             Dom.getElementsByClassName('eb-variable', variable.type === 'Binding' && 'select' || 'input', row, function (variableInput) {
                 var savedValue = Dom.getAttribute(variableInput, 'value'),
@@ -262,14 +275,7 @@ var ElasticBoxVariables = (function () {
 
                 Event.addListener(variableInput, 'change', function () {
                     saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, variableHolder.varTextBox)
-                    
-                    if (this.value === Dom.getAttribute(variableInput, 'data-original-value')) {
-                        Dom.setAttribute(variableInput, "style", "color: gray;");
-                        showResetButton(Dom.getAncestorByTagName(variableInput, 'tr'), false);
-                    } else {
-                        Dom.setAttribute(variableInput, "style", "");
-                        showResetButton(Dom.getAncestorByTagName(variableInput, 'tr'), true);
-                    }
+                    toggleResetButton(Dom.getAncestorByTagName(variableInput, 'tr'));
                 });
                 if (variable.type === 'Binding') {
                     variableInput.innerHTML = '<option value="loading">Loading...</option>'
@@ -343,6 +349,7 @@ var ElasticBoxVariables = (function () {
 
                         if (row) {
                             varTableBody.appendChild(row);
+                            toggleResetButton(row);
                         }
                     });
                     varTableRows.push(varTableRow);
