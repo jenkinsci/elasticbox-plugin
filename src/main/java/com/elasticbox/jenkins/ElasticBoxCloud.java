@@ -96,40 +96,29 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return username + '@' + endpointUrl;
     }
     
-    @Override
-    public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
-        JSONArray activeInstances;
-        try {
-            activeInstances = ElasticBoxSlaveHandler.getActiveInstances(this);
-        } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, "Error fetching active instances", ex);
-            return Collections.EMPTY_LIST;
-        }
-        
-        if (activeInstances.size() >= maxInstances) {
-            LOGGER.log(Level.WARNING, 
-                    MessageFormat.format("Cannot provision slave for label ''{0}'' because the maxinum number of instances has been reached for ElasticBox cloud {2}.", 
-                            label.getName(), getDisplayName()));
-            return Collections.EMPTY_LIST;
-        }
-
-        // readjust the excess work load by considering the instances that are being deployed or already deployed but not yet connected with Jenkins
+    private List<ElasticBoxSlave> getPendingSlaves(Label label, JSONArray activeInstances) {
         List<ElasticBoxSlave> pendingSlaves = new ArrayList<ElasticBoxSlave>();
         List<ElasticBoxSlave> offlineSlaves = new ArrayList<ElasticBoxSlave>();
         for (Node node : Jenkins.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
-                if (label.matches(slave)) {
+                ElasticBoxCloud slaveCloud = null;
+                try {
+                    slaveCloud = slave.getCloud();
+                } catch (IOException ex) {
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                }
+                if (slaveCloud == this && label.matches(slave)) {
                     if (ElasticBoxSlaveHandler.isSubmitted(slave)) {
                         pendingSlaves.add(slave);
                     }
-                    
+
                     if (slave.getInstanceUrl() != null && slave.getComputer().isOffline()) {
                         offlineSlaves.add(slave);
                     }
                 }
             }
-        }
+        }        
         
         if (!offlineSlaves.isEmpty() && !activeInstances.isEmpty()) {            
             Map<String, JSONObject> idToInstanceMap = new HashMap<String, JSONObject>(activeInstances.size());
@@ -151,6 +140,28 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
         }
         
+        return pendingSlaves;
+    }
+            
+    @Override
+    public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+        JSONArray activeInstances;
+        try {
+            activeInstances = ElasticBoxSlaveHandler.getActiveInstances(this);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, "Error fetching active instances", ex);
+            return Collections.EMPTY_LIST;
+        }
+        
+        if (activeInstances.size() >= maxInstances) {
+            LOGGER.log(Level.WARNING, 
+                    MessageFormat.format("Cannot provision slave for label ''{0}'' because the maxinum number of instances has been reached for ElasticBox cloud {2}.", 
+                            label.getName(), getDisplayName()));
+            return Collections.EMPTY_LIST;
+        }
+
+        // readjust the excess work load by considering the instances that are being deployed or already deployed but not yet connected with Jenkins
+        List<ElasticBoxSlave> pendingSlaves = getPendingSlaves(label, activeInstances);
         if (!pendingSlaves.isEmpty()) {
             Map<ElasticBoxSlave, Integer> slaveToNumOfAvailableExecutorsMap = new HashMap<ElasticBoxSlave, Integer>(pendingSlaves.size());
             for (ElasticBoxSlave slave : pendingSlaves) {
@@ -172,7 +183,13 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 }
             };
             
-            excessWorkload -= slaveToNumOfAvailableExecutorsMap.size();
+            for (int numOfAvailableExecutors : slaveToNumOfAvailableExecutorsMap.values()) {
+                excessWorkload -= numOfAvailableExecutors;                
+            }
+        }
+        
+        if (excessWorkload <= 0) {
+            LOGGER.log(Level.INFO, MessageFormat.format("Skipped provisioning slave for label ''{0}'' because there are enough slaves are being launched in ElasticBox cloud {1}.", label.getName(), getDisplayName()));
         }
          
         List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<NodeProvisioner.PlannedNode>();        
@@ -294,7 +311,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             JSONObject instance = (JSONObject) json;
             String environment = instance.getString("environment");
             Integer instanceCount = environmentToInstanceCountMap.get(environment);
-            environmentToInstanceCountMap.put(environment, instanceCount == null ? 1 : instanceCount++);
+            environmentToInstanceCountMap.put(environment, instanceCount == null ? 1 : ++instanceCount);
         }
         
         for (SlaveConfiguration slaveConfig : getSlaveConfigurations()) {
