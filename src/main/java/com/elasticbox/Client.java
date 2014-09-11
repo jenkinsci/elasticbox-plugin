@@ -253,43 +253,72 @@ public class Client {
             creationTime = System.currentTimeMillis();            
         }
         
+        private JSONObject getInstance() throws IOException, IncompleteException {
+            try {
+                return (JSONObject) doGet(instanceUrl, false);
+            } catch (ClientException ex) {
+                if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                    throw new IncompleteException(MessageFormat.format("The instance {0} cannot be found", instanceUrl));
+                } else {
+                    throw ex;
+                }                
+            }            
+        }
+        
         public String getResourceUrl() {
             return instanceUrl;
         }
-        
+
         public boolean isDone() throws IncompleteException, IOException {
-            String state;
-            try {
-                state = getState();
-            } catch (ClientException ex) {
-                if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                    throw new IncompleteException("The instance cannot be found");
-                } else {
-                    throw ex;
-                }
+            return isDone(getInstance());
+        }
+        
+        public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
+            String updated = instance.getString("updated");
+            String state = instance.getString("state");
+            String operation = instance.getString("operation");
+            if (lastModified.equals(updated) || !FINISH_STATES.contains(state)) {
+                return false;
             }
+
             if (state.equals(InstanceState.UNAVAILABLE)) {
-                throw new IncompleteException("The instance is unavailable");
+                throw new IncompleteException(MessageFormat.format("The instance at {0} is unavailable", instanceUrl));
+            } 
+
+            if (operations != null && !operations.contains(operation)) {
+                throw new IncompleteException(MessageFormat.format("Unexpected operation ''{0}'' has been performed for instance {1}", operation, instanceUrl));
             }
             
-            return state.equals(InstanceState.DONE);
+            return true;
         }
 
         public void waitForDone(int timeout) throws IncompleteException, IOException {
-            String state = waitFor(FINISH_STATES, timeout);
-            if (state.equals(InstanceState.UNAVAILABLE)) {
-                throw new IncompleteException(MessageFormat.format("The instance at {0} is unavailable", instanceUrl));
-            }
-            else if (!state.equals(InstanceState.DONE)) {
+            long startTime = System.currentTimeMillis();
+            long remainingTime = timeout * 60000;
+            do {
+                if (isDone()) {
+                    return;
+                }
+                
+                synchronized(waitLock) {
+                    try {
+                        waitLock.wait(1000);
+                    } catch (InterruptedException ex) {
+                    }
+                }            
+
+                long currentTime = System.currentTimeMillis();
+                remainingTime =  remainingTime - (currentTime - startTime);
+                startTime = currentTime;                
+            } while (timeout == 0 || remainingTime > 0);
+
+            JSONObject instance = getInstance();
+            if (!isDone(instance)) {
                 throw new TimeoutException(
                         MessageFormat.format("The instance at {0} is not in ready after waiting for {1} minutes. Current instance state: {2}",
-                                instanceUrl, timeout, state));
+                                instanceUrl, timeout, instance.getString("state")));
+                
             }
-        }
-        
-        private String getState() throws IOException {
-            JSONObject instance = (JSONObject) doGet(instanceUrl, false);
-            return instance.getString("state");            
         }
         
         /**

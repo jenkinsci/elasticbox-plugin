@@ -16,10 +16,8 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
-import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
-import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -28,14 +26,11 @@ import hudson.tasks.Builder;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -63,69 +58,21 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         readResolve();
     }
     
-    static String reconfigure(String instanceId, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables, 
-            boolean waitForCompletion, TaskLogger logger) throws IOException {
-        IProgressMonitor monitor = client.reconfigure(instanceId, jsonVariables);
-        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
-        if (waitForCompletion) {
-            logger.info(MessageFormat.format("Waiting for the box instance {0} to be reconfigured", instancePageUrl));
-            try {
-                monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-                logger.info(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
-            } catch (IProgressMonitor.IncompleteException ex) {
-                Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-                logger.error("Failed to reconfigure box instance {0}: {1}", instancePageUrl, ex.getMessage());
-                throw new AbortException(ex.getMessage());
-            }   
-        }
-        
-        return Client.getResourceId(monitor.getResourceUrl());
-    }   
-    
     static void reconfigure(List<String> instanceIDs, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables, 
             boolean waitForCompletion, TaskLogger logger) throws IOException {
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         for (String instanceId : instanceIDs) {
-            IProgressMonitor monitor = client.reconfigure(instanceId, jsonVariables);
+            JSONArray validVariables = jsonVariables != null ? JSONArray.fromObject(jsonVariables) : new JSONArray();
+            DescriptorHelper.removeInvalidVariables(validVariables, 
+                    ((DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(ReconfigureBox.class)).doGetBoxStack(ebCloud.name, instanceId).getJsonArray());
+            IProgressMonitor monitor = client.reconfigure(instanceId, validVariables);
             monitors.add(monitor);
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
             logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));            
         }
         if (waitForCompletion) {
-            logger.info(MessageFormat.format("Waiting for {0} to be reconfigured", instanceIDs.size() > 0 ? "the instances" : "the instance"));
-            long startWaitTime = System.currentTimeMillis();
-            List<IProgressMonitor> doneMonitors = new ArrayList<IProgressMonitor>();
-            final int waitInterval = 2;            
-            final int maxWaitCycles = (int) Math.ceil(ElasticBoxSlaveHandler.TIMEOUT_MINUTES / (waitInterval * instanceIDs.size())) + 1; 
-            for (int i = 0; i < maxWaitCycles && doneMonitors.size() < instanceIDs.size(); i++) {
-                for (Iterator<IProgressMonitor> iter = monitors.iterator(); iter.hasNext();) {
-                    IProgressMonitor monitor = iter.next();
-                    String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-                    try {
-                        monitor.waitForDone(waitInterval);
-                        doneMonitors.add(monitor);
-                        iter.remove();
-                        logger.info(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));
-                    } catch (IProgressMonitor.TimeoutException ex) {
-                        logger.info(ex.getMessage());
-                    } catch (IProgressMonitor.IncompleteException ex) {
-                        Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-                        logger.error("Failed to reconfigure box instance {0}: {1}", instancePageUrl, ex.getMessage());
-                        throw new AbortException(ex.getMessage());
-                    }
-                }
-            }
-            if (!monitors.isEmpty()) {
-                List<String> instancePageURLs = new ArrayList<String>();
-                for (IProgressMonitor monitor : monitors) {
-                    instancePageURLs.add(Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl()));
-                }
-                String message = MessageFormat.format("The following instances still are not ready after waiting for {0} minutes: {1}", 
-                        TimeUnit.MINUTES.toMinutes(System.currentTimeMillis() - startWaitTime), StringUtils.join(instancePageURLs, ','));
-                logger.error(message);
-                throw new AbortException(message);
-            }
+            logger.info(MessageFormat.format("Waiting for {0} to be reconfigured", monitors.size() > 0 ? "the instances" : "the instance"));        
+            InstanceBuildStep.waitForCompletion(Client.InstanceOperation.RECONFIGURE, monitors, ebCloud, client, logger);
         }
     }
     
@@ -141,13 +88,15 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         
         ebCloud = instanceProvider.getElasticBoxCloud();
         VariableResolver resolver = new VariableResolver(build, listener);
-        JSONArray jsonVariables = JSONArray.fromObject(getBuildStep() == null ? variables : buildStepVariables);
+        String varStr = getBuildStep() == null ? variables : buildStepVariables;
+        JSONArray jsonVariables = varStr != null ? JSONArray.fromObject(varStr) : new JSONArray();
         for (Object variable : jsonVariables) {
             resolver.resolve((JSONObject) variable);
         }        
         
         Client client = ebCloud.createClient();
-        String instanceId = reconfigure(instanceProvider.getInstanceId(build), ebCloud, client, jsonVariables, true, logger);
+        String instanceId = instanceProvider.getInstanceId(build);
+        reconfigure(Collections.singletonList(instanceId), ebCloud, client, jsonVariables, true, logger);
         instanceManager.setInstance(build, client.getInstance(instanceId));
         return true;
     }    
@@ -189,15 +138,19 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         public String getDisplayName() {
             return "ElasticBox - Reconfigure Box";
         }
-
+        
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             if (isPreviousBuildStepSelected(formData)) {
                 formData.remove("variables");
             } else {
                 formData.remove("buildStepVariables");
+                if (formData.containsKey("variables")) {
+                    JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("instance")).getJsonArray();
+                    formData.put("variables", DescriptorHelper.fixVariables(formData.getString("variables"), boxStack));
+                }                            
             }
-
+            
             return super.newInstance(req, formData);
         }
 

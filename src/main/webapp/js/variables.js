@@ -361,6 +361,13 @@ var ElasticBoxVariables = (function () {
             });
         },
         
+        removeInvalidVariables = function (variables, boxes) {
+            var validVariables = _.flatten(_.pluck(boxes, 'variables'));
+            return _.filter(variables, function (variable) {
+                return _.findWhere(validVariables, {'name': variable.name, 'scope': variable.scope});
+            });
+        },
+        
         refreshVariables = function (variableHolder, populate) {
             var varHeader = _.first(Dom.getChildren(variableHolder.varTBody)),
                 varTBodyElement = new Element(variableHolder.varTBody),
@@ -386,16 +393,19 @@ var ElasticBoxVariables = (function () {
                 variableHolder.varTBody.appendChild(messageRow);
                 Connect.asyncRequest('GET', boxStackUrl, {
                     success: function (response) {
-                        var savedVariables = null;
+                        var boxes = response.responseText.evalJSON(),
+                            savedVariables = null;
                         
                         if (populate) {
                             savedVariables = Dom.getAttribute(variableHolder.varTextBox, 'value').evalJSON();
+                            savedVariables = removeInvalidVariables(savedVariables, boxes);
+                            Dom.setAttribute(variableHolder.varTextBox, 'value', savedVariables.toJSON());   
                         } else {
                             Dom.setAttribute(variableHolder.varTextBox, 'value', '[]');
                         }
                         
                         clearVariables();
-                        addVariables(response.responseText.evalJSON(), savedVariables, variableHolder);
+                        addVariables(boxes, savedVariables, variableHolder);
                     },
 
                     failure: function (response) {

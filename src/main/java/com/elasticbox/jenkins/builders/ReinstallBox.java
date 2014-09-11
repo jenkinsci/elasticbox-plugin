@@ -14,10 +14,9 @@ package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
-import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -25,13 +24,10 @@ import hudson.model.BuildListener;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -56,71 +52,25 @@ public class ReinstallBox extends InstanceBuildStep {
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
-        reinstall(instanceProvider.getInstanceId(build), ebCloud, ebCloud.createClient(), null, true, logger);
+        reinstall(Collections.singletonList(instanceProvider.getInstanceId(build)), ebCloud, ebCloud.createClient(), null, true, logger);
         return true;
     }   
-    
-    static void reinstall(String instanceId, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables,
-            boolean waitForCompletion, TaskLogger logger) throws IOException {
-        IProgressMonitor monitor = client.reinstall(instanceId, jsonVariables);
-        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-        logger.info("Reinstalling box instance {0}", instancePageUrl);
-        if (waitForCompletion) {
-            try {
-                logger.info("Waiting for the box instance {0} to finish reinstall", instancePageUrl);
-                monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-                logger.info("The box instance {0} has been reinstalled successfully ", instancePageUrl);
-            } catch (IProgressMonitor.IncompleteException ex) {
-                Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
-                logger.error("Failed to reinstall box instance {0}: {1}", instancePageUrl, ex.getMessage());
-                throw new AbortException(ex.getMessage());
-            }   
-        }
-    }
     
     static void reinstall(List<String> instanceIDs, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables, 
             boolean waitForCompletion, TaskLogger logger) throws IOException {
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         for (String instanceId : instanceIDs) {
-            IProgressMonitor monitor = client.reinstall(instanceId, jsonVariables);
+            JSONArray validVariables = jsonVariables != null ? JSONArray.fromObject(jsonVariables) : new JSONArray();
+            DescriptorHelper.removeInvalidVariables(validVariables, 
+                    ((ReconfigureBox.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(ReconfigureBox.class)).doGetBoxStack(ebCloud.name, instanceId).getJsonArray());
+            IProgressMonitor monitor = client.reinstall(instanceId, validVariables);
             monitors.add(monitor);
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
             logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));            
         }
         if (waitForCompletion) {
-            logger.info(MessageFormat.format("Waiting for {0} to finish reinstall", instanceIDs.size() > 0 ? "the instances" : "the instance"));
-            long startWaitTime = System.currentTimeMillis();
-            List<IProgressMonitor> doneMonitors = new ArrayList<IProgressMonitor>();
-            final int waitInterval = 2;            
-            final int maxWaitCycles = (int) Math.ceil(ElasticBoxSlaveHandler.TIMEOUT_MINUTES / (waitInterval * instanceIDs.size())) + 1; 
-            for (int i = 0; i < maxWaitCycles && doneMonitors.size() < instanceIDs.size(); i++) {
-                for (Iterator<IProgressMonitor> iter = monitors.iterator(); iter.hasNext();) {
-                    IProgressMonitor monitor = iter.next();
-                    String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-                    try {
-                        monitor.waitForDone(waitInterval);
-                        doneMonitors.add(monitor);
-                        iter.remove();
-                        logger.info(MessageFormat.format("The box instance {0} has been reinstalled successfully ", instancePageUrl));
-                    } catch (IProgressMonitor.TimeoutException ex) {
-                        logger.info(ex.getMessage());
-                    } catch (IProgressMonitor.IncompleteException ex) {
-                        Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-                        logger.error("Failed to reinstall box instance {0}: {1}", instancePageUrl, ex.getMessage());
-                        throw new AbortException(ex.getMessage());
-                    }
-                }
-            }
-            if (!monitors.isEmpty()) {
-                List<String> instancePageURLs = new ArrayList<String>();
-                for (IProgressMonitor monitor : monitors) {
-                    instancePageURLs.add(Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl()));
-                }
-                String message = MessageFormat.format("The following instances still are not ready after waiting for {0} minutes: {1}", 
-                        TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime), StringUtils.join(instancePageURLs, ','));
-                logger.error(message);
-                throw new AbortException(message);
-            }
+            logger.info(MessageFormat.format("Waiting for {0} to finish reinstall", instanceIDs.size() > 1 ? "the instances" : "the instance"));
+            InstanceBuildStep.waitForCompletion(Client.InstanceOperation.REINSTALL, monitors, ebCloud, client, logger);
         }
     }
     

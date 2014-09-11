@@ -59,8 +59,8 @@ public class StartBox extends InstanceBuildStep {
             logger.info(MessageFormat.format("The box instance {0} has been started successfully ", instancePageUrl));
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-            logger.error("Failed to start box instance %s: %s", instancePageUrl, ex.getMessage());
+            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+            logger.error(MessageFormat.format("Failed to start box instance {0}: {1}", instancePageUrl, ex.getMessage()));
             throw new AbortException(ex.getMessage());
         }
     }    

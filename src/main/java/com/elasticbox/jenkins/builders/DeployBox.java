@@ -97,7 +97,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
     
     private JSONArray getResolvedVariables(VariableResolver resolver) {
-        JSONArray resolvedVariables = JSONArray.fromObject(variables);
+        JSONArray resolvedVariables = variables != null ? JSONArray.fromObject(variables) : new JSONArray();
         for (Object variable : resolvedVariables) {
             resolver.resolve((JSONObject) variable);
         }        
@@ -148,7 +148,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) throws IOException {
         String resolvedEnvironment = resolver.resolve(this.environment);
-        IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, getResolvedVariables(resolver));
+        JSONArray resolvedVariables = getResolvedVariables(resolver);
+        DescriptorHelper.removeInvalidVariables(resolvedVariables, ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, box, boxVersion).getJsonArray());
+        IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, resolvedVariables);
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         logger.info("Deploying box instance {0}", instancePageUrl);
         if (waitForCompletion) {
@@ -341,6 +343,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
             if (formData.getString("environment").trim().length() == 0) {
                 throw new FormException("Enviroment is required to launch a box in ElasticBox", "environment");
             }     
+            
+            if (formData.containsKey("variables")) {
+                JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("box"), formData.getString("boxVersion")).getJsonArray();
+                formData.put("variables", DescriptorHelper.fixVariables(formData.getString("variables"), boxStack));
+            }
             
             return super.newInstance(req, formData);
         }                

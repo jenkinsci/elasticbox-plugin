@@ -68,6 +68,10 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
 
         public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException {
         }
+
+        public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
+            return true;
+        }
     };
 
     private static class InstanceCreationRequest {
@@ -166,6 +170,10 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                     LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 }
             }
+        }
+
+        public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
+            return monitor != null ? monitor.isDone(instance) : false;
         }
         
     }
@@ -428,7 +436,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         JSONArray variables = SlaveInstance.createJenkinsVariables(ebClient, Jenkins.getInstance().getRootUrl(), request.slave);
         String scope = variables.getJSONObject(0).getString("scope");
         SlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
-        if (slaveConfig != null) {
+        if (slaveConfig != null && slaveConfig.getVariables() != null) {
             JSONArray configuredVariables = JSONArray.fromObject(slaveConfig.getVariables());
             for (int i = 0; i < configuredVariables.size(); i++) {
                 JSONObject variable = configuredVariables.getJSONObject(i);

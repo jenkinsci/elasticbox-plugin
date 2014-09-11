@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>elasticbox</artifactId>
-  <version>0.8.7</version>
+  <version>0.8.8-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->

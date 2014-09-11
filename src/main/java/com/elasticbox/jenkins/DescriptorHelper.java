@@ -23,7 +23,10 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
@@ -322,6 +325,36 @@ public class DescriptorHelper {
         } catch (IOException ex) {
             return FormValidation.error(ex.getMessage() != null ? ex.getMessage() : "Cannot connect to the cloud");
         }
+    }
+    
+    public static JSONArray removeInvalidVariables(JSONArray variableArray, JSONArray boxStack) {
+        Set<String> fullVariableNames = new HashSet<String>();
+        for (Object box : boxStack) {
+            JSONObject boxJson = (JSONObject) box;
+            for (Object var : boxJson.getJSONArray("variables")) {
+                JSONObject varJson = (JSONObject) var;
+                fullVariableNames.add(varJson.getString("scope") + '.' + varJson.getString("name"));
+            }
+        }
+        for (Iterator iter = variableArray.iterator(); iter.hasNext();) {
+            JSONObject varJson = (JSONObject) iter.next();
+            String fullVariableName = (varJson.containsKey("scope") ? varJson.getString("scope") : StringUtils.EMPTY) + '.' + varJson.getString("name");
+            if (!fullVariableNames.contains(fullVariableName)) {
+                iter.remove();
+            }
+        }
+        
+        return variableArray;
+    }
+    
+    public static String fixVariables(String variables, JSONArray boxStack) {
+        if (variables == null) {
+            return null;
+        }
+        
+        JSONArray variableArray = JSONArray.fromObject(variables);
+        removeInvalidVariables(variableArray, boxStack);
+        return variableArray.toString();
     }
     
     private static ListBoxModel sort(ListBoxModel model) {

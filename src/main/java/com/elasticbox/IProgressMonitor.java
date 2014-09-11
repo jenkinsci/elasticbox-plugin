@@ -13,6 +13,7 @@
 package com.elasticbox;
 
 import java.io.IOException;
+import net.sf.json.JSONObject;
 
 /**
  *
@@ -34,6 +35,8 @@ public interface IProgressMonitor {
     String getResourceUrl();
     
     boolean isDone() throws IncompleteException, IOException;
+    
+    boolean isDone(JSONObject instance) throws IncompleteException, IOException;
     
     long getCreationTime();
     
