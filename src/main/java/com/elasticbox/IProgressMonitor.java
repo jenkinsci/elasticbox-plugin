@@ -20,18 +20,6 @@ import net.sf.json.JSONObject;
  * @author Phong Nguyen Le
  */
 public interface IProgressMonitor {
-    public static class IncompleteException extends Exception {
-        public IncompleteException(String message) {
-            super(message);
-        }
-    }
-    
-    public static class TimeoutException extends IncompleteException {
-        public TimeoutException(String message) {
-            super(message);
-        }
-    }
-    
     String getResourceUrl();
     
     boolean isDone() throws IncompleteException, IOException;
@@ -48,4 +36,45 @@ public interface IProgressMonitor {
      * @throws IOException if unexpected error occurred
      */
     void waitForDone(int timeout) throws IncompleteException, IOException;
+    
+    public static final IProgressMonitor DONE_MONITOR = new DoneMonitor(null);
+            
+    public static class DoneMonitor implements IProgressMonitor {
+        private final String resourceUrl;
+        
+        public DoneMonitor(String resourceUrl) {
+            this.resourceUrl = resourceUrl;
+        }
+        
+        public String getResourceUrl() {
+            return resourceUrl;
+        }
+
+        public boolean isDone() throws IProgressMonitor.IncompleteException, IOException {
+            return true;
+        }
+
+        public long getCreationTime() {
+            throw new UnsupportedOperationException();
+        }
+
+        public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException {
+        }
+
+        public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
+            return true;
+        }        
+    }
+    
+    public static class IncompleteException extends Exception {
+        public IncompleteException(String message) {
+            super(message);
+        }
+    }
+    
+    public static class TimeoutException extends IncompleteException {
+        public TimeoutException(String message) {
+            super(message);
+        }
+    }        
 }

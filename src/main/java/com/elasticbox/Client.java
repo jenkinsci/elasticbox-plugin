@@ -133,6 +133,10 @@ public class Client {
     public JSONArray getBoxVersions(String boxId) throws IOException {
         return (JSONArray) doGet(MessageFormat.format("{0}/services/boxes/{1}/versions", endpointUrl, boxId), true);
     }
+
+    public JSONObject getBox(String boxId) throws IOException {
+        return (JSONObject) doGet(MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId), false);
+    }
     
     private boolean canChange(String workspaceId, String boxId) throws IOException {
         JSONObject box = (JSONObject) doGet(MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId), false);
@@ -151,6 +155,10 @@ public class Client {
     }
     
     public JSONArray getProfiles(String workspaceId, String boxId) throws IOException {
+        if (StringUtils.isBlank(workspaceId)) {
+            throw new IOException("workspaceId cannot be blank");
+        };
+
         JSONArray profiles = (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles?box_version={2}", endpointUrl, URLEncoder.encode(workspaceId, UTF_8), boxId), true);
         if (!canChange(workspaceId, boxId)) {
             // this is a read-only box that could have profiles associated with the its versions
@@ -175,18 +183,31 @@ public class Client {
     }
     
     public JSONObject getInstance(String instanceId) throws IOException {
+        if (StringUtils.isBlank(instanceId)) {
+            throw new IOException("instanceId cannot be blank");
+        };
         return (JSONObject) doGet(MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId), false);
     }
 
     public JSONObject getProfile(String profileId) throws IOException {
+        if (StringUtils.isBlank(profileId)) {
+            throw new IOException("profileId cannot be blank");
+        };
         return (JSONObject) doGet(MessageFormat.format("{0}/services/profiles/{1}", endpointUrl, profileId), false);  
     }
     
     public JSONArray getInstances(String workspaceId) throws IOException {
+        if (StringUtils.isBlank(workspaceId)) {
+            throw new IOException("workspaceId cannot be blank");
+        };
         return (JSONArray) doGet(MessageFormat.format("/services/workspaces/{0}/instances", workspaceId), true);
     }
     
     public JSONArray getInstances(String workspaceId, List<String> instanceIDs) throws IOException {
+        if (StringUtils.isBlank(workspaceId)) {
+            throw new IOException("workspaceId cannot be blank");
+        };
+
         JSONArray instances = new JSONArray();
         for (int start = 0; start < instanceIDs.size();) {
             int end = Math.min(800, instanceIDs.size());            
@@ -228,7 +249,38 @@ public class Client {
         return (JSONArray) doGet(MessageFormat.format("/services/boxes/{0}/stack", boxId), true);
     }
 
-    public JSONObject updateInstance(JSONObject instance) throws IOException  {
+    public JSONObject updateInstance(JSONObject instance, JSONArray variables) throws IOException  {
+        if (variables != null && !variables.isEmpty()) {
+            JSONArray instanceBoxes = instance.getJSONArray("boxes");
+            JSONObject mainBox = instanceBoxes.getJSONObject(0);
+            JSONArray boxStack = new BoxStack(mainBox.getString("id"), instanceBoxes, this).toJSONArray();
+            JSONArray boxVariables = new JSONArray();
+            for (Object box : boxStack) {
+                boxVariables.addAll(((JSONObject) box).getJSONArray("variables"));
+            }
+            JSONArray instanceVariables = instance.getJSONArray("variables");
+            List<JSONObject> newVariables = new ArrayList<JSONObject>();
+            for (Object variable : variables) {
+                JSONObject variableJson = (JSONObject) variable;
+                JSONObject instanceVariable = findVariable(variableJson, instanceVariables);            
+                if (instanceVariable == null) {
+                    JSONObject boxVariable = findVariable(variableJson, boxVariables);
+                    if (boxVariable != null) {
+                        instanceVariable = JSONObject.fromObject(boxVariable);
+                        if (instanceVariable.getString("scope").isEmpty()) {
+                            instanceVariable.remove("scope");
+                        }
+                        newVariables.add(instanceVariable);
+                    }
+                }
+                if (instanceVariable != null) {
+                    instanceVariable.put("value", variableJson.getString("value"));
+                }
+            }
+            instanceVariables.addAll(newVariables);
+            instance.put("variables", instanceVariables);
+        }
+        
         HttpPut put = new HttpPut(getInstanceUrl(instance.getString("id")));
         put.setEntity(new StringEntity(instance.toString(), ContentType.APPLICATION_JSON));
         try {
@@ -392,44 +444,22 @@ public class Client {
         return new ProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.RECONFIGURE),
                 instance.getString("updated"));        
     }
-        
+    
     private JSONObject doOperation(String instanceId, String operation, JSONArray variables) throws IOException {
-        JSONObject instance = getInstance(instanceId);
+        return doOperation(getInstance(instanceId), operation, variables);
+    }
+        
+    private JSONObject doOperation(JSONObject instance, String operation, JSONArray variables) throws IOException {
+        String instanceId = instance.getString("id");
         String instanceUrl = getInstanceUrl(instanceId);
         if (variables != null && !variables.isEmpty()) {
-            JSONArray instanceVariables = instance.getJSONArray("variables");
-            JSONArray boxVariables = instance.getJSONArray("boxes").getJSONObject(0).getJSONArray("variables");
-            List<JSONObject> newVariables = new ArrayList<JSONObject>();
-            for (Object variable : variables) {
-                JSONObject variableJson = (JSONObject) variable;
-                JSONObject instanceVariable = findVariable(variableJson, instanceVariables);            
-                if (instanceVariable == null) {
-                    JSONObject boxVariable = findVariable(variableJson, boxVariables);
-                    if (boxVariable != null) {
-                        instanceVariable = JSONObject.fromObject(boxVariable);
-                        newVariables.add(instanceVariable);
-                    }
-                }
-                if (instanceVariable != null) {
-                    instanceVariable.put("value", variableJson.getString("value"));
-                }
-            }
-            instanceVariables.addAll(newVariables);
-            instance.put("variables", instanceVariables);
-            HttpPut put = new HttpPut(instanceUrl);
-            put.setEntity(new StringEntity(instance.toString(), ContentType.APPLICATION_JSON));
-            try {
-                HttpResponse response = execute(put);
-                instance = JSONObject.fromObject(getResponseBodyAsString(response));
-            } finally {
-                put.reset();
-            }
+            instance = updateInstance(instance, variables);
         }
         
         HttpPut put = new HttpPut(MessageFormat.format("{0}/{1}", instanceUrl, operation));
         try {
             execute(put);
-            return instance;
+            return getInstance(instanceId);
         } finally {
             put.reset();
         }
@@ -463,7 +493,13 @@ public class Client {
     }
     
     public IProgressMonitor poweron(String instanceId) throws IOException {
-        JSONObject instance = doOperation(instanceId, InstanceOperation.POWERON, null);
+        JSONObject instance = getInstance(instanceId);
+        String state = instance.getString("state");
+        if (ON_OPERATIONS.contains(instance.getString("operation")) && (InstanceState.DONE.equals(state) || InstanceState.PROCESSING.equals(state))) {
+            return new IProgressMonitor.DoneMonitor(getInstanceUrl(instanceId));
+        }
+        
+        instance = doOperation(instance, InstanceOperation.POWERON, null);
         return new ProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.POWERON),
             instance.getString("updated"));
     }
@@ -500,6 +536,10 @@ public class Client {
             get.reset();
         }
     }
+
+    public String getInstanceUrl(String instanceId) {
+        return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);
+    }
     
     public static final String getResourceId(String resourceUrl) {
         return resourceUrl != null ? resourceUrl.substring(resourceUrl.lastIndexOf('/') + 1) : null;
@@ -511,6 +551,15 @@ public class Client {
             if (instanceId != null) {
                 return MessageFormat.format("{0}/#/instances/{1}/i", endpointUrl, instanceId);
             }
+        }
+        return null;
+    }
+    
+    public static final String getPageUrl(String endpointUrl, JSONObject resource) {
+        String resourceUri = resource.getString("uri");
+        if (resourceUri.startsWith("/services/instances/")) {
+            return MessageFormat.format("{0}/#/instances/{1}/{2}", endpointUrl, resource.getString("id"),
+                    resource.getString("name").replaceAll("[^a-zA-Z0-9-]", "-"));
         }
         return null;
     }
@@ -529,10 +578,6 @@ public class Client {
         }
         return null;
     }    
-    
-    private String getInstanceUrl(String instanceId) {
-        return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);
-    }
     
     private String getErrorMessage(String errorResponseBody) {
         JSONObject error = null;

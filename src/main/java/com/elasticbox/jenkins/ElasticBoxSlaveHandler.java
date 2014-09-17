@@ -52,27 +52,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     public static final int TIMEOUT_MINUTES = Integer.getInteger("elasticbox.jenkins.deploymentTimeout", 60);
     private static final long TIMEOUT = TIMEOUT_MINUTES * 60000;
     private static final long RECURRENT_PERIOD = Long.getLong("elasticbox.jenkins.ElasticBoxSlaveHandler.recurrentPeriod", 10000);
-    private static final IProgressMonitor DONE_MONITOR = new IProgressMonitor() {
-
-        public String getResourceUrl() {
-            return null;
-        }
-
-        public boolean isDone() throws IProgressMonitor.IncompleteException, IOException {
-            return true;
-        }
-
-        public long getCreationTime() {
-            throw new UnsupportedOperationException();
-        }
-
-        public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException {
-        }
-
-        public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
-            return true;
-        }
-    };
 
     private static class InstanceCreationRequest {
         private final ElasticBoxSlave slave;
@@ -147,7 +126,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             }
             
-            if (monitor == DONE_MONITOR) {
+            if (monitor == IProgressMonitor.DONE_MONITOR) {
                 return;
             }
             
@@ -248,12 +227,12 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                 } catch (IOException ex) {
                     log(Level.SEVERE, MessageFormat.format("Error deloying a new instance for slave {0}", 
                             request.slave.getDisplayName()), ex, listener);
-                    request.monitor.setMonitor(DONE_MONITOR);
+                    request.monitor.setMonitor(IProgressMonitor.DONE_MONITOR);
                     removeSlave(request.slave);
                 }
             } else {
                 log(Level.WARNING, MessageFormat.format("Max number of ElasticBox instances has been reached for {0}", cloud.getDisplayName()), null, listener);
-                request.monitor.setMonitor(DONE_MONITOR);
+                request.monitor.setMonitor(IProgressMonitor.DONE_MONITOR);
                 removeSlave(request.slave);
             }            
         }
@@ -467,7 +446,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         String scope = variables.getJSONObject(0).getString("scope");
         SlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
         if (slaveConfig != null && slaveConfig.getVariables() != null) {
-            JSONArray configuredVariables = JSONArray.fromObject(slaveConfig.getVariables());
+            JSONArray configuredVariables = DescriptorHelper.parseVariables(slaveConfig.getVariables());
             for (int i = 0; i < configuredVariables.size(); i++) {
                 JSONObject variable = configuredVariables.getJSONObject(i);
                 if (!scope.equals(variable.getString("scope")) || !SlaveInstance.REQUIRED_VARIABLES.contains(variable.getString("name"))) {

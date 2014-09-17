@@ -17,7 +17,7 @@
             <f:select clazz="required eb-instance" />
         </f:entry>
         <f:invisibleEntry>
-            <f:textbox clazz="eb-variables help" field="variables"/>
+            <f:textbox clazz="eb-variables help" field="variables" default="[]"/>
         </f:invisibleEntry>
         <f:entry>
             <f:block>
@@ -42,7 +42,7 @@
             <f:select clazz="eb-buildstep" />
         </f:entry>
         <f:invisibleEntry>
-            <f:textbox clazz="eb-variables help" field="buildStepVariables"/>
+            <f:textbox clazz="eb-variables help" field="buildStepVariables" default="[]"/>
         </f:invisibleEntry>
         <f:entry>
             <f:block>

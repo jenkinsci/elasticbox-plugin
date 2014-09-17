@@ -122,7 +122,7 @@ public abstract class InstanceBuildStep extends Builder {
         return null;        
     }
     
-    static void waitForCompletion(String operation, List<IProgressMonitor> monitors, ElasticBoxCloud ebCloud, 
+    static void waitForCompletion(String operationDisplayName, List<IProgressMonitor> monitors, ElasticBoxCloud ebCloud, 
             Client client, TaskLogger logger) throws IOException {
         Map<String, IProgressMonitor> instanceIdToMonitorMap = new HashMap<String, IProgressMonitor>();        
         for (IProgressMonitor monitor : monitors) {
@@ -144,17 +144,17 @@ public abstract class InstanceBuildStep extends Builder {
                 String instanceId = instanceJson.getString("id");
                 instanceIDs.remove(instanceId);
                 IProgressMonitor monitor = instanceIdToMonitorMap.get(instanceId);
-                String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
+                String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), instanceJson);
                 boolean done;
                 try {
                     done = monitor.isDone(instanceJson);
                 } catch (IProgressMonitor.IncompleteException ex) {
-                    logger.error("Failed to perform operation ''{0}'' for box instance {0}: {1}", operation, instancePageUrl, ex.getMessage());
+                    logger.error("Failed to perform operation {0} for instance {0}: {1}", operationDisplayName, instancePageUrl, ex.getMessage());
                     throw new AbortException(ex.getMessage());
                 }
                 
                 if (done) {
-                    logger.info(MessageFormat.format("The box instance {0} has been reconfigured successfully ", instancePageUrl));                    
+                    logger.info(MessageFormat.format("Operation {0} is successful for instance {1}", operationDisplayName, instancePageUrl));                    
                     instanceIdToMonitorMap.remove(instanceId);
                 }
             }

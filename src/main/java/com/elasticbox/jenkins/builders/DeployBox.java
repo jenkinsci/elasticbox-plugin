@@ -97,7 +97,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
     
     private JSONArray getResolvedVariables(VariableResolver resolver) {
-        JSONArray resolvedVariables = variables != null ? JSONArray.fromObject(variables) : new JSONArray();
+        JSONArray resolvedVariables = DescriptorHelper.parseVariables(variables);
         for (Object variable : resolvedVariables) {
             resolver.resolve((JSONObject) variable);
         }        
@@ -124,8 +124,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
         JSONObject instance = existingInstances.get(0);
         if (alternateAction.equals(ACTION_SKIP)) {
-            String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), 
-                    ebCloud.getEndpointUrl() + instance.getString("uri"));
+            String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), instance);
             logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
         } else if (alternateAction.equals(ACTION_RECONFIGURE)) {            
             ReconfigureBox.reconfigure(instanceIDs, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
@@ -151,7 +150,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
         JSONArray resolvedVariables = getResolvedVariables(resolver);
         DescriptorHelper.removeInvalidVariables(resolvedVariables, ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, box, boxVersion).getJsonArray());
         IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, resolvedVariables);
-        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
+        String instanceId = Client.getResourceId(monitor.getResourceUrl());
+        String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
         logger.info("Deploying box instance {0}", instancePageUrl);
         if (waitForCompletion) {
             try {
@@ -218,7 +218,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
             if (instanceTags.size() > oldSize) {
                 instance.put("tags", instanceTags);
-                instance = client.updateInstance(instance);
+                instance = client.updateInstance(instance, null);
             }
         }
         instanceManager.setInstance(build, instance);
@@ -340,9 +340,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 throw new FormException(ex.getMessage(), "instances");
             }
             
-            if (formData.getString("environment").trim().length() == 0) {
+            String environment = formData.getString("environment").trim();
+            if (environment.length() == 0) {
                 throw new FormException("Enviroment is required to launch a box in ElasticBox", "environment");
             }     
+            formData.put("environment", environment);
             
             if (formData.containsKey("variables")) {
                 JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("box"), formData.getString("boxVersion")).getJsonArray();

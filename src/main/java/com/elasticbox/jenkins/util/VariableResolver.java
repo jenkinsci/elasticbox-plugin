@@ -15,8 +15,8 @@ package com.elasticbox.jenkins.util;
 import com.elasticbox.jenkins.builders.IInstanceProvider;
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.Project;
+import hudson.model.TaskListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +40,7 @@ public final class VariableResolver {
     private final Map<String, String> variableValueLookup;
     
 
-    public VariableResolver(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
+    public VariableResolver(AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {
         instanceProviders = new ArrayList<IInstanceProvider>();
         for (Object builder : ((Project) build.getProject()).getBuilders()) {
             if (builder instanceof IInstanceProvider) {

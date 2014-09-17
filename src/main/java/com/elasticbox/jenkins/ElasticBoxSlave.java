@@ -30,11 +30,13 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -55,6 +57,39 @@ public class ElasticBoxSlave extends Slave {
     private static final String PER_PROJECT_TYPE = "Per project configured";
     private static final String GLOBAL_TYPE = "Glocally configured";
     
+    private static final int ID_PREFIX_LENGTH = 21;
+    private static final String ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+    
+    private static String randomId(Random random) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 8; i++) {
+            sb.append(ID_CHARS.charAt(random.nextInt(ID_CHARS.length())));
+        }
+        return sb.toString();
+    }
+    
+    private static synchronized String generateName(ElasticBoxCloud cloud, String boxVersion) throws IOException {
+        JSONObject boxJson = cloud.createClient().getBox(boxVersion);
+        String prefix = boxJson.getString("name").replaceAll("[^a-zA-Z0-9-]", "-").toLowerCase();
+        if (prefix.length() > ID_PREFIX_LENGTH) {
+            prefix = prefix.substring(0, ID_PREFIX_LENGTH);
+        } else if (prefix.length() < ID_PREFIX_LENGTH) {
+            StringBuilder padding = new StringBuilder();
+            for (int i = prefix.length(); i < ID_PREFIX_LENGTH; i++) {
+                padding.append('-');
+            }
+            prefix += padding.toString();
+        }
+                
+        Random random = new Random();
+        String name;
+        do {
+            name = prefix + '-' + randomId(random);
+        } while (Jenkins.getInstance().getNode(name) != null);
+        
+        return name;
+    }
+    
     private final String boxVersion;
     private String profileId;
     private final boolean singleUse;
@@ -68,7 +103,7 @@ public class ElasticBoxSlave extends Slave {
     private final transient String environment;
 
     public ElasticBoxSlave(String profileId, String boxVersion, boolean singleUse, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
-        super(UUID.randomUUID().toString(), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", 
+        super(generateName(cloud, boxVersion), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", 
                 new JNLPLauncher(), new IdleTimeoutRetentionStrategy(cloud.getRetentionTime()), Collections.EMPTY_LIST);
         this.boxVersion = boxVersion;
         this.profileId = profileId;
@@ -80,7 +115,7 @@ public class ElasticBoxSlave extends Slave {
     }
     
     public ElasticBoxSlave(SlaveConfiguration config, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
-        super(UUID.randomUUID().toString(), config.getDescription(), 
+        super(generateName(cloud, config.getBoxVersion()), config.getDescription(), 
             StringUtils.isBlank(config.getRemoteFS()) ? getRemoteFS(config.getProfile(), cloud) : config.getRemoteFS(), 
             config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), 
             new SlaveConfigurationRetentionStrategy(config, cloud), Collections.EMPTY_LIST);

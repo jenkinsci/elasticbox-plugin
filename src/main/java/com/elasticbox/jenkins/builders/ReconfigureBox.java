@@ -21,6 +21,7 @@ import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.Builder;
 import java.io.IOException;
@@ -163,6 +164,11 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
                 @QueryParameter String workspace, @QueryParameter String box) {
             return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, box);
         }
-        
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return false;
+        }
+
     }
 }

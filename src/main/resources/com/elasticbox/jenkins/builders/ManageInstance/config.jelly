@@ -1,0 +1,27 @@
+<!--
+ElasticBox Confidential
+Copyright (c) 2014 All Right Reserved, ElasticBox Inc.
+
+NOTICE:  All information contained herein is, and remains the property
+of ElasticBox. The intellectual and technical concepts contained herein are
+proprietary and may be covered by U.S. and Foreign Patents, patents in process,
+and are protected by trade secret or copyright law. Dissemination of this
+information or reproduction of this material is strictly forbidden unless prior
+written permission is obtained from ElasticBox.
+-->
+<?jelly escape-by-default='true'?>
+
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry title="${%Cloud}" field="cloud">
+        <f:select clazz="required eb-cloud" />
+    </f:entry>    
+    <f:entry title="${%Workspace}" field="workspace">
+        <f:select clazz="required eb-workspace" />
+    </f:entry>
+    <f:nested>
+        <f:hetero-list name="operations" addCaption="Add operation" descriptors="${descriptor.operations}" hasHeader="true"
+            items="${instance.operations}" >
+        </f:hetero-list>
+    </f:nested>
+</j:jelly>

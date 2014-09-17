@@ -26,6 +26,10 @@ public class TaskLogger {
     public TaskLogger(TaskListener listener) {
         taskListener = listener;
     }
+
+    public TaskListener getTaskListener() {
+        return taskListener;
+    }
     
     public void info(String msg) {
         taskListener.getLogger().println(PREFIX + msg);

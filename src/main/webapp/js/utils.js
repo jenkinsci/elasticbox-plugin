@@ -14,7 +14,6 @@ var ElasticBoxUtils = (function() {
     var DescriptorIdPrefix = 'com.elasticbox.jenkins.builders.',
         DeployBoxDescriptorId = DescriptorIdPrefix + 'DeployBox',
         DeployBoxBuildStepName = 'ElasticBox - Deploy Box',
-        ReconfigureBoxDescriptorId = DescriptorIdPrefix + 'ReconfigureBox',
 
         Dom = YAHOO.util.Dom,
         
@@ -51,9 +50,10 @@ var ElasticBoxUtils = (function() {
         },
 
         DescriptorIdPrefix: DescriptorIdPrefix,
-        DeployBoxDescriptorId: DeployBoxDescriptorId,
+        DeployBoxDescriptorId: DescriptorIdPrefix + 'DeployBox',
         DeployBoxBuildStepName: DeployBoxBuildStepName,
-        ReconfigureBoxDescriptorId: ReconfigureBoxDescriptorId,
+        ReconfigureBoxDescriptorId: DescriptorIdPrefix + 'ReconfigureBox',
+        ManageInstanceDescriptorId: DescriptorIdPrefix + 'ManageInstance',
         ElasticBoxCloudDescriptorId: 'com.elasticbox.jenkins.ElasticBoxCloud',
         
         getDeployBoxSteps: function (deployBoxStepElements) {

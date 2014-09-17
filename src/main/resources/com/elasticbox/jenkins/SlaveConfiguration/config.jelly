@@ -45,7 +45,7 @@ written permission is obtained from ElasticBox.
       <f:textbox />
     </f:entry>
     <f:invisibleEntry>
-        <f:textbox clazz="eb-variables help" field="variables"/>
+        <f:textbox clazz="eb-variables help" field="variables" default="[]"/>
     </f:invisibleEntry>
     <f:entry>
         <f:block>

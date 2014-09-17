@@ -12,8 +12,11 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.util.ClientCache;
+import com.elasticbox.jenkins.util.CompositeObjectFilter;
+import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import hudson.slaves.Cloud;
 import hudson.util.FormValidation;
@@ -21,6 +24,7 @@ import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -208,11 +213,64 @@ public class DescriptorHelper {
     public static JSONArrayResponse getInstanceBoxStack(String cloud, String instance) {
         return getInstanceBoxStack(ClientCache.getClient(cloud), instance);
     }
+    
+    private static class InstanceFilterByTags implements ObjectFilter {
+        final Set<String> tags;
+        final List<Pattern> tagPatterns;
+        final boolean excludeInaccessible;
 
-    private static class InstanceFilter {
-        private final String boxId;
+        public InstanceFilterByTags(Set<String> tags, boolean excludeInaccessible) {
+            this.tags = new HashSet<String>();
+            Set<String> regExTags = new HashSet<String>();
+            for (String tag : tags) {
+                if (tag.startsWith("/") && tag.endsWith("/")) {
+                    regExTags.add(tag.substring(1, tag.length() - 1));
+                } else {
+                    this.tags.add(tag);
+                }
+            }
+            tagPatterns = new ArrayList<Pattern>();
+            for (String tag : regExTags) {
+                tagPatterns.add(Pattern.compile(tag));
+            }
+            this.excludeInaccessible = excludeInaccessible;
+        }
 
-        InstanceFilter(String boxId) {
+        public boolean accept(JSONObject instance) {
+            if (tags.isEmpty() && tagPatterns.isEmpty()) {
+                return false;
+            }
+            
+            Set<String> instanceTags = new HashSet<String>(Arrays.asList((String[])instance.getJSONArray("tags").toArray(new String[0])));
+            instanceTags.add(instance.getString("id"));
+            boolean hasTags = instanceTags.containsAll(tags);
+            if (!hasTags) {
+                return false;
+            }
+            for (Pattern pattern : tagPatterns) {
+                boolean matchFound = false;
+                for (String tag : instanceTags) {
+                    if (pattern.matcher(tag).matches()) {
+                        matchFound = true;
+                        break;
+                    }
+                }             
+                if (!matchFound) {
+                    return false;
+                }
+            }
+            if (hasTags && excludeInaccessible) {
+                return !Client.InstanceState.UNAVAILABLE.equals(instance.getString("state")) &&
+                        !Client.TERMINATE_OPERATIONS.contains(instance.getString("operation")); 
+            }            
+            return hasTags;
+        }
+    }
+
+    private static class InstanceFilterByBox implements ObjectFilter {
+        final String boxId;
+
+        InstanceFilterByBox(String boxId) {
             this.boxId = boxId;
         }
         
@@ -229,10 +287,10 @@ public class DescriptorHelper {
         }
     }
     
-    public static JSONArrayResponse getInstancesAsJSONArrayResponse(Client client, String workspace, String box) {
+    private static JSONArray getInstances(Client client, String workspace, ObjectFilter filter) {
         JSONArray instances = new JSONArray();
-        if (client == null || StringUtils.isBlank(workspace) || StringUtils.isBlank(box)) {
-            return new JSONArrayResponse(instances);
+        if (client == null || StringUtils.isBlank(workspace)) {
+            return instances;
         }
 
         try {
@@ -244,12 +302,9 @@ public class DescriptorHelper {
                 }
                 instanceArray = client.getInstances(workspace, instanceIDs);
             }
-            InstanceFilter instanceFilter = new InstanceFilter(box);
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
-                if (instanceFilter.accept(json)) {
-                    json.put("name", MessageFormat.format("{0} - {1} - {2}", json.getString("name"), 
-                            json.getString("environment"), json.getJSONObject("service").getString("id")));
+                if (filter.accept(json)) {
                     instances.add(json);
                 }
             }
@@ -262,6 +317,17 @@ public class DescriptorHelper {
                 return ((JSONObject) o1).getString("name").compareTo(((JSONObject) o2).getString("name"));
             }
         });
+        
+        return instances;
+    }
+    
+    public static JSONArrayResponse getInstancesAsJSONArrayResponse(Client client, String workspace, String box) {
+        JSONArray instances = getInstances(client, workspace, new InstanceFilterByBox(box));
+        for (Object instance : instances) {
+            JSONObject json = (JSONObject) instance;
+            json.put("name", MessageFormat.format("{0} - {1} - {2}", json.getString("name"), 
+                    json.getString("environment"), json.getJSONObject("service").getString("id")));
+        }
         
         return new JSONArrayResponse(instances);
     }
@@ -342,6 +408,10 @@ public class DescriptorHelper {
             if (!fullVariableNames.contains(fullVariableName)) {
                 iter.remove();
             }
+            
+            if (varJson.getString("type").equals("Binding") && StringUtils.isBlank(varJson.getString("value"))) {
+                iter.remove();
+            }
         }
         
         return variableArray;
@@ -352,10 +422,23 @@ public class DescriptorHelper {
             return null;
         }
         
-        JSONArray variableArray = JSONArray.fromObject(variables);
+        JSONArray variableArray = parseVariables(variables);
         removeInvalidVariables(variableArray, boxStack);
         return variableArray.toString();
     }
+    
+    public static JSONArray parseVariables(String variables) {
+        return StringUtils.isBlank(variables) ? new JSONArray(): JSONArray.fromObject(variables);
+    }
+    
+    public static JSONArray getInstances(Set<String> tags, String cloud, String workspace, boolean excludeInaccessible) {
+        return getInstances(ClientCache.getClient(cloud), workspace, new InstanceFilterByTags(tags, excludeInaccessible));
+    }
+    
+    public static JSONArray getInstances(Set<String> tags, String cloud, String workspace, String boxVersion) {
+        return getInstances(ClientCache.getClient(cloud), workspace, 
+                new CompositeObjectFilter(new InstanceFilterByTags(tags, false), new InstanceFilterByBox((boxVersion))));
+    }    
     
     private static ListBoxModel sort(ListBoxModel model) {
         Collections.sort(model, new Comparator<ListBoxModel.Option> () {
@@ -364,114 +447,6 @@ public class DescriptorHelper {
             }
         });
         return model;
-    }
-
-    private static class BoxStack {
-        private final List<JSONObject> overriddenVariables;
-        private final JSONArray boxes;
-        private final String boxId;
-        private final Client client;
-        
-        BoxStack(String boxId, JSONArray boxes, Client client) {
-            this(boxId, boxes, client, new ArrayList<JSONObject>());
-        }
-        
-        BoxStack(String boxId, JSONArray boxes, Client client, List<JSONObject> overridenVariables) {
-            this.boxId = boxId;
-            this.boxes = boxes;      
-            this.client = client;
-            this.overriddenVariables = overridenVariables;
-        }
-        
-        public JSONArray toJSONArray() {
-            return JSONArray.fromObject(createBoxStack("", boxId));
-        }
-        
-        private JSONObject findBox(String boxId) {
-            for (Object json : boxes) {
-                JSONObject box = (JSONObject) json;
-                if (box.getString("id").equals(boxId)) {
-                    return box;
-                }
-            }
-            
-            for (Object json : boxes) {
-                JSONObject box = (JSONObject) json;
-                if (box.containsKey("version") && box.getJSONObject("version").getString("box").equals(boxId)) {
-                    return box;
-                }
-            }      
-            
-            return null;
-        }
-        
-        private JSONObject findOverriddenVariable(String name, String scope) {
-            for (Object json : overriddenVariables) {
-                JSONObject variable = (JSONObject) json;
-                if (scope.equals(variable.get("scope")) && variable.get("name").equals(name)) {
-                    return variable;
-                }
-            }
-
-            return null;
-        }
-
-        private List<JSONObject> createBoxStack(String scope, String boxId) {
-            JSONObject box = findBox(boxId);
-            if (box == null) {
-                return Collections.EMPTY_LIST;
-            }
-            
-            List<JSONObject> boxStack = new ArrayList<JSONObject>();
-            JSONObject stackBox = new JSONObject();
-            String icon = null;
-            if (box.containsKey("icon")) {
-                icon = box.getString("icon");
-            }
-            if (icon == null || icon.isEmpty()) {
-                icon = "/images/platform/box.png";
-            } else if (icon.charAt(0) != '/') {
-                icon = '/' + icon;
-            }
-            stackBox.put("id", box.getString("id"));
-            stackBox.put("name", box.getString("name"));
-            stackBox.put("icon", client.getEndpointUrl() + icon);
-            boxStack.add(stackBox);
-            JSONArray stackBoxVariables = new JSONArray();
-            JSONArray variables = box.getJSONArray("variables");
-            List<JSONObject> boxVariables = new ArrayList<JSONObject>();
-            for (Object json : variables) {
-                JSONObject variable = (JSONObject) json;
-                String varScope = (String) variable.get("scope");
-                if (varScope != null && !varScope.isEmpty()) {
-                    String fullScope = scope.isEmpty() ? varScope : scope + '.' + varScope;
-                    if (findOverriddenVariable(variable.getString("name"), scope) == null) {
-                        JSONObject overriddenVariable = JSONObject.fromObject(variable);
-                        overriddenVariable.put("scope", fullScope);
-                        overriddenVariables.add(variable);
-                    }
-                } else if (variable.getString("type").equals("Box")) {
-                    boxVariables.add(variable);
-                } else {
-                    JSONObject stackBoxVariable = JSONObject.fromObject(variable);
-                    stackBoxVariable.put("scope", scope);
-                    JSONObject overriddenVariable = findOverriddenVariable(stackBoxVariable.getString("name"), scope);
-                    if (overriddenVariable != null) {
-                        stackBoxVariable.put("value", overriddenVariable.get("value"));
-                    }
-                    stackBoxVariables.add(stackBoxVariable);
-                }
-            }        
-            stackBox.put("variables", stackBoxVariables);
-
-            for (JSONObject boxVariable : boxVariables) {
-                String variableName = boxVariable.getString("name");
-                boxStack.addAll(createBoxStack(scope.isEmpty() ? variableName : scope + '.' + variableName, boxVariable.getString("value")));
-            }
-
-            return boxStack;
-        }
-            
     }
         
 }

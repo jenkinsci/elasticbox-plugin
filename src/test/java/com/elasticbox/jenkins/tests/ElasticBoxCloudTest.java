@@ -226,7 +226,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         assertEquals(log.toString(), Result.SUCCESS, result.getResult());
         
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        JSONObject instance = client.getInstance("i-9oewhy");
+        JSONObject instance = client.getInstance("i-c51bop");
         JSONObject connectionVar = null;
         JSONObject httpsVar = null;
         for (Object json : instance.getJSONArray("variables")) {

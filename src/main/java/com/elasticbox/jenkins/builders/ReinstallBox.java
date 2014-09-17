@@ -20,6 +20,7 @@ import com.elasticbox.jenkins.util.TaskLogger;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -81,6 +82,11 @@ public class ReinstallBox extends InstanceBuildStep {
         @Override
         public String getDisplayName() {
             return "ElasticBox - Reinstall Box";
+        }
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return false;
         }
 
     }

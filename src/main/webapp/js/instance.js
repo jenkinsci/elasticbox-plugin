@@ -15,36 +15,104 @@
         Event = YAHOO.util.Event,
 
         refresh = function (populate) {
-            var deployBoxIndex = 1,
-                buildSteps;
+            var takenLabels = [],
+                
+                areBoxesLoaded = function (deployBoxBuildStep) {
+                    var boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', deployBoxBuildStep)),
+                        boxVersionSelect = _.first(Dom.getElementsByClassName('eb-boxVersion', 'select', deployBoxBuildStep)),
+                        boxFirstOption =  ElasticBoxUtils.getElementByTag('option', boxSelect),
+                        boxVersionFirstOption = ElasticBoxUtils.getElementByTag('option', boxVersionSelect);
+                
+                    return _.isUndefined(boxFirstOption) || _.isUndefined(boxVersionFirstOption) ||
+                        (boxFirstOption.value !== boxFirstOption.innerText && boxVersionFirstOption.value !== boxVersionFirstOption.innerText);
+                },
+                
+                updateDeployBoxLabel = function (builder) {
+                    var buildStepLabel = Dom.getElementBy(function (element) {
+                            return ElasticBoxUtils.startsWith(element.innerHTML, ElasticBoxUtils.DeployBoxBuildStepName);
+                        }, null, builder),
+
+                        getSelectionName = function (clazz) {
+                            var select = _.first(Dom.getElementsByClassName(clazz, 'select', builder)),
+                                selectedOption = Dom.getElementBy(function (element) {
+                                    return Dom.getAttribute(element, 'value') === select.value;
+                                }, 'option', select);
+
+                            return selectedOption ? selectedOption.innerText : '';
+                        },
+                        
+                        boxName = getSelectionName('eb-box'),
+                        boxVersionName =  getSelectionName('eb-boxVersion'),
+                        duplicateIndex = 2,
+                        
+                        label;
+                    
+                    if (boxName) {
+                        label = ElasticBoxUtils.format('{0} ({1} - {2})', ElasticBoxUtils.DeployBoxBuildStepName, boxName, boxVersionName);
+                        if (_.contains(takenLabels, label)) {   
+                            for (;_.contains(takenLabels, label + ' (' + duplicateIndex + ')'); duplicateIndex++);
+                            label = label + ' (' + duplicateIndex + ')';
+                        }
+                        takenLabels.push(label);                             
+                    } else {
+                        label = ElasticBoxUtils.DeployBoxBuildStepName;
+                    }
+                    buildStepLabel.innerHTML = label;
+                },
+                                    
+                initializeDeployBoxBuildStepLabels = function (buildSteps) {
+                    var remainingBuildSteps = [];
+                    
+                    _.each(buildSteps, function (buildStep) {
+                        if (areBoxesLoaded(buildStep)) {
+                            updateDeployBoxLabel(buildStep);
+                        } else {
+                            remainingBuildSteps.push(buildStep);
+                        }
+                    });
+                    
+                    if (remainingBuildSteps.length > 0) {
+                        setTimeout(function () {
+                            initializeDeployBoxBuildStepLabels(remainingBuildSteps);
+                        }, 100);
+                    }
+                },
+
+                deployBoxBuildSteps = Dom.getElementsBy(function (element) {
+                    return Dom.getAttribute(element, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId;
+                }, 'div', document, function (builder) {
+                    var deleteButton = ElasticBoxUtils.getElementByTag('button', _.first(Dom.getElementsByClassName('repeatable-delete', 'span', builder)));
+
+                    if (!_.some(Event.getListeners(deleteButton, 'click'), function (listener) {
+                        return listener.obj === ElasticBoxUtils.DeployBoxDescriptorId;
+                    })) {
+                        Event.addListener(deleteButton, 'click', function () {
+                            setTimeout(refresh, 500);
+                        }, ElasticBoxUtils.DeployBoxDescriptorId);
+
+                    }      
+
+                    Dom.getElementsByClassName('eb-boxVersion', 'select', builder, function (select) {
+                        if (!_.some(Event.getListeners(select, 'change'), function (listener) {
+                            return listener.obj === ElasticBoxUtils.DeployBoxDescriptorId;
+                        })) {
+                            Event.addListener(select, 'change', function () {
+                                setTimeout(refresh, 500);
+                            }, ElasticBoxUtils.DeployBoxDescriptorId);
+
+                        }      
+                    });
+                }), 
+                                            
+                nonDeployBoxBuildSteps = Dom.getElementsBy(function (element) {
+                    var descriptorId = Dom.getAttribute(element, 'descriptorid');
+                    return descriptorId !== ElasticBoxUtils.DeployBoxDescriptorId && ElasticBoxUtils.startsWith(descriptorId, ElasticBoxUtils.DescriptorIdPrefix);
+                }, 'div', document);
 
             ElasticBoxUtils.initializeBuildSteps();
-            Dom.getElementsBy(function (element) {
-                return Dom.getAttribute(element, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId;
-            }, 'div', document, function (builder) {
-                var buildStepLabel = Dom.getElementBy(function (element) {
-                        return ElasticBoxUtils.startsWith(element.innerHTML, ElasticBoxUtils.DeployBoxBuildStepName);
-                    }, null, builder),
-
-                    deleteButton = Dom.getElementBy(function () { return true; }, 'button', builder);
-
-                buildStepLabel.innerHTML = ElasticBoxUtils.format('{0} ({1})', ElasticBoxUtils.DeployBoxBuildStepName, deployBoxIndex++);
-                if (!_.some(Event.getListeners(deleteButton, 'click'), function (listener) {
-                    return listener.obj === ElasticBoxUtils.DeployBoxDescriptorId;
-                })) {
-                    Event.addListener(deleteButton, 'click', function () {
-                        setTimeout(refresh, 500);
-                    }, ElasticBoxUtils.DeployBoxDescriptorId);
-
-                }                            
-            });
+            initializeDeployBoxBuildStepLabels(deployBoxBuildSteps);
                      
-            buildSteps = Dom.getElementsBy(function (element) {
-                var descriptorId = Dom.getAttribute(element, 'descriptorid');
-                return descriptorId !== ElasticBoxUtils.DeployBoxDescriptorId && ElasticBoxUtils.startsWith(descriptorId, ElasticBoxUtils.DescriptorIdPrefix);
-            }, 'div', document);
-            
-            _.each(buildSteps, function (buildStep) {
+            _.each(nonDeployBoxBuildSteps, function (buildStep) {
                 var getOptions = function () {
                         var options = ElasticBoxUtils.getPriorDeployBoxSteps(buildStep);
 
