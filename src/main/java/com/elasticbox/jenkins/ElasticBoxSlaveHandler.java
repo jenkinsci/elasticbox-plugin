@@ -381,26 +381,56 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         return cloudToInstancesMap;
     }
     
+    private boolean purgeSlave(ElasticBoxSlave slave, TaskListener listener) {
+        JSONObject instance = null;
+        try {
+            instance = slave.getInstance();
+        } catch (IOException ex) {
+            if (ex instanceof ClientException && ((ClientException) ex).getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                return true;
+            }
+            log(Level.SEVERE, MessageFormat.format("Error fetching the instance data of ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
+            return false;
+        }
+        String state = instance.getString("state");
+        if (Client.InstanceState.UNAVAILABLE.equals(state)) {
+            try {
+                slave.getCloud().createClient().forceTerminate(instance.getString("id"));
+            } catch (IOException ex) {
+                log(Level.SEVERE, MessageFormat.format("Error force-terminating the instance of ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
+            }
+            return false;
+        }
+        if (!Client.InstanceState.DONE.equals(state)) {
+            return false;
+        }
+
+        try  {
+            try {
+                slave.delete();
+            } catch (ClientException ex) {
+                if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
+                    return false;
+                } else if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                    throw ex;
+                }
+            }
+            return true;
+        } catch (IOException ex) {
+            log(Level.SEVERE, MessageFormat.format("Error deleting ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
+            return false;
+        }        
+    }
+    
     private Map<ElasticBoxCloud, JSONArray> purgeSlaves(TaskListener listener) throws IOException {
         List<ElasticBoxSlave> slavesToRemove = new ArrayList<ElasticBoxSlave>();
         Map<ElasticBoxCloud, JSONArray> cloudToActiveInstancesMap = collectSlavesToRemove(slavesToRemove);
         
         for (Iterator<ElasticBoxSlave> iter = terminatedSlaves.iterator(); iter.hasNext();) {
             ElasticBoxSlave slave = iter.next();
-            try  {
-                try {
-                    slave.delete();
-                } catch (ClientException ex) {
-                    if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
-                        continue;
-                    } else if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
-                        throw ex;
-                    }
-                }
+            if (purgeSlave(slave, listener)) {
                 iter.remove();
-                removeSlave(slave);
-            } catch (IOException ex) {
-                log(Level.WARNING, MessageFormat.format("Error deleting ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
+                removeSlave(slave);                
             }
         }
         

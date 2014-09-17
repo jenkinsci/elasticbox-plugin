@@ -321,47 +321,6 @@ public class Client {
             }
         }
         
-        /**
-         * 
-         * @param states
-         * @param timeout in minutes
-         * @return the latest state if it is one of the specified states or the timeout elapsed
-         * @throws IOException 
-         */
-        private String waitFor(Set<String> states, int timeout) throws IOException {
-            long startTime = System.currentTimeMillis();
-            long remainingTime = timeout * 60000;
-            String state = null;
-            do {
-                JSONObject instance = (JSONObject) doGet(instanceUrl, false);
-                String updated = instance.getString("updated");
-                state = instance.getString("state");
-                if (!lastModified.equals(updated) && states.contains(state)) {
-                    if (operations == null) {
-                        break;
-                    }
-
-                    String operation = instance.getString("operation");
-                    if (TERMINATE_OPERATIONS.contains(operation) || operations.contains(operation)) {
-                        break;
-                    }
-                }
-                
-                synchronized(waitLock) {
-                    try {
-                        waitLock.wait(1000);
-                    } catch (InterruptedException ex) {
-                    }
-                }            
-
-                long currentTime = System.currentTimeMillis();
-                remainingTime =  remainingTime - (currentTime - startTime);
-                startTime = currentTime;                
-            } while (timeout == 0 || remainingTime > 0);
-            
-            return state;
-        }
-
         public long getCreationTime() {
             return this.creationTime;
         }
