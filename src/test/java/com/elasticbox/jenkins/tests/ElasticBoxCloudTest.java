@@ -19,11 +19,13 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SlaveConfiguration;
 import com.elasticbox.jenkins.util.SlaveInstance;
+import com.elasticbox.jenkins.util.VariableResolver;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
+import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.queue.QueueTaskFuture;
 import hudson.util.Scrambler;
@@ -42,14 +44,17 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.test.HudsonTestCase;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.model.TextParameterValue;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -65,7 +70,13 @@ import org.apache.commons.lang.StringUtils;
 public class ElasticBoxCloudTest extends HudsonTestCase {
     private static final String OPS_USER_NAME_PROPERTY = "elasticbox.jenkins.test.opsUsername";
     private static final String OPS_PASSWORD_PROPERTY = "elasticbox.jenkins.test.opsPassword";
+    
+    private static final String TEST_WORKSPACE="tphongio";
     private static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
+    private static final String TEST_BINDING_BOX_NAME = "test-binding-box";
+    private static final String TEST_LINUX_BOX_NAME = "test-linux-box";
+    private static final String TEST_NESTED_BOX_NAME = "test-nested-box";    
+    
     private static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost" ,"localhost");
     private static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://catapult.elasticbox.com");
     private static final String USER_NAME = System.getProperty("elasticbox.jenkins.test.username", Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"));
@@ -143,6 +154,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     
     public void testBuild() throws Exception { 
         ElasticBoxCloud cloud = createCloud();
+        testBuildWithOldSteps(cloud);
         testBuildWithSteps(cloud);
     }
     
@@ -213,17 +225,9 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         }
     }
     
-    private void testBuildWithSteps(ElasticBoxCloud cloud) throws Exception {    
-        String projectXml = IOUtils.toString((InputStream) getClass().getResource("TestProject.xml").getContent());
-        FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML("test", new ByteArrayInputStream(projectXml.getBytes()));
-        TextParameterValue buildParameter = new TextParameterValue("eb_test_build_parameter", UUID.randomUUID().toString());
-        QueueTaskFuture future = project.scheduleBuild2(0, new Cause.LegacyCodeCause(), new ParametersAction(buildParameter));
-        Future startCondition = future.getStartCondition();
-        startCondition.get(60, TimeUnit.MINUTES);
-        FreeStyleBuild result = (FreeStyleBuild) future.get(60, TimeUnit.MINUTES);
-        ByteArrayOutputStream log = new ByteArrayOutputStream();
-        result.getLogText().writeLogTo(0, log);
-        assertEquals(log.toString(), Result.SUCCESS, result.getResult());
+    private void testBuildWithOldSteps(ElasticBoxCloud cloud) throws Exception {    
+        String testParameter = UUID.randomUUID().toString();
+        runJob("test-old-job", "TestOldJob.xml", Collections.singletonMap("eb_test_build_parameter", testParameter));
         
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         JSONObject instance = client.getInstance("i-c51bop");
@@ -239,10 +243,159 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
             }
         }
         
-        assertEquals(connectionVar.toString(), buildParameter.value, connectionVar.getString("value"));
+        assertEquals(connectionVar.toString(), testParameter, connectionVar.getString("value"));
         assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
     }
-
+    
+    private void testBuildWithSteps(ElasticBoxCloud cloud) throws Exception {    
+        final String testTag = UUID.randomUUID().toString().substring(0, 30);
+        Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
+        FreeStyleBuild build = runJob("test", "TestJob.xml", testParameters);
+        
+        // validate the results of executed build steps   
+        VariableResolver variableResolver = new VariableResolver(build, TaskListener.NULL);
+        String buildNumber = variableResolver.resolve("${BUILD_NUMBER}");
+        String buildId = variableResolver.resolve("${BUILD_ID}");
+        String buildTag = variableResolver.resolve("${BUILD_TAG}");
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        JSONObject testLinuxBox = null;
+        JSONObject testBindingBox = null;
+        JSONObject testNestedBox = null;        
+        JSONArray boxes = client.getBoxes(TEST_WORKSPACE);
+        for (Object box : boxes) {
+            JSONObject boxJson = (JSONObject) box;
+            String boxName = boxJson.getString("name");
+            if (TEST_LINUX_BOX_NAME.equals(boxName)) {
+                testLinuxBox = boxJson;
+            } else if (TEST_BINDING_BOX_NAME.equals(boxName)) {
+                testBindingBox = boxJson;
+            } else if (TEST_NESTED_BOX_NAME.equals(boxName)) {
+                testNestedBox = boxJson;
+            }
+        }
+        assertNotNull(MessageFormat.format("Cannot find box {0}", TEST_LINUX_BOX_NAME), testLinuxBox);
+        assertNotNull(MessageFormat.format("Cannot find box {0}", TEST_BINDING_BOX_NAME), testBindingBox);
+        assertNotNull(MessageFormat.format("Cannot find box {0}", TEST_NESTED_BOX_NAME), testNestedBox);
+        
+        JSONArray instances = client.getInstances(TEST_WORKSPACE);
+        List<String> instanceIDs = new ArrayList<String>();
+        for (Object instance : instances) {
+            JSONObject instanceJson = (JSONObject) instance;
+            if (instanceJson.getJSONArray("tags").contains(testTag)) {
+                instanceIDs.add(instanceJson.getString("id"));
+            }
+        }
+        instances = client.getInstances(TEST_WORKSPACE, instanceIDs);
+        
+        JSONObject testLinuxBoxInstance = null;
+        JSONObject testBindingBoxInstance1 = null;
+        JSONObject testBindingBoxInstance2 = null;
+        JSONObject testBindingBoxInstance3 = null;
+        JSONObject testNestedBoxInstance = null;   
+        Collection<String> testBindingBoxInstanceEnvironments = Arrays.asList(new String[] {
+            testTag, buildNumber, buildTag
+        });
+        for (Object instance : instances) {
+            JSONObject instanceJson = (JSONObject) instance;
+            String mainBoxId = instanceJson.getJSONArray("boxes").getJSONObject(0).getString("id");
+            String environment = instanceJson.getString("environment");
+            if (mainBoxId.equals(testLinuxBox.getString("id"))) {
+                assertNull(MessageFormat.format("The build deployed more than one instance of box {0}", TEST_LINUX_BOX_NAME), testLinuxBoxInstance);                    
+                assertEquals(buildId, environment);
+                testLinuxBoxInstance = instanceJson;
+            } else if (mainBoxId.equals(testNestedBox.getString("id"))) {
+                assertNull(MessageFormat.format("The build deployed more than one instance of box {0}", TEST_NESTED_BOX_NAME), testNestedBoxInstance);
+                assertEquals(testTag, environment);
+                testNestedBoxInstance = instanceJson;                    
+            } else if (mainBoxId.equals(testBindingBox.getString("id"))) {
+                assertTrue(MessageFormat.format("Unexpected instance with environment ''{0}'' has been deployed", environment),
+                        testBindingBoxInstanceEnvironments.contains(environment));
+                if (environment.equals(testTag)) {
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", 
+                            TEST_BINDING_BOX_NAME, testTag), testBindingBoxInstance1);
+                    testBindingBoxInstance1 = instanceJson;
+                } else if (environment.equals(buildNumber)) {
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", 
+                            TEST_BINDING_BOX_NAME, buildNumber), testBindingBoxInstance2);
+                    testBindingBoxInstance2 = instanceJson;
+                } else if (environment.equals(buildTag)) {                        
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", 
+                            TEST_BINDING_BOX_NAME, buildTag), testBindingBoxInstance3);
+                    testBindingBoxInstance3 = instanceJson;
+                } 
+            } else {
+                
+            }           
+        }
+        
+        assertNotNull(testLinuxBoxInstance);
+        assertNotNull(testBindingBoxInstance1);
+        assertNotNull(testBindingBoxInstance2);
+        assertNotNull(testBindingBoxInstance3);
+        assertNotNull(testNestedBoxInstance);
+        
+        // check test-linux-box instance
+        assertTrue(MessageFormat.format("Instance {0} is not terminated", Client.getPageUrl(cloud.getEndpointUrl(), testLinuxBoxInstance)),
+                Client.TERMINATE_OPERATIONS.contains(testLinuxBoxInstance.getString("operation")));
+        JSONArray variables = testLinuxBoxInstance.getJSONArray("variables");                
+        assertEquals(testBindingBoxInstance1.getString("id"), findVariable(variables, "ANY_BINDING").getString("value"));
+        assertEquals(MessageFormat.format("SLAVE_HOST_NAME: {0}", variableResolver.resolve("${SLAVE_HOST_NAME}")),
+                findVariable(variables, "VAR_INSIDE").getString("value"));
+        //assertNull(findVariable(variables, "HTTP"));
+        assertNull(findVariable(variables, "VAR_WHOLE"));
+        
+        // check test-nested-box instance
+        assertTrue(MessageFormat.format("Instance {0} is not on-line", Client.getPageUrl(cloud.getEndpointUrl(), testNestedBoxInstance)),
+                Client.ON_OPERATIONS.contains(testNestedBoxInstance.getString("operation")) && 
+                        !Client.InstanceState.UNAVAILABLE.equals(testNestedBoxInstance.getString("state")));
+        variables = testNestedBoxInstance.getJSONArray("variables");
+        assertEquals(testBindingBoxInstance2.getString("id"), findVariable(variables, "ANY_BINDING", "nested").getString("value"));
+        assertEquals(testBindingBoxInstance3.getString("id"), findVariable(variables, "REQUIRED_BINDING").getString("value"));
+        assertEquals(testTag, findVariable(variables, "VAR_INSIDE").getString("value"));
+        assertEquals(testTag, findVariable(variables, "VAR_WHOLE").getString("value"));
+        assertEquals(testTag, findVariable(variables, "VAR_INSIDE", "nested").getString("value"));
+        assertNull(findVariable(variables, "HTTP", "nested"));
+        
+        runJob("cleanup", "CleanupJob.xml", testParameters);        
+    }    
+    
+    private FreeStyleBuild runJob(String name, String configXml, Map<String, String> textParameters) throws Exception {
+        String projectXml = IOUtils.toString((InputStream) getClass().getResource(configXml).getContent());
+        FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML(name, new ByteArrayInputStream(projectXml.getBytes()));
+        List<ParameterValue> parameters = new ArrayList<ParameterValue>();
+        for (Map.Entry<String, String> entry : textParameters.entrySet()) {
+            parameters.add(new TextParameterValue(entry.getKey(), entry.getValue()));
+        }
+        QueueTaskFuture future = project.scheduleBuild2(0, new Cause.LegacyCodeCause(), new ParametersAction(parameters));
+        Future startCondition = future.getStartCondition();
+        startCondition.get(60, TimeUnit.MINUTES);
+        FreeStyleBuild result = (FreeStyleBuild) future.get(60, TimeUnit.MINUTES);
+        ByteArrayOutputStream log = new ByteArrayOutputStream();
+        result.getLogText().writeLogTo(0, log);
+        assertEquals(log.toString(), Result.SUCCESS, result.getResult());     
+        return result;
+    }
+    
+    private static JSONObject findVariable(JSONArray variables, String name) {
+        return findVariable(variables, name, null);
+    }
+    
+    private static JSONObject findVariable(JSONArray variables, String name, String scope) {
+        for (Object variable : variables) {
+            JSONObject variableJson = (JSONObject) variable;
+            if (variableJson.getString("name").equals(name)) {
+                if (scope == null) {
+                    scope = StringUtils.EMPTY;
+                }
+                String variableScope = variableJson.containsKey("scope") ? variableJson.getString("scope") : StringUtils.EMPTY;
+                if (scope.equals(variableScope)) {
+                    return variableJson;
+                }
+            }
+        }
+        return null;
+    }
+    
     public void testBuildWithLinuxSlave() throws Exception {
         if (System.getProperty(OPS_USER_NAME_PROPERTY) != null) {
             testBuildWithSlave(JENKINS_SLAVE_BOX_NAME);

@@ -1,0 +1,181 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>TEST_TAG</name>
+          <description></description>
+          <defaultValue>test-tag</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <operations>
+        <com.elasticbox.jenkins.builders.TerminateOperation>
+          <tags>${TEST_TAG}</tags>
+          <delete>true</delete>
+        </com.elasticbox.jenkins.builders.TerminateOperation>
+      </operations>
+    </com.elasticbox.jenkins.builders.ManageInstance>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-7b80286a-9174-4d5d-be34-469e8ecc4876</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+      <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+      <profile>9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744</profile>
+      <environment>${BUILD_ID}</environment>
+      <instances>1</instances>
+      <variables>[{&quot;name&quot;:&quot;HTTP&quot;,&quot;value&quot;:&quot;80&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Port&quot;}]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags>${BUILD_ID}, ${TEST_TAG}</tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</box>
+      <boxVersion>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</boxVersion>
+      <profile>e14460b4-c288-46f4-8a45-bea58e492428</profile>
+      <environment>${TEST_TAG}</environment>
+      <instances>1</instances>
+      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags></tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-ba74ebf0-240c-441b-bcfa-bb76d9c3689f</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</box>
+      <boxVersion>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</boxVersion>
+      <profile>e14460b4-c288-46f4-8a45-bea58e492428</profile>
+      <environment>${BUILD_NUMBER}</environment>
+      <instances>1</instances>
+      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags> ${TEST_TAG}</tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-a924d736-3021-474c-af50-ea1885c3a9cd</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>112fe05b-1cb7-4eb8-9ffe-777ef4c2825e</box>
+      <boxVersion>112fe05b-1cb7-4eb8-9ffe-777ef4c2825e</boxVersion>
+      <profile>e155115d-6e4e-4027-b4a7-89eb3ae6ef58</profile>
+      <environment>${TEST_TAG}</environment>
+      <instances>1</instances>
+      <variables>[{&quot;name&quot;:&quot;REQUIRED_BINDING&quot;,&quot;value&quot;:&quot;com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Binding&quot;}]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags></tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <operations>
+        <com.elasticbox.jenkins.builders.UpdateOperation>
+          <tags>${BUILD_ID}</tags>
+          <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+          <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+          <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;VAR_INSIDE&quot;, &quot;value&quot;: &quot;SLAVE_HOST_NAME: ${SLAVE_HOST_NAME}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}]</variables>
+        </com.elasticbox.jenkins.builders.UpdateOperation>
+        <com.elasticbox.jenkins.builders.ReinstallOperation>
+          <tags>${BUILD_ID}</tags>
+          <waitForCompletion>true</waitForCompletion>
+        </com.elasticbox.jenkins.builders.ReinstallOperation>
+        <com.elasticbox.jenkins.builders.ReconfigureOperation>
+          <tags>${BUILD_ID}</tags>
+          <waitForCompletion>true</waitForCompletion>
+        </com.elasticbox.jenkins.builders.ReconfigureOperation>
+        <com.elasticbox.jenkins.builders.TerminateOperation>
+          <tags>${BUILD_ID}</tags>
+          <delete>false</delete>
+        </com.elasticbox.jenkins.builders.TerminateOperation>
+        <com.elasticbox.jenkins.builders.UpdateOperation>
+          <tags>${BUILD_NUMBER}</tags>
+          <box>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</box>
+          <boxVersion>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</boxVersion>
+          <variables>[{&quot;name&quot;: &quot;CONNECTION&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}, {&quot;name&quot;: &quot;HTTPS&quot;, &quot;value&quot;: &quot;9443&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Port&quot;}]</variables>
+        </com.elasticbox.jenkins.builders.UpdateOperation>
+        <com.elasticbox.jenkins.builders.UpdateOperation>
+          <tags> ${TEST_TAG}</tags>
+          <box>112fe05b-1cb7-4eb8-9ffe-777ef4c2825e</box>
+          <boxVersion>112fe05b-1cb7-4eb8-9ffe-777ef4c2825e</boxVersion>
+          <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;com.elasticbox.jenkins.builders.DeployBox-ba74ebf0-240c-441b-bcfa-bb76d9c3689f&quot;, &quot;scope&quot;: &quot;nested&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;REQUIRED_BINDING&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;VAR_INSIDE&quot;, &quot;value&quot;: &quot;${TEST_TAG}&quot;, &quot;scope&quot;: &quot;nested&quot;, &quot;type&quot;: &quot;Text&quot;}, {&quot;name&quot;: &quot;HTTP&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;nested&quot;, &quot;type&quot;: &quot;Port&quot;}, {&quot;name&quot;: &quot;VAR_WHOLE&quot;, &quot;value&quot;: &quot;${TEST_TAG}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}, {&quot;name&quot;: &quot;VAR_INSIDE&quot;, &quot;value&quot;: &quot;${TEST_TAG}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}]</variables>
+        </com.elasticbox.jenkins.builders.UpdateOperation>
+        <com.elasticbox.jenkins.builders.ReconfigureOperation>
+          <tags> ${TEST_TAG}</tags>
+          <waitForCompletion>true</waitForCompletion>
+        </com.elasticbox.jenkins.builders.ReconfigureOperation>
+      </operations>
+    </com.elasticbox.jenkins.builders.ManageInstance>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-ad677e58-fb68-4c51-97a1-f2e62e913771</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</box>
+      <boxVersion>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</boxVersion>
+      <profile>e14460b4-c288-46f4-8a45-bea58e492428</profile>
+      <environment>${BUILD_TAG}</environment>
+      <instances>1</instances>
+      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags>${TEST_TAG}</tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <operations>
+        <com.elasticbox.jenkins.builders.ReinstallOperation>
+          <tags>${BUILD_NUMBER}, ${TEST_TAG}</tags>
+          <waitForCompletion>true</waitForCompletion>
+        </com.elasticbox.jenkins.builders.ReinstallOperation>
+        <com.elasticbox.jenkins.builders.ReconfigureOperation>
+          <tags>${BUILD_NUMBER},  ${TEST_TAG}</tags>
+          <waitForCompletion>true</waitForCompletion>
+        </com.elasticbox.jenkins.builders.ReconfigureOperation>
+        <com.elasticbox.jenkins.builders.UpdateOperation>
+          <tags> ${TEST_TAG}</tags>
+          <box>112fe05b-1cb7-4eb8-9ffe-777ef4c2825e</box>
+          <boxVersion>112fe05b-1cb7-4eb8-9ffe-777ef4c2825e</boxVersion>
+          <variables>[{&quot;name&quot;: &quot;REQUIRED_BINDING&quot;, &quot;value&quot;: &quot;com.elasticbox.jenkins.builders.DeployBox-ad677e58-fb68-4c51-97a1-f2e62e913771&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;nested&quot;, &quot;type&quot;: &quot;Binding&quot;}]</variables>
+        </com.elasticbox.jenkins.builders.UpdateOperation>
+        <com.elasticbox.jenkins.builders.StopOperation>
+          <tags> ${TEST_TAG}</tags>
+          <waitForCompletion>true</waitForCompletion>
+        </com.elasticbox.jenkins.builders.StopOperation>
+        <com.elasticbox.jenkins.builders.StartOperation>
+          <tags> ${TEST_TAG}</tags>
+          <waitForCompletion>false</waitForCompletion>
+        </com.elasticbox.jenkins.builders.StartOperation>
+      </operations>
+    </com.elasticbox.jenkins.builders.ManageInstance>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
