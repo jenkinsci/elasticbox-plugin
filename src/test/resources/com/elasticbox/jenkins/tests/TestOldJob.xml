@@ -37,14 +37,12 @@
     <com.elasticbox.jenkins.builders.ReinstallBox plugin="elasticbox@0.8.4-SNAPSHOT">
       <buildStep>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</buildStep>
     </com.elasticbox.jenkins.builders.ReinstallBox>
-<!--    
     <com.elasticbox.jenkins.builders.StopBox plugin="elasticbox@0.8.4-SNAPSHOT">
       <buildStep>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</buildStep>
     </com.elasticbox.jenkins.builders.StopBox>
     <com.elasticbox.jenkins.builders.StartBox plugin="elasticbox@0.8.4-SNAPSHOT">
       <buildStep>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</buildStep>
     </com.elasticbox.jenkins.builders.StartBox>
--->
     <com.elasticbox.jenkins.builders.ReconfigureBox plugin="elasticbox@0.8.4-SNAPSHOT">
       <buildStep>com.elasticbox.jenkins.builders.DeployBox-cc300876-44cb-45bb-801d-2702ad769077</buildStep>
       <id>com.elasticbox.jenkins.builders.ReconfigureBox-19a2b977-a0b0-4be1-9f18-0c20bd9f6d45</id>
