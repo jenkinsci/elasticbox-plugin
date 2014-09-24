@@ -22,7 +22,9 @@ var ElasticBoxVariables = (function () {
                 '<input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="{5}"></td>' +
                 '<td>&nbsp;<a><img></a></td></tr>',
         BINDING_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
-                '<td class="setting-main" colspan="2"><select name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input select eb-variable"></select></td>' +
+                '<td class="setting-main" colspan="2">' + 
+                '<select name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input select eb-variable"></select>' + 
+                '<input name="{5}" value="{6}" class="eb-binding-tags setting-input" style="display: none;"></td>' +
                 '<td>&nbsp;<a><img></a></td></tr>',
 
         Dom = YAHOO.util.Dom,
@@ -188,7 +190,9 @@ var ElasticBoxVariables = (function () {
                     fireEvent(variableInput, 'change');
                 });
             } else {
-                Dom.setAttribute(variableInput, 'style', 'color: gray');
+                if (variableInput.tagName.toLowerCase() !== 'select') {
+                    Dom.setAttribute(variableInput, 'style', 'color: gray');
+                }
                 Dom.setAttribute(img, 'src', getImageFolder() + '/none.png');
                 Dom.setAttribute(img, 'style', '');
                 Event.removeListener(img, 'click');                
@@ -223,6 +227,9 @@ var ElasticBoxVariables = (function () {
                             return ElasticBoxUtils.startsWith(Dom.getAttribute(element, 'descriptorid'), ElasticBoxUtils.DescriptorIdPrefix);
                         }),
                         descriptorId = Dom.getAttribute(descriptorElement, 'descriptorid'),
+                        tagsOption = Dom.getElementBy(function (option) {
+                            return Dom.getAttribute(option, 'value') === 'tags';
+                        }, 'option', bindingSelect),
 
                         selectedOption, noneOption, noneOptionText;
 
@@ -244,7 +251,11 @@ var ElasticBoxVariables = (function () {
                         bindingSelect.removeChild(noneOption);
                         noneOptionText = noneOption.innerHTML;
                     }
-
+                    
+                    if (tagsOption) {
+                        bindingSelect.removeChild(tagsOption);
+                    }
+                    
                     // remove existing options for deploy box steps
                     for (var child = Dom.getFirstChild(bindingSelect); 
                             child !== null && ElasticBoxUtils.startsWith(child.getAttribute('value'), ElasticBoxUtils.DeployBoxDescriptorId); 
@@ -252,7 +263,8 @@ var ElasticBoxVariables = (function () {
                         bindingSelect.removeChild(child);
                     } 
 
-                    bindingSelect.innerHTML = _.map(deployBoxSteps, function (step) {
+                    bindingSelect.innerHTML = '<option value="tags">Instances with tags</option>' +
+                            _.map(deployBoxSteps, function (step) {
                                 return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
                             }).join(' ') + bindingSelect.innerHTML;
                     if (!noneOption) {
@@ -276,21 +288,35 @@ var ElasticBoxVariables = (function () {
                         selectedOption = _.first(Dom.getChildren(bindingSelect));
                         saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type, variableHolder.varTextBox);
                     }
-                    bindingSelect.selectedIndex = selectedOption ? Dom.getChildren(bindingSelect).indexOf(selectedOption) : 0;
+                    bindingSelect.selectedIndex = selectedOption ? Dom.getChildren(bindingSelect).indexOf(selectedOption) : 0;                    
                 },
         
+                toggleBindingTagsInput = function (bindingSelect) {
+                    var tagsInput = Dom.getNextSibling(bindingSelect);
+                    
+                    // Toggle tags input text box
+                    if (bindingSelect.value === 'tags') {
+                        Dom.setAttribute(tagsInput, 'style', '');
+                        tagsInput.focus();
+                    } else {
+                        Dom.setAttribute(tagsInput, 'style', 'display: none;');
+                    }                    
+                },
                     
                 row = document.createElement('tr'),
-                savedValue;
+                savedValue, isBindingWithTags;
 
             if (_.isNull(variable.value) || _.isUndefined(variable.value)) {
                 variable.value = '';
             }
             
             savedValue = savedVariable && savedVariable.value || variable.value;
-            if (variable.type === 'Binding') {                
+            if (variable.type === 'Binding') {  
+                isBindingWithTags = savedValue.charAt(0) === '(' && savedValue.charAt(savedValue.length - 1) === ')';
+                    
                 row.innerHTML = ElasticBoxUtils.format(BINDING_VARIABLE_TEMPLATE, 
-                    variable.name, '_' + variable.name, savedValue, variable.value, variable.scope);
+                    variable.name, '_' + variable.name, isBindingWithTags ? 'tags' : savedValue, variable.value, variable.scope,
+                    '_' + variable.name + '_tags', isBindingWithTags ? savedValue.substr(1, savedValue.length - 2) : '');
             } else {
                 row.innerHTML = ElasticBoxUtils.format(TEXT_VARIABLE_TEMPLATE, variable.name, '_' + variable.name, 
                     savedValue, variable.value, variable.scope, variable.type === 'Password' ? 'password' : 'text');
@@ -303,12 +329,22 @@ var ElasticBoxVariables = (function () {
                 Event.addListener(variableInput, 'change', function () {
                     saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, variableHolder.varTextBox);
                     toggleResetButton(Dom.getAncestorByTagName(variableInput, 'tr'));
+                    if (variable.type === 'Binding') {
+                        toggleBindingTagsInput(this);
+                    }
                 });
                 if (variable.type === 'Binding') {
                     variableInput.innerHTML = '<option value="loading">Loading...</option>';
 
                     Event.addListener(variableInput, 'focus', function () {
                         updateBindingOptions(this.value, this);
+                    });
+                    
+                    Event.addListener(Dom.getNextSibling(variableInput), 'change', function () {
+                        if (variableInput.value === 'tags') {
+                            saveVariable(variable.name, ElasticBoxUtils.format('({0})', this.value), 
+                                Dom.getAttribute(variableInput, 'data-scope'), variable.type, variableHolder.varTextBox);
+                        }
                     });
 
                     instancesUrl = getInstancesUrl(variableHolder, variableInput);
@@ -324,6 +360,7 @@ var ElasticBoxVariables = (function () {
                                     variableInput.appendChild(option);                                            
                                 });
                                 updateBindingOptions(savedValue, variableInput);
+                                toggleBindingTagsInput(variableInput);                                
                             },
 
                             failure: function (response) {

@@ -30,15 +30,13 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
@@ -398,7 +396,7 @@ public class ElasticBoxSlave extends Slave {
         public boolean shouldTerminate(ElasticBoxComputer computer) {
             if (getMinInstances() > 0 && getSlaveConfiguration() != null) {
                 try {
-                    JSONArray activeInstances = ElasticBoxSlaveHandler.getActiveInstances(computer.getSlave().getCloud());
+                    List<JSONObject> activeInstances = ElasticBoxSlaveHandler.getActiveInstances(computer.getSlave().getCloud());
                     if (activeInstances.size() <= getMinInstances()) {
                         return false;
                     }
@@ -418,8 +416,7 @@ public class ElasticBoxSlave extends Slave {
                     }
                         
                     int instanceCount = 0;
-                    for (int i = 0; i < activeInstances.size(); i++) {
-                        JSONObject instance = activeInstances.getJSONObject(i);
+                    for (JSONObject instance : activeInstances) {
                         if (configActiveInstanceIDs.contains(instance.getString("id"))) {
                             instanceCount++;
                         }

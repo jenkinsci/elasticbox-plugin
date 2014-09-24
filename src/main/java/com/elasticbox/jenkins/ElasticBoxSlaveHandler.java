@@ -15,23 +15,26 @@ package com.elasticbox.jenkins;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.SlaveInstance;
+import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.AsyncPeriodicWork;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
-import hudson.slaves.SlaveComputer;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,7 +42,6 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.lang.time.StopWatch;
 
 /**
  *
@@ -47,7 +49,7 @@ import org.apache.commons.lang.time.StopWatch;
  */
 @Extension
 public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
-    private static final Logger LOGGER = Logger.getLogger(InstanceCreator.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlaveHandler.class.getName());
     
     public static final int TIMEOUT_MINUTES = Integer.getInteger("elasticbox.jenkins.deploymentTimeout", 60);
     private static final long TIMEOUT = TIMEOUT_MINUTES * 60000;
@@ -55,104 +57,11 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
 
     private static class InstanceCreationRequest {
         private final ElasticBoxSlave slave;
-        private final ProgressMonitorWrapper monitor;
+        private final LaunchSlaveProgressMonitor monitor;
 
         public InstanceCreationRequest(ElasticBoxSlave slave) {
             this.slave = slave;
-            monitor = new ProgressMonitorWrapper(slave);
-        }
-        
-    }
-    
-    private static class ProgressMonitorWrapper implements IProgressMonitor {
-        private final Object waitLock = new Object();
-        private final long creationTime;
-        private final ElasticBoxSlave slave;
-        private IProgressMonitor monitor;
-
-        public ProgressMonitorWrapper(ElasticBoxSlave slave) {
-            creationTime = System.currentTimeMillis();
-            this.slave = slave;
-        }
-        
-        public String getResourceUrl() {
-            return monitor != null ? monitor.getResourceUrl() : null;
-        }
-
-        public boolean isDone() throws IncompleteException, IOException {
-            return monitor != null ? monitor.isDone() : false;
-        }
-
-        public long getCreationTime() {
-            return creationTime;
-        }
-
-        public void setMonitor(IProgressMonitor monitor) {
-            this.monitor = monitor;
-            synchronized (waitLock) {
-                waitLock.notifyAll();
-            }
-        }
-        
-        private void wait(Callable<Boolean> condition, long timeout) throws Exception {
-            long startTime = System.currentTimeMillis();
-            long remainingTime = timeout;
-            while(remainingTime > 0 && condition.call()) {
-                synchronized (waitLock) {
-                    try {
-                        waitLock.wait(remainingTime);
-                    } catch (InterruptedException ex) {
-                    }
-                }
-                long currentTime = System.currentTimeMillis();
-                remainingTime = remainingTime - (currentTime - startTime);
-                startTime = currentTime;                
-            }            
-        }
-        
-        public void waitForDone(int timeout) throws IncompleteException, IOException {
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            long timeoutMiliseconds = timeout * 60000;
-            long remainingTime = timeoutMiliseconds;
-            try {
-                wait(new Callable<Boolean>() {
-                    
-                    public Boolean call() throws Exception {
-                        return monitor == null;
-                    }
-                }, timeoutMiliseconds);
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-            }
-            
-            if (monitor == IProgressMonitor.DONE_MONITOR) {
-                return;
-            }
-            
-            remainingTime = remainingTime - stopWatch.getTime();
-            if (monitor != null && remainingTime > 0) {
-                monitor.waitForDone(Math.round(remainingTime / 60000));
-            }
-            
-            remainingTime = remainingTime - stopWatch.getTime();
-            if (remainingTime > 0) {
-                try {
-                    wait(new Callable<Boolean>() {
-                        
-                        public Boolean call() throws Exception {
-                            SlaveComputer computer = slave.getComputer();
-                            return computer != null && computer.isOffline();
-                        }
-                    }, remainingTime);
-                } catch (Exception ex) {
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-                }
-            }
-        }
-
-        public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
-            return monitor != null ? monitor.isDone(instance) : false;
+            monitor = new LaunchSlaveProgressMonitor(slave);
         }
         
     }
@@ -188,9 +97,30 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         }
     }
     
-    public static JSONArray getActiveInstances(ElasticBoxCloud cloud) throws IOException {
-        JSONArray activeInstances = collectSlavesToRemove(new ArrayList<ElasticBoxSlave>()).get(cloud);
-        return activeInstances != null ? activeInstances : new JSONArray();
+    public static List<JSONObject> getActiveInstances(ElasticBoxCloud cloud) throws IOException {
+        return new SlaveInstanceManager().getInstances(cloud);
+    }
+    
+    @Initializer(after = InitMilestone.COMPLETED)
+    public static void tagSlaveInstances() throws IOException {
+        LOGGER.info("Tagging slave instances");
+        SlaveInstanceManager manager = new SlaveInstanceManager();
+        for (JSONObject instance : manager.getInstances()) {
+            ElasticBoxSlave slave = manager.getSlave(instance.getString("id"));
+            tagSlaveInstance(instance, slave);
+        }        
+    }
+    
+    private static void tagSlaveInstance(JSONObject instance, ElasticBoxSlave slave) throws IOException {
+        if (instance.getJSONArray("tags").contains(slave.getNodeName())) {
+            return;
+        }
+        
+        instance.getJSONArray("tags").add(slave.getNodeName());
+        Client client = ClientCache.getClient(slave.getCloud().name);
+        client.updateInstance(instance, null);
+        LOGGER.fine(MessageFormat.format("Slave instance {0} has been tagged with slave name {1}",
+                Client.getPageUrl(client.getEndpointUrl(), instance), slave.getNodeName()));        
     }
         
     public ElasticBoxSlaveHandler() {
@@ -199,17 +129,14 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
 
     @Override
     protected void execute(TaskListener listener) throws IOException, InterruptedException {
-        Map<ElasticBoxCloud, JSONArray> cloudToActiveInstancesMap = purgeSlaves(listener);    
+        SlaveInstanceManager slaveInstanceManager = new SlaveInstanceManager();
+        purgeSlaves(slaveInstanceManager, listener);    
         Map<ElasticBoxCloud, Integer> cloudToMaxNewInstancesMap = new HashMap<ElasticBoxCloud, Integer>();
-        for (Map.Entry<ElasticBoxCloud, JSONArray> entry : cloudToActiveInstancesMap.entrySet()) {
-            ElasticBoxCloud cloud = entry.getKey();
-            cloudToMaxNewInstancesMap.put(cloud, cloud.getMaxInstances() - entry.getValue().size());
-        }
-        
         for (Cloud cloud : Jenkins.getInstance().clouds) {
-            if (cloud instanceof ElasticBoxCloud && !cloudToMaxNewInstancesMap.containsKey(cloud)) {
+            if (cloud instanceof ElasticBoxCloud) {
                 ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
-                cloudToMaxNewInstancesMap.put(ebCloud, ebCloud.getMaxInstances());
+                List<JSONObject> instances = slaveInstanceManager.getInstances(ebCloud);
+                cloudToMaxNewInstancesMap.put(ebCloud, ebCloud.getMaxInstances() - instances.size());
             }
         }
         
@@ -257,8 +184,10 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             InstanceCreationRequest request = iter.next();
             try {
                 if (request.monitor.isDone()) {
+                    tagSlaveInstance(request.slave.getInstance(), request.slave);
+                    
                     if (request.slave.getComputer() != null && request.slave.getComputer().isOnline()) {
-                        request.slave.setInstanceStatusMessage(MessageFormat.format("Successfully deployed at {0}", 
+                        request.slave.setInstanceStatusMessage(MessageFormat.format("Successfully deployed at <a href=\"{0}\">{0}</a>", 
                                 request.slave.getInstancePageUrl()));
                         saveNeeded = true;
                         iter.remove();
@@ -294,70 +223,50 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         }        
     }
     
+    private static Map<String, ElasticBoxSlave> getInstanceIdToSlaveMap() {
+        Map<String, ElasticBoxSlave> instanceIdToSlaveMap = new HashMap<String, ElasticBoxSlave>();
+        for (Node node : Jenkins.getInstance().getNodes()) {
+            if (node instanceof ElasticBoxSlave) {
+                final ElasticBoxSlave slave = (ElasticBoxSlave) node;
+                if (slave.getInstanceUrl() != null) {
+                    instanceIdToSlaveMap.put(slave.getInstanceId(), slave);
+                }
+            }
+        }        
+        return instanceIdToSlaveMap;
+    }
+    
     /**
      * Collects inactive or invalid slaves that can be removed.
      * 
      * @param slavesToRemove a list to be filled with inactive or invalid slaves that can be removed
-     * @return a list of active instances
+     * @return a list of slaves to remove
      * @throws IOException 
      */
-    private static Map<ElasticBoxCloud, JSONArray> collectSlavesToRemove(List<ElasticBoxSlave> slavesToRemove) throws IOException {
-        Map<String, ElasticBoxSlave> instanceIdToSlaveMap = new HashMap<String, ElasticBoxSlave>();
-        Map<ElasticBoxCloud, JSONArray> cloudToInstancesMap = new HashMap<ElasticBoxCloud, JSONArray>();
-        for (Node node : Jenkins.getInstance().getNodes()) {
-            if (node instanceof ElasticBoxSlave && !isSlaveInQueue((ElasticBoxSlave) node, incomingQueue)) {
-                final ElasticBoxSlave slave = (ElasticBoxSlave) node;
-                if (slave.getInstanceUrl() != null) {
-                    instanceIdToSlaveMap.put(slave.getInstanceId(), slave);
-                } else if (!slave.isInUse()) {
-                    slavesToRemove.add(slave);
-                }
+    private static List<ElasticBoxSlave> collectSlavesToRemove(SlaveInstanceManager slaveInstanceManager) throws IOException {
+        List<ElasticBoxSlave> slavesToRemove = new ArrayList<ElasticBoxSlave>();
+        Collection<ElasticBoxSlave> slaves = slaveInstanceManager.getSlaves();
+        for (ElasticBoxSlave slave : slaves) {
+            if (!isSlaveInQueue(slave, incomingQueue) && !slave.isInUse()) {
+                slavesToRemove.add(slave);
             }
-        }    
-        
-        if (!instanceIdToSlaveMap.isEmpty()) {
-            Map<ElasticBoxCloud, List<String>> cloudToInstanceIDsMap = new HashMap<ElasticBoxCloud, List<String>>();
-            for (Map.Entry<String, ElasticBoxSlave> entry : instanceIdToSlaveMap.entrySet()) {
-                ElasticBoxSlave slave = entry.getValue();
-                ElasticBoxCloud cloud = slave.getCloud();
-                List<String> instanceIDs = cloudToInstanceIDsMap.get(cloud);
-                if (instanceIDs == null) {
-                    instanceIDs = new ArrayList<String>();
-                    cloudToInstanceIDsMap.put(cloud, instanceIDs);
-                }
-                instanceIDs.add(slave.getInstanceId());
-            }
-            
-            for (Map.Entry<ElasticBoxCloud, List<String>> entry : cloudToInstanceIDsMap.entrySet()) {
-                ElasticBoxCloud cloud = entry.getKey();
-                cloudToInstancesMap.put(cloud, cloud.createClient().getInstances(entry.getValue()));
-            }
-            
-            for (JSONArray instances : cloudToInstancesMap.values()) {
-                for (Iterator iter = instances.iterator(); iter.hasNext();) {
-                    JSONObject instance = (JSONObject) iter.next();
-                    String state = instance.getString("state");
-                    String instanceId = instance.getString("id");
-                    ElasticBoxSlave slave = instanceIdToSlaveMap.get(instanceId);
-                    if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getString("operation"))) {
-                        addToTerminatedQueue(slave);
-                        iter.remove();
-                    } else if (Client.InstanceState.UNAVAILABLE.equals(state)) {
-                        Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, 
-                                MessageFormat.format("The instance {0} is unavailable, it will be terminated.", slave.getInstancePageUrl()));
-                        slavesToRemove.add(slave);
-                        iter.remove();
-                    }                      
-
-                    instanceIdToSlaveMap.remove(instanceId);
-                }                
-            }
-            
-            // the instances of the remaining slaves no longer exist in ElasticBox, removing them
-            slavesToRemove.addAll(instanceIdToSlaveMap.values());
         }
+        for (JSONObject instance : slaveInstanceManager.getInstances()) {
+            String state = instance.getString("state");
+            String instanceId = instance.getString("id");
+            ElasticBoxSlave slave = slaveInstanceManager.getSlave(instanceId);
+            if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getString("operation"))) {
+                addToTerminatedQueue(slave);
+            } else if (Client.InstanceState.UNAVAILABLE.equals(state)) {
+                Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, 
+                        MessageFormat.format("The instance {0} is unavailable, it will be terminated.", slave.getInstancePageUrl()));
+                slavesToRemove.add(slave);
+            }                      
+        }
+
+        slavesToRemove.addAll(slaveInstanceManager.getSlavesWithoutInstance());
         
-        return cloudToInstancesMap;
+        return slavesToRemove;
     }
     
     private boolean purgeSlave(ElasticBoxSlave slave, TaskListener listener) {
@@ -401,10 +310,8 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         }        
     }
     
-    private Map<ElasticBoxCloud, JSONArray> purgeSlaves(TaskListener listener) throws IOException {
-        List<ElasticBoxSlave> slavesToRemove = new ArrayList<ElasticBoxSlave>();
-        Map<ElasticBoxCloud, JSONArray> cloudToActiveInstancesMap = collectSlavesToRemove(slavesToRemove);
-        
+    private void purgeSlaves(SlaveInstanceManager slaveInstanceManager, TaskListener listener) throws IOException {
+        List<ElasticBoxSlave> slavesToRemove = collectSlavesToRemove(slaveInstanceManager);
         for (Iterator<ElasticBoxSlave> iter = terminatedSlaves.iterator(); iter.hasNext();) {
             ElasticBoxSlave slave = iter.next();
             if (purgeSlave(slave, listener)) {
@@ -416,8 +323,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         for (ElasticBoxSlave badSlave : slavesToRemove) {
             removeSlave(badSlave);
         }
-        
-        return cloudToActiveInstancesMap;
     }
     
     private static boolean isSlaveInQueue(ElasticBoxSlave slave, Queue<InstanceCreationRequest> queue) {
@@ -446,7 +351,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         String scope = variables.getJSONObject(0).getString("scope");
         SlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
         if (slaveConfig != null && slaveConfig.getVariables() != null) {
-            JSONArray configuredVariables = DescriptorHelper.parseVariables(slaveConfig.getVariables());
+            JSONArray configuredVariables = VariableResolver.parseVariables(slaveConfig.getVariables());
             for (int i = 0; i < configuredVariables.size(); i++) {
                 JSONObject variable = configuredVariables.getJSONObject(i);
                 if (!scope.equals(variable.getString("scope")) || !SlaveInstance.REQUIRED_VARIABLES.contains(variable.getString("name"))) {
@@ -457,7 +362,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), 
                 profile.getString("owner"), request.slave.getEnvironment(), 1, variables);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
-        request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance {0}", 
+        request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>", 
                 request.slave.getInstancePageUrl()));
         request.monitor.setMonitor(monitor);
         submittedQueue.add(request);

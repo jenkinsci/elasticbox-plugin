@@ -96,26 +96,6 @@ public class DeployBox extends Builder implements IInstanceProvider {
         readResolve();
     }
     
-    private JSONArray getResolvedVariables(VariableResolver resolver) {
-        JSONArray resolvedVariables = DescriptorHelper.parseVariables(variables);
-        for (Object variable : resolvedVariables) {
-            resolver.resolve((JSONObject) variable);
-        }        
-        return resolvedVariables;
-    }
-    
-    private Set<String> getResolvedTags(VariableResolver resolver) {
-        Set<String> tagSet = new HashSet<String>();
-        if (StringUtils.isNotBlank(tags)) {
-            for (String tag : tags.split(",")) {
-                if (StringUtils.isNotBlank(tag)) {
-                    tagSet.add(resolver.resolve(tag.trim()));
-                }
-            }
-        }        
-        return tagSet;
-    } 
-    
     private JSONObject performAlternateAction(List<JSONObject> existingInstances, ElasticBoxCloud ebCloud, Client client, 
             VariableResolver resolver, TaskLogger logger) throws IOException {
         List<String> instanceIDs = new ArrayList<String>();
@@ -127,9 +107,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), instance);
             logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
         } else if (alternateAction.equals(ACTION_RECONFIGURE)) {            
-            ReconfigureBox.reconfigure(instanceIDs, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
+            ReconfigureBox.reconfigure(instanceIDs, ebCloud, client, 
+                    resolver.resolveVariables(variables), waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_REINSTALL)) {
-            ReinstallBox.reinstall(instanceIDs, ebCloud, client, getResolvedVariables(resolver), waitForCompletion, logger);
+            ReinstallBox.reinstall(instanceIDs, ebCloud, client, resolver.resolveVariables(variables), 
+                    waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
             for (JSONObject existingInstance : existingInstances) {
                 String instanceId = existingInstance.getString("id");
@@ -147,7 +129,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) throws IOException {
         String resolvedEnvironment = resolver.resolve(this.environment);
-        JSONArray resolvedVariables = getResolvedVariables(resolver);
+        JSONArray resolvedVariables = resolver.resolveVariables(variables);
         DescriptorHelper.removeInvalidVariables(resolvedVariables, ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, box, boxVersion).getJsonArray());
         IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, resolvedVariables);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
@@ -178,12 +160,12 @@ public class DeployBox extends Builder implements IInstanceProvider {
             throw new IOException("No ElasticBox cloud is configured.");
         }
 
-        VariableResolver resolver = new VariableResolver(build, listener);
+        VariableResolver resolver = new VariableResolver(cloud, workspace, build, listener);
         Client client = ebCloud.createClient();
         if (!alternateAction.equals(ACTION_NONE)) {
             JSONArray instanceArray = DescriptorHelper.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
             Set<String> tagSet = new HashSet<String>();
-            Set<String> resolvedTags = getResolvedTags(resolver);
+            Set<String> resolvedTags = resolver.resolveTags(tags);
             if (resolvedTags.isEmpty()) {
                 tagSet.add(resolver.resolve(environment));
             } else {
@@ -207,7 +189,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         
         String instanceId = deploy(ebCloud, client, resolver, logger);
         JSONObject instance = client.getInstance(instanceId);
-        Set<String> resolvedTags = getResolvedTags(resolver);
+        Set<String> resolvedTags = resolver.resolveTags(tags);
         if (waitForCompletion && !resolvedTags.isEmpty()) {
             JSONArray instanceTags = instance.getJSONArray("tags");
             int oldSize = instanceTags.size();

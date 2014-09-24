@@ -88,12 +88,9 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         }
         
         ebCloud = instanceProvider.getElasticBoxCloud();
-        VariableResolver resolver = new VariableResolver(build, listener);
+        VariableResolver resolver = new VariableResolver(ebCloud.name, null, build, listener);
         String varStr = getBuildStep() == null ? variables : buildStepVariables;
-        JSONArray jsonVariables = varStr != null ? JSONArray.fromObject(varStr) : new JSONArray();
-        for (Object variable : jsonVariables) {
-            resolver.resolve((JSONObject) variable);
-        }        
+        JSONArray jsonVariables = resolver.resolveVariables(varStr);
         
         Client client = ebCloud.createClient();
         String instanceId = instanceProvider.getInstanceId(build);

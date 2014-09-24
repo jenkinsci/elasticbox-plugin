@@ -253,7 +253,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         FreeStyleBuild build = runJob("test", "TestJob.xml", testParameters);
         
         // validate the results of executed build steps   
-        VariableResolver variableResolver = new VariableResolver(build, TaskListener.NULL);
+        VariableResolver variableResolver = new VariableResolver(cloud.name, TEST_WORKSPACE, build, TaskListener.NULL);
         String buildNumber = variableResolver.resolve("${BUILD_NUMBER}");
         String buildId = variableResolver.resolve("${BUILD_ID}");
         String buildTag = variableResolver.resolve("${BUILD_TAG}");

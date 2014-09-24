@@ -27,9 +27,8 @@
         <f:readOnlyTextbox />
     </f:entry>
 
-    <f:entry title="${%Deployment Status}" field="instanceStatusMessage">
-        <f:readOnlyTextbox />
-    </f:entry>
+    <f:section title="Deployment Status" />
+    <f:block>${it.instanceStatusMessage}</f:block>
 
     <f:descriptorList title="${%Node Properties}" descriptors="${h.getNodePropertyDescriptors(descriptor.clazz)}"
                       field="nodeProperties"/>

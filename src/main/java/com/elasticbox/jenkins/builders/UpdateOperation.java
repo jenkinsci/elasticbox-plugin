@@ -18,6 +18,7 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.RelativePath;
@@ -37,7 +38,7 @@ import org.kohsuke.stapler.QueryParameter;
  *
  * @author Phong Nguyen Le
  */
-public class UpdateOperation extends Operation {
+public class UpdateOperation extends Operation implements IOperation.InstanceOperation {
     private final String box;
     private final String boxVersion;
     private final String variables;    
@@ -66,21 +67,20 @@ public class UpdateOperation extends Operation {
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Update");
         
-        VariableResolver resolver = new VariableResolver(build, logger.getTaskListener());
-        JSONArray resolvedVariables = DescriptorHelper.parseVariables(variables);
-        for (Object variable : resolvedVariables) {
-            resolver.resolve((JSONObject) variable);
-        }       
+        VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
+        JSONArray resolvedVariables = resolver.resolveVariables(variables);
         Client client = ClientCache.getClient(cloud.name);
         DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, boxVersion).getJsonArray());
-        // remove empty variables
+        // remove empty variables and resolve binding with tags
         for (Iterator iter = resolvedVariables.iterator(); iter.hasNext();) {
             JSONObject variable = (JSONObject) iter.next();
-            if (variable.getString("value").isEmpty()) {
+            String variableValue = variable.getString("value");
+            if (variableValue.isEmpty()) {
                 iter.remove();
             }
         }
-        Set<String> resolvedTags = getResolvedTags(resolver);
+        
+        Set<String> resolvedTags = resolver.resolveTags(getTags());
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, true);        
         if (instances.isEmpty()) {

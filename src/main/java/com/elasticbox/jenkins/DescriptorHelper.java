@@ -18,6 +18,7 @@ import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.SlaveInstance;
+import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.slaves.Cloud;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -422,13 +423,9 @@ public class DescriptorHelper {
             return null;
         }
         
-        JSONArray variableArray = parseVariables(variables);
+        JSONArray variableArray = VariableResolver.parseVariables(variables);
         removeInvalidVariables(variableArray, boxStack);
         return variableArray.toString();
-    }
-    
-    public static JSONArray parseVariables(String variables) {
-        return StringUtils.isBlank(variables) ? new JSONArray(): JSONArray.fromObject(variables);
     }
     
     public static JSONArray getInstances(Set<String> tags, String cloud, String workspace, boolean excludeInaccessible) {

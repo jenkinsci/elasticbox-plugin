@@ -36,7 +36,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  *
  * @author Phong Nguyen Le
  */
-public class ReconfigureOperation extends LongOperation {
+public class ReconfigureOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
     public ReconfigureOperation(String tags, boolean waitForCompletion) {
@@ -47,9 +47,9 @@ public class ReconfigureOperation extends LongOperation {
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Reconfigure");
         
-        VariableResolver resolver = new VariableResolver(build, logger.getTaskListener());
+        VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         Client client = ClientCache.getClient(cloud.name);
-        Set<String> resolvedTags = getResolvedTags(resolver);
+        Set<String> resolvedTags = resolver.resolveTags(getTags());
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, true);        
         if (instances.isEmpty()) {

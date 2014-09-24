@@ -96,7 +96,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return username + '@' + endpointUrl;
     }
     
-    private List<ElasticBoxSlave> getPendingSlaves(Label label, JSONArray activeInstances) {
+    private List<ElasticBoxSlave> getPendingSlaves(Label label, List<JSONObject> activeInstances) {
         List<ElasticBoxSlave> pendingSlaves = new ArrayList<ElasticBoxSlave>();
         List<ElasticBoxSlave> offlineSlaves = new ArrayList<ElasticBoxSlave>();
         for (Node node : Jenkins.getInstance().getNodes()) {
@@ -122,8 +122,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         
         if (!offlineSlaves.isEmpty() && !activeInstances.isEmpty()) {            
             Map<String, JSONObject> idToInstanceMap = new HashMap<String, JSONObject>(activeInstances.size());
-            for (Object json : activeInstances) {
-                JSONObject instance = (JSONObject) json;
+            for (JSONObject instance : activeInstances) {
                 idToInstanceMap.put(instance.getString("id"), instance);
             }
             
@@ -144,8 +143,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     }
             
     @Override
-    public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
-        JSONArray activeInstances;
+    public synchronized Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+        List<JSONObject> activeInstances;
         try {
             activeInstances = ElasticBoxSlaveHandler.getActiveInstances(this);
         } catch (IOException ex) {
@@ -305,18 +304,17 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return null;
     }
     
-    private SlaveConfiguration findSlaveConfiguration(Label label, JSONArray activeInstances) {
-        Map<String, Integer> environmentToInstanceCountMap = new HashMap<String, Integer>();
-        for (Object json : activeInstances) {
-            JSONObject instance = (JSONObject) json;
+    private SlaveConfiguration findSlaveConfiguration(Label label, List<JSONObject> activeInstances) {
+        Map<String, Integer> slaveConfigIdToInstanceCountMap = new HashMap<String, Integer>();
+        for (JSONObject instance : activeInstances) {
             String environment = instance.getString("environment");
-            Integer instanceCount = environmentToInstanceCountMap.get(environment);
-            environmentToInstanceCountMap.put(environment, instanceCount == null ? 1 : ++instanceCount);
+            Integer instanceCount = slaveConfigIdToInstanceCountMap.get(environment);
+            slaveConfigIdToInstanceCountMap.put(environment, instanceCount == null ? 1 : ++instanceCount);
         }
         
         for (SlaveConfiguration slaveConfig : getSlaveConfigurations()) {
             if (label.matches(slaveConfig.getLabelSet())) {
-                Integer instanceCount = environmentToInstanceCountMap.get(slaveConfig.getEnvironment());
+                Integer instanceCount = slaveConfigIdToInstanceCountMap.get(slaveConfig.getEnvironment());
                 if (instanceCount == null || instanceCount < slaveConfig.getMaxInstances()) {
                     return slaveConfig;
                 }
