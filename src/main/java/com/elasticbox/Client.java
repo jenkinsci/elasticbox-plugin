@@ -559,7 +559,7 @@ public class Client {
         String resourceUri = resource.getString("uri");
         if (resourceUri.startsWith("/services/instances/")) {
             return MessageFormat.format("{0}/#/instances/{1}/{2}", endpointUrl, resource.getString("id"),
-                    resource.getString("name").replaceAll("[^a-zA-Z0-9-]", "-"));
+                    resource.getString("name").toLowerCase().replaceAll("[^a-z0-9-]", "-"));
         }
         return null;
     }

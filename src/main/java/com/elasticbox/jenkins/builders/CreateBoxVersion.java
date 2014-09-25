@@ -12,10 +12,44 @@
 
 package com.elasticbox.jenkins.builders;
 
+import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.jenkins.util.TaskLogger;
+import hudson.Extension;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import java.io.IOException;
+import org.kohsuke.stapler.DataBoundConstructor;
+
 /**
  *
  * @author Phong Nguyen Le
  */
-public class CreateBoxVersion {
+public class CreateBoxVersion extends Operation implements IOperation.BoxOperation {
+    private final String versionDescription;
+
+    @DataBoundConstructor
+    public CreateBoxVersion(String tags, String versionDescription) {
+        super(tags);
+        this.versionDescription = versionDescription;
+    }
+
+    public String getVersionDescription() {
+        return versionDescription;
+    }
+    
+    @Override
+    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Extension    
+    public static final class DescriptorImpl extends OperationDescriptor {
+
+        @Override
+        public String getDisplayName() {
+            return "Create Version";
+        }
+        
+    }
     
 }

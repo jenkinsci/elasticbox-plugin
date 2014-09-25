@@ -18,12 +18,10 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
-import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.RelativePath;
 import hudson.model.AbstractBuild;
-import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Iterator;
@@ -38,39 +36,21 @@ import org.kohsuke.stapler.QueryParameter;
  *
  * @author Phong Nguyen Le
  */
-public class UpdateOperation extends Operation implements IOperation.InstanceOperation {
-    private final String box;
-    private final String boxVersion;
-    private final String variables;    
-    
+public class UpdateOperation extends BoxRequiredOperation implements IOperation.InstanceOperation {
+
     @DataBoundConstructor
     public UpdateOperation(String box, String boxVersion, String tags, String variables) {
-        super(tags);
-        this.box = box;
-        this.boxVersion = boxVersion;    
-        this.variables = variables;
+        super(box, boxVersion, tags, variables);
     }
 
-    public String getBox() {
-        return box;
-    }
-
-    public String getBoxVersion() {
-        return boxVersion;
-    }
-
-    public String getVariables() {
-        return variables;
-    }
-    
     @Override
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Update");
         
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
-        JSONArray resolvedVariables = resolver.resolveVariables(variables);
+        JSONArray resolvedVariables = resolver.resolveVariables(getVariables());
         Client client = ClientCache.getClient(cloud.name);
-        DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, boxVersion).getJsonArray());
+        DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, getBoxVersion()).getJsonArray());
         // remove empty variables and resolve binding with tags
         for (Iterator iter = resolvedVariables.iterator(); iter.hasNext();) {
             JSONObject variable = (JSONObject) iter.next();
@@ -98,45 +78,12 @@ public class UpdateOperation extends Operation implements IOperation.InstanceOpe
     }
     
     @Extension
-    public static final class DescriptorImpl extends OperationDescriptor {
+    public static final class DescriptorImpl extends Descriptor {
 
         @Override
         public String getDisplayName() {
             return "Update";
         }
 
-        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud, 
-                @RelativePath("..") @QueryParameter String workspace) {
-            return DescriptorHelper.getBoxes(cloud, workspace);
-        }
-
-        public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String cloud, 
-                @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(cloud, box);
-        }
-
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@RelativePath("..") @QueryParameter String cloud, 
-                @QueryParameter String box, @QueryParameter String boxVersion) {
-            DescriptorHelper.JSONArrayResponse response = DescriptorHelper.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
-            // reset the variable of all variable to empty string so the UI will save variables with non-empty value and
-            // only those variables will be updated for every instance with matching tags
-            for (Object boxJson : response.getJsonArray()) {
-                for (Object variable : ((JSONObject) boxJson).getJSONArray("variables")) {
-                    JSONObject variableJson = (JSONObject) variable;
-                    if (!"Binding".equals(variableJson.get("type"))) {
-                        ((JSONObject) variable).put("value", StringUtils.EMPTY);
-                    }
-                }
-            }
-            return response;
-        }
-
-        public DescriptorHelper.JSONArrayResponse doGetInstances(@RelativePath("..") @QueryParameter String cloud, 
-                @RelativePath("..") @QueryParameter String workspace, @QueryParameter String box, 
-                @QueryParameter String boxVersion) {
-            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, 
-                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
-        }
-                
     }
 }

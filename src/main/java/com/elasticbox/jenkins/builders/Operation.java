@@ -12,13 +12,9 @@
 
 package com.elasticbox.jenkins.builders;
 
-import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import java.util.HashSet;
-import java.util.Set;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
 
 /**
  *
@@ -35,6 +31,7 @@ public abstract class Operation implements IOperation, Describable<Operation> {
         return tags;
     }
 
+    @Override
     public Descriptor<Operation> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
     }
