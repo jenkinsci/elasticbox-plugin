@@ -54,7 +54,14 @@ var ElasticBoxUtils = (function() {
         DeployBoxBuildStepName: DeployBoxBuildStepName,
         ReconfigureBoxDescriptorId: DescriptorIdPrefix + 'ReconfigureBox',
         ManageInstanceDescriptorId: DescriptorIdPrefix + 'ManageInstance',
+        ManageBoxDescriptorId: DescriptorIdPrefix + 'ManageInstance',
         ElasticBoxCloudDescriptorId: 'com.elasticbox.jenkins.ElasticBoxCloud',
+        
+        getDescriptorElement: function (childElement) {
+            return Dom.getAncestorBy(childElement, function (element) {
+                    return ElasticBoxUtils.startsWith(Dom.getAttribute(element, 'descriptorid'), ElasticBoxUtils.DescriptorIdPrefix);
+                });
+        },
         
         getDeployBoxSteps: function (deployBoxStepElements) {
             if (!deployBoxStepElements) {

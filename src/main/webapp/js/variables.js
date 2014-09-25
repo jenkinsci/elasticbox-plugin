@@ -20,12 +20,12 @@ var ElasticBoxVariables = (function () {
         TEXT_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
                 '<td class="setting-main" colspan="2">' + 
                 '<input name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input eb-variable" type="{5}"></td>' +
-                '<td>&nbsp;<a><img></a></td></tr>',
+                '<td><div>&nbsp;<a><img></a><div></td></tr>',
         BINDING_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 
                 '<td class="setting-main" colspan="2">' + 
                 '<select name="{1}" value="{2}" data-original-value="{3}" data-scope="{4}" class="setting-input select eb-variable"></select>' + 
                 '<input name="{5}" value="{6}" class="eb-binding-tags setting-input" style="display: none;"></td>' +
-                '<td>&nbsp;<a><img></a></td></tr>',
+                '<td><div>&nbsp;<a><img></a><div></td></tr>',
 
         Dom = YAHOO.util.Dom,
         Element = YAHOO.util.Element,
@@ -176,26 +176,42 @@ var ElasticBoxVariables = (function () {
             return null;
         },
         
-        toggleResetButton = function (variableRow) {
+        // variable decorators are the following:
+        //   - a red mark to indicates that the variable is required
+        //   - a trash bin icon to indicate that variable is modified, clicking on the trash bin will reset the variable
+        toggleVariableDecorators = function (variableRow, variable) {
             var img = ElasticBoxUtils.getElementByTag('img', variableRow),
+                div = ElasticBoxUtils.getElementByTag('div', variableRow),
                 variableInput = _.first(Dom.getElementsByClassName('eb-variable', undefined, variableRow)),
-                imageFolder = getImageFolder();                    
+                imageFolder = getImageFolder(),
+                descriptorElement = ElasticBoxUtils.getDescriptorElement(variableRow);                    
             
-            if (variableInput.tagName.toLowerCase() !== 'select' && variableInput.value !== Dom.getAttribute(variableInput, 'data-original-value')) {
-                Dom.setAttribute(variableInput, 'style', '');
-                Dom.setAttribute(img, 'src', imageFolder + '/reset.png');
-                Dom.setAttribute(img, 'style', 'cursor: pointer');
-                Event.addListener(img, 'click', function () {
-                    variableInput.value = Dom.getAttribute(variableInput, 'data-original-value');
-                    fireEvent(variableInput, 'change');
-                });
-            } else {
-                if (variableInput.tagName.toLowerCase() !== 'select') {
-                    Dom.setAttribute(variableInput, 'style', 'color: gray');
-                }
+            if (variable.type === 'Binding') {
                 Dom.setAttribute(img, 'src', getImageFolder() + '/none.png');
-                Dom.setAttribute(img, 'style', '');
-                Event.removeListener(img, 'click');                
+            } else {
+                if (variableInput.value !== Dom.getAttribute(variableInput, 'data-original-value')) {
+                    Dom.setAttribute(variableInput, 'style', '');
+                    Dom.setAttribute(img, 'src', imageFolder + '/reset.png');
+                    Dom.setAttribute(img, 'style', 'cursor: pointer');
+                    Event.addListener(img, 'click', function () {
+                        variableInput.value = Dom.getAttribute(variableInput, 'data-original-value');
+                        fireEvent(variableInput, 'change');
+                    });
+                } else {
+                    Dom.setAttribute(variableInput, 'style', 'color: gray');
+                    Dom.setAttribute(img, 'src', getImageFolder() + '/none.png');
+                    Dom.setAttribute(img, 'style', '');
+                    Event.removeListener(img, 'click');                
+                }                
+            }
+            
+            if (!_.contains(["com.elasticbox.jenkins.builders.UpdateOperation", "com.elasticbox.jenkins.builders.UpdateBox"], 
+                    Dom.getAttribute(descriptorElement, "descriptorid"))) {
+                if (variable.required && !variableInput.value) {
+                    Dom.addClass(div, "error");
+                } else {
+                    Dom.removeClass(div, "error");
+                }
             }
         },
         
@@ -223,9 +239,7 @@ var ElasticBoxVariables = (function () {
                 updateBindingOptions = function (currentValue, bindingSelect) {            
                     var scope = Dom.getAttribute(bindingSelect, 'data-scope'),
                         deployBoxSteps = variableHolder.getPriorDeployBoxSteps(),
-                        descriptorElement = Dom.getAncestorBy(bindingSelect, function (element) {
-                            return ElasticBoxUtils.startsWith(Dom.getAttribute(element, 'descriptorid'), ElasticBoxUtils.DescriptorIdPrefix);
-                        }),
+                        descriptorElement = ElasticBoxUtils.getDescriptorElement(bindingSelect),
                         descriptorId = Dom.getAttribute(descriptorElement, 'descriptorid'),
                         tagsOption = Dom.getElementBy(function (option) {
                             return Dom.getAttribute(option, 'value') === 'tags';
@@ -328,7 +342,7 @@ var ElasticBoxVariables = (function () {
 
                 Event.addListener(variableInput, 'change', function () {
                     saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, variableHolder.varTextBox);
-                    toggleResetButton(Dom.getAncestorByTagName(variableInput, 'tr'));
+                    toggleVariableDecorators(Dom.getAncestorByTagName(variableInput, 'tr'), variable);
                     if (variable.type === 'Binding') {
                         toggleBindingTagsInput(this);
                     }
@@ -413,7 +427,7 @@ var ElasticBoxVariables = (function () {
 
                         if (row) {
                             varTableBody.appendChild(row);
-                            toggleResetButton(row);
+                            toggleVariableDecorators(row, variable);
                         }
                     });
                     varTableRows.push(varTableRow);
@@ -501,9 +515,7 @@ var ElasticBoxVariables = (function () {
         },
         
         createVariableHoder = function (variableHolderSelect, buildStepElement, varTBody, varTextBox) {
-            var descriptorElement = Dom.getAncestorBy(variableHolderSelect, function (element) {
-                    return ElasticBoxUtils.startsWith(Dom.getAttribute(element, 'descriptorid'), ElasticBoxUtils.DescriptorIdPrefix);
-                });
+            var descriptorElement = ElasticBoxUtils.getDescriptorElement(variableHolderSelect);
             
             if (_.isUndefined(varTBody)) {
                 varTBody = _.first(Dom.getElementsByClassName('eb-variable-inputs', 'tbody', descriptorElement));
@@ -576,7 +588,8 @@ var ElasticBoxVariables = (function () {
                             return  name === 'builder' && _.contains([
                                 ElasticBoxUtils.DeployBoxDescriptorId, 
                                 ElasticBoxUtils.ReconfigureBoxDescriptorId,
-                                ElasticBoxUtils.ManageInstanceDescriptorId
+                                ElasticBoxUtils.ManageInstanceDescriptorId,
+                                ElasticBoxUtils.ManageBoxDescriptorId
                             ], descriptorId);
                         }),
                                 
