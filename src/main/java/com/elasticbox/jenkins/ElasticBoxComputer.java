@@ -38,6 +38,9 @@ final class ElasticBoxComputer extends SlaveComputer {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxComputer.class.getName());
     
     private boolean terminateOnOffline = false;
+    
+    // A reference to the slave is kept here so the computer still can access to it even after it has been removed and
+    // getNode() returns null
     private final ElasticBoxSlave slave;
 
     public ElasticBoxComputer(ElasticBoxSlave slave) {
@@ -51,6 +54,11 @@ final class ElasticBoxComputer extends SlaveComputer {
         boolean terminateNow = false;
         if (cause instanceof OfflineCause.SimpleOfflineCause && 
                 ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString())) {
+            try {
+                LOGGER.info(MessageFormat.format("Slave {0} is removed, its instance {1} will be terminated.", slave.getNodeName(), slave.getInstancePageUrl()));
+            } catch (IOException ex) {
+                LOGGER.info(MessageFormat.format("Slave {0} is removed, its instance cannot be terminated due to the following error: {1}", slave.getNodeName(), ex.getMessage()));
+            }
             // remove any pending launches
             for (LabelAtom label : ElasticBoxLabelFinder.INSTANCE.findLabels(slave)) {
                 for (NodeProvisioner.PlannedNode plannedNode : label.nodeProvisioner.getPendingLaunches()) {

@@ -154,7 +154,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         
         if (activeInstances.size() >= maxInstances) {
             LOGGER.log(Level.WARNING, 
-                    MessageFormat.format("Cannot provision slave for label ''{0}'' because the maxinum number of instances has been reached for ElasticBox cloud {2}.", 
+                    MessageFormat.format("Cannot provision slave for label ''{0}'' because the maxinum number of instances has been reached for ElasticBox cloud {1}.", 
                             label.getName(), getDisplayName()));
             return Collections.EMPTY_LIST;
         }
