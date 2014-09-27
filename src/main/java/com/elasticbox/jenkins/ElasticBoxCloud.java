@@ -16,6 +16,7 @@ import antlr.ANTLRException;
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.util.ClientCache;
+import com.elasticbox.jenkins.util.SlaveInstance;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -196,17 +197,21 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             try {                
                 ElasticBoxSlave newSlave;
                 if (isLabelForReusableSlave(label)) {
-                    String[] ids = label.getName().substring(ElasticBoxLabelFinder.REUSE_PREFIX.length()).split("\\.");
-                    String profileId = ids[0];
-                    String boxVersion = null;
-                    if (ids.length > 1) {
-                        boxVersion = ids[1];
+                    ProjectSlaveConfiguration slaveConfig = ProjectSlaveConfiguration.find(label);
+                    if (slaveConfig != null) {
+                        SlaveInstance.InstanceCounter instanceCounter = new SlaveInstance.InstanceCounter(activeInstances);
+                        if (instanceCounter.count(slaveConfig) >= slaveConfig.getMaxInstances()) {
+                            LOGGER.log(Level.WARNING, MessageFormat.format("Cannot provision slave for label \"{0}\" because the maxinum number of ElasticBox instances of the slave configuration has been reached.", label.getName()));
+                            break;                        
+                        }
+                        newSlave = new ElasticBoxSlave(slaveConfig, false);
+                    } else {
+                        LOGGER.log(Level.WARNING, MessageFormat.format("Cannot find any slave configuration for label ''{0}''. No slave will be provisioned.", label.getName()));
+                        break;
                     }
-
-                    newSlave = new ElasticBoxSlave(profileId, boxVersion, false, this);
                 } else {
                     SlaveConfiguration slaveConfig = findSlaveConfiguration(label, activeInstances);
-                    if (slaveConfig == null) {
+                    if (slaveConfig != null) {
                         LOGGER.log(Level.WARNING, MessageFormat.format("Cannot provision slave for label \"{0}\" because the maxinum number of ElasticBox instances of all matching slave configurations has been reached.", label.getName()));
                         break;                        
                     }
@@ -242,7 +247,12 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
     @Override
     public boolean canProvision(Label label) {
-        return isLabelForReusableSlave(label) || getSlaveConfiguration(label) != null;
+        if (isLabelForReusableSlave(label)) {
+            ProjectSlaveConfiguration slaveConfig = ProjectSlaveConfiguration.find(label);
+            return slaveConfig != null && slaveConfig.getCloud().equals(name);
+        }
+        
+        return getSlaveConfiguration(label) != null;
     }
 
     public String getEndpointUrl() {
@@ -304,19 +314,12 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     }
     
     private SlaveConfiguration findSlaveConfiguration(Label label, List<JSONObject> activeInstances) {
-        Map<String, Integer> slaveConfigIdToInstanceCountMap = new HashMap<String, Integer>();
-        for (JSONObject instance : activeInstances) {
-            String environment = instance.getString("environment");
-            Integer instanceCount = slaveConfigIdToInstanceCountMap.get(environment);
-            slaveConfigIdToInstanceCountMap.put(environment, instanceCount == null ? 1 : ++instanceCount);
-        }
+        SlaveInstance.InstanceCounter instanceCounter = new SlaveInstance.InstanceCounter(activeInstances);
         
         for (SlaveConfiguration slaveConfig : getSlaveConfigurations()) {
-            if (label.matches(slaveConfig.getLabelSet())) {
-                Integer instanceCount = slaveConfigIdToInstanceCountMap.get(slaveConfig.getEnvironment());
-                if (instanceCount == null || instanceCount < slaveConfig.getMaxInstances()) {
-                    return slaveConfig;
-                }
+            if (label.matches(slaveConfig.getLabelSet()) && 
+                    instanceCounter.count(slaveConfig) < slaveConfig.getMaxInstances()) {
+                return slaveConfig;
             }
         }
         
@@ -330,18 +333,22 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             this.future = future;
         }
 
+        @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             return future.cancel(mayInterruptIfRunning);
         }
 
+        @Override
         public boolean isCancelled() {
             return future.isCancelled();
         }
 
+        @Override
         public boolean isDone() {
             return future.isDone();
         }
 
+        @Override
         public V get() throws InterruptedException, ExecutionException {
             try {
                 return future.get();
@@ -350,6 +357,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
         }
 
+        @Override
         public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
             try {
                 return future.get(timeout, unit);
@@ -377,7 +385,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 throw new FormException(MessageFormat.format("Invalid End Point URL: {0}", newCloud.endpointUrl), ENDPOINT_URL);
             }
             
-            boolean invalidNumber = false;
+            boolean invalidNumber;
             try {
                 invalidNumber = newCloud.maxInstances <= 0;
             } catch (JSONException ex) {
@@ -387,7 +395,6 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 throw new FormException("Invalid Max. No. of Instances, it must be a positive whole number.", "maxInstances");
             }
             
-            invalidNumber = false;
             try {
                 invalidNumber = newCloud.retentionTime < 0;
             } catch (JSONException ex) {
@@ -586,7 +593,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
                     }
                     if (cloud == existingCloud && StringUtils.isNotBlank(slave.getLabelString())) {
-                        SlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
+                        AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
                         if (slaveConfig != null) {
                             if (newCloud.getSlaveConfiguration(slaveConfig.getId()) == null) {
                                 throw new FormException(MessageFormat.format("Cannot remove slave configuration ''{0}'' from ElasticBox cloud {1} because it is used by slave {2}.", 

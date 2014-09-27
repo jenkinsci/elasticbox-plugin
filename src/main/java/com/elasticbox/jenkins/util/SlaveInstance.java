@@ -13,16 +13,21 @@
 package com.elasticbox.jenkins.util;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.AbstractSlaveConfiguration;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlave;
+import hudson.model.Node;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -106,6 +111,69 @@ public class SlaveInstance {
     
     public static boolean isSlaveBox(JSONObject boxJson) {
         return getRequiredVariables(boxJson).size() == REQUIRED_VARIABLES.size();
+    }
+    
+    public static Map<String, Integer> getSlaveConfigIdToInstanceCountMap(List<JSONObject> activeInstances) {
+        Map<String, String> slaveNameToConfigIdMap = new HashMap<String, String>();
+        for (Node node : Jenkins.getInstance().getNodes()) {
+            if (node instanceof ElasticBoxSlave) {
+                ElasticBoxSlave slave = (ElasticBoxSlave) node;
+                AbstractSlaveConfiguration config = slave.getSlaveConfiguration();
+                if (config != null) {
+                    slaveNameToConfigIdMap.put(slave.getNodeName(), config.getId());
+                }
+            }
+        }
+        Map<String, Integer> slaveConfigIdToInstanceCountMap = new HashMap<String, Integer>();
+        for (JSONObject instance : activeInstances) {
+            List<?> tags = new ArrayList(instance.getJSONArray("tags"));
+            tags.retainAll(slaveNameToConfigIdMap.keySet());
+            if (!tags.isEmpty()) {
+                String slaveName = (String) tags.get(0);
+                String slaveConfigId = slaveNameToConfigIdMap.get(slaveName);
+                Integer instanceCount = slaveConfigIdToInstanceCountMap.get(slaveConfigId);
+                slaveConfigIdToInstanceCountMap.put(slaveConfigId, instanceCount == null ? 1 : ++instanceCount);
+            }
+        }
+        
+        return slaveConfigIdToInstanceCountMap;
+    }
+    
+    public static class InstanceCounter {
+        private final Map<String, Integer> slaveConfigIdToInstanceCountMap;
+        
+        public InstanceCounter(List<JSONObject> activeInstances) {
+            Map<String, AbstractSlaveConfiguration> instanceIdToSlaveConfigMap = new HashMap<String, AbstractSlaveConfiguration>();
+            for (Node node : Jenkins.getInstance().getNodes()) {
+                if (node instanceof ElasticBoxSlave) {
+                    ElasticBoxSlave slave = (ElasticBoxSlave) node;
+                    AbstractSlaveConfiguration config = slave.getSlaveConfiguration();
+                    if (config != null) {
+                        instanceIdToSlaveConfigMap.put(slave.getInstanceId(), slave.getSlaveConfiguration());
+                    }
+                }
+            }
+            slaveConfigIdToInstanceCountMap = new HashMap<String, Integer>();
+            for (JSONObject instance : activeInstances) {
+                AbstractSlaveConfiguration slaveConfig = instanceIdToSlaveConfigMap.get(instance.getString("id"));
+                if (slaveConfig != null) {
+                    Integer instanceCount = slaveConfigIdToInstanceCountMap.get(slaveConfig.getId());
+                    slaveConfigIdToInstanceCountMap.put(slaveConfig.getId(), instanceCount == null ? 1 : ++instanceCount);
+                }
+            }
+        }
+        
+        /**
+         * Counts the active instances created with the specified slave configurations.
+         * 
+         * @param slaveConfig the slave configuration
+         * @return the number of instances created with the specified slave configuration
+         */
+        public int count(AbstractSlaveConfiguration slaveConfig) {
+            Integer instanceCount = slaveConfigIdToInstanceCountMap.get(slaveConfig.getId());
+            return instanceCount == null ? 0 : instanceCount;
+        }
+    
     }
     
 }

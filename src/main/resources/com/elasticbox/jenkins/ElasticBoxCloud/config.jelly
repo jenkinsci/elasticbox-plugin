@@ -17,9 +17,6 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Max. No. of Instances}" field="maxInstances">
         <f:textbox clazz="required number" />
     </f:entry>
-    <f:entry title="${%Retention Time}" field="retentionTime">
-        <f:textbox clazz="required number" default="30"/>
-    </f:entry>
     <f:entry title="${%Username}" field="username">
         <f:textbox clazz="required eb-username" />
     </f:entry>

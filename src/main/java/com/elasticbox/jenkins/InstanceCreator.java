@@ -12,22 +12,22 @@
 
 package com.elasticbox.jenkins;
 
-import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Node;
+import hudson.slaves.Cloud;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
 import java.io.IOException;
+import java.util.UUID;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
@@ -35,26 +35,31 @@ import org.kohsuke.stapler.StaplerRequest;
  * @author Phong Nguyen Le
  */
 public class InstanceCreator extends BuildWrapper {
-
+    @Deprecated
     private String cloud;
-    private final String workspace;
-    private final String box;
-    private final String profile;
-    private final String variables;
-    private final String boxVersion;
+    @Deprecated
+    private String workspace;
+    @Deprecated
+    private String box;
+    @Deprecated
+    private String profile;
+    @Deprecated
+    private String variables;
+    @Deprecated
+    private String boxVersion;
+
+    private ProjectSlaveConfiguration slaveConfiguration;
 
     private transient ElasticBoxSlave ebSlave;
-
     
     @DataBoundConstructor
-    public InstanceCreator(String cloud, String workspace, String box, String boxVersion, String profile, String variables) {
+    public InstanceCreator(ProjectSlaveConfiguration slaveConfiguration) {
         super();
-        this.cloud = cloud;
-        this.workspace = workspace;
-        this.box = box;
-        this.boxVersion = boxVersion;
-        this.profile = profile;
-        this.variables = variables;        
+        this.slaveConfiguration = slaveConfiguration;
+    }
+
+    public ProjectSlaveConfiguration getSlaveConfiguration() {
+        return slaveConfiguration;
     }
     
     @Override
@@ -82,39 +87,25 @@ public class InstanceCreator extends BuildWrapper {
     }
     
     protected Object readResolve() {
-        if (cloud == null) {
-            ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
-            if (ebCloud != null) {
-                cloud = ebCloud.name;
-                getDescriptor().save();
+        if (slaveConfiguration == null) {
+            ElasticBoxCloud ebCloud = null;
+            if (cloud == null) {
+                ebCloud = ElasticBoxCloud.getInstance();
+                if (ebCloud != null) {
+                    cloud = ebCloud.name;
+                }
+            } else {
+                Cloud c = Jenkins.getInstance().getCloud(cloud);
+                if (c instanceof ElasticBoxCloud) {
+                    ebCloud = (ElasticBoxCloud) c;
+                }
             }
+            slaveConfiguration = new ProjectSlaveConfiguration(UUID.randomUUID().toString(), cloud, workspace, box, 
+                    boxVersion, profile, null, variables, StringUtils.EMPTY, 
+                    ebCloud != null ? ebCloud.getRetentionTime() : 30, 1, ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
         }
         
         return this;
-    }
-
-    public String getCloud() {
-        return cloud;
-    }
-
-    public String getWorkspace() {
-        return workspace;
-    }
-
-    public String getBox() {
-        return box;
-    }
-
-    public String getBoxVersion() {
-        return boxVersion;
-    }
-    
-    public String getProfile() {
-        return profile;
-    }
-
-    public String getVariables() {
-        return variables;
     }
 
     @Extension
@@ -133,54 +124,16 @@ public class InstanceCreator extends BuildWrapper {
         @Override
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             InstanceCreator instanceCreator = (InstanceCreator) super.newInstance(req, formData);
-            FormValidation result = doCheckBoxVersion(instanceCreator.getBoxVersion(), instanceCreator.getCloud(), 
-                    instanceCreator.getBox());
+            ProjectSlaveConfiguration.DescriptorImpl descriptor = (ProjectSlaveConfiguration.DescriptorImpl) instanceCreator.getSlaveConfiguration().getDescriptor();
+            FormValidation result = descriptor.doCheckBoxVersion(instanceCreator.getSlaveConfiguration().getBoxVersion(), 
+                    instanceCreator.getSlaveConfiguration().getCloud(), 
+                    instanceCreator.getSlaveConfiguration().getBox());
             if (result.kind == FormValidation.Kind.ERROR) {
                 throw new FormException(result.getMessage(), "boxVersion");
             }
             
             return instanceCreator;
-        }
+        }        
         
-        
-        public ListBoxModel doFillCloudItems() {
-            return DescriptorHelper.getClouds();
-        }
-
-        public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
-            return DescriptorHelper.getWorkspaces(cloud);
-        }
-        
-        public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
-            return DescriptorHelper.getBoxes(cloud, workspace);
-        }
-
-        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(cloud, box);
-        }
-
-        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 
-                @QueryParameter String box) {                
-            return DescriptorHelper.getProfiles(cloud, workspace, box);
-        }
-
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
-                @QueryParameter String box, @QueryParameter String boxVersion) {
-            return DescriptorHelper.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
-        }
-
-        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
-                @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
-            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, 
-                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
-        }
-        
-        public FormValidation doCheckBoxVersion(@QueryParameter String value, @QueryParameter String cloud, @QueryParameter String box) {
-            return DescriptorHelper.checkSlaveBox(ClientCache.getClient(cloud), StringUtils.isBlank(value) ? box : value);
-        }
-        
-        public FormValidation doCheckCloud(@QueryParameter String value) {
-            return DescriptorHelper.checkCloud(value);
-        }
     }
 }

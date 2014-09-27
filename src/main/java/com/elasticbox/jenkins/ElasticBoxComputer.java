@@ -15,16 +15,21 @@ package com.elasticbox.jenkins;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import hudson.Extension;
+import hudson.model.AbstractBuild;
 import hudson.model.Computer;
 import hudson.model.Messages;
 import hudson.model.Queue;
+import hudson.model.TaskListener;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.SlaveComputer;
+import hudson.util.RunList;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -58,10 +63,27 @@ final class ElasticBoxComputer extends SlaveComputer {
             try {
                 LOGGER.info(MessageFormat.format("Slave {0} is removed, its instance {1} will be terminated.", slave.getNodeName(), slave.getInstancePageUrl()));
             } catch (IOException ex) {
-                LOGGER.info(MessageFormat.format("Slave {0} is removed, its instance cannot be terminated due to the following error: {1}", slave.getNodeName(), ex.getMessage()));
+                LOGGER.warning(MessageFormat.format("Slave {0} is removed, its instance cannot be terminated due to the following error: {1}", slave.getNodeName(), ex.getMessage()));
+                
             }
             // remove any pending launches
-            for (LabelAtom label : ElasticBoxLabelFinder.INSTANCE.findLabels(slave)) {
+            Set<LabelAtom> slaveLabels = new HashSet<LabelAtom>(ElasticBoxLabelFinder.INSTANCE.findLabels(slave));
+            if (slave.isSingleUse()) {
+                slaveLabels.add(ElasticBoxLabelFinder.getLabel(slave.getSlaveConfiguration(), true));
+                RunList builds = slave.getComputer().getBuilds();
+                if (slave.getInstanceUrl() == null && !builds.isEmpty()) {
+                    AbstractBuild build = (AbstractBuild) builds.iterator().next();
+                    String buildTag;
+                    try {
+                        buildTag = build.getEnvironment(TaskListener.NULL).get("BUILD_TAG");
+                    } catch (Exception ex) {                        
+                        LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                        buildTag = build.getDescription();
+                    }
+                    LOGGER.warning(MessageFormat.format("The build ''{0}'' will be canceled because a slave cannot be launched for it.", buildTag));
+                }
+            }
+            for (LabelAtom label : slaveLabels) {
                 for (NodeProvisioner.PlannedNode plannedNode : label.nodeProvisioner.getPendingLaunches()) {
                     if (plannedNode.displayName.equals(slave.getNodeName())) {
                         plannedNode.future.cancel(false);

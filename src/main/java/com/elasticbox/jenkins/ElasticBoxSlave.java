@@ -97,28 +97,28 @@ public class ElasticBoxSlave extends Slave {
 
     private transient boolean deletable;
     private final transient int launchTimeout;
-    private final transient String environment;
+    private transient String environment;
 
-    public ElasticBoxSlave(String profileId, String boxVersion, boolean singleUse, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
-        super(generateName(cloud, boxVersion), "", getRemoteFS(profileId, cloud), 1, Mode.EXCLUSIVE, "", 
-                new JNLPLauncher(), new IdleTimeoutRetentionStrategy(cloud.getRetentionTime()), Collections.EMPTY_LIST);
-        this.boxVersion = boxVersion;
-        this.profileId = profileId;
-        this.singleUse = singleUse;
-        this.cloudName = cloud.name;
-        this.retentionTime = cloud.getRetentionTime();
-        this.launchTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
-        this.environment = getNodeName().substring(0, 30);
+    public ElasticBoxSlave(ProjectSlaveConfiguration config, boolean singleUse) throws Descriptor.FormException, IOException {
+        this(config, config.getElasticBoxCloud(), new ProjectSlaveConfigurationRetentionStrategy(config), singleUse);
+        if (StringUtils.isBlank(config.getEnvironment())) {
+            environment = getNodeName().substring(0, 30);
+        }
     }
     
     public ElasticBoxSlave(SlaveConfiguration config, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
+        this(config, cloud, new SlaveConfigurationRetentionStrategy(config, cloud), false);
+    }
+    
+    public ElasticBoxSlave(AbstractSlaveConfiguration config, ElasticBoxCloud cloud, 
+            RetentionStrategy retentionStrategy, boolean singleUse) throws Descriptor.FormException, IOException {
         super(generateName(cloud, config.getBoxVersion()), config.getDescription(), 
             StringUtils.isBlank(config.getRemoteFS()) ? getRemoteFS(config.getProfile(), cloud) : config.getRemoteFS(), 
-            config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), 
-            new SlaveConfigurationRetentionStrategy(config, cloud), Collections.EMPTY_LIST);
+            config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), retentionStrategy, 
+            Collections.EMPTY_LIST);
         this.boxVersion = config.getBoxVersion();
         this.profileId = config.getProfile();
-        this.singleUse = false;
+        this.singleUse = singleUse;
         this.cloudName = cloud.name;
         this.retentionTime = config.getRetentionTime();
         this.launchTimeout = config.getLaunchTimeout();
@@ -194,9 +194,9 @@ public class ElasticBoxSlave extends Slave {
         return ebCloud != null ? ebCloud : ElasticBoxCloud.getInstance();
     }       
     
-    public SlaveConfiguration getSlaveConfiguration() {
-        if (getRetentionStrategy() instanceof SlaveConfigurationRetentionStrategy) {
-            return ((SlaveConfigurationRetentionStrategy) getRetentionStrategy()).getSlaveConfiguration();
+    public AbstractSlaveConfiguration getSlaveConfiguration() {
+        if (getRetentionStrategy() instanceof AbstractSlaveConfigurationRetentionStrategy) {
+            return ((AbstractSlaveConfigurationRetentionStrategy) getRetentionStrategy()).getSlaveConfiguration();
         }
         
         return null;
@@ -352,27 +352,50 @@ public class ElasticBoxSlave extends Slave {
 
     }
     
-    private static final class SlaveConfigurationRetentionStrategy extends IdleTimeoutRetentionStrategy {
-        private final String slaveConfigId;
-        private final int minInstances;
-
+    private static final class SlaveConfigurationRetentionStrategy extends AbstractSlaveConfigurationRetentionStrategy {
         private transient String cloudName;
-        
-        SlaveConfigurationRetentionStrategy(SlaveConfiguration slaveConfig, ElasticBoxCloud cloud) {
-            super(slaveConfig.getRetentionTime());
-            this.slaveConfigId = slaveConfig.getId();
-            this.minInstances = slaveConfig.getMinInstances();
+
+        public SlaveConfigurationRetentionStrategy(AbstractSlaveConfiguration slaveConfig, ElasticBoxCloud cloud) {
+            super(slaveConfig);
             this.cloudName = cloud.name;
         }
-
-        private SlaveConfiguration getSlaveConfiguration() {
+        
+        @Override
+        protected SlaveConfiguration getSlaveConfiguration() {
             Cloud cloud = Jenkins.getInstance().getCloud(cloudName);            
             if (cloud instanceof ElasticBoxCloud) {
                 return ((ElasticBoxCloud) cloud).getSlaveConfiguration(slaveConfigId);
             }
                 
             return null;
+        }        
+    }
+    
+    private static final class ProjectSlaveConfigurationRetentionStrategy extends AbstractSlaveConfigurationRetentionStrategy {
+
+        public ProjectSlaveConfigurationRetentionStrategy(ProjectSlaveConfiguration slaveConfig) {
+            super(slaveConfig);
         }
+
+        @Override
+        protected ProjectSlaveConfiguration getSlaveConfiguration() {
+            return ProjectSlaveConfiguration.find(slaveConfigId);
+        }
+        
+    }
+    
+    private static abstract class AbstractSlaveConfigurationRetentionStrategy extends IdleTimeoutRetentionStrategy {
+        
+        protected final String slaveConfigId;
+        protected final int minInstances;
+
+        AbstractSlaveConfigurationRetentionStrategy(AbstractSlaveConfiguration slaveConfig) {
+            super(slaveConfig.getRetentionTime());
+            this.slaveConfigId = slaveConfig.getId();
+            this.minInstances = slaveConfig.getMinInstances();
+        }
+
+        protected abstract AbstractSlaveConfiguration getSlaveConfiguration();
 
         @Override
         protected int getRetentionTime() {

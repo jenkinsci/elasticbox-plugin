@@ -1,18 +1,4 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="${%Cloud}" field="cloud">
-        <f:select clazz="required eb-cloud" />
-    </f:entry>    
-    <f:entry title="${%Workspace}" field="workspace">
-        <f:select clazz="required eb-workspace" />
-    </f:entry>
-    <f:entry title="${%Box}" field="box">
-        <f:select clazz="required eb-box" />
-    </f:entry>
-    <f:entry title="${%Version}" field="boxVersion">
-        <f:select clazz="required eb-boxVersion" />
-    </f:entry>
-    <f:entry title="${%Deployment Profile}" field="profile">
-        <f:select clazz="required eb-profile" />
-    </f:entry>
+    <f:property field="slaveConfiguration" />
 </j:jelly>

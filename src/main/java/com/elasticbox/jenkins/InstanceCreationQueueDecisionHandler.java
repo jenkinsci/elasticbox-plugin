@@ -64,10 +64,10 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                     }
                 }
                 
-                LabelAtom label = ElasticBoxLabelFinder.getLabel(instanceCreator.getProfile(), instanceCreator.getBoxVersion(), singleUse);
+                LabelAtom label = ElasticBoxLabelFinder.getLabel(instanceCreator.getSlaveConfiguration(), singleUse);
                 if (singleUse) {
                     try {
-                        ElasticBoxSlave slave = new ElasticBoxSlave(instanceCreator.getProfile(), instanceCreator.getBoxVersion(), singleUse, (ElasticBoxCloud) Jenkins.getInstance().getCloud(instanceCreator.getCloud()));
+                        ElasticBoxSlave slave = new ElasticBoxSlave(instanceCreator.getSlaveConfiguration(), singleUse);
                         Jenkins.getInstance().addNode(slave);
                         ElasticBoxSlaveHandler.submit(slave);
                     } catch (Descriptor.FormException ex) {

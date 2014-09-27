@@ -19,8 +19,6 @@ import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
 import hudson.model.AsyncPeriodicWork;
 import hudson.model.Descriptor;
 import hudson.model.Node;
@@ -102,17 +100,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         return new SlaveInstanceManager().getInstances(cloud);
     }
     
-    @Initializer(after = InitMilestone.COMPLETED)
-    public static void tagSlaveInstances() throws IOException {
-        LOGGER.info("Tagging slave instances");
-        SlaveInstanceManager manager = new SlaveInstanceManager();
-        for (JSONObject instance : manager.getInstances()) {
-            ElasticBoxSlave slave = manager.getSlave(instance.getString("id"));
-            tagSlaveInstance(instance, slave);
-        }        
-    }
-    
-    private static void tagSlaveInstance(JSONObject instance, ElasticBoxSlave slave) throws IOException {
+    public static void tagSlaveInstance(JSONObject instance, ElasticBoxSlave slave) throws IOException {
         if (instance.getJSONArray("tags").contains(slave.getNodeName())) {
             return;
         }
@@ -353,7 +341,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         JSONObject profile = ebClient.getProfile(request.slave.getProfileId());     
         JSONArray variables = SlaveInstance.createJenkinsVariables(ebClient, Jenkins.getInstance().getRootUrl(), request.slave);
         String scope = variables.getJSONObject(0).getString("scope");
-        SlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
+        AbstractSlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
         if (slaveConfig != null && slaveConfig.getVariables() != null) {
             JSONArray configuredVariables = VariableResolver.parseVariables(slaveConfig.getVariables());
             for (int i = 0; i < configuredVariables.size(); i++) {
@@ -372,12 +360,12 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         submittedQueue.add(request);
     }
     
-    private Map<SlaveConfiguration, Integer> countSlavesPerConfiguration() {
-        Map<SlaveConfiguration, Integer> slaveConfigToSlaveCountMap = new HashMap<SlaveConfiguration, Integer>();
+    private Map<AbstractSlaveConfiguration, Integer> countSlavesPerConfiguration() {
+        Map<AbstractSlaveConfiguration, Integer> slaveConfigToSlaveCountMap = new HashMap<AbstractSlaveConfiguration, Integer>();
         for (Node node : Jenkins.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
-                SlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
+                AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
                 if (slaveConfig != null) {
                     Integer slaveCount = slaveConfigToSlaveCountMap.get(slaveConfig);
                     slaveConfigToSlaveCountMap.put(slaveConfig, slaveCount == null ? 1 : ++slaveCount);
@@ -387,7 +375,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         return slaveConfigToSlaveCountMap;
     }
     
-    private void launchMinimumSlaves(ElasticBoxCloud cloud, Map<SlaveConfiguration, Integer> slaveConfigToSlaveCountMap) 
+    private void launchMinimumSlaves(ElasticBoxCloud cloud, Map<AbstractSlaveConfiguration, Integer> slaveConfigToSlaveCountMap) 
             throws IOException {
         for (SlaveConfiguration slaveConfig : cloud.getSlaveConfigurations()) {
             if (slaveConfig.getMinInstances() > 0) {
@@ -409,7 +397,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     }
 
     private void launchMinimumSlaves() throws IOException {
-        Map<SlaveConfiguration, Integer> slaveConfigToSlaveCountMap = countSlavesPerConfiguration();
+        Map<AbstractSlaveConfiguration, Integer> slaveConfigToSlaveCountMap = countSlavesPerConfiguration();
         for (Cloud cloud : Jenkins.getInstance().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 launchMinimumSlaves((ElasticBoxCloud) cloud, slaveConfigToSlaveCountMap);

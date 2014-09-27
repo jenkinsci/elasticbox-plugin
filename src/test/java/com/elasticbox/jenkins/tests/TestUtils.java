@@ -33,8 +33,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -112,6 +114,23 @@ public class TestUtils {
         ByteArrayOutputStream log = new ByteArrayOutputStream();
         build.getLogText().writeLogTo(0, log);
         Assert.assertEquals(log.toString(), Result.SUCCESS, build.getResult());
+    }
+
+    static Object getResult(Future<?> future, int waitMinutes) throws ExecutionException {
+        Object result = null;
+        long maxWaitTime = waitMinutes * 60000;
+        long waitTime = 0;
+        do {
+            long waitStart = System.currentTimeMillis();
+            try {
+                result = future.get(maxWaitTime - waitTime, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+            } catch (TimeoutException ex) {
+                break;
+            }
+            waitTime += (System.currentTimeMillis() - waitStart);
+        } while (result == null && waitTime < maxWaitTime);
+        return result;
     }
 
 }

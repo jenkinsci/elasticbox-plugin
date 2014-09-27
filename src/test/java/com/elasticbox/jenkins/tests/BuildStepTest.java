@@ -14,13 +14,11 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.DescriptorHelper;
-import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Result;
 import hudson.model.TaskListener;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,27 +35,13 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
 
 /**
  *
  * @author Phong Nguyen Le
  */
-public class BuildStepTest {
-
-    private ElasticBoxCloud cloud;
-    
-    @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
-    
-    @Before
-    public void createCloud() throws IOException {
-        cloud = new ElasticBoxCloud("elasticbox", TestUtils.ELASTICBOX_URL, 2, 10, TestUtils.USER_NAME, TestUtils.PASSWORD, Collections.EMPTY_LIST);
-        jenkins.getInstance().clouds.add(cloud);        
-    }
+public class BuildStepTest extends TestBase {
 
     @Test
     public void testBuildWithSteps() throws Exception {    
@@ -202,6 +186,5 @@ public class BuildStepTest {
 
         TestUtils.cleanUp(testTag, jenkins.getInstance());
     }
-    
     
 }

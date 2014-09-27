@@ -18,7 +18,6 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 /**
@@ -29,7 +28,6 @@ public abstract class AbstractBuilder extends Builder {
     private final String cloud;
     private final String workspace;
     
-    @DataBoundConstructor
     public AbstractBuilder(String cloud, String workspace) {
         this.cloud = cloud;
         this.workspace = workspace;   

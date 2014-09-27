@@ -17,37 +17,25 @@ import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
-import com.elasticbox.jenkins.SlaveConfiguration;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
 import hudson.model.Node;
-import hudson.model.queue.QueueTaskFuture;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.io.IOUtils;
 import org.jvnet.hudson.test.HudsonTestCase;
-import hudson.model.Result;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.JenkinsLocationConfiguration;
@@ -221,38 +209,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         assertEquals(connectionVar.toString(), testParameter, connectionVar.getString("value"));
         assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
     }
-    
-    public void testBuildWithLinuxSlave() throws Exception {
-        if (System.getProperty(TestUtils.OPS_USER_NAME_PROPERTY) != null) {
-            testBuildWithSlave(TestUtils.JENKINS_SLAVE_BOX_NAME);
-        }
-    }
-    
-    public void testBuildWithWindowsSlave() throws Exception {
-        if (System.getProperty(TestUtils.OPS_PASSWORD_PROPERTY) != null) {
-            testBuildWithSlave("Windows Jenkins Slave");        
-        }
-    }
         
-    private void testBuildWithProjectSpecificSlave(ElasticBoxCloud cloud) throws Exception {
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", TestUtils.JENKINS_SLAVE_BOX_NAME), true);
-        assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", TestUtils.JENKINS_SLAVE_BOX_NAME, cloud.getDisplayName()), profiles.size() > 0);
-        JSONObject profile = profiles.getJSONObject(0);        
-        String projectXml = IOUtils.toString((InputStream) getClass().getResource("TestProjectWithSlave.xml").getContent());
-        projectXml = projectXml.replace("{workspaceId}", profile.getString("owner")).
-                replace("{InstanceCreator.boxId}", profile.getJSONObject("box").getString("version")).
-                replace("{InstanceCreator.profileId}", profile.getString("id")).
-                replace("{version}", "0.7.5-SNAPSHOT");   
-        FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML("test", new ByteArrayInputStream(projectXml.getBytes()));
-        QueueTaskFuture future = project.scheduleBuild2(0);
-        Object scheduleResult = getResult(future.getStartCondition(), 30);
-        assertNotNull("30 minutes after job scheduling but no result returned", scheduleResult);
-        FreeStyleBuild result = (FreeStyleBuild) getResult(future, 60);      
-        assertNotNull("60 minutes after job start but no result returned", result);
-        assertEquals(Result.SUCCESS, result.getResult());
-    }
-    
     private void testConfigRoundtrip(ElasticBoxCloud cloud) throws Exception {
         WebClient webClient = createWebClient();
         HtmlForm configForm = webClient.goTo("configure").getFormByName("config");
@@ -271,58 +228,6 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         String content = post.getResponseBodyAsString();
         assertEquals(HttpStatus.SC_OK, status);
         assertStringContains(content, content, MessageFormat.format("Connection to {0} was successful.", cloud.getEndpointUrl()));
-    }
-    
-    private void testBuildWithSlave(String slaveBoxName) throws Exception {  
-        LOGGER.info(MessageFormat.format("Testing build with slave {0}", slaveBoxName));
-        
-        String username = System.getProperty(TestUtils.OPS_USER_NAME_PROPERTY);
-        String password = System.getProperty(TestUtils.OPS_PASSWORD_PROPERTY);
-        assertNotNull(MessageFormat.format("System property {0} must be specified to run this test", TestUtils.OPS_USER_NAME_PROPERTY), username);
-        assertNotNull(MessageFormat.format("System property {0} must be specified to run this test", TestUtils.OPS_PASSWORD_PROPERTY), password);
-        ElasticBoxCloud cloud = createCloud(TestUtils.ELASTICBOX_URL, username, password);        
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", 
-                URLEncoder.encode(slaveBoxName, "UTF-8")), true);
-        assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, 
-                cloud.getDisplayName()), profiles.size() > 0);
-        JSONObject profile = profiles.getJSONObject(0);        
-        String workspace = profile.getString("owner");
-        String box = profile.getJSONObject("box").getString("version");
-        String label = UUID.randomUUID().toString();
-        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, box, box, 
-                profile.getString("id"), 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, 1, 60);
-        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox", cloud.getEndpointUrl(), cloud.getMaxInstances(), 
-                cloud.getRetentionTime(), cloud.getUsername(), cloud.getPassword(), Collections.singletonList(slaveConfig));
-        jenkins.clouds.remove(cloud);
-        jenkins.clouds.add(newCloud);
-        FreeStyleProject project = jenkins.createProject(FreeStyleProject.class, 
-                MessageFormat.format("Build with {0}", slaveBoxName));
-        project.setAssignedLabel(jenkins.getLabel(label));
-        QueueTaskFuture future = project.scheduleBuild2(0);
-        Object scheduleResult = getResult(future.getStartCondition(), 60);
-        assertNotNull("60 minutes after job scheduling but no result returned", scheduleResult);
-        FreeStyleBuild result = (FreeStyleBuild) getResult(future, 30);      
-        assertNotNull("30 minutes after job start but no result returned", result);
-        assertEquals(Result.SUCCESS, result.getResult());
-    }
-    
-    private Object getResult(Future<?> future, int waitMinutes) throws ExecutionException {
-        Object result = null;
-        long maxWaitTime = waitMinutes * 60000;
-        long waitTime = 0;
-        do {
-            long waitStart = System.currentTimeMillis();
-            try {
-                result = future.get(maxWaitTime - waitTime, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException ex) {
-            } catch (TimeoutException ex) {
-                break;
-            }
-            waitTime += (System.currentTimeMillis() - waitStart);
-        } while (result == null && waitTime < maxWaitTime);
-        
-        return result;
     }
     
 }
