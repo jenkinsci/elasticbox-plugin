@@ -36,12 +36,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
  *
  * @author Phong Nguyen Le
  */
-public class TerminateOperation extends Operation implements IOperation.InstanceOperation {
+public class TerminateOperation extends LongOperation implements IOperation.InstanceOperation {
     private final boolean delete;
 
     @DataBoundConstructor
-    public TerminateOperation(String tags, boolean delete) {
-        super(tags);
+    public TerminateOperation(String tags, boolean waitForCompletion, boolean delete) {
+        super(tags, waitForCompletion);
         this.delete = delete;
     }
 
@@ -80,7 +80,7 @@ public class TerminateOperation extends Operation implements IOperation.Instance
             logger.info(MessageFormat.format("Terminating instance {0}", instancePageUrl));            
         }
 
-        if (!monitors.isEmpty()) {
+        if (!monitors.isEmpty() && isWaitForCompletion()) {
             logger.info(MessageFormat.format("Waiting for {0} to complete terminating", instances.size() > 1 ? "the instances" : "the instance"));
             InstanceBuildStep.waitForCompletion(getDescriptor().getDisplayName(), monitors, cloud, client, logger);
         }

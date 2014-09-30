@@ -211,7 +211,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     }
                 } else {
                     SlaveConfiguration slaveConfig = findSlaveConfiguration(label, activeInstances);
-                    if (slaveConfig != null) {
+                    if (slaveConfig == null) {
                         LOGGER.log(Level.WARNING, MessageFormat.format("Cannot provision slave for label \"{0}\" because the maxinum number of ElasticBox instances of all matching slave configurations has been reached.", label.getName()));
                         break;                        
                     }
