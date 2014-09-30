@@ -217,7 +217,6 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 plannedNodes.add(new NodeProvisioner.PlannedNode(slave.getDisplayName(),
                         new FutureWrapper<Node>(Computer.threadPoolForRemoting.submit(new Callable<Node>() {
                             public Node call() throws Exception {
-                                slave.setInUse(true);
                                 Jenkins.getInstance().addNode(slave);                                
                                 IProgressMonitor monitor = ElasticBoxSlaveHandler.submit(slave);
                                 monitor.waitForDone(slave.getLaunchTimeout());

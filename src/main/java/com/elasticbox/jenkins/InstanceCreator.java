@@ -64,7 +64,6 @@ public class InstanceCreator extends BuildWrapper {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
                 if (slave.getComputer().getBuilds().contains(build)) {
                     ebSlave = slave;
-                    ebSlave.setInUse(true);
                     break;
                 }
             }
@@ -73,7 +72,6 @@ public class InstanceCreator extends BuildWrapper {
         return new Environment() {
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
-                ebSlave.setInUse(false);
                 if (ebSlave.isSingleUse()) {
                     ebSlave.getComputer().setAcceptingTasks(false);
                 }                        

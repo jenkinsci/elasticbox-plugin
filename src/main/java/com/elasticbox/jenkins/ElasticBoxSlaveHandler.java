@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -118,7 +119,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         
         instance.getJSONArray("tags").add(slave.getNodeName());
         Client client = ClientCache.getClient(slave.getCloud().name);
-        client.updateInstance(instance, null);
+        client.updateInstance(instance);
         LOGGER.fine(MessageFormat.format("Slave instance {0} has been tagged with slave name {1}",
                 Client.getPageUrl(client.getEndpointUrl(), instance), slave.getNodeName()));        
     }
@@ -191,11 +192,14 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                                 request.slave.getInstancePageUrl()));
                         saveNeeded = true;
                         iter.remove();
-                    } else if ((System.currentTimeMillis() - request.monitor.getCreationTime()) >= TIMEOUT) {
-                        request.slave.setInUse(false);
-                        iter.remove();
-                        log(Level.SEVERE, MessageFormat.format("Slave agent {0} didn't contact after {1} minutes.", 
-                                request.slave.getNodeName(), TIMEOUT_MINUTES), null, listener);
+                    } else { 
+                        long launchTime = System.currentTimeMillis() - request.monitor.getCreationTime();
+                        if (launchTime >= TimeUnit.MINUTES.toMillis(request.slave.getLaunchTimeout())) {                        
+                            request.slave.setDeletable(true);
+                            iter.remove();
+                            log(Level.SEVERE, MessageFormat.format("Slave agent {0} didn't contact after {1} minutes.", 
+                                    request.slave.getNodeName(), TimeUnit.MILLISECONDS.toMinutes(launchTime)), null, listener);
+                        }
                     }
                 }
             } catch (IProgressMonitor.IncompleteException ex) {
@@ -247,7 +251,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         List<ElasticBoxSlave> slavesToRemove = new ArrayList<ElasticBoxSlave>();
         Collection<ElasticBoxSlave> slaves = slaveInstanceManager.getSlaves();
         for (ElasticBoxSlave slave : slaves) {
-            if (!isSlaveInQueue(slave, incomingQueue) && !slave.isInUse()) {
+            if (slave.isDeletable()) {
                 slavesToRemove.add(slave);
             }
         }
@@ -391,7 +395,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                 if (slaveCount == null || slaveConfig.getMinInstances() > slaveCount) {
                     try {
                         ElasticBoxSlave slave = new ElasticBoxSlave(slaveConfig, cloud);
-                        slave.setInUse(true);
                         Jenkins.getInstance().addNode(slave);
                         ElasticBoxSlaveHandler.submit(slave);
                         break;

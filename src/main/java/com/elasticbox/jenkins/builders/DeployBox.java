@@ -200,7 +200,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
             if (instanceTags.size() > oldSize) {
                 instance.put("tags", instanceTags);
-                instance = client.updateInstance(instance, null);
+                instance = client.updateInstance(instance);
             }
         }
         instanceManager.setInstance(build, instance);

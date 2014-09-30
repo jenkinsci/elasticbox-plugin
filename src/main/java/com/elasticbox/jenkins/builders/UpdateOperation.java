@@ -20,7 +20,6 @@ import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.RelativePath;
 import hudson.model.AbstractBuild;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -30,7 +29,6 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
 /**
  *
@@ -62,16 +60,15 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
         
         Set<String> resolvedTags = resolver.resolveTags(getTags());
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
-        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, true);        
+        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, getBoxVersion());        
         if (instances.isEmpty()) {
             logger.info("No instance found with the specified tags");
             return;
         }
 
         for (Object instance : instances) {
-            JSONObject instanceJson = (JSONObject) instance;
-            
-            client.updateInstance(instanceJson, resolvedVariables);
+            JSONObject instanceJson = (JSONObject) instance;            
+            client.updateInstance(instanceJson, resolvedVariables, getBoxVersion());
             String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Updated instance {0}", instancePageUrl));            
         }

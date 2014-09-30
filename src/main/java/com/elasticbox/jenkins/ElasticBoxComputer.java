@@ -14,10 +14,12 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
+import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Messages;
 import hudson.model.Queue;
 import hudson.model.labels.LabelAtom;
+import hudson.slaves.ComputerListener;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.SlaveComputer;
@@ -52,8 +54,7 @@ final class ElasticBoxComputer extends SlaveComputer {
     public Future<?> disconnect(OfflineCause cause) {
         boolean online = isOnline();
         boolean terminateNow = false;
-        if (cause instanceof OfflineCause.SimpleOfflineCause && 
-                ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString())) {
+        if (isSlaveRemoved(cause)) {
             try {
                 LOGGER.info(MessageFormat.format("Slave {0} is removed, its instance {1} will be terminated.", slave.getNodeName(), slave.getInstancePageUrl()));
             } catch (IOException ex) {
@@ -149,5 +150,25 @@ final class ElasticBoxComputer extends SlaveComputer {
             LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         }                
     }
+    
+    private static boolean isSlaveRemoved(OfflineCause cause) {
+        return cause instanceof OfflineCause.SimpleOfflineCause && 
+                ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString());        
+    }
 
+    @Extension
+    public static final class ComputerListenerImpl extends ComputerListener {
+
+        @Override
+        public void onOffline(Computer c) {
+            if (c instanceof ElasticBoxComputer) {
+                ElasticBoxComputer ebComputer = (ElasticBoxComputer) c;
+                if (ebComputer.mustBeTerminatedOnOffline()) {
+                    ebComputer.terminate();
+                }
+            }
+        }
+        
+    }
+    
 }

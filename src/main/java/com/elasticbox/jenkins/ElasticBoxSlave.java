@@ -23,7 +23,6 @@ import hudson.model.Items;
 import hudson.model.Node;
 import hudson.model.Slave;
 import hudson.slaves.Cloud;
-import hudson.slaves.ComputerListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.RetentionStrategy;
 import java.io.IOException;
@@ -96,7 +95,7 @@ public class ElasticBoxSlave extends Slave {
     private final int retentionTime;
     private final String cloudName;
 
-    private transient boolean inUse;
+    private transient boolean deletable;
     private final transient int launchTimeout;
     private final transient String environment;
 
@@ -173,12 +172,12 @@ public class ElasticBoxSlave extends Slave {
         return singleUse;
     }   
 
-    public void setInUse(boolean inUse) {
-        this.inUse = inUse;
+    public void setDeletable(boolean inUse) {
+        this.deletable = inUse;
     }
 
-    public boolean isInUse() {
-        return inUse;
+    public boolean isDeletable() {
+        return deletable;
     }
 
     public ElasticBoxCloud getCloud() throws IOException {
@@ -436,22 +435,6 @@ public class ElasticBoxSlave extends Slave {
         
     }
     
-
-    @Extension
-    public static final class ComputerListenerImpl extends ComputerListener {
-
-        @Override
-        public void onOffline(Computer c) {
-            if (c instanceof ElasticBoxComputer) {
-                ElasticBoxComputer ebComputer = (ElasticBoxComputer) c;
-                if (ebComputer.mustBeTerminatedOnOffline()) {
-                    ebComputer.terminate();
-                }
-            }
-        }
-        
-    }
-
     @Extension
     public static final class DescriptorImpl extends SlaveDescriptor {
 
