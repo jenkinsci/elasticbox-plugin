@@ -19,7 +19,6 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import hudson.model.FreeStyleBuild;
 import hudson.model.Node;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -35,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.JenkinsLocationConfiguration;
@@ -45,8 +43,8 @@ import org.apache.commons.lang.StringUtils;
  *
  * @author Phong Nguyen Le
  */
-public class ElasticBoxCloudTest extends HudsonTestCase {
-    private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloudTest.class.getName());
+public class ElasticBoxCloudTests extends HudsonTestCase {
+    private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloudTests.class.getName());
 
     @Override
     protected void setUp() throws Exception {
@@ -113,11 +111,6 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     public void testClient() throws Exception {
         ElasticBoxCloud cloud = createCloud();
         testClient(cloud);   
-    }
-    
-    public void testBuild() throws Exception { 
-        ElasticBoxCloud cloud = createCloud();
-        testBuildWithOldSteps(cloud);
     }
     
     private ElasticBoxCloud createCloud() throws IOException {
@@ -187,29 +180,6 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
         }
     }
     
-    private void testBuildWithOldSteps(ElasticBoxCloud cloud) throws Exception {    
-        String testParameter = UUID.randomUUID().toString();
-        FreeStyleBuild build = TestUtils.runJob("test-old-job", "TestOldJob.xml", Collections.singletonMap("eb_test_build_parameter", testParameter), jenkins);
-        TestUtils.assertBuildSuccess(build);
-        
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        JSONObject instance = client.getInstance("i-c51bop");
-        JSONObject connectionVar = null;
-        JSONObject httpsVar = null;
-        for (Object json : instance.getJSONArray("variables")) {
-            JSONObject variable = (JSONObject) json;
-            String name = variable.getString("name");
-            if (name.equals("CONNECTION")) {
-                connectionVar = variable;                
-            } else if (name.equals("HTTPS")) {
-                httpsVar = variable;
-            }
-        }
-        
-        assertEquals(connectionVar.toString(), testParameter, connectionVar.getString("value"));
-        assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
-    }
-        
     private void testConfigRoundtrip(ElasticBoxCloud cloud) throws Exception {
         WebClient webClient = createWebClient();
         HtmlForm configForm = webClient.goTo("configure").getFormByName("config");

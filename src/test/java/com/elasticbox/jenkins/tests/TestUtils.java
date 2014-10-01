@@ -29,14 +29,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -49,13 +49,16 @@ import org.junit.Assert;
  * @author Phong Nguyen Le
  */
 public class TestUtils {
-    static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://catapult.elasticbox.com");
+    static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
     static final String OPS_PASSWORD_PROPERTY = "elasticbox.jenkins.test.opsPassword";
     static final String OPS_USER_NAME_PROPERTY = "elasticbox.jenkins.test.opsUsername";
-    static final String TEST_WORKSPACE = "tphongio";
-    static final String TEST_LINUX_BOX_NAME = "test-linux-box";
-    static final String TEST_NESTED_BOX_NAME = "test-nested-box";
+    static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", "tphongio");
+    
+    static final String TEST_LINUX_BOX_NAME = "test-linux-box";    
+    static final String TEST_NESTED_BOX_NAME = "test-nested-box";    
     static final String TEST_BINDING_BOX_NAME = "test-binding-box";
+    static final String TEST_BINDING_BOX_INSTANCE_ID = "i-c51bop";
+    
     static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
     static final String PASSWORD = System.getProperty("elasticbox.jenkins.test.password", Scrambler.descramble("dHBob25naW8="));
     static final String USER_NAME = System.getProperty("elasticbox.jenkins.test.username", Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"));
@@ -91,9 +94,12 @@ public class TestUtils {
         }        
         return null;
     }
+    
+    static String getResourceAsString(String resourcePath) throws IOException {
+        return IOUtils.toString((InputStream) TestUtils.class.getResource(resourcePath).getContent());
+    }
 
-    static FreeStyleBuild runJob(String name, String configXml, Map<String, String> textParameters, Jenkins jenkins) throws Exception {
-        String projectXml = IOUtils.toString((InputStream) TestUtils.class.getResource(configXml).getContent());
+    static FreeStyleBuild runJob(String name, String projectXml, Map<String, String> textParameters, Jenkins jenkins) throws Exception {
         FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML(name, new ByteArrayInputStream(projectXml.getBytes()));
         List<ParameterValue> parameters = new ArrayList<ParameterValue>();
         for (Map.Entry<String, String> entry : textParameters.entrySet()) {
@@ -106,7 +112,8 @@ public class TestUtils {
     }
     
     static void cleanUp(String testTag, Jenkins jenkins) throws Exception {
-        FreeStyleBuild build = TestUtils.runJob("cleanup", "CleanupJob.xml", Collections.singletonMap("TEST_TAG", testTag), jenkins);
+        FreeStyleBuild build = TestUtils.runJob("cleanup", getResourceAsString("CleanupJob.xml"), 
+                Collections.singletonMap("TEST_TAG", testTag), jenkins);
         TestUtils.assertBuildSuccess(build);                
     }
 

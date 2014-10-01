@@ -1,0 +1,32 @@
+{
+    "name": "test-linux-box",
+    "service": "Linux Compute",
+    "tags": [],
+    "variables": [
+        {
+            "required": false,
+            "type": "Binding",
+            "name": "ANY_BINDING",
+            "value": "AnyBox"
+        }, {
+            "required": false,
+            "type": "Port",
+            "name": "HTTP",
+            "value": "80"
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "VAR_WHOLE",
+            "value": "VAR_WHOLE"
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "VAR_INSIDE",
+            "value": "VAR_INSIDE"
+        }
+    ],
+    "events": {},
+    "members": [],
+    "id": "5ddd6fc0-0c9c-4aab-8933-629ddeef843f",
+    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+}

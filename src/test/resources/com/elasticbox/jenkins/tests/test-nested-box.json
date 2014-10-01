@@ -1,0 +1,32 @@
+{
+    "name": "test-nested-box",
+    "service": "Linux Compute",
+    "tags": [],
+    "variables": [
+        {
+            "required": false,
+            "type": "Text",
+            "name": "VAR_WHOLE",
+            "value": "VAR_WHOLE"
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "VAR_INSIDE",
+            "value": "VAR_INSIDE"
+        }, {
+            "required": true,
+            "type": "Box",
+            "name": "nested",
+            "value": "5ddd6fc0-0c9c-4aab-8933-629ddeef843f"
+        }, {
+            "required": true,
+            "type": "Binding",
+            "name": "REQUIRED_BINDING",
+            "value": "AnyBox"
+        }
+    ],
+    "events": {},
+    "members": [],
+    "id": "112fe05b-1cb7-4eb8-9ffe-777ef4c2825e",
+    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+}

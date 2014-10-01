@@ -28,7 +28,6 @@ public class ManageBox extends ManageObject {
         super(cloud, workspace, operations);
     }
     
-    @Extension
     public static class DescriptorImpl extends ManageObjectDescriptor {
 
         @Override

@@ -58,7 +58,7 @@ public class Client {
     private static final String JSON_CONTENT_TYPE = "application/json";    
     private static final String UTF_8 = "UTF-8";
 
-    private static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
+    public static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
     private static final String DEPLOYMENT_REQUEST_SCHEMA_NAME = "deploy-instance-request";
 
     public static interface InstanceState {
@@ -85,9 +85,19 @@ public class Client {
     public static final Set ON_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.DEPLOY, InstanceOperation.POWERON, InstanceOperation.REINSTALL, InstanceOperation.RECONFIGURE, InstanceOperation.SNAPSHOT));
     public static final Set OFF_OPERATIONS = new HashSet(Arrays.asList(InstanceOperation.SHUTDOWN, InstanceOperation.SHUTDOWN_SERVICE, InstanceOperation.TERMINATE, InstanceOperation.TERMINATE_SERVICE));
     
+    public static interface ProviderState {
+        String INITIALIZING = "initializing";
+        String PROCESSING = "processing";
+        String READY = "ready";
+        String DELETING = "deleting";
+        String UNAVAILABLE = "unavailable";
+    }
+    private static final Set<String> PROVIDER_FINISH_STATES = new HashSet<String>(Arrays.asList(ProviderState.READY, ProviderState.UNAVAILABLE));
+    
+    
     private static HttpClient httpClient = null;
     
-    private static String getSchemaVersion(String url) {
+    public static String getSchemaVersion(String url) {
         return url.substring(BASE_ELASTICBOX_SCHEMA.length(), url.indexOf('/', BASE_ELASTICBOX_SCHEMA.length()));
     }
 
@@ -136,6 +146,15 @@ public class Client {
 
     public JSONObject getBox(String boxId) throws IOException {
         return (JSONObject) doGet(MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId), false);
+    }
+    
+    public JSONObject createBox(JSONObject box) throws IOException {
+        return doPost("/services/boxes", box);
+    } 
+    
+    public IProgressMonitor createProvider(JSONObject provider) throws IOException {
+        provider = doPost("/services/providers", provider);
+        return new ProviderProgressMonitor(endpointUrl + provider.getString("uri"), provider.getString("updated"));
     }
     
     private boolean canChange(String workspaceId, String boxId) throws IOException {
@@ -259,7 +278,7 @@ public class Client {
             put.reset();
         }                
     }
-
+    
     public JSONObject updateInstance(JSONObject instance, JSONArray variables) throws IOException  {
         if (variables != null && !variables.isEmpty()) {
             JSONArray instanceBoxes = instance.getJSONArray("boxes");
@@ -336,45 +355,40 @@ public class Client {
         
         return updateInstance(instance, variablesWithFullScope);
     }    
-        
-    protected class ProgressMonitor implements IProgressMonitor {
-        private final String instanceUrl;
-        private final long creationTime;
-        private final Object waitLock = new Object();
-        private final Set<String> operations;
-        private final String lastModified;
-        
-        private ProgressMonitor(String instanceUrl, Set<String> operations, String lastModified) {
-            this.instanceUrl = instanceUrl;
-            this.operations = operations;
-            this.lastModified = lastModified;
-            creationTime = System.currentTimeMillis();            
+    
+    protected abstract class ProgressMonitor extends AbstractProgressMonitor {
+        protected final String lastModified;
+
+        protected ProgressMonitor(String resourceUrl, String lastModified) {
+            super(resourceUrl);
+            this.lastModified = lastModified;            
         }
-        
-        private JSONObject getInstance() throws IOException, IncompleteException {
+
+        @Override
+        protected JSONObject getResource() throws IOException, IncompleteException {
             try {
-                return (JSONObject) doGet(instanceUrl, false);
+                return (JSONObject) doGet(getResourceUrl(), false);
             } catch (ClientException ex) {
                 if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-                    throw new IncompleteException(MessageFormat.format("The instance {0} cannot be found", instanceUrl));
+                    throw new IncompleteException(MessageFormat.format("{0} cannot be found", getResourceUrl()));
                 } else {
                     throw ex;
                 }                
             }            
         }
-        
-        @Override
-        public String getResourceUrl() {
-            return instanceUrl;
-        }
 
-        @Override
-        public boolean isDone() throws IncompleteException, IOException {
-            return isDone(getInstance());
+    }
+
+    protected class InstanceProgressMonitor extends ProgressMonitor {
+        private final Set<String> operations;
+        
+        private InstanceProgressMonitor(String instanceUrl, Set<String> operations, String lastModified) {
+            super(instanceUrl, lastModified);
+            this.operations = operations;
         }
         
         @Override
-        public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
+        public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
             String updated = instance.getString("updated");
             String state = instance.getString("state");
             String operation = instance.getString("operation");
@@ -383,50 +397,37 @@ public class Client {
             }
 
             if (state.equals(InstanceState.UNAVAILABLE)) {
-                throw new IncompleteException(MessageFormat.format("The instance at {0} is unavailable", getPageUrl(endpointUrl, instance)));
+                throw new IProgressMonitor.IncompleteException(MessageFormat.format("The instance at {0} is unavailable", getPageUrl(endpointUrl, instance)));
             } 
 
             if (operations != null && !operations.contains(operation)) {
-                throw new IncompleteException(MessageFormat.format("Unexpected operation ''{0}'' has been performed for instance {1}", operation, getPageUrl(endpointUrl, instance)));
+                throw new IProgressMonitor.IncompleteException(MessageFormat.format("Unexpected operation ''{0}'' has been performed for instance {1}", operation, getPageUrl(endpointUrl, instance)));
             }
             
             return true;
         }
 
+    }
+    
+    protected class ProviderProgressMonitor extends ProgressMonitor {
+
+        public ProviderProgressMonitor(String resourceUrl, String lastModified) {
+            super(resourceUrl, lastModified);
+        }
+
         @Override
-        public void waitForDone(int timeout) throws IncompleteException, IOException {
-            long startTime = System.currentTimeMillis();
-            long remainingTime = timeout * 60000;
-            do {
-                if (isDone()) {
-                    return;
-                }
-                
-                synchronized(waitLock) {
-                    try {
-                        waitLock.wait(1000);
-                    } catch (InterruptedException ex) {
-                    }
-                }            
-
-                long currentTime = System.currentTimeMillis();
-                remainingTime =  remainingTime - (currentTime - startTime);
-                startTime = currentTime;                
-            } while (timeout == 0 || remainingTime > 0);
-
-            JSONObject instance = getInstance();
-            if (!isDone(instance)) {
-                throw new TimeoutException(
-                        MessageFormat.format("The instance at {0} is not in ready after waiting for {1} minutes. Current instance state: {2}",
-                                instanceUrl, timeout, instance.getString("state")));
-                
+        public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
+            String updated = instance.getString("updated");
+            String state = instance.getString("state");
+            if (lastModified.equals(updated) || !PROVIDER_FINISH_STATES.contains(state)) {
+                return false;
             }
+            if (state.equals(InstanceState.UNAVAILABLE)) {
+                throw new IProgressMonitor.IncompleteException(MessageFormat.format("The instance at {0} is unavailable", getResourceUrl()));
+            } 
+            return true;            
         }
         
-        @Override
-        public long getCreationTime() {
-            return this.creationTime;
-        }
     }
     
     public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {
@@ -478,21 +479,14 @@ public class Client {
         deployRequest.put("profile", profile);
         deployRequest.put("owner", workspaceId);        
         
-        HttpPost post = new HttpPost(MessageFormat.format("{0}/services/instances", endpointUrl));
-        post.setEntity(new StringEntity(deployRequest.toString(), ContentType.APPLICATION_JSON));
-        try {
-            HttpResponse response = execute(post);
-            JSONObject instance = JSONObject.fromObject(getResponseBodyAsString(response));
-            return new ProgressMonitor(endpointUrl + instance.getString("uri"), 
-                    Collections.singleton(InstanceOperation.DEPLOY), instance.getString("updated"));
-        } finally {
-            post.reset();
-        }
+        JSONObject instance = doPost("/services/instances", deployRequest);
+        return new InstanceProgressMonitor(endpointUrl + instance.getString("uri"), 
+                Collections.singleton(InstanceOperation.DEPLOY), instance.getString("updated"));
     }
 
     public IProgressMonitor reconfigure(String instanceId, JSONArray variables) throws IOException {
         JSONObject instance = doOperation(instanceId, InstanceOperation.RECONFIGURE, variables);
-        return new ProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.RECONFIGURE),
+        return new InstanceProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.RECONFIGURE),
                 instance.getString("updated"));        
     }
     
@@ -521,7 +515,7 @@ public class Client {
         HttpDelete delete = new HttpDelete(MessageFormat.format("{0}?operation={1}", instanceUrl, operation));
         try {
             execute(delete);
-            return new ProgressMonitor(instanceUrl, TERMINATE_OPERATIONS, instance.getString("updated"));
+            return new InstanceProgressMonitor(instanceUrl, TERMINATE_OPERATIONS, instance.getString("updated"));
         } finally {
             delete.reset();
         }        
@@ -550,35 +544,31 @@ public class Client {
         }
         
         instance = doOperation(instance, InstanceOperation.POWERON, null);
-        return new ProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.POWERON),
+        return new InstanceProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.POWERON),
             instance.getString("updated"));
     }
 
     public IProgressMonitor shutdown(String instanceId) throws IOException {
         JSONObject instance = doOperation(instanceId, InstanceOperation.SHUTDOWN, null);
-        return new ProgressMonitor(getInstanceUrl(instanceId), SHUTDOWN_OPERATIONS, instance.getString("updated"));
+        return new InstanceProgressMonitor(getInstanceUrl(instanceId), SHUTDOWN_OPERATIONS, instance.getString("updated"));
     }
 
     public void delete(String instanceId) throws IOException {
-        HttpDelete delete = new HttpDelete(MessageFormat.format("{0}?operation=delete", getInstanceUrl(instanceId)));
-        try {
-            execute(delete);
-        } finally {
-            delete.reset();
-        }
+        doDelete(MessageFormat.format("{0}?operation=delete", getInstanceUrl(instanceId)));
     }
 
     public IProgressMonitor reinstall(String instanceId, JSONArray variables) throws IOException {
         JSONObject instance = doOperation(instanceId, InstanceOperation.REINSTALL, variables);
-        return new ProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.REINSTALL),
+        return new InstanceProgressMonitor(getInstanceUrl(instanceId), Collections.singleton(InstanceOperation.REINSTALL),
             instance.getString("updated"));
+    }
+    
+    private String prepareUrl (String url) {
+        return url.startsWith("/") ? endpointUrl + url : url;
     }
         
     public JSON doGet(String url, boolean isArray) throws IOException {
-        if (url.startsWith("/")) {
-            url = endpointUrl + url;
-        }
-        HttpGet get = new HttpGet(url);
+        HttpGet get = new HttpGet(prepareUrl(url));
         try {
             HttpResponse response = execute(get);
             return isArray ? JSONArray.fromObject(getResponseBodyAsString(response)) : JSONObject.fromObject(getResponseBodyAsString(response));                    
@@ -587,6 +577,26 @@ public class Client {
         }
     }
 
+    public JSONObject doPost(String url, JSONObject resource) throws IOException {
+        HttpPost post = new HttpPost(prepareUrl(url));
+        post.setEntity(new StringEntity(resource.toString(), ContentType.APPLICATION_JSON));
+        try {
+            HttpResponse response = execute(post);
+            return JSONObject.fromObject(getResponseBodyAsString(response));
+        } finally {
+            post.reset();
+        }                        
+    }
+    
+    public void doDelete(String url) throws IOException {
+        HttpDelete delete = new HttpDelete(prepareUrl(url));
+        try {
+            execute(delete);
+        } finally {
+            delete.reset();
+        }        
+    }
+    
     public String getInstanceUrl(String instanceId) {
         return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);
     }

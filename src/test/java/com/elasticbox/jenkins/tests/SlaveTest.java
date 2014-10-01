@@ -35,8 +35,6 @@ import static junit.framework.TestCase.assertTrue;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
 
 /**
  *

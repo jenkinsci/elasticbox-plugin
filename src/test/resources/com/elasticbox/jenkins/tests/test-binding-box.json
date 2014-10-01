@@ -1,0 +1,22 @@
+{
+    "name": "test-binding-box",
+    "service": "Linux Compute",
+    "tags": [],
+    "variables": [
+        {
+            "required": true,
+            "type": "Text",
+            "name": "CONNECTION",
+            "value": ""
+        }, {
+            "required": true,
+            "type": "Port",
+            "name": "HTTPS",
+            "value": "443"
+        }
+    ],
+    "events": {},
+    "members": [],
+    "id": "00e7f1c3-9549-4c33-87c0-c3048de7a7c3",
+    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+}

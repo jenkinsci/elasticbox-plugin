@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
@@ -42,12 +43,38 @@ import org.junit.Test;
  * @author Phong Nguyen Le
  */
 public class BuildStepTest extends TestBase {
+    
+    public void testBuildWithOldSteps() throws Exception {    
+        String testParameter = UUID.randomUUID().toString();
+        String projectXml = createTestDataFromTemplate("TestOldJob.xml");
+        FreeStyleBuild build = TestUtils.runJob("test-old-job", projectXml, 
+                Collections.singletonMap("eb_test_build_parameter", testParameter), jenkins.getInstance());
+        TestUtils.assertBuildSuccess(build);
+        
+        Client client = cloud.createClient();
+        JSONObject instance = client.getInstance(newTestBindingBoxInstanceId);
+        JSONObject connectionVar = null;
+        JSONObject httpsVar = null;
+        for (Object json : instance.getJSONArray("variables")) {
+            JSONObject variable = (JSONObject) json;
+            String name = variable.getString("name");
+            if (name.equals("CONNECTION")) {
+                connectionVar = variable;                
+            } else if (name.equals("HTTPS")) {
+                httpsVar = variable;
+            }
+        }
+        
+        assertEquals(connectionVar.toString(), testParameter, connectionVar.getString("value"));
+        assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
+    }
 
+    
     @Test
     public void testBuildWithSteps() throws Exception {    
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
-        FreeStyleBuild build = TestUtils.runJob("test", "TestJob.xml", testParameters, jenkins.getInstance());
+        FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("TestJob.xml"), testParameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
         
         // validate the results of executed build steps   
@@ -56,21 +83,10 @@ public class BuildStepTest extends TestBase {
         String buildId = variableResolver.resolve("${BUILD_ID}");
         String buildTag = variableResolver.resolve("${BUILD_TAG}");
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
-        JSONObject testLinuxBox = null;
-        JSONObject testBindingBox = null;
-        JSONObject testNestedBox = null;        
+        JSONObject testLinuxBox = getTestBox(TestUtils.TEST_LINUX_BOX_NAME);
+        JSONObject testBindingBox = getTestBox(TestUtils.TEST_BINDING_BOX_NAME);
+        JSONObject testNestedBox = getTestBox(TestUtils.TEST_NESTED_BOX_NAME);        
         JSONArray boxes = client.getBoxes(TestUtils.TEST_WORKSPACE);
-        for (Object box : boxes) {
-            JSONObject boxJson = (JSONObject) box;
-            String boxName = boxJson.getString("name");
-            if (TestUtils.TEST_LINUX_BOX_NAME.equals(boxName)) {
-                testLinuxBox = boxJson;
-            } else if (TestUtils.TEST_BINDING_BOX_NAME.equals(boxName)) {
-                testBindingBox = boxJson;
-            } else if (TestUtils.TEST_NESTED_BOX_NAME.equals(boxName)) {
-                testNestedBox = boxJson;
-            }
-        }
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_LINUX_BOX_NAME), testLinuxBox);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_BINDING_BOX_NAME), testBindingBox);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_NESTED_BOX_NAME), testNestedBox);
@@ -158,7 +174,7 @@ public class BuildStepTest extends TestBase {
     public void testBindingWithTags() throws Exception {
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
-        FreeStyleBuild build = TestUtils.runJob("test", "TestBindingWithTags.xml", testParameters, jenkins.getInstance());
+        FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("TestBindingWithTags.xml"), testParameters, jenkins.getInstance());
         ByteArrayOutputStream log = new ByteArrayOutputStream();
         build.getLogText().writeLogTo(0, log);
         String logText = log.toString();
