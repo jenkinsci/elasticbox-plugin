@@ -440,9 +440,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }          
             
             if (StringUtils.isBlank(newCloud.name)) {
-                newCloud = new ElasticBoxCloud(NAME_PREFIX + UUID.randomUUID().toString(), newCloud.endpointUrl, 
-                        newCloud.maxInstances, newCloud.retentionTime, newCloud.username, newCloud.password, 
-                        newCloud.slaveConfigurations);
+                newCloud = new ElasticBoxCloud(NAME_PREFIX + UUID.randomUUID().toString(), newCloud.getEndpointUrl(), 
+                        newCloud.getMaxInstances(), newCloud.getRetentionTime(), newCloud.getUsername(), 
+                        newCloud.getPassword(), newCloud.getSlaveConfigurations());
             }
             
             for (ElasticBoxCloud cloud : cloudsToRemoveCachedClient) {

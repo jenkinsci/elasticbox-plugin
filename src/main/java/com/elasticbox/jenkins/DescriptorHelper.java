@@ -216,7 +216,7 @@ public class DescriptorHelper {
         return getInstanceBoxStack(ClientCache.getClient(cloud), instance);
     }
     
-    private static class InstanceFilterByTags implements ObjectFilter {
+    public static class InstanceFilterByTags implements ObjectFilter {
         final Set<String> tags;
         final List<Pattern> tagPatterns;
         final boolean excludeInaccessible;
@@ -269,10 +269,10 @@ public class DescriptorHelper {
         }
     }
 
-    private static class InstanceFilterByBox implements ObjectFilter {
+    public static class InstanceFilterByBox implements ObjectFilter {
         final String boxId;
 
-        InstanceFilterByBox(String boxId) {
+        public InstanceFilterByBox(String boxId) {
             this.boxId = boxId;
         }
         
@@ -289,7 +289,7 @@ public class DescriptorHelper {
         }
     }
     
-    private static JSONArray getInstances(Client client, String workspace, ObjectFilter filter) {
+    public static JSONArray getInstances(Client client, String workspace, ObjectFilter filter) {
         JSONArray instances = new JSONArray();
         if (client == null || StringUtils.isBlank(workspace)) {
             return instances;

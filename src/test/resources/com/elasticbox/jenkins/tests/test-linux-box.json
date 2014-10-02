@@ -23,9 +23,32 @@
             "type": "Text",
             "name": "VAR_INSIDE",
             "value": "VAR_INSIDE"
+        }, {
+            "required": false,
+            "type": "Number",
+            "name": "INSTALL_EXIT_CODE",
+            "value": "0"
+        }, {
+            "required": false,
+            "type": "Number",
+            "name": "CONFIGURE_EXIT_CODE",
+            "value": "0"
         }
     ],
-    "events": {},
+    "events": {
+        "configure": {
+            "url": "/services/blobs/download/542cf95dd7dbd03e2cdf350d/configure",
+            "length": 30,
+            "destination_path": "scripts",
+            "content_type": "text/x-shellscript"
+        },
+        "install": {
+            "url": "/services/blobs/download/542cf94cd7dbd03e2cdf350b/install",
+            "length": 28,
+            "destination_path": "scripts",
+            "content_type": "text/x-shellscript"
+        }
+    },
     "members": [],
     "id": "5ddd6fc0-0c9c-4aab-8933-629ddeef843f",
     "schema": "http://elasticbox.net/schemas/{schema_version}/box"

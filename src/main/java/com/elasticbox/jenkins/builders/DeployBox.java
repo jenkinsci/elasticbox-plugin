@@ -17,6 +17,7 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
@@ -96,13 +97,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
         readResolve();
     }
     
-    private JSONObject performAlternateAction(List<JSONObject> existingInstances, ElasticBoxCloud ebCloud, Client client, 
+    private JSONObject performAlternateAction(JSONArray existingInstances, ElasticBoxCloud ebCloud, Client client, 
             VariableResolver resolver, TaskLogger logger) throws IOException {
         List<String> instanceIDs = new ArrayList<String>();
-        for (JSONObject instance : existingInstances) {
-            instanceIDs.add(instance.getString("id"));
+        for (Object instance : existingInstances) {
+            instanceIDs.add(((JSONObject) instance).getString("id"));
         }
-        JSONObject instance = existingInstances.get(0);
+        JSONObject instance = existingInstances.getJSONObject(0);
         if (alternateAction.equals(ACTION_SKIP)) {
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), instance);
             logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
@@ -113,8 +114,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
             ReinstallBox.reinstall(instanceIDs, ebCloud, client, resolver.resolveVariables(variables), 
                     waitForCompletion, logger);
         } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
-            for (JSONObject existingInstance : existingInstances) {
-                String instanceId = existingInstance.getString("id");
+            for (Object existingInstance : existingInstances) {
+                String instanceId = ((JSONObject) existingInstance).getString("id");
                 TerminateBox.terminate(instanceId, ebCloud, client, logger);
                 client.delete(instanceId);
             }
@@ -163,7 +164,6 @@ public class DeployBox extends Builder implements IInstanceProvider {
         VariableResolver resolver = new VariableResolver(cloud, workspace, build, listener);
         Client client = ebCloud.createClient();
         if (!alternateAction.equals(ACTION_NONE)) {
-            JSONArray instanceArray = DescriptorHelper.getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
             Set<String> tagSet = new HashSet<String>();
             Set<String> resolvedTags = resolver.resolveTags(tags);
             if (resolvedTags.isEmpty()) {
@@ -171,15 +171,15 @@ public class DeployBox extends Builder implements IInstanceProvider {
             } else {
                 tagSet.addAll(resolvedTags);
             }
-            List<JSONObject> existingInstances = new ArrayList<JSONObject>();
-            for (Object instance : instanceArray) {
-                JSONObject json = (JSONObject) instance;
-                if (json.getJSONArray("tags").containsAll(tagSet) && 
-                        !Client.InstanceState.UNAVAILABLE.equals(json.getString("state")) &&
-                        !Client.TERMINATE_OPERATIONS.contains(json.getString("operation"))) {
-                    existingInstances.add(json);
-                }
-            }
+            CompositeObjectFilter instanceFilter = new CompositeObjectFilter(new DescriptorHelper.InstanceFilterByBox(box));
+            if (alternateAction.equals(ACTION_RECONFIGURE)) {
+                instanceFilter.add(ReconfigureOperation.instanceFilter(tagSet));
+            } else if (alternateAction.equals(ACTION_REINSTALL)) {
+                instanceFilter.add(ReinstallOperation.instanceFilter(tagSet));
+            } else {
+                instanceFilter.add(new DescriptorHelper.InstanceFilterByTags(tagSet, false));
+            }         
+            JSONArray existingInstances = DescriptorHelper.getInstances(client, workspace, instanceFilter);
             if (!existingInstances.isEmpty()) {
                 JSONObject instance = performAlternateAction(existingInstances, ebCloud, client, resolver, logger);
                 instanceManager.setInstance(build, instance);
@@ -277,11 +277,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return waitForCompletion;
     }
 
+    @Override
     public String getInstanceId(AbstractBuild build) {
         JSONObject instance = instanceManager.getInstance(build);
         return instance != null ? instance.getString("id") : null;
     }
 
+    @Override
     public ElasticBoxCloud getElasticBoxCloud() {
         return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloud);
     }

@@ -1,0 +1,135 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>TEST_TAG</name>
+          <description></description>
+          <defaultValue>test-manage-instance</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-1d3c1032-93cf-4471-9d38-430938d932fa</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+      <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+      <profile>9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744</profile>
+      <environment>test-manage-instance-1</environment>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>skip</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags>test-manage-instance-1, ${TEST_TAG}</tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-9c797e10-3e5d-450f-9039-0d173a72c70e</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+      <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+      <profile>9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744</profile>
+      <environment>test-manage-instance-2</environment>
+      <instances>1</instances>
+      <variables>[{&quot;name&quot;:&quot;INSTALL_EXIT_CODE&quot;,&quot;value&quot;:&quot;1&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Number&quot;}]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>reinstall</alternateAction>
+      <waitForCompletion>false</waitForCompletion>
+      <tags>test-manage-instance-2, ${TEST_TAG}</tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-88567b85-7287-4ae6-803c-8630a73d382b</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+      <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+      <profile>9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744</profile>
+      <environment>test-manage-instance-3</environment>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>skip</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags>test-manage-instance-3, ${TEST_TAG}</tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9-SNAPSHOT">
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <operations>
+        <com.elasticbox.jenkins.builders.UpdateOperation>
+          <tags>${TEST_TAG}</tags>
+          <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+          <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+          <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;INSTALL_EXIT_CODE&quot;, &quot;value&quot;: &quot;0&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Number&quot;}]</variables>
+        </com.elasticbox.jenkins.builders.UpdateOperation>
+        <com.elasticbox.jenkins.builders.ReinstallOperation>
+          <tags>${TEST_TAG}</tags>
+          <waitForCompletion>true</waitForCompletion>
+        </com.elasticbox.jenkins.builders.ReinstallOperation>
+        <com.elasticbox.jenkins.builders.UpdateOperation>
+          <tags>test-manage-instance-1, ${TEST_TAG}</tags>
+          <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+          <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+          <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;CONFIGURE_EXIT_CODE&quot;, &quot;value&quot;: &quot;1&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Number&quot;}]</variables>
+        </com.elasticbox.jenkins.builders.UpdateOperation>
+        <com.elasticbox.jenkins.builders.ReconfigureOperation>
+          <tags>${TEST_TAG}</tags>
+          <waitForCompletion>false</waitForCompletion>
+        </com.elasticbox.jenkins.builders.ReconfigureOperation>
+      </operations>
+    </com.elasticbox.jenkins.builders.ManageInstance>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-c7b6158f-10b5-496a-b374-ad26d2812671</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+      <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+      <profile>9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744</profile>
+      <environment>test-manage-instance-4</environment>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>skip</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags>test-manage-instance-4, ${TEST_TAG}</tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9-SNAPSHOT">
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <operations>
+        <com.elasticbox.jenkins.builders.UpdateOperation>
+          <tags>${TEST_TAG}</tags>
+          <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
+          <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+          <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;CONFIGURE_EXIT_CODE&quot;, &quot;value&quot;: &quot;0&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Number&quot;}, {&quot;name&quot;: &quot;INSTALL_EXIT_CODE&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Number&quot;}]</variables>
+        </com.elasticbox.jenkins.builders.UpdateOperation>
+        <com.elasticbox.jenkins.builders.ReconfigureOperation>
+          <tags>${TEST_TAG}</tags>
+          <waitForCompletion>true</waitForCompletion>
+        </com.elasticbox.jenkins.builders.ReconfigureOperation>
+        <com.elasticbox.jenkins.builders.TerminateOperation>
+          <tags>test-manage-instance-2</tags>
+          <waitForCompletion>true</waitForCompletion>
+          <delete>true</delete>
+        </com.elasticbox.jenkins.builders.TerminateOperation>
+      </operations>
+    </com.elasticbox.jenkins.builders.ManageInstance>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

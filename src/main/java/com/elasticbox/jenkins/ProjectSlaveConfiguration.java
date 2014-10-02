@@ -38,10 +38,10 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
 
     @DataBoundConstructor
     public ProjectSlaveConfiguration(String id, String cloud, String workspace, String box, String boxVersion, 
-            String profile, String environment, String variables, String remoteFS, int retentionTime, 
+            String profile, int maxInstances, String environment, String variables, String remoteFS, int retentionTime, 
             int executors, int launchTimeout) {
-        super(StringUtils.isBlank(id) ? UUID.randomUUID().toString() : id, workspace, box, boxVersion, profile, 0, 1, 
-                environment, variables, null, StringUtils.EMPTY, remoteFS, Node.Mode.EXCLUSIVE, retentionTime, 
+        super(StringUtils.isBlank(id) ? UUID.randomUUID().toString() : id, workspace, box, boxVersion, profile, 0, 
+                maxInstances, environment, variables, null, StringUtils.EMPTY, remoteFS, Node.Mode.EXCLUSIVE, retentionTime, 
                 executors, launchTimeout);
         this.cloud = cloud;
     }

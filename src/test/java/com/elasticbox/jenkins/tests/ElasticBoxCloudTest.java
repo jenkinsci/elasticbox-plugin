@@ -43,8 +43,8 @@ import org.apache.commons.lang.StringUtils;
  *
  * @author Phong Nguyen Le
  */
-public class ElasticBoxCloudTests extends HudsonTestCase {
-    private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloudTests.class.getName());
+public class ElasticBoxCloudTest extends HudsonTestCase {
+    private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloudTest.class.getName());
 
     @Override
     protected void setUp() throws Exception {

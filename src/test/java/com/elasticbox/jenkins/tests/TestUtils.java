@@ -35,8 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -49,7 +47,7 @@ import org.junit.Assert;
  * @author Phong Nguyen Le
  */
 public class TestUtils {
-    static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
+    static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://catapult.elasticbox.com");
     static final String OPS_PASSWORD_PROPERTY = "elasticbox.jenkins.test.opsPassword";
     static final String OPS_USER_NAME_PROPERTY = "elasticbox.jenkins.test.opsUsername";
     static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", "tphongio");

@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import net.sf.json.JSONObject;
@@ -24,9 +25,10 @@ public class CompositeObjectFilter implements ObjectFilter {
     private final List<ObjectFilter> filters;
     
     public CompositeObjectFilter(ObjectFilter... filters) {
-        this.filters = Arrays.asList(filters);
+        this.filters = new ArrayList<ObjectFilter>(Arrays.asList(filters));
     }
 
+    @Override
     public boolean accept(JSONObject instance) {
         for (ObjectFilter filter : filters) {
             if (!filter.accept(instance)) {
@@ -35,6 +37,10 @@ public class CompositeObjectFilter implements ObjectFilter {
         }
         
         return true;
+    }
+    
+    public void add(ObjectFilter filter) {
+        filters.add(filter);
     }
     
 }
