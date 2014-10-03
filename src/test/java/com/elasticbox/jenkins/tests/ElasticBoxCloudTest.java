@@ -126,16 +126,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     private void testClient(ElasticBoxCloud cloud) throws Exception {
         Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
         client.connect();
-        JSONArray workspaces = client.getWorkspaces();
-        JSONObject personalWorkspace = null;
-        for (Object workspace : workspaces) {
-            if (((JSONObject) workspace).getString("email") != null) {
-                personalWorkspace = (JSONObject) workspace;
-                break;
-            }
-        }
-        assertNotNull(personalWorkspace);
-        JSONArray boxes = client.getBoxes(personalWorkspace.getString("id"));
+        JSONArray boxes = client.getBoxes(TestUtils.TEST_WORKSPACE);
         JSONObject testJenkinsSlaveBox = null;
         for (Object box : boxes) {
             JSONObject boxJson = (JSONObject) box;
@@ -144,9 +135,11 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
                 break;
             }
         }
-        assertNotNull(testJenkinsSlaveBox);
-        JSONArray profiles = client.getProfiles(personalWorkspace.getString("id"), testJenkinsSlaveBox.getString("id"));
-        assertTrue(profiles.size() > 0);
+        assertNotNull(MessageFormat.format("Box {0} cannot be found in workspace {1}", TestUtils.JENKINS_SLAVE_BOX_NAME,
+                        TestUtils.TEST_WORKSPACE), testJenkinsSlaveBox);
+        JSONArray profiles = client.getProfiles(TestUtils.TEST_WORKSPACE, testJenkinsSlaveBox.getString("id"));
+        assertTrue(MessageFormat.format("Box {0} does not have any profile in workspace {1}",
+                TestUtils.JENKINS_SLAVE_BOX_NAME, TestUtils.TEST_WORKSPACE), profiles.size() > 0);
         for (Object profile : profiles) {
             JSONObject profileJson = client.getProfile(((JSONObject) profile).getString("id"));
             assertEquals(profile.toString(), profileJson.toString());

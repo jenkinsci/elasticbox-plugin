@@ -16,7 +16,10 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import static com.elasticbox.jenkins.tests.TestUtils.getResourceAsString;
+
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -81,7 +85,7 @@ public class TestBase {
     protected ElasticBoxCloud cloud;    
     private String schemaVersion;
     private final List<TestBoxData> testBoxDataList = Arrays.asList(new TestBoxData[] {
-        new TestBoxData("test-linux-box.json", "9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744"),
+        new TestBoxData("boxes/test-linux-box/test-linux-box.json", "9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744"),
         new TestBoxData("test-binding-box.json", "e14460b4-c288-46f4-8a45-bea58e492428"),
         new TestBoxData("test-nested-box.json", "e155115d-6e4e-4027-b4a7-89eb3ae6ef58"),
         new TestBoxData("test-deeply-nested-box.json", "74cd448d-1e1b-4afb-8d92-c11eab38c99a")
@@ -104,7 +108,7 @@ public class TestBase {
         testBoxDataLookup = new HashMap<String, TestBoxData>();
         for (TestBoxData testBoxData : testBoxDataList) {
             testBoxDataLookup.put(testBoxData.getJson().getString("name"), testBoxData);
-            JSONObject box = JSONObject.fromObject(createTestDataFromTemplate(testBoxData.jsonFileName));
+            JSONObject box = JSONObject.fromObject(loadBox(testBoxData.jsonFileName));
             box.put("name", box.getString("name") + '-' + UUID.randomUUID().toString());
             box.put("owner", TestUtils.TEST_WORKSPACE);
             box.remove("id");
@@ -181,12 +185,40 @@ public class TestBase {
     }
     
     protected String createTestDataFromTemplate(String templatePath) throws IOException {
-        String template = TestUtils.getResourceAsString(templatePath).replace("{schema_version}", schemaVersion);
+        String template = TestUtils.getResourceAsString(templatePath);
+        return resolveTemplate(template);
+    }
+    
+    private String resolveTemplate(String template) throws IOException {
+        template = template.replace("{schema_version}", schemaVersion);
         for (TestBoxData testBoxData : testBoxDataList) {
             template = template.replace(testBoxData.boxId, testBoxData.getJson().getString("id")).
                     replace(testBoxData.profileId, testBoxData.getNewProfileId());
         }
-        return template.replace(TestUtils.TEST_BINDING_BOX_INSTANCE_ID, newTestBindingBoxInstanceId);
+        return template.replace(TestUtils.TEST_BINDING_BOX_INSTANCE_ID, newTestBindingBoxInstanceId);        
+    }
+
+    protected JSONObject loadBox(String templatePath) throws Exception {
+        URI boxJsonUri = getClass().getResource(templatePath).toURI();
+        String template = FileUtils.readFileToString(new File(boxJsonUri));
+        JSONObject box = JSONObject.fromObject(resolveTemplate(template));
+        if (box.containsKey("variables")) {
+            for (Object variable : box.getJSONArray("variables")) {
+                JSONObject variableJson = (JSONObject) variable;
+                if (variableJson.getString("type").equals("File")) {
+                    variableJson.put("value", boxJsonUri.resolve(variableJson.getString("value")).toString());
+                }
+            }
+        }
+        if (box.containsKey("events")) {
+            JSONObject events = box.getJSONObject("events");
+            for (Object entry : events.entrySet()) {
+                Map.Entry mapEntry = (Map.Entry) entry;
+                events.put(mapEntry.getKey().toString(), boxJsonUri.resolve(mapEntry.getValue().toString()).toString());
+            }
+        }
+
+        return box;
     }
     
 }

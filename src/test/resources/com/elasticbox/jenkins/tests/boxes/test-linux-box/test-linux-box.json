@@ -36,18 +36,8 @@
         }
     ],
     "events": {
-        "configure": {
-            "url": "/services/blobs/download/542cf95dd7dbd03e2cdf350d/configure",
-            "length": 30,
-            "destination_path": "scripts",
-            "content_type": "text/x-shellscript"
-        },
-        "install": {
-            "url": "/services/blobs/download/542cf94cd7dbd03e2cdf350b/install",
-            "length": 28,
-            "destination_path": "scripts",
-            "content_type": "text/x-shellscript"
-        }
+        "configure": "configure.sh",
+        "install": "install.sh"
     },
     "members": [],
     "id": "5ddd6fc0-0c9c-4aab-8933-629ddeef843f",

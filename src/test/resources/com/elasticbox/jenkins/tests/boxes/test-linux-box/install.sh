@@ -1,0 +1,1 @@
+exit {{ INSTALL_EXIT_CODE }}

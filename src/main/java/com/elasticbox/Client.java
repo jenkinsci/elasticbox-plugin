@@ -12,17 +12,16 @@
 
 package com.elasticbox;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URLEncoder;
+import java.net.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -45,17 +44,17 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.util.EntityUtils;
+
 
 /**
  *
  * @author Phong Nguyen Le
  */
 public class Client {
-    private static final String CONTENT_TYPE_HEADER = "Content-Type";
-    private static final String JSON_CONTENT_TYPE = "application/json";    
     private static final String UTF_8 = "UTF-8";
 
     public static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
@@ -147,8 +146,60 @@ public class Client {
     public JSONObject getBox(String boxId) throws IOException {
         return (JSONObject) doGet(MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId), false);
     }
-    
-    public JSONObject createBox(JSONObject box) throws IOException {
+
+    private JSONObject uploadFile(URI fileUri, ContentType contentType) throws IOException {
+        MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create().setLaxMode();
+        if (fileUri.getScheme().equalsIgnoreCase("file")) {
+            File file = new File(fileUri);
+            if (contentType == null) {
+                String mimeType = Files.probeContentType(FileSystems.getDefault().getPath(file.getPath()));
+                contentType = mimeType != null ? ContentType.create(mimeType) : ContentType.DEFAULT_BINARY;
+            }
+            entityBuilder.addBinaryBody("blob", file, contentType, file.getName());
+        } else {
+            URL fileUrl = fileUri.toURL();
+            URLConnection connection = fileUrl.openConnection();
+            if (contentType == null) {
+                String mimeType = connection.getContentType();
+                contentType = mimeType != null ? ContentType.create(mimeType) : ContentType.DEFAULT_BINARY;
+            }
+            String[] segments = fileUrl.getPath().split("/");
+            entityBuilder.addBinaryBody("blob", connection.getInputStream(), contentType, segments[segments.length - 1]);
+        }
+        HttpPost post = new HttpPost(prepareUrl("/services/blobs/upload"));
+        post.setEntity(entityBuilder.build());
+        try {
+            HttpResponse response = execute(post);
+            return JSONObject.fromObject(getResponseBodyAsString(response));
+        } finally {
+            post.reset();
+        }
+    }
+
+    public JSONObject createBox(JSONObject box) throws IOException, URISyntaxException {
+        // upload files
+        if (box.containsKey("variables")) {
+            for (Object variable : box.getJSONArray("variables")) {
+                JSONObject variableJson = (JSONObject) variable;
+                String value = variableJson.getString("value");
+                if (variableJson.getString("type").equals("File") && StringUtils.isNotBlank(value)) {
+                    JSONObject blobInfo = uploadFile(new URI(value), null);
+                    variableJson.put("value", blobInfo.getString("url"));
+                }
+            }
+        }
+        if (box.containsKey("events")) {
+            JSONObject events = box.getJSONObject("events");
+            for (Object entry : events.entrySet()) {
+                Map.Entry mapEntry = (Map.Entry) entry;
+                JSONObject blobInfo = uploadFile(new URI(mapEntry.getValue().toString()), ContentType.TEXT_PLAIN);
+                JSONObject event = new JSONObject();
+                event.put("url", blobInfo.getString("url"));
+                event.put("destination_path", "scripts");
+                event.put("content_type", "text/x-shellscript");
+                events.put(mapEntry.getKey().toString(), event);
+            }
+        }
         return doPost("/services/boxes", box);
     } 
     
@@ -650,7 +701,6 @@ public class Client {
     }
     
     private void setRequiredHeaders(HttpRequestBase request) {
-        request.setHeader(CONTENT_TYPE_HEADER, JSON_CONTENT_TYPE);
         request.setHeader("ElasticBox-Token", token);
     }
     

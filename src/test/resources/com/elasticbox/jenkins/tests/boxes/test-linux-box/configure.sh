@@ -1,0 +1,1 @@
+exit {{ CONFIGURE_EXIT_CODE }}
