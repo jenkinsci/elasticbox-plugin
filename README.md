@@ -4,7 +4,7 @@ ElasticBox CI Plug-in
 =====================
 
 The ElasticBox CI Jenkins plug-in provides full integration between Jenkins and ElasticBox (http://elasticbox.com).
-With this plugin, Jenkins can launch, provision, and manage Jenkins slaves on-demand in different cloud providers via ElasticBox. It also provides build steps to deploy and manage your applications, including a complex, multi-tiear applications that are defined as boxes in ElasticBox.
+With this plugin, Jenkins can launch, provision, and manage Jenkins slaves on-demand in different cloud providers via ElasticBox. It also provides build steps to deploy and manage your applications, including complex, multi-tiear applications that are defined as boxes in ElasticBox.
 
   - Configure project to be built on slaves deployed with specific deployment profile and variables in a specific workspace.
   - Slave can be single-use, single-use slaves cannot be reused for another build.
