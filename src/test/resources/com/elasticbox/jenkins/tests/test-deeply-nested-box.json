@@ -1,0 +1,27 @@
+{
+    "name": "test-deeply-nested-box",
+    "service": "Linux Compute",
+    "tags": [],
+    "variables": [
+        {
+            "required": true,
+            "type": "Box",
+            "name": "nested",
+            "value": "112fe05b-1cb7-4eb8-9ffe-777ef4c2825e"
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "VAR_WHOLE",
+            "value": ""
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "VAR_INSIDE",
+            "value": ""
+        }
+    ],
+    "events": {},
+    "members": [],
+    "id": "531123d9-5a73-42ff-ad70-87a6eb31442e",
+    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+}

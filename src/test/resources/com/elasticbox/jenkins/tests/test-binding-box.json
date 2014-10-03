@@ -9,6 +9,11 @@
             "name": "CONNECTION",
             "value": ""
         }, {
+            "required": false, 
+            "type": "Port", 
+            "name": "HTTP", 
+            "value": "80"
+        }, {
             "required": true,
             "type": "Port",
             "name": "HTTPS",

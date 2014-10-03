@@ -83,7 +83,8 @@ public class TestBase {
     private final List<TestBoxData> testBoxDataList = Arrays.asList(new TestBoxData[] {
         new TestBoxData("test-linux-box.json", "9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744"),
         new TestBoxData("test-binding-box.json", "e14460b4-c288-46f4-8a45-bea58e492428"),
-        new TestBoxData("test-nested-box.json", "e155115d-6e4e-4027-b4a7-89eb3ae6ef58")
+        new TestBoxData("test-nested-box.json", "e155115d-6e4e-4027-b4a7-89eb3ae6ef58"),
+        new TestBoxData("test-deeply-nested-box.json", "74cd448d-1e1b-4afb-8d92-c11eab38c99a")
     });
     private Map<String, TestBoxData> testBoxDataLookup;
     protected String newTestBindingBoxInstanceId = TestUtils.TEST_BINDING_BOX_INSTANCE_ID;
