@@ -11,10 +11,9 @@
  */
 
 var ElasticBoxVariables = (function () {
-    var VARIABLE_TABLE_TEMPLATE = '<td><table style="width:100%; margin-left: 15px;"><tbody>' +
-                '<tr style="background-image: linear-gradient(to bottom, #ffffff, #eef0f2); ">' + 
-                '<td class="setting-leftspace" colspan="4"><span style="cursor: pointer; ">&nbsp;' + 
-                '<img src="{3}/expanded.png">&nbsp;' +
+    var VARIABLE_TABLE_TEMPLATE = '<td><table style="width:100%; margin-left: 15px;"><tbody><tr>' + 
+                '<td class="setting-leftspace" colspan="4" style="background-image: linear-gradient(to bottom, #ffffff, #eef0f2); ">' + 
+                '<span style="cursor: pointer; ">&nbsp;<img src="{3}/expanded.png">&nbsp;' +
                 '<img height="16" width="16" src="{2}">&nbsp;<b>{0} {1}</b></span></td></tr>' +
                 '</tbody></table></td>',
         TEXT_VARIABLE_TEMPLATE = '<tr><td class="setting-leftspace">&nbsp;</td><td class="setting-name">{0}</td>' + 

@@ -176,9 +176,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 instanceFilter.add(ReconfigureOperation.instanceFilter(tagSet));
             } else if (alternateAction.equals(ACTION_REINSTALL)) {
                 instanceFilter.add(ReinstallOperation.instanceFilter(tagSet));
-            } else {
+            } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
                 instanceFilter.add(new DescriptorHelper.InstanceFilterByTags(tagSet, false));
-            }         
+            } else {
+                instanceFilter.add(new DescriptorHelper.InstanceFilterByTags(tagSet, true));
+            }        
             JSONArray existingInstances = DescriptorHelper.getInstances(client, workspace, instanceFilter);
             if (!existingInstances.isEmpty()) {
                 JSONObject instance = performAlternateAction(existingInstances, ebCloud, client, resolver, logger);
