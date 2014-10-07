@@ -51,7 +51,7 @@ public class StopBox extends InstanceBuildStep {
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
-        IProgressMonitor monitor = ebCloud.createClient().shutdown(instanceProvider.getInstanceId(build));
+        IProgressMonitor monitor = ebCloud.getClient().shutdown(instanceProvider.getInstanceId(build));
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
         logger.info(MessageFormat.format("Stopping box instance {0}", instancePageUrl));
         logger.info(MessageFormat.format("Waiting for the box instance {0} to stop", instancePageUrl));

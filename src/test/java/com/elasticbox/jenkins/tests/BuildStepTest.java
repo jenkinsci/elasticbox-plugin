@@ -52,7 +52,7 @@ public class BuildStepTest extends TestBase {
                 Collections.singletonMap("eb_test_build_parameter", testParameter), jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
         
-        Client client = cloud.createClient();
+        Client client = cloud.getClient();
         JSONObject instance = client.getInstance(newTestBindingBoxInstanceId);
         JSONObject connectionVar = null;
         JSONObject httpsVar = null;

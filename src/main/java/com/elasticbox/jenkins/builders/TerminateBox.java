@@ -53,7 +53,7 @@ public class TerminateBox extends InstanceBuildStep {
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();        
-        Client client = ebCloud.createClient();
+        Client client = ebCloud.getClient();
         String instanceId = instanceProvider.getInstanceId(build);
         terminate(instanceId, ebCloud, client, logger);
         if (delete) {

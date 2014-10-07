@@ -92,7 +92,7 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         String varStr = getBuildStep() == null ? variables : buildStepVariables;
         JSONArray jsonVariables = resolver.resolveVariables(varStr);
         
-        Client client = ebCloud.createClient();
+        Client client = ebCloud.getClient();
         String instanceId = instanceProvider.getInstanceId(build);
         reconfigure(Collections.singletonList(instanceId), ebCloud, client, jsonVariables, true, logger);
         instanceManager.setInstance(build, client.getInstance(instanceId));

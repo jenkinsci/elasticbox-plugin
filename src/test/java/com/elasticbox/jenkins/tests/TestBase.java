@@ -101,7 +101,7 @@ public class TestBase {
     public void setupTestData() throws Exception {
         cloud = new ElasticBoxCloud("elasticbox", TestUtils.ELASTICBOX_URL, 2, 10, TestUtils.USER_NAME, TestUtils.PASSWORD, Collections.EMPTY_LIST);
         jenkins.getInstance().clouds.add(cloud);        
-        Client client = cloud.createClient();
+        Client client = cloud.getClient();
         JSONObject workspace = (JSONObject) client.doGet(MessageFormat.format("/services/workspaces/{0}", TestUtils.TEST_WORKSPACE), false);
         schemaVersion = Client.getSchemaVersion(workspace.getString("schema"));
         createTestProvider(client);
@@ -133,7 +133,7 @@ public class TestBase {
     
     @After
     public void cleanUp() throws Exception {
-        Client client = cloud.createClient();
+        Client client = cloud.getClient();
         if (!newTestBindingBoxInstanceId.equals(TestUtils.TEST_BINDING_BOX_INSTANCE_ID)) {
             IProgressMonitor monitor = client.terminate(newTestBindingBoxInstanceId);
             monitor.waitForDone(10);

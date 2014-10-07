@@ -53,7 +53,7 @@ public class ReinstallBox extends InstanceBuildStep {
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
-        reinstall(Collections.singletonList(instanceProvider.getInstanceId(build)), ebCloud, ebCloud.createClient(), null, true, logger);
+        reinstall(Collections.singletonList(instanceProvider.getInstanceId(build)), ebCloud, ebCloud.getClient(), null, true, logger);
         return true;
     }   
     

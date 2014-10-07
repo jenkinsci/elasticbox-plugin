@@ -54,7 +54,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         logger.info("Executing Terminate");
         
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
-        Client client = ClientCache.getClient(cloud.name);
+        Client client = cloud.getClient();
         Set<String> resolvedTags = resolver.resolveTags(getTags());
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, false);        

@@ -162,7 +162,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
 
         VariableResolver resolver = new VariableResolver(cloud, workspace, build, listener);
-        Client client = ebCloud.createClient();
+        Client client = ebCloud.getClient();
         if (!alternateAction.equals(ACTION_NONE)) {
             Set<String> tagSet = new HashSet<String>();
             Set<String> resolvedTags = resolver.resolveTags(tags);

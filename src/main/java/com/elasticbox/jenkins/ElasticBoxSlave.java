@@ -14,6 +14,7 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
+import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -66,7 +67,7 @@ public class ElasticBoxSlave extends Slave {
     }
     
     private static synchronized String generateName(ElasticBoxCloud cloud, String boxVersion) throws IOException {
-        JSONObject boxJson = cloud.createClient().getBox(boxVersion);
+        JSONObject boxJson = cloud.getClient().getBox(boxVersion);
         String prefix = boxJson.getString("name").replaceAll("[^a-zA-Z0-9-]", "-").toLowerCase();
         if (prefix.length() > ID_PREFIX_LENGTH) {
             prefix = prefix.substring(0, ID_PREFIX_LENGTH);
@@ -246,7 +247,7 @@ public class ElasticBoxSlave extends Slave {
 
     public void terminate() throws IOException {
         checkInstanceReachable();
-        Client client = getCloud().createClient();
+        Client client = getCloud().getClient();
         String instanceId = getInstanceId();
         try {
             client.terminate(instanceId);
@@ -260,23 +261,23 @@ public class ElasticBoxSlave extends Slave {
     
     public void delete() throws IOException {
         checkInstanceReachable();
-        getCloud().createClient().delete(getInstanceId());
+        getCloud().getClient().delete(getInstanceId());
     }
     
     public boolean isTerminated() throws IOException {
         checkInstanceReachable();
-        JSONObject instance = getCloud().createClient().getInstance(getInstanceId());
+        JSONObject instance = getCloud().getClient().getInstance(getInstanceId());
         return Client.InstanceState.DONE.equals(instance.get("state")) && Client.TERMINATE_OPERATIONS.contains(instance.get("operation"));
     }
     
     public JSONObject getInstance() throws IOException {
         checkInstanceReachable();
-        return getCloud().createClient().getInstance(getInstanceId());
+        return getCloud().getClient().getInstance(getInstanceId());
     }
     
     public JSONObject getProfile() throws IOException {
         checkInstanceReachable();
-        return getCloud().createClient().getProfile(getProfileId());
+        return getCloud().getClient().getProfile(getProfileId());
     }  
     
     void checkInstanceReachable() throws IOException {
@@ -293,7 +294,7 @@ public class ElasticBoxSlave extends Slave {
     }
     
     private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        Client client = cloud.getClient();
         JSONObject profile = client.getProfile(profileId);
         String boxId = profile.getJSONObject("box").getString("version");
         JSONObject box = (JSONObject) client.doGet(MessageFormat.format("/services/boxes/{0}", boxId), false);

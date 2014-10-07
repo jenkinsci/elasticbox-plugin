@@ -279,10 +279,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return slaveConfigurations != null ? Collections.unmodifiableList(slaveConfigurations) : Collections.EMPTY_LIST;
     }
     
-    public Client createClient() throws IOException {
-        Client client = new Client(getEndpointUrl(), getUsername(), getPassword());
-        client.connect();
-        return client;
+    public Client getClient() throws IOException {
+        return ClientCache.findOrCreateClient(name);
     }
     
     SlaveConfiguration getSlaveConfiguration(String configId) {

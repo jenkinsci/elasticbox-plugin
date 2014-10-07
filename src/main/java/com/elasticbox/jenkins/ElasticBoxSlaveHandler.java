@@ -105,7 +105,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         }
         
         instance.getJSONArray("tags").add(slave.getNodeName());
-        Client client = ClientCache.getClient(slave.getCloud().name);
+        Client client = slave.getCloud().getClient();
         client.updateInstance(instance);
         LOGGER.fine(MessageFormat.format("Slave instance {0} has been tagged with slave name {1}",
                 Client.getPageUrl(client.getEndpointUrl(), instance), slave.getNodeName()));        
@@ -261,7 +261,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         String state = instance.getString("state");
         if (Client.InstanceState.UNAVAILABLE.equals(state)) {
             try {
-                slave.getCloud().createClient().forceTerminate(instance.getString("id"));
+                slave.getCloud().getClient().forceTerminate(instance.getString("id"));
             } catch (IOException ex) {
                 log(Level.SEVERE, MessageFormat.format("Error force-terminating the instance of ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
             }
@@ -323,7 +323,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     
     private void deployInstance(InstanceCreationRequest request) throws IOException {
         ElasticBoxCloud cloud = request.slave.getCloud();        
-        Client ebClient = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        Client ebClient = cloud.getClient();
         JSONObject profile = ebClient.getProfile(request.slave.getProfileId());     
         JSONArray variables = SlaveInstance.createJenkinsVariables(ebClient, Jenkins.getInstance().getRootUrl(), request.slave);
         String scope = variables.getJSONObject(0).getString("scope");

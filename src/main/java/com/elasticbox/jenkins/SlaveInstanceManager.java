@@ -12,6 +12,8 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.Client;
+import com.elasticbox.jenkins.util.ClientCache;
 import hudson.model.Node;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,8 +64,9 @@ public class SlaveInstanceManager {
             Set<String> validInstanceIDs = new HashSet<String>();
             for (Map.Entry<ElasticBoxCloud, List<String>> entry : cloudToInstanceIDsMap.entrySet()) {
                 ElasticBoxCloud cloud = entry.getKey();
+                Client client = ClientCache.findOrCreateClient(cloud.name);
                 List<JSONObject> instances = new ArrayList<JSONObject>();
-                for (Object instance : cloud.createClient().getInstances(entry.getValue())) {
+                for (Object instance : client.getInstances(entry.getValue())) {
                     JSONObject instanceJson = (JSONObject) instance;
                     validInstanceIDs.add(instanceJson.getString("id"));
                     instances.add(instanceJson);

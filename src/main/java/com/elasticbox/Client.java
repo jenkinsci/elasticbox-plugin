@@ -115,12 +115,20 @@ public class Client {
     public String getEndpointUrl() {
         return endpointUrl;
     }
+
+    protected String getUsername() {
+        return username;
+    }
+
+    protected String getPassword() {
+        return password;
+    }
         
     public void connect() throws IOException {
         HttpPost post = new HttpPost(MessageFormat.format("{0}/services/security/token", endpointUrl));
         JSONObject json = new JSONObject();
-        json.put("email", this.username);
-        json.put("password", this.password);
+        json.put("email", getUsername());
+        json.put("password", getPassword());
         post.setEntity(new StringEntity(json.toString(), ContentType.APPLICATION_JSON));
         HttpResponse response = httpClient.execute(post);
         int status = response.getStatusLine().getStatusCode();

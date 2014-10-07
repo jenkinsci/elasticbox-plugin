@@ -100,6 +100,20 @@ public class ClientCache {
             cloudName = cloud.name;
         }
 
+        private ElasticBoxCloud getElasticBoxCloud() {
+            return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloudName);
+        }
+        
+        @Override
+        protected String getUsername() {
+            return getElasticBoxCloud().getUsername();
+        }
+
+        @Override
+        protected String getPassword() {
+            return getElasticBoxCloud().getPassword();
+        }
+
         @Override
         public void connect() throws IOException {
             try {

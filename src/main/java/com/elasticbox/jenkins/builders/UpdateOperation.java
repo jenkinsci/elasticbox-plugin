@@ -47,7 +47,7 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
         
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         JSONArray resolvedVariables = resolver.resolveVariables(getVariables());
-        Client client = ClientCache.getClient(cloud.name);
+        Client client = cloud.getClient();
         DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, getBoxVersion()).getJsonArray());
         // remove empty variables and resolve binding with tags
         for (Iterator iter = resolvedVariables.iterator(); iter.hasNext();) {
