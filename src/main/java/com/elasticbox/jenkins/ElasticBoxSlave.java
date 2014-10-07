@@ -417,39 +417,44 @@ public class ElasticBoxSlave extends Slave {
         @Override
         public boolean shouldTerminate(ElasticBoxComputer computer) {
             if (getMinInstances() > 0 && getSlaveConfiguration() != null) {
+                List<JSONObject> activeInstances;
                 try {
-                    List<JSONObject> activeInstances = ElasticBoxSlaveHandler.getActiveInstances(computer.getSlave().getCloud());
-                    if (activeInstances.size() <= getMinInstances()) {
-                        return false;
-                    }
-                    
-                    Set<String> configActiveInstanceIDs = new HashSet<String>();
-                    for (Node node : Jenkins.getInstance().getNodes()) {
-                        if (node instanceof ElasticBoxSlave) {
-                            ElasticBoxSlave slave = (ElasticBoxSlave) node;
-                            if (slave.getSlaveConfiguration() == getSlaveConfiguration()) {
-                                configActiveInstanceIDs.add(slave.getInstanceId());
-                            }
-                        }
-                    }
-                    
-                    if (configActiveInstanceIDs.isEmpty()) {
-                        return false;
-                    }
-                        
-                    int instanceCount = 0;
-                    for (JSONObject instance : activeInstances) {
-                        if (configActiveInstanceIDs.contains(instance.getString("id"))) {
-                            instanceCount++;
-                        }
-                    }
-                    
-                    if (configActiveInstanceIDs.contains(computer.getSlave().getInstanceId()) && 
-                            instanceCount <= getMinInstances()) {
-                        return false;
-                    }
+                    activeInstances = ElasticBoxSlaveHandler.getActiveInstances(computer.getSlave().getCloud());
                 } catch (IOException ex) {
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);    
+                    // cannot decide whether the slave should be terminated because the active instances could not be fetched
+                    // leave it alone for now
+                    return false;
+                }
+                    
+                if (activeInstances.size() <= getMinInstances()) {
+                    return false;
+                }
+
+                Set<String> configActiveInstanceIDs = new HashSet<String>();
+                for (Node node : Jenkins.getInstance().getNodes()) {
+                    if (node instanceof ElasticBoxSlave) {
+                        ElasticBoxSlave slave = (ElasticBoxSlave) node;
+                        if (slave.getSlaveConfiguration() == getSlaveConfiguration()) {
+                            configActiveInstanceIDs.add(slave.getInstanceId());
+                        }
+                    }
+                }
+
+                if (configActiveInstanceIDs.isEmpty()) {
+                    return false;
+                }
+
+                int instanceCount = 0;
+                for (JSONObject instance : activeInstances) {
+                    if (configActiveInstanceIDs.contains(instance.getString("id"))) {
+                        instanceCount++;
+                    }
+                }
+
+                if (configActiveInstanceIDs.contains(computer.getSlave().getInstanceId()) && 
+                        instanceCount <= getMinInstances()) {
+                    return false;
                 }
             }
             

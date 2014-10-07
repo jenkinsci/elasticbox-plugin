@@ -51,7 +51,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlaveHandler.class.getName());
     
     public static final int TIMEOUT_MINUTES = Integer.getInteger("elasticbox.jenkins.deploymentTimeout", 60);
-    private static final long TIMEOUT = TIMEOUT_MINUTES * 60000;
     private static final long RECURRENT_PERIOD = Long.getLong("elasticbox.jenkins.ElasticBoxSlaveHandler.recurrentPeriod", 10000);
 
     private static class InstanceCreationRequest {
@@ -213,19 +212,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.SEVERE, 
                     MessageFormat.format("Error removing slave {0}", slave.getDisplayName()), ex);
         }        
-    }
-    
-    private static Map<String, ElasticBoxSlave> getInstanceIdToSlaveMap() {
-        Map<String, ElasticBoxSlave> instanceIdToSlaveMap = new HashMap<String, ElasticBoxSlave>();
-        for (Node node : Jenkins.getInstance().getNodes()) {
-            if (node instanceof ElasticBoxSlave) {
-                final ElasticBoxSlave slave = (ElasticBoxSlave) node;
-                if (slave.getInstanceUrl() != null) {
-                    instanceIdToSlaveMap.put(slave.getInstanceId(), slave);
-                }
-            }
-        }        
-        return instanceIdToSlaveMap;
     }
     
     /**
