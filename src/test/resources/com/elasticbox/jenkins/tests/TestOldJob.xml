@@ -17,7 +17,7 @@
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
       <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
-      <boxVersion>ce0ebad1-1bdc-4593-aaf6-52a8f0d0d95e</boxVersion>
+      <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
       <profile>9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744</profile>
       <environment>jenkins-plugin-test-buildsteps</environment>
       <instances>1</instances>
