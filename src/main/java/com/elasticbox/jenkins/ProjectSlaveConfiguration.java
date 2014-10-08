@@ -21,6 +21,7 @@ import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import jenkins.model.Jenkins;
@@ -55,16 +56,23 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
         return (c instanceof ElasticBoxCloud ? (ElasticBoxCloud) c : null);
     }
     
-    public static ProjectSlaveConfiguration find(String id) {
+    public static List<ProjectSlaveConfiguration> list() {
+        List<ProjectSlaveConfiguration> slaveConfigurations = new ArrayList<ProjectSlaveConfiguration>();
         List<BuildableItemWithBuildWrappers> projects = Jenkins.getInstance().getItems(BuildableItemWithBuildWrappers.class);
         for (BuildableItemWithBuildWrappers project : projects) {
             for (Object buildWrapper : project.getBuildWrappersList().toMap().values()) {
                 if (buildWrapper instanceof InstanceCreator) {
-                    InstanceCreator instanceCreator = (InstanceCreator) buildWrapper;
-                    if (instanceCreator.getSlaveConfiguration().getId().equals(id)) {
-                        return instanceCreator.getSlaveConfiguration();
-                    }
+                    slaveConfigurations.add(((InstanceCreator) buildWrapper).getSlaveConfiguration());
                 }
+            }
+        }
+        return slaveConfigurations;
+    }
+    
+    public static ProjectSlaveConfiguration find(String id) {
+        for (ProjectSlaveConfiguration slaveConfig : list()) {
+            if (slaveConfig.getId().equals(id)) {
+                return slaveConfig;
             }
         }
         return null;

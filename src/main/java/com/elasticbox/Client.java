@@ -274,7 +274,7 @@ public class Client {
         return (JSONObject) doGet(MessageFormat.format("{0}/services/profiles/{1}", endpointUrl, profileId), false);  
     }
     
-    public JSONArray getInstances(String workspaceId) throws IOException {
+    public JSONArray getInstances(String workspaceId) throws IOException, IOException, IOException, IOException, IOException {
         if (StringUtils.isBlank(workspaceId)) {
             throw new IOException("workspaceId cannot be blank");
         }

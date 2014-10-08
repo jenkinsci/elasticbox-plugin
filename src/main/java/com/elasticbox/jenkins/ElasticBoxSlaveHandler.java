@@ -15,7 +15,6 @@ package com.elasticbox.jenkins;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
-import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
@@ -24,6 +23,9 @@ import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
+import hudson.util.DaemonThreadFactory;
+import hudson.util.ExceptionCatchingThreadFactory;
+import hudson.util.NamingThreadFactory;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -34,6 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,6 +54,8 @@ import org.apache.commons.httpclient.HttpStatus;
 @Extension
 public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlaveHandler.class.getName());
+    private static final ExecutorService threadPool = Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(
+            new NamingThreadFactory(new DaemonThreadFactory(), "ElasticBoxSlaveHandler.threadPool")));
     
     public static final int TIMEOUT_MINUTES = Integer.getInteger("elasticbox.jenkins.deploymentTimeout", 60);
     private static final long RECURRENT_PERIOD = Long.getLong("elasticbox.jenkins.ElasticBoxSlaveHandler.recurrentPeriod", 10000);
@@ -288,28 +295,35 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         }        
     }
     
-    private void purgeSlaves(SlaveInstanceManager slaveInstanceManager, TaskListener listener) throws IOException {
+    private void purgeSlaves(SlaveInstanceManager slaveInstanceManager, final TaskListener listener) throws IOException {
         List<ElasticBoxSlave> slavesToRemove = collectSlavesToRemove(slaveInstanceManager);
         for (Iterator<ElasticBoxSlave> iter = terminatedSlaves.iterator(); iter.hasNext();) {
-            ElasticBoxSlave slave = iter.next();
-            if (purgeSlave(slave, listener)) {
-                iter.remove();
-                removeSlave(slave);                
-            }
+            final ElasticBoxSlave slave = iter.next();
+            threadPool.submit(new Runnable() {
+
+                @Override
+                public void run() {
+                    if (purgeSlave(slave, listener)) {
+                        terminatedSlaves.remove(slave);
+                        removeSlave(slave);                
+                    }
+                }
+                
+            });
         }
         
-        for (ElasticBoxSlave badSlave : slavesToRemove) {
-            removeSlave(badSlave);
+        for (ElasticBoxSlave slave : slavesToRemove) {
+            final ElasticBoxSlave badSlave = slave;
+            threadPool.submit(new Runnable() {
+
+                @Override
+                public void run() {
+                    removeSlave(badSlave);
+                }
+                
+            });
+            
         }
-    }
-    
-    private static boolean isSlaveInQueue(ElasticBoxSlave slave, Queue<InstanceCreationRequest> queue) {
-        for (InstanceCreationRequest request : queue) {
-            if (request.slave == slave) {
-                return true;
-            }
-        }
-        return false;
     }
     
     private void log(String message, TaskListener listener) {
