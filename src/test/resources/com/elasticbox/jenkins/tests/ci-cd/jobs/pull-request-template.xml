@@ -1,0 +1,63 @@
+<project>
+    <actions/>
+    <description/>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.9.1">
+            <projectUrl>{{ GITHUB_PROJECT_URL }}</projectUrl>
+        </com.coravy.hudson.plugins.github.GithubProjectProperty>
+    </properties>
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@2.2.7">
+        <configVersion>2</configVersion>
+        <userRemoteConfigs>
+            <hudson.plugins.git.UserRemoteConfig>
+                <name>origin</name>
+                <refspec>+refs/pull/*:refs/remotes/origin/pr/*</refspec>
+                <url>{{ GIT_REPOSITORY_URL }}</url>
+            </hudson.plugins.git.UserRemoteConfig>
+        </userRemoteConfigs>
+        <branches>
+            <hudson.plugins.git.BranchSpec>
+                <name>${sha1}</name>
+            </hudson.plugins.git.BranchSpec>
+        </branches>
+        <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+        <submoduleCfg class="list"/>
+        <extensions/>
+    </scm>
+    <canRoam>true</canRoam>
+    <disabled>true</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers>
+        <org.jenkinsci.plugins.ghprb.GhprbTrigger plugin="ghprb@1.16-2">
+            <spec>H/5 * * * *</spec>
+            <adminlist/>
+            <allowMembersOfWhitelistedOrgsAsAdmin>false</allowMembersOfWhitelistedOrgsAsAdmin>
+            <orgslist/>
+            <cron>H/5 * * * *</cron>
+            <triggerPhrase>.*test\W+this\W+please.*</triggerPhrase>
+            <onlyTriggerPhrase>false</onlyTriggerPhrase>
+            <useGitHubHooks>true</useGitHubHooks>
+            <permitAll>true</permitAll>
+            <commentFilePath/>
+            <whitelist>{{ GITHUB_USER }}</whitelist>
+            <autoCloseFailedPullRequests>false</autoCloseFailedPullRequests>
+            <displayBuildErrorsOnDownstreamBuilds>false</displayBuildErrorsOnDownstreamBuilds>
+            <whiteListTargetBranches>
+                <org.jenkinsci.plugins.ghprb.GhprbBranch>
+                    <branch/>
+                </org.jenkinsci.plugins.ghprb.GhprbBranch>
+            </whiteListTargetBranches>
+            <msgSuccess>You rock!</msgSuccess>
+            <msgFailure>Sorry, keep trying.</msgFailure>
+            <project>pull-request-template</project>
+        </org.jenkinsci.plugins.ghprb.GhprbTrigger>
+    </triggers>
+    <concurrentBuild>false</concurrentBuild>
+    <builders/>
+    <publishers>
+        <com.cloudbees.jenkins.GitHubCommitNotifier plugin="github@1.9.1"/>
+    </publishers>
+    <buildWrappers/>
+</project>
