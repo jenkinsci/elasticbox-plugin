@@ -47,7 +47,7 @@ import org.junit.Assert;
  * @author Phong Nguyen Le
  */
 public class TestUtils {
-    static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://catapult.elasticbox.com");
+    static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
     static final String OPS_PASSWORD_PROPERTY = "elasticbox.jenkins.test.opsPassword";
     static final String OPS_USER_NAME_PROPERTY = "elasticbox.jenkins.test.opsUsername";
     static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", "tphongio");

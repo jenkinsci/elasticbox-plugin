@@ -25,7 +25,6 @@ import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
 import hudson.util.DaemonThreadFactory;
 import hudson.util.ExceptionCatchingThreadFactory;
-import hudson.util.NamingThreadFactory;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -38,7 +37,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,8 +52,7 @@ import org.apache.commons.httpclient.HttpStatus;
 @Extension
 public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlaveHandler.class.getName());
-    private static final ExecutorService threadPool = Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(
-            new NamingThreadFactory(new DaemonThreadFactory(), "ElasticBoxSlaveHandler.threadPool")));
+    private static final ExecutorService threadPool = Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(new DaemonThreadFactory()));
     
     public static final int TIMEOUT_MINUTES = Integer.getInteger("elasticbox.jenkins.deploymentTimeout", 60);
     private static final long RECURRENT_PERIOD = Long.getLong("elasticbox.jenkins.ElasticBoxSlaveHandler.recurrentPeriod", 10000);

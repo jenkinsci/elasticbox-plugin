@@ -2,7 +2,7 @@
 USAGE="Usage : build.sh -a ELASTICBOX_ADDRESS [-j JENKINS_VERSION,JENKINS_VERSION...]
 
 Example:
-    build.sh -a https://catapult.elasticbox.com -j 1.509.3,1.581
+    build.sh -a https://blue.elasticbox.com -j 1.509.3,1.581
 
 Options:
     -a ElasticBox address to run tests against
@@ -51,11 +51,11 @@ function escape() {
 }
 
 function set_jenkins_version() {
-    sed -i -e "s|\(.*\)\(<version>.*</version>\)\(.*${JENKINS_VERSION_COMMENT}.*\)|\1<version>${1}</version>\3|" pom.xml
+    sed -i -e "s|\(.*\)\(<version>.*</version>\)\(.*${JENKINS_VERSION_COMMENT}.*\)|\1<version>${1}</version>\3|" ${REPOSITORY_FOLDER}/pom.xml
 }
 
 function get_jenkins_version() {
-    grep "${JENKINS_VERSION_COMMENT}" pom.xml | sed -e "s|<version>\(.*\)</version>.*|\1|" -e "s/ //g"
+    grep "${JENKINS_VERSION_COMMENT}" ${REPOSITORY_FOLDER}/pom.xml | sed -e "s|<version>\(.*\)</version>.*|\1|" -e "s/ //g"
 }
 
 function build_with_jenkins_version() {
@@ -68,10 +68,28 @@ function build_with_jenkins_version() {
     then
         echo Testing against ElasticBox at ${EBX_ADDRESS}
     fi
+    
+    cd ${REPOSITORY_FOLDER}
     mvn -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS} clean install
+    
+    # keep the test results and logs for the tested Jenkins version
+    cd target/surefire-reports
+    if [ -d "${JENKINS_VERSION}" ]
+    then
+        rm -rf ${JENKINS_VERSION}
+    fi
+    mkdir ${JENKINS_VERSION}
+    for FILE in $(ls)
+    do
+        if [ -f "${FILE}" ]
+        then
+            cp ${FILE} ${JENKINS_VERSION}/${JENKINS_VERSION}_${FILE}
+        fi
+    done
 }
 
 cd $(dirname $0)
+REPOSITORY_FOLDER=$(pwd)
 
 SAVED_JENKINS_VERSION=$(get_jenkins_version)
 
@@ -98,7 +116,7 @@ then
     build_with_jenkins_version ${LATEST_JENKINS_VERSION}
 fi
 
-if [[ -f "pom.xml-e" ]]
+if [[ -f "${REPOSITORY_FOLDER}/pom.xml-e" ]]
 then
-    mv -f pom.xml-e pom.xml
+    mv -f ${REPOSITORY_FOLDER}/pom.xml-e ${REPOSITORY_FOLDER}/pom.xml
 fi
