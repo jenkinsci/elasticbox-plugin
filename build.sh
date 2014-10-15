@@ -73,17 +73,15 @@ function build_with_jenkins_version() {
     mvn -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS} clean install
     
     # keep the test results and logs for the tested Jenkins version
+    TEST_RESULTS_FOLDER=${REPOSITORY_FOLDER}/target/test-results/${JENKINS_VERSION}
+    rm -rf ${TEST_RESULTS_FOLDER}
+    mkdir -p ${TEST_RESULTS_FOLDER}
     cd target/surefire-reports
-    if [ -d "${JENKINS_VERSION}" ]
-    then
-        rm -rf ${JENKINS_VERSION}
-    fi
-    mkdir ${JENKINS_VERSION}
     for FILE in $(ls)
     do
         if [ -f "${FILE}" ]
         then
-            cp ${FILE} ${JENKINS_VERSION}/${JENKINS_VERSION}_${FILE}
+            cp ${FILE} ${TEST_RESULTS_FOLDER}/${JENKINS_VERSION}_${FILE}
         fi
     done
 }
