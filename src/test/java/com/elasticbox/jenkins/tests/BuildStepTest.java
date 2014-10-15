@@ -83,7 +83,7 @@ public class BuildStepTest extends TestBase {
         String buildNumber = variableResolver.resolve("${BUILD_NUMBER}");
         String buildId = variableResolver.resolve("${BUILD_ID}");
         String buildTag = variableResolver.resolve("${BUILD_TAG}");
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getToken());
         JSONObject testLinuxBox = getTestBox(TestUtils.TEST_LINUX_BOX_NAME);
         JSONObject testBindingBox = getTestBox(TestUtils.TEST_BINDING_BOX_NAME);
         JSONObject testNestedBox = getTestBox(TestUtils.TEST_NESTED_BOX_NAME);        

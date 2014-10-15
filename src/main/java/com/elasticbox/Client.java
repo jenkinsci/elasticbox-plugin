@@ -105,11 +105,20 @@ public class Client {
     private final String password;
     private String token = null;
 
-    public Client(String endpointUrl, String username, String password) {
+    protected Client(String endpointUrl, String username, String password, String token) {
         createHttpClient();
         this.endpointUrl = endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl;
         this.username = username;
         this.password = password;
+        this.token = token;
+    }
+
+    public Client(String endpointUrl, String username, String password) {
+        this(endpointUrl, username, password, null);
+    }
+    
+    public Client(String endpointUrl, String token) {
+        this(endpointUrl, null, null, token);
     }
     
     public String getEndpointUrl() {
@@ -123,8 +132,12 @@ public class Client {
     protected String getPassword() {
         return password;
     }
-        
+
     public void connect() throws IOException {
+        if (token != null && username == null) {
+            return;
+        }
+        
         HttpPost post = new HttpPost(MessageFormat.format("{0}/services/security/token", endpointUrl));
         JSONObject json = new JSONObject();
         json.put("email", getUsername());
@@ -137,6 +150,17 @@ public class Client {
                     this.endpointUrl, getErrorMessage(getResponseBodyAsString(response))), status);
         }
         token = getResponseBodyAsString(response);            
+    }
+
+    public String generateToken(String description) throws IOException {
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("description", description);
+        JSONObject tokenInfo = doPost("/services/tokens", requestBody);
+        return tokenInfo.getString("value");
+    }
+    
+    public JSONArray getTokens() throws IOException {
+        return (JSONArray) doGet("/services/tokens", true);
     }
     
     public JSONArray getWorkspaces() throws IOException {
@@ -725,16 +749,20 @@ public class Client {
         HttpResponse response = httpClient.execute(request);
         int status = response.getStatusLine().getStatusCode();
         if (status == HttpStatus.SC_UNAUTHORIZED) {
-            token = null;
-            EntityUtils.consumeQuietly(response.getEntity());
-            request.reset();
-            connect();
-            setRequiredHeaders(request);
-            response = httpClient.execute(request);                
+            if (username != null) {
+                token = null;
+                EntityUtils.consumeQuietly(response.getEntity());
+                request.reset();
+                connect();
+                setRequiredHeaders(request);
+                response = httpClient.execute(request);                
+            }
             status = response.getStatusLine().getStatusCode();
         }
         if (status < 200 || status > 299) {
-            token = null;
+            if (username != null) {
+                token = null;
+            }
             throw new ClientException(getErrorMessage(getResponseBodyAsString(response)), status);
         }            
 

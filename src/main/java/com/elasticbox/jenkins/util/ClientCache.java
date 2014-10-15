@@ -74,13 +74,20 @@ public class ClientCache {
         return null;
     }
 
-    public static Client getClient(String endpointUrl, String username, String password) {
+    public static Client getClient(String endpointUrl, String username, String password, String token) {
         for (Cloud cloud : Jenkins.getInstance().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
-                if (ebCloud.getEndpointUrl().equals(endpointUrl) && ebCloud.getUsername().equals(username) &&
-                        ebCloud.getPassword().equals(password)) {
-                    return getClient(ebCloud.name);
+                if (ebCloud.getEndpointUrl().equals(endpointUrl)) {
+                    if (StringUtils.isNotBlank(token)) {
+                        if (token.equals(ebCloud.getToken())) {
+                            return getClient(ebCloud.name);
+                        }
+                    } else {
+                        if (ebCloud.getUsername().equals(username) && ebCloud.getPassword().equals(password)) {
+                            return getClient(ebCloud.name);
+                        }
+                    }
                 }
             }
         }
@@ -96,7 +103,7 @@ public class ClientCache {
         private final String cloudName;
 
         public CachedClient(ElasticBoxCloud cloud) throws IOException {
-            super(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+            super(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword(), cloud.getToken());
             cloudName = cloud.name;
         }
 

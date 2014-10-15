@@ -15,6 +15,7 @@ package com.elasticbox.jenkins.tests;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.util.SlaveInstance;
@@ -118,13 +119,14 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     }
     
     private ElasticBoxCloud createCloud(String endpointUrl, String username, String password) throws IOException {
-        ElasticBoxCloud cloud = new ElasticBoxCloud("elasticbox", endpointUrl, 2, 10, username, password, Collections.EMPTY_LIST);
+        String token = DescriptorHelper.getToken(endpointUrl, username, password);
+        ElasticBoxCloud cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", endpointUrl, 2, token, Collections.EMPTY_LIST);
         jenkins.clouds.add(cloud);
         return cloud;        
     }
     
     private void testClient(ElasticBoxCloud cloud) throws Exception {
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword());
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getToken());
         client.connect();
         JSONArray boxes = client.getBoxes(TestUtils.TEST_WORKSPACE);
         JSONObject testJenkinsSlaveBox = null;

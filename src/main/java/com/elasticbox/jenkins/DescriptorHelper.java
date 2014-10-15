@@ -14,6 +14,7 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
+import com.elasticbox.ClientException;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
@@ -41,6 +42,7 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONArray;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHeaders;
+import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.StaplerRequest;
@@ -82,6 +84,28 @@ public class DescriptorHelper {
         }
         
         return clouds;
+    }
+    
+    public static String getToken(String endpointUrl, String username, String password) throws IOException {
+        final String TOKEN_DESCRIPTION = "ElasticBox CI Jenkins Plugin";        
+        String token = null;
+        Client client = new Client(endpointUrl, username, password);
+        try {
+            token = client.generateToken(TOKEN_DESCRIPTION);
+        } catch (ClientException ex) {
+            if (ex.getStatusCode() != HttpStatus.SC_CONFLICT) {
+                throw ex;
+            } else {
+                for (Object tokenObject : client.getTokens()) {
+                    JSONObject tokenJson = (JSONObject) tokenObject;
+                    if (tokenJson.getString("description").equals(TOKEN_DESCRIPTION)) {
+                        token = tokenJson.getString("value");
+                        break;
+                    }
+                }                        
+            }
+        }
+        return token;
     }
         
     public static ListBoxModel getWorkspaces(String cloud) {

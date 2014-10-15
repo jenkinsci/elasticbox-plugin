@@ -75,26 +75,51 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     
     private final String endpointUrl;
     private int maxInstances;
+    @Deprecated
     private final int retentionTime;
+    @Deprecated
     private final String username;
+    @Deprecated
     private final String password;
+    private final String token;
     private final List<? extends SlaveConfiguration> slaveConfigurations;
+    private String description;
     
     @DataBoundConstructor
-    public ElasticBoxCloud(String name, String endpointUrl, int maxInstances, int retentionTime, String username, String password,
+    public ElasticBoxCloud(String name, String description, String endpointUrl, int maxInstances, String token,
             List<? extends SlaveConfiguration> slaveConfigurations) {
         super(name, String.valueOf(maxInstances));
+        this.description = description;
         this.endpointUrl = endpointUrl;
         this.maxInstances = maxInstances;
-        this.retentionTime = retentionTime;
-        this.username = username;
-        this.password = Scrambler.scramble(password);
+        this.token = token;
         this.slaveConfigurations = slaveConfigurations;
+        username = password = null;
+        retentionTime = 0;
+    }
+    
+    protected Object readResolve() {
+        if (StringUtils.isBlank(description) && StringUtils.isNotBlank(username)) {
+            description = getDisplayName();
+        }
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     @Override
     public String getDisplayName() {
-        return username + '@' + endpointUrl;
+        if (StringUtils.isBlank(description)) {
+            return username + '@' + endpointUrl;
+        } else {
+            return description;
+        }
+    }
+
+    public String getToken() {
+        return token;
     }
     
     private List<ElasticBoxSlave> getPendingSlaves(Label label, List<JSONObject> activeInstances) {
@@ -259,10 +284,12 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return endpointUrl;
     }
 
+    @Deprecated
     public String getUsername() {
         return username;
     }
 
+    @Deprecated
     public String getPassword() {
         return Scrambler.descramble(password);
     }
@@ -271,6 +298,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return maxInstances;
     }
 
+    @Deprecated
     public int getRetentionTime() {
         return retentionTime;
     }
@@ -382,6 +410,10 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             } catch (MalformedURLException ex) {
                 throw new FormException(MessageFormat.format("Invalid End Point URL: {0}", newCloud.endpointUrl), ENDPOINT_URL);
             }
+
+            if (StringUtils.isBlank(newCloud.description)) {
+                throw new FormException(MessageFormat.format("Description is required for ElasticBox cloud at {0}", newCloud.getEndpointUrl()), "description");
+            }       
             
             boolean invalidNumber;
             try {
@@ -390,24 +422,11 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 invalidNumber = true;
             } 
             if (invalidNumber) {
-                throw new FormException("Invalid Max. No. of Instances, it must be a positive whole number.", "maxInstances");
+                throw new FormException(MessageFormat.format("Invalid Max. No. of Instances for ElasticBox cloud {0}, it must be a positive whole number.", newCloud.getDisplayName()), "maxInstances");
             }
             
-            try {
-                invalidNumber = newCloud.retentionTime < 0;
-            } catch (JSONException ex) {
-                invalidNumber = true;
-            } 
-            if (invalidNumber) {
-                throw new FormException("Invalid Retention Time, it must be a non-negative whole number.", "retentionTime");
-            }
-            
-            if (StringUtils.isBlank(newCloud.username)) {
-                throw new FormException("Username is required", USER_NAME);
-            }
-            
-            if (StringUtils.isBlank(newCloud.password)) {
-                throw new FormException("Password is required", PASSWORD);
+            if (StringUtils.isBlank(newCloud.token)) {
+                throw new FormException(MessageFormat.format("Authentication token is required for ElasticBox cloud {0}", newCloud.getDisplayName()), "token");
             }       
             
             checkDeletedSlaveConfiguration(newCloud);
@@ -438,9 +457,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }          
             
             if (StringUtils.isBlank(newCloud.name)) {
-                newCloud = new ElasticBoxCloud(NAME_PREFIX + UUID.randomUUID().toString(), newCloud.getEndpointUrl(), 
-                        newCloud.getMaxInstances(), newCloud.getRetentionTime(), newCloud.getUsername(), 
-                        newCloud.getPassword(), newCloud.getSlaveConfigurations());
+                newCloud = new ElasticBoxCloud(NAME_PREFIX + UUID.randomUUID().toString(), newCloud.getDescription(), newCloud.getEndpointUrl(), 
+                        newCloud.getMaxInstances(), newCloud.getToken(), newCloud.getSlaveConfigurations());
             }
             
             for (ElasticBoxCloud cloud : cloudsToRemoveCachedClient) {
@@ -450,32 +468,42 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             return newCloud;
         }
 
-        public FormValidation doTestConnection(
+        public FormValidation doGetToken(
                 @QueryParameter String endpointUrl,
                 @QueryParameter String username,
                 @QueryParameter String password) {
-            Client client = new Client(endpointUrl, username, password);
+            String token = null;
             try {
-                client.connect();
+                token = DescriptorHelper.getToken(endpointUrl, username, password);
             } catch (IOException ex) {
                 return FormValidation.error(ex.getMessage());
             }
-            return FormValidation.ok(MessageFormat.format("Connection to {0} was successful.", endpointUrl));
+            return FormValidation.ok(token);
         }
-
+        
+        public FormValidation doVerifyToken(@QueryParameter String endpointUrl, @QueryParameter String token) {
+            Client client = new Client(endpointUrl, token);
+            try {
+                client.doGet("/services/workspaces", true);
+            } catch (IOException ex) {
+                return FormValidation.error(ex.getMessage());
+            }
+            return FormValidation.ok(MessageFormat.format("The authentication token is valid for {0}.", endpointUrl));
+        }
+        
         private List<ElasticBoxCloud> validateClouds(JSONArray clouds) throws FormException {
+            // check for unique description
+            Set<String> takenDescriptions = new HashSet<String>();
             Set<String> takenLogins = new HashSet<String>();
             Map<String, JSONObject> nameToExistingCloudMap = new HashMap<String, JSONObject>();
             for (Object cloud : clouds) {
                 JSONObject json = (JSONObject) cloud;
                 if (ElasticBoxCloud.class.getName().equals(json.getString("kind"))) {
-                    String username = json.getString("username");
-                    String endpointUrl = json.getString("endpointUrl");
-                    String login = username + '@' + endpointUrl;
-                    if (takenLogins.contains(login)) {
-                        throw new FormException(MessageFormat.format("There are more than one ElasticBox clouds with the same End Point URL ({0}) and Username ({1}).", endpointUrl, username), null);
+                    String description = json.getString("description");
+                    if (takenDescriptions.contains(description)) {
+                        throw new FormException(MessageFormat.format("There are more than one ElasticBox clouds with description ''{0}''. Please specify unique description.", description), null);
                     } else {
-                        takenLogins.add(login);
+                        takenDescriptions.add(description);
                     }
                     
                     String name = json.getString("name");
@@ -506,8 +534,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         cloudsToRemoveCachedClient.add(ebCloud);
                     } else {
                         if (!ebCloud.getEndpointUrl().equalsIgnoreCase(json.getString(ENDPOINT_URL)) || 
-                                !ebCloud.getUsername().equals(json.getString(USER_NAME)) || 
-                                !ebCloud.getPassword().equals(json.getString(PASSWORD))) {
+                                !json.getString("token").equals(ebCloud.getToken())) {
                             cloudsToRemoveCachedClient.add(ebCloud);
                         }
                     }                    
@@ -569,7 +596,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
             
             FormValidation result = ((SlaveConfiguration.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(SlaveConfiguration.class)).doCheckBoxVersion(slaveConfig.getBoxVersion(), 
-                    newCloud.getEndpointUrl(), newCloud.getUsername(), newCloud.getPassword(), slaveConfig.getBox());
+                    newCloud.getEndpointUrl(), newCloud.getUsername(), newCloud.getPassword(), newCloud.getToken(), slaveConfig.getBox());
             if (result.kind == FormValidation.Kind.ERROR) {
                 throw new FormException(result.getMessage(), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }

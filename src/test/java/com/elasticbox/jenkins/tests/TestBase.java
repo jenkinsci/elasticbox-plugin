@@ -14,6 +14,7 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import static com.elasticbox.jenkins.tests.TestUtils.getResourceAsString;
 
@@ -99,7 +100,8 @@ public class TestBase {
     
     @Before
     public void setupTestData() throws Exception {
-        cloud = new ElasticBoxCloud("elasticbox", TestUtils.ELASTICBOX_URL, 2, 10, TestUtils.USER_NAME, TestUtils.PASSWORD, Collections.EMPTY_LIST);
+        String token = DescriptorHelper.getToken(TestUtils.ELASTICBOX_URL, TestUtils.USER_NAME, TestUtils.PASSWORD);
+        cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, token, Collections.EMPTY_LIST);
         jenkins.getInstance().clouds.add(cloud);        
         Client client = cloud.getClient();
         JSONObject workspace = (JSONObject) client.doGet(MessageFormat.format("/services/workspaces/{0}", TestUtils.TEST_WORKSPACE), false);

@@ -53,12 +53,13 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return "Slave Configuration";
         }
 
-        private Client createClient(String endpointUrl, String username, String password) {
-            if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
+        private Client createClient(String endpointUrl, String username, String password, String token) {
+            if (StringUtils.isBlank(endpointUrl) || 
+                    (StringUtils.isBlank(token) && (StringUtils.isBlank(username) || StringUtils.isBlank(password)))) {
                 return null;
             }
             
-            Client client = ClientCache.getClient(endpointUrl, username, password);
+            Client client = ClientCache.getClient(endpointUrl, username, password, token);
             if (client == null) {
                 client = new Client(endpointUrl, username, password);
                 try {  
@@ -74,47 +75,53 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
 
         public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,
                 @RelativePath("..") @QueryParameter String username, 
-                @RelativePath("..") @QueryParameter String password) {
-            return DescriptorHelper.getWorkspaces(createClient(endpointUrl, username, password));
+                @RelativePath("..") @QueryParameter String password,
+                @RelativePath("..") @QueryParameter String token) {
+            return DescriptorHelper.getWorkspaces(createClient(endpointUrl, username, password, token));
         }
         
         public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
-                @RelativePath("..") @QueryParameter String password, 
+                @RelativePath("..") @QueryParameter String password,
+                @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace) {
-            return DescriptorHelper.getBoxes(createClient(endpointUrl, username, password), workspace);
+            return DescriptorHelper.getBoxes(createClient(endpointUrl, username, password, token), workspace);
         }
 
         public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
+                @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(createClient(endpointUrl, username, password), box);
+            return DescriptorHelper.getBoxVersions(createClient(endpointUrl, username, password, token), box);
         }
         
         public FormValidation doCheckBoxVersion(@QueryParameter String value,
                 @RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
-                @RelativePath("..") @QueryParameter String password, 
+                @RelativePath("..") @QueryParameter String password,
+                @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String box) {
-            return DescriptorHelper.checkSlaveBox(createClient(endpointUrl, username, password), 
+            return DescriptorHelper.checkSlaveBox(createClient(endpointUrl, username, password, token), 
                     StringUtils.isBlank(value) ? box : value);
         }
 
         public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
+                @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace, @QueryParameter String box) {                
-            return DescriptorHelper.getProfiles(createClient(endpointUrl, username, password), workspace, box);
+            return DescriptorHelper.getProfiles(createClient(endpointUrl, username, password, token), workspace, box);
         }
 
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(
                 @RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
+                @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String box, 
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getBoxStack(createClient(endpointUrl, username, password),
+            return DescriptorHelper.getBoxStack(createClient(endpointUrl, username, password, token),
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
@@ -122,10 +129,11 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 @RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
+                @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace, 
                 @QueryParameter String box, 
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getInstancesAsJSONArrayResponse(createClient(endpointUrl, username, password),
+            return DescriptorHelper.getInstancesAsJSONArrayResponse(createClient(endpointUrl, username, password, token),
                     workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
         
