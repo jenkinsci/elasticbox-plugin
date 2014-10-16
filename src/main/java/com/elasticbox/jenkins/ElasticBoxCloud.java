@@ -494,7 +494,6 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         private List<ElasticBoxCloud> validateClouds(JSONArray clouds) throws FormException {
             // check for unique description
             Set<String> takenDescriptions = new HashSet<String>();
-            Set<String> takenLogins = new HashSet<String>();
             Map<String, JSONObject> nameToExistingCloudMap = new HashMap<String, JSONObject>();
             for (Object cloud : clouds) {
                 JSONObject json = (JSONObject) cloud;

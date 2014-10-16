@@ -61,7 +61,11 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             
             Client client = ClientCache.getClient(endpointUrl, username, password, token);
             if (client == null) {
-                client = new Client(endpointUrl, username, password);
+                if (StringUtils.isNotBlank(token)) {
+                    client = new Client(endpointUrl, token);
+                } else {
+                    client = new Client(endpointUrl, username, password);
+                }
                 try {  
                     client.connect();
                 } catch (IOException ex) {
