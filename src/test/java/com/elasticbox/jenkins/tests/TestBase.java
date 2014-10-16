@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
@@ -41,6 +43,8 @@ import org.jvnet.hudson.test.JenkinsRule;
  * @author Phong Nguyen Le
  */
 public class TestBase {
+    private static final Logger LOGGER = Logger.getLogger(TestBase.class.getName());
+    
     private static final String TEST_PROVIDER_TYPE = "Test Provider";
     private static final String NAME_PREFIX = "jenkins-plugin-test-";
 
@@ -137,9 +141,20 @@ public class TestBase {
     public void cleanUp() throws Exception {
         Client client = cloud.getClient();
         if (!newTestBindingBoxInstanceId.equals(TestUtils.TEST_BINDING_BOX_INSTANCE_ID)) {
-            IProgressMonitor monitor = client.terminate(newTestBindingBoxInstanceId);
-            monitor.waitForDone(10);
-            client.delete(newTestBindingBoxInstanceId);
+            try {
+                IProgressMonitor monitor = client.terminate(newTestBindingBoxInstanceId);
+                monitor.waitForDone(10);
+                if (monitor.isDone()) {
+                    client.delete(newTestBindingBoxInstanceId);
+                } else {
+                    // this will force-terminate
+                    monitor = client.terminate(newTestBindingBoxInstanceId);
+                    monitor.waitForDone(1);
+                    client.delete(newTestBindingBoxInstanceId);
+                }
+            } catch (Exception ex) {
+                LOGGER.log(Level.WARNING, MessageFormat.format("Cannot delete test instance {0}", newTestBindingBoxInstanceId), ex);
+            }
         }
         
         for (int i = testBoxDataList.size() - 1; i > -1; i--) {

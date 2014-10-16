@@ -126,8 +126,8 @@ var ElasticBoxVariables = (function () {
         
         getCloudParameters = function (variableHolder) {
             return variableHolder.cloudSelect ? 'cloud=' + variableHolder.cloudSelect.value :
-                ElasticBoxUtils.format('endpointUrl={0}&username={1}&password={2}', 
-                    variableHolder.endpointUrlInput.value, variableHolder.usernameInput.value, variableHolder.passwordInput.value);
+                ElasticBoxUtils.format('endpointUrl={0}&username={1}&password={2}&token={3}', 
+                    variableHolder.endpointUrlInput.value, variableHolder.usernameInput.value, variableHolder.passwordInput.value, variableHolder.tokenInput.value);
         },
 
         getBoxStackUrl = function (variableHolder) {
@@ -633,6 +633,7 @@ var ElasticBoxVariables = (function () {
                                 variableHolder.endpointUrlInput = _.first(Dom.getElementsByClassName('eb-endpointUrl', 'input', descriptorElement));
                                 variableHolder.usernameInput = _.first(Dom.getElementsByClassName('eb-username', 'input', descriptorElement));
                                 variableHolder.passwordInput = _.first(Dom.getElementsByClassName('eb-password', 'input', descriptorElement));
+                                variableHolder.tokenInput = _.first(Dom.getElementsByClassName('eb-token', 'input', descriptorElement));
                             } else {
                                 Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
                                     variableHolder.cloudSelect = _.first(Dom.getElementsByClassName('eb-cloud', 'select', element));
