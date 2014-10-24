@@ -5,7 +5,7 @@ TOKEN=$2
 
 function delete_boxes() {
 	BOX_NAME_PART=${1}
-	BOX_IDS=$(eb boxes list --token ${TOKEN} --address https://blue.elasticbox.com --no-keychain -i tphongio | grep ${BOX_NAME_PART} | awk '{ print $1 }')
+	BOX_IDS=$(eb boxes list --token ${TOKEN} --address ${EBX_ADDRESS} --no-keychain -i tphongio | grep ${BOX_NAME_PART} | awk '{ print $1 }')
 	for BOX_ID in ${BOX_IDS}
 	do
 		BOX_URL=${EBX_ADDRESS}/services/boxes/${BOX_ID}
@@ -13,6 +13,8 @@ function delete_boxes() {
 		curl -k -X DELETE -H "ElasticBox-Token: ${TOKEN}" ${BOX_URL}	
 	done
 }
+
+sudo pip install ebcli --upgrade
 
 PROVIDER_IDS=$(curl -k -H "ElasticBox-Token: ${TOKEN}" ${EBX_ADDRESS}/services/workspaces/tphongio/providers | python -m json.tool | grep /services/providers | sed -e 's|/services/providers/||g' -e 's/"//g' | awk '{ print $2 }')
 for PROVIDER_ID in ${PROVIDER_IDS}

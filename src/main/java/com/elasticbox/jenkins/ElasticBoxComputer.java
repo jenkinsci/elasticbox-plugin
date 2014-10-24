@@ -69,7 +69,10 @@ final class ElasticBoxComputer extends SlaveComputer {
             // remove any pending launches
             Set<LabelAtom> slaveLabels = new HashSet<LabelAtom>(ElasticBoxLabelFinder.INSTANCE.findLabels(slave));
             if (slave.isSingleUse()) {
-                slaveLabels.add(ElasticBoxLabelFinder.getLabel(slave.getSlaveConfiguration(), true));
+                AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
+                if (slaveConfig != null) {
+                    slaveLabels.add(ElasticBoxLabelFinder.getLabel(slaveConfig, true));
+                }
                 RunList builds = slave.getComputer().getBuilds();
                 if (slave.getInstanceUrl() == null && !builds.isEmpty()) {
                     AbstractBuild build = (AbstractBuild) builds.iterator().next();
@@ -80,7 +83,7 @@ final class ElasticBoxComputer extends SlaveComputer {
                         LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                         buildTag = build.getDescription();
                     }
-                    LOGGER.warning(MessageFormat.format("The build ''{0}'' will be canceled because a slave cannot be launched for it.", buildTag));
+                    LOGGER.warning(MessageFormat.format("The build ''{0}'' will be cancelled because a slave cannot be launched for it.", buildTag));
                 }
             }
             for (LabelAtom label : slaveLabels) {
