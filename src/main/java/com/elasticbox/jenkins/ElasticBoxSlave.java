@@ -14,7 +14,6 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
-import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -173,8 +172,8 @@ public class ElasticBoxSlave extends Slave {
         return singleUse;
     }   
 
-    public void setDeletable(boolean inUse) {
-        this.deletable = inUse;
+    public void setDeletable(boolean deletable) {
+        this.deletable = deletable;
     }
 
     public boolean isDeletable() {
@@ -342,15 +341,14 @@ public class ElasticBoxSlave extends Slave {
 
         @Override
         public boolean shouldTerminate(ElasticBoxComputer computer) {
-            // retention time 0 means being retained forever
-            return getRetentionTime() > 0 && computer.getIdleTime() > TimeUnit.MINUTES.toMillis(getRetentionTime());            
+            return computer.getIdleTime() > TimeUnit.MINUTES.toMillis(getRetentionTime());            
         }
 
         @Override
         protected int getRetentionTime() {
             return retentionTime;
         }
-
+        
     }
     
     private static final class SlaveConfigurationRetentionStrategy extends AbstractSlaveConfigurationRetentionStrategy {

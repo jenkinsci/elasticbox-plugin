@@ -114,6 +114,16 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         LOGGER.fine(MessageFormat.format("Slave instance {0} has been tagged with slave name {1}",
                 Client.getPageUrl(client.getEndpointUrl(), instance), slave.getNodeName()));        
     }
+    
+    public static void removeSlaveAsync(final Node slave) {
+        threadPool.submit(new Runnable() {
+
+            public void run() {
+                removeSlave(slave);
+            }
+            
+        });
+    }
         
     public ElasticBoxSlaveHandler() {
         super("ElasticBox Slave Handler");
@@ -209,7 +219,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         }
     }
     
-    private void removeSlave(ElasticBoxSlave slave) {
+    private static void removeSlave(Node slave) {
         try {            
             Jenkins.getInstance().removeNode(slave);
         } catch (IOException ex) {
