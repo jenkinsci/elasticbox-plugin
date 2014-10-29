@@ -681,7 +681,16 @@ public class Client {
     }
     
     public String getInstanceUrl(String instanceId) {
-        return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);
+        return getInstanceUrl(endpointUrl, instanceId);
+    }
+    
+    
+    public static final String getInstanceUrl(String endpointUrl, String instanceId) {
+        return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);        
+    }
+    
+    public static final String getInstancePageUrl(String endpointUrl, String instanceId) {
+        return getPageUrl(endpointUrl, getInstanceUrl(endpointUrl, instanceId));
     }
     
     public static final String getResourceId(String resourceUrl) {

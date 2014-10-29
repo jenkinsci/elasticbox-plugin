@@ -14,7 +14,6 @@ package com.elasticbox.jenkins.util;
 
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.builders.IInstanceProvider;
-import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.Project;

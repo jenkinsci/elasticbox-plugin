@@ -115,12 +115,7 @@ public class ElasticBoxCloudTest extends HudsonTestCase {
     }
     
     private ElasticBoxCloud createCloud() throws IOException {
-        return createCloud(TestUtils.ELASTICBOX_URL, TestUtils.USER_NAME, TestUtils.PASSWORD);
-    }
-    
-    private ElasticBoxCloud createCloud(String endpointUrl, String username, String password) throws IOException {
-        String token = DescriptorHelper.getToken(endpointUrl, username, password);
-        ElasticBoxCloud cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", endpointUrl, 2, token, Collections.EMPTY_LIST);
+        ElasticBoxCloud cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
         jenkins.clouds.add(cloud);
         return cloud;        
     }

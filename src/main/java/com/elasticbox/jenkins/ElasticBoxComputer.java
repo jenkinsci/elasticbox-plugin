@@ -18,6 +18,7 @@ import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Computer;
 import hudson.model.Messages;
+import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.model.TaskListener;
 import hudson.model.labels.LabelAtom;
@@ -121,6 +122,7 @@ final class ElasticBoxComputer extends SlaveComputer {
     }
 
     void terminate() {
+        ElasticBoxSlaveHandler.markForTermination(slave);
         if (slave.getInstanceUrl() == null) {
             return;
         }
@@ -193,7 +195,22 @@ final class ElasticBoxComputer extends SlaveComputer {
                 }
             }
         }
-        
+
+        @Override
+        public void onConfigurationChange() {
+            for (Node node : Jenkins.getInstance().getNodes()) {
+                if (node instanceof ElasticBoxSlave) {
+                    ElasticBoxSlave slave = (ElasticBoxSlave) node;
+                    if (slave.isDeletable()) {
+                        SlaveComputer computer = slave.getComputer();
+                        if (computer != null && computer.isAcceptingTasks()) {
+                            ElasticBoxSlaveHandler.markForTermination(slave);
+                        }
+                    }
+                }
+            }
+        }
+
     }
     
 }

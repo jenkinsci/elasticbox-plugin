@@ -94,8 +94,8 @@ public class ElasticBoxSlave extends Slave {
     private String instanceStatusMessage;
     private final int retentionTime;
     private final String cloudName;
-
-    private transient boolean deletable;
+    private boolean deletable;
+    
     private final transient int launchTimeout;
     private transient String environment;
 

@@ -14,7 +14,6 @@ package com.elasticbox.jenkins;
 
 import hudson.Extension;
 import hudson.model.AbstractProject;
-import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import hudson.model.queue.QueueListener;
@@ -30,26 +29,13 @@ public class ElasticBoxQueueListener extends QueueListener {
     public void onLeft(hudson.model.Queue.LeftItem li) {
         if (li.isCancelled()) {
             if (li.task instanceof AbstractProject) {
-                AbstractProject project = (AbstractProject) li.task;
                 // check if there is a single-use slave being launched for this build, disable it
-                SingleUseSlaveBuildOption singleUseOption = null;
-                InstanceCreator instanceCreator = null;
-                for (Object buildWrapper : ((BuildableItemWithBuildWrappers) project).getBuildWrappersList().toMap().values()) {
-                    if (buildWrapper instanceof InstanceCreator) {
-                        instanceCreator = (InstanceCreator) buildWrapper;
-                    } else if (buildWrapper instanceof SingleUseSlaveBuildOption) {
-                        singleUseOption = (SingleUseSlaveBuildOption) buildWrapper;
-                    }
-                    if (instanceCreator != null && singleUseOption != null) {
-                        break;
-                    }
-                }
-
-                if (singleUseOption != null && instanceCreator != null) {
-                    LabelAtom label = ElasticBoxLabelFinder.getLabel(instanceCreator.getSlaveConfiguration(), true);
+                ElasticBoxBuildWrappers ebxBuildWrappers = ElasticBoxBuildWrappers.getElasticBoxBuildWrappers((AbstractProject) li.task);
+                if (ebxBuildWrappers.singleUseSlaveOption != null && ebxBuildWrappers.instanceCreator != null) {
+                    LabelAtom label = ElasticBoxLabelFinder.getLabel(ebxBuildWrappers.instanceCreator.getSlaveConfiguration(), true);
                     for (Node node : Jenkins.getInstance().getNodes()) {
                         if (node instanceof ElasticBoxSlave && label.matches(node)) {
-                            ((ElasticBoxSlave) node).setDeletable(true);
+                            ElasticBoxSlaveHandler.markForTermination(((ElasticBoxSlave) node));
                             break;
                         }
                     }

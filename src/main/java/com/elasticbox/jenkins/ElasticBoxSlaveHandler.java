@@ -23,6 +23,8 @@ import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
+import hudson.slaves.OfflineCause;
+import hudson.slaves.SlaveComputer;
 import hudson.util.DaemonThreadFactory;
 import hudson.util.ExceptionCatchingThreadFactory;
 import java.io.IOException;
@@ -68,6 +70,39 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         
     }
     
+    private static class TerminationOfflineCause extends OfflineCause {
+        
+        private transient ElasticBoxSlave slave;
+        
+        private TerminationOfflineCause(ElasticBoxSlave slave) {
+            this.slave = slave;
+        }
+
+        @Override
+        public String toString() {
+            String message;
+            ElasticBoxCloud cloud = null;
+            try {
+                cloud = slave.getCloud();
+            } catch (IOException ex) {
+            }
+            String instanceUrl = slave.getInstanceUrl();
+            if (instanceUrl == null || cloud == null) {
+                message = "This slave will be removed shortly";
+            } else {
+                String url = Client.getPageUrl(((ElasticBoxCloud) cloud).getEndpointUrl(), instanceUrl);
+                if (url != null) {
+                    message = MessageFormat.format("Instance at {0} of ElasticBox cloud ''{1}'' will be terminated and deleted", 
+                            url, cloud.getDisplayName());
+                } else {
+                    message = MessageFormat.format("Instance {0} must be terminated but that's not possible because the endpoint URL of ElasticBox cloud ''{1}'' has been changed", instanceUrl, cloud.getDisplayName());
+                }              
+            }
+            return message;
+        }
+        
+    }
+    
     private static final Queue<InstanceCreationRequest> incomingQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<InstanceCreationRequest> submittedQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<ElasticBoxSlave> terminatedSlaves = new ConcurrentLinkedQueue<ElasticBoxSlave>();
@@ -85,6 +120,21 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             }
         }
         return false;
+    }
+    
+    public static final void markForTermination(ElasticBoxSlave slave) {
+        slave.setDeletable(true);
+        SlaveComputer computer = slave.getComputer();        
+        if (computer != null) {
+            computer.setAcceptingTasks(false);
+            computer.setTemporarilyOffline(true, new TerminationOfflineCause(slave));
+        } else {
+            try {
+                Jenkins.getInstance().save();
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
+        }    
     }
 
     public static final void addToTerminatedQueue(ElasticBoxSlave slave) {
@@ -115,16 +165,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                 Client.getPageUrl(client.getEndpointUrl(), instance), slave.getNodeName()));        
     }
     
-    public static void removeSlaveAsync(final Node slave) {
-        threadPool.submit(new Runnable() {
-
-            public void run() {
-                removeSlave(slave);
-            }
-            
-        });
-    }
-        
     public ElasticBoxSlaveHandler() {
         super("ElasticBox Slave Handler");
     }
@@ -219,7 +259,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         }
     }
     
-    private static void removeSlave(Node slave) {
+    private static void removeSlave(ElasticBoxSlave slave) {     
         try {            
             Jenkins.getInstance().removeNode(slave);
         } catch (IOException ex) {
@@ -237,12 +277,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
      */
     private static List<ElasticBoxSlave> collectSlavesToRemove(SlaveInstanceManager slaveInstanceManager) throws IOException {
         List<ElasticBoxSlave> slavesToRemove = new ArrayList<ElasticBoxSlave>();
-        Collection<ElasticBoxSlave> slaves = slaveInstanceManager.getSlaves();
-        for (ElasticBoxSlave slave : slaves) {
-            if (slave.isDeletable()) {
-                slavesToRemove.add(slave);
-            }
-        }
         for (JSONObject instance : slaveInstanceManager.getInstances()) {
             String state = instance.getString("state");
             String instanceId = instance.getString("id");
@@ -304,6 +338,25 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     
     private void purgeSlaves(SlaveInstanceManager slaveInstanceManager, final TaskListener listener) throws IOException {
         List<ElasticBoxSlave> slavesToRemove = collectSlavesToRemove(slaveInstanceManager);
+        
+        // terminate slaves that are marked as deletable
+        Collection<ElasticBoxSlave> slaves = slaveInstanceManager.getSlaves();
+        for (ElasticBoxSlave slave : slaves) {
+            if (slave.isDeletable() && slaveInstanceManager.getInstance(slave) != null) {                
+                final ElasticBoxSlave slaveToTerminate = slave;
+                threadPool.submit(new Runnable() {
+                    public void run() {
+                        try {
+                            slaveToTerminate.terminate();
+                        } catch (IOException ex) {
+                            LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slaveToTerminate.getDisplayName()), ex);
+                        }
+                    }
+                });
+            }
+        }
+        
+        // remove terminated slaves
         for (Iterator<ElasticBoxSlave> iter = terminatedSlaves.iterator(); iter.hasNext();) {
             final ElasticBoxSlave slave = iter.next();
             threadPool.submit(new Runnable() {
@@ -319,6 +372,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             });
         }
         
+        // remove bad slaves
         for (ElasticBoxSlave slave : slavesToRemove) {
             final ElasticBoxSlave badSlave = slave;
             threadPool.submit(new Runnable() {

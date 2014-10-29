@@ -13,7 +13,6 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
-import com.elasticbox.jenkins.util.ClientCache;
 import hudson.model.Node;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,6 +32,7 @@ import net.sf.json.JSONObject;
  */
 public class SlaveInstanceManager {
     private final Map<String, ElasticBoxSlave> instanceIdToSlaveMap;
+    private Map<ElasticBoxSlave, JSONObject> slaveToInstanceMap;
     private final Map<ElasticBoxCloud, List<JSONObject>> cloudToInstancesMap;
     private Collection<ElasticBoxSlave> slavesWithoutInstance;
     private final Map<ElasticBoxCloud, Set<String>> cloudToWorkspaceIDsMap;
@@ -113,13 +113,25 @@ public class SlaveInstanceManager {
         }
     }
     
-    public List<JSONObject> getInstances() throws IOException {
-        ensureAllFetched();        
-        List<JSONObject> instances = new ArrayList<JSONObject>();
-        for (List<JSONObject> cloudInstances : cloudToInstancesMap.values()) {
-            instances.addAll(cloudInstances);
-        }        
-        return instances;
+    public Collection<JSONObject> getInstances() throws IOException {
+        return getSlaveToInstanceMap().values();
+    }
+    
+    public JSONObject getInstance(ElasticBoxSlave slave) throws IOException {
+        return getSlaveToInstanceMap().get(slave);
+    }
+    
+    private Map<ElasticBoxSlave, JSONObject> getSlaveToInstanceMap() throws IOException {
+        if (slaveToInstanceMap == null) {
+            ensureAllFetched();        
+            slaveToInstanceMap = new HashMap<ElasticBoxSlave, JSONObject>();
+            for (List<JSONObject> cloudInstances : cloudToInstancesMap.values()) {
+                for (JSONObject instance : cloudInstances) {
+                    slaveToInstanceMap.put(getSlave(instance.getString("id")), instance);
+                }
+            }        
+        }
+        return slaveToInstanceMap;        
     }
     
     private void ensureAllFetched() throws IOException {

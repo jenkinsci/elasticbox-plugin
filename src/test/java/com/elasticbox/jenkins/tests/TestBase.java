@@ -104,8 +104,7 @@ public class TestBase {
     
     @Before
     public void setupTestData() throws Exception {
-        String token = DescriptorHelper.getToken(TestUtils.ELASTICBOX_URL, TestUtils.USER_NAME, TestUtils.PASSWORD);
-        cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, token, Collections.EMPTY_LIST);
+        cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
         jenkins.getInstance().clouds.add(cloud);        
         Client client = cloud.getClient();
         JSONObject workspace = (JSONObject) client.doGet(MessageFormat.format("/services/workspaces/{0}", TestUtils.TEST_WORKSPACE), false);

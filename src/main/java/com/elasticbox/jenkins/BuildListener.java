@@ -14,10 +14,10 @@ package com.elasticbox.jenkins;
 
 import hudson.Extension;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import hudson.slaves.SlaveComputer;
 
 /**
  *
@@ -32,14 +32,16 @@ public class BuildListener extends RunListener<AbstractBuild> {
         if (node instanceof ElasticBoxSlave) {
             ElasticBoxSlave slave = (ElasticBoxSlave) node;
             AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
-            if (slave.isSingleUse() || (slaveConfig != null && slaveConfig.getRetentionTime() == 0)) {
-                SlaveComputer computer = slave.getComputer();
-                if (computer != null) {
-                    computer.setAcceptingTasks(false);
-                }
-                slave.setDeletable(true);
+            if (slave.isSingleUse() || (slaveConfig != null && slaveConfig.getRetentionTime() == 0) || 
+                    requiresGlobalSingleUseSlave(build.getProject())) {
+                ElasticBoxSlaveHandler.markForTermination(slave);
             }
         }        
+    }
+    
+    private static boolean requiresGlobalSingleUseSlave(AbstractProject project) {
+        ElasticBoxBuildWrappers ebxBuildWrappers = ElasticBoxBuildWrappers.getElasticBoxBuildWrappers(project);
+        return ebxBuildWrappers.singleUseSlaveOption != null && ebxBuildWrappers.instanceCreator == null;
     }
 
 }

@@ -13,15 +13,16 @@
 package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
-import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
+import com.elasticbox.jenkins.SingleUseSlaveBuildOption;
 import com.elasticbox.jenkins.SlaveConfiguration;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.queue.QueueTaskFuture;
+import hudson.tasks.Shell;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +33,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.JenkinsLocationConfiguration;
@@ -44,6 +46,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -119,11 +122,8 @@ public class SlaveTest {
     }
     
     private ElasticBoxCloud createCloud() throws IOException {
-        String username = System.getProperty(TestUtils.OPS_USER_NAME_PROPERTY);
-        String password = System.getProperty(TestUtils.OPS_PASSWORD_PROPERTY);
-        TestCase.assertNotNull(MessageFormat.format("System property {0} must be specified to run this test", TestUtils.OPS_USER_NAME_PROPERTY), username);
-        TestCase.assertNotNull(MessageFormat.format("System property {0} must be specified to run this test", TestUtils.OPS_PASSWORD_PROPERTY), password);
-        String token = DescriptorHelper.getToken(TestUtils.ELASTICBOX_URL, username, password);
+        String token = System.getProperty(TestUtils.OPS_ACCESS_TOKEN);
+        TestCase.assertNotNull(MessageFormat.format("System property {0} must be specified to run this test", TestUtils.OPS_ACCESS_TOKEN), token);
         ElasticBoxCloud ebCloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, token, Collections.EMPTY_LIST);
         jenkins.getInstance().clouds.add(ebCloud);
         return ebCloud;        
@@ -148,16 +148,15 @@ public class SlaveTest {
         assertNotNull("60 minutes after job start but no result returned", result);
         assertEquals(Result.SUCCESS, result.getResult());
     }
-    
-    @Test
+        
     public void testBuildWithLinuxSlave() throws Exception {
-        if (System.getProperty(TestUtils.OPS_USER_NAME_PROPERTY) != null) {
+        if (System.getProperty(TestUtils.OPS_ACCESS_TOKEN) != null) {
             testBuildWithSlave(TestUtils.JENKINS_SLAVE_BOX_NAME);
         }
     }
 
     public void testBuildWithWindowsSlave() throws Exception {
-        if (System.getProperty(TestUtils.OPS_USER_NAME_PROPERTY) != null) {
+        if (System.getProperty(TestUtils.OPS_ACCESS_TOKEN) != null) {
             testBuildWithSlave("Windows Jenkins Slave");
         }
     }    
@@ -185,5 +184,164 @@ public class SlaveTest {
         TestCase.assertNotNull("30 minutes after job start but no result returned", result);
         TestCase.assertEquals(Result.SUCCESS, result.getResult());
     }
+     
+    @Test
+    public void testBuildWithSingleUseSlaveViaLabel() throws Exception {
+        final String slaveBoxName = TestUtils.JENKINS_SLAVE_BOX_NAME;
+        LOGGER.info(MessageFormat.format("Testing build with single use slave deployed from box {0}", slaveBoxName));
+        ElasticBoxCloud ebCloud = createCloud();
+        Client client = ebCloud.getClient();
+        JSONObject slaveBox = null;
+        String workspace = TestUtils.TEST_WORKSPACE;
+        for (Object box : client.getBoxes(workspace)) {
+            JSONObject boxJson = (JSONObject) box;
+            if (slaveBoxName.equals(boxJson.getString("name"))) {
+                slaveBox = boxJson;
+                break;
+            }
+        }
+        Assert.assertNotNull(MessageFormat.format("Cannot find slave box {0} in workspace {1}", slaveBoxName, workspace), slaveBox);
+        String boxId = slaveBox.getString("id");
+        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/workspaces/{0}/profiles?box_version={1}", 
+                workspace, boxId), true);
+        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, ebCloud.getDisplayName()), profiles.size() > 0);
+        JSONObject profile = profiles.getJSONObject(0);
+        String label = UUID.randomUUID().toString();
+        // Create a slave configuration with 0 retention time. This means, the slave of this configuration will be killed right after use (single-use)
+        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId, profile.getString("id"), 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, 1, 60);
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
+        jenkins.getInstance().clouds.remove(ebCloud);
+        jenkins.getInstance().clouds.add(newCloud);
+        FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
+        project.setAssignedLabel(jenkins.getInstance().getLabel(label));                        
+        QueueTaskFuture future = project.scheduleBuild2(0);
+        Object scheduleResult = TestUtils.getResult(future.getStartCondition(), 30);
+        TestCase.assertNotNull("30 minutes after job scheduling but no result returned", scheduleResult);
+        ElasticBoxSlave slave = findSlave(label);
+        FreeStyleBuild result = (FreeStyleBuild) TestUtils.getResult(future, 10);
+        TestCase.assertNotNull("10 minutes after job start but no result returned", result);
+        TestCase.assertEquals(Result.SUCCESS, result.getResult());
+        // check that slave can no longer accept task
+        Assert.assertFalse("Single-use slave still can accept task even after the build is canceled", slave.getComputer().isAcceptingTasks());
+        // check that slave is removed      
+        Thread.sleep(TimeUnit.SECONDS.toMillis(60));
+        Assert.assertNull("Single-use slave is not removed after build", findSlave(label));
+    }
+    
+    @Test
+    public void testBuildWithProjectWithSingleUseSlaveOption() throws Exception {
+        final String slaveBoxName = TestUtils.JENKINS_SLAVE_BOX_NAME;
+        LOGGER.info(MessageFormat.format("Testing build with single use slave deployed from box {0}", slaveBoxName));
+        ElasticBoxCloud ebCloud = createCloud();
+        Client client = ebCloud.getClient();
+        JSONObject slaveBox = null;
+        String workspace = TestUtils.TEST_WORKSPACE;
+        for (Object box : client.getBoxes(workspace)) {
+            JSONObject boxJson = (JSONObject) box;
+            if (slaveBoxName.equals(boxJson.getString("name"))) {
+                slaveBox = boxJson;
+                break;
+            }
+        }
+        Assert.assertNotNull(MessageFormat.format("Cannot find slave box {0} in workspace {1}", slaveBoxName, workspace), slaveBox);
+        String boxId = slaveBox.getString("id");
+        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/workspaces/{0}/profiles?box_version={1}", 
+                workspace, boxId), true);
+        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, ebCloud.getDisplayName()), profiles.size() > 0);
+        JSONObject profile = profiles.getJSONObject(0);
+        String label = UUID.randomUUID().toString();
         
+        // Create a slave configuration with retention time of 2 minutes.
+        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId, profile.getString("id"), 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 2, 1, 60);
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
+        jenkins.getInstance().clouds.remove(ebCloud);
+        jenkins.getInstance().clouds.add(newCloud);
+        
+        // create a project with single-use slave option and tie it to the slave config created above
+        FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
+        project.getBuildWrappersList().add(new SingleUseSlaveBuildOption());
+        project.setAssignedLabel(jenkins.getInstance().getLabel(label));                        
+        
+        // schedule a build
+        QueueTaskFuture future = project.scheduleBuild2(0);
+        Object scheduleResult = TestUtils.getResult(future.getStartCondition(), 30);
+        TestCase.assertNotNull("30 minutes after job scheduling but no result returned", scheduleResult);
+        ElasticBoxSlave slave = findSlave(label);
+        FreeStyleBuild result = (FreeStyleBuild) TestUtils.getResult(future, 10);
+        TestCase.assertNotNull("10 minutes after job start but no result returned", result);
+        TestCase.assertEquals(Result.SUCCESS, result.getResult());
+        
+        // check that slave can no longer accept task
+        Assert.assertFalse("Single-use slave still can accept task even after the build is canceled", slave.getComputer().isAcceptingTasks());
+        
+        // check that slave is removed      
+        Thread.sleep(TimeUnit.MINUTES.toMillis(5));
+        Assert.assertNull("Single-use slave is not removed after build", findSlave(label));
+    }
+
+    @Test
+    public void testCancelBuildWithSingleUseSlave() throws Exception {
+        final String slaveBoxName = TestUtils.JENKINS_SLAVE_BOX_NAME;
+        LOGGER.info(MessageFormat.format("Testing build with single use slave deployed from box {0}", slaveBoxName));
+        ElasticBoxCloud ebCloud = createCloud();
+        Client client = ebCloud.getClient();
+        JSONObject slaveBox = null;
+        String workspace = TestUtils.TEST_WORKSPACE;
+        for (Object box : client.getBoxes(workspace)) {
+            JSONObject boxJson = (JSONObject) box;
+            if (slaveBoxName.equals(boxJson.getString("name"))) {
+                slaveBox = boxJson;
+                break;
+            }
+        }
+        Assert.assertNotNull(MessageFormat.format("Cannot find slave box {0} in workspace {1}", slaveBoxName, workspace), slaveBox);
+        String boxId = slaveBox.getString("id");
+        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/workspaces/{0}/profiles?box_version={1}", 
+                workspace, boxId), true);
+        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, ebCloud.getDisplayName()), profiles.size() > 0);
+        JSONObject profile = profiles.getJSONObject(0);
+        String label = UUID.randomUUID().toString();
+        
+        // Create a slave configuration with 0 retention time. This means, the slave of this configuration will be killed right after use (single-use)
+        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId, profile.getString("id"), 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, 1, 60);
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
+        jenkins.getInstance().clouds.remove(ebCloud);
+        jenkins.getInstance().clouds.add(newCloud);
+        
+        // Create a project and tie it to the slave configuration created above 
+        FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
+        project.getBuildersList().add(new Shell("sleep 5"));
+        project.getBuildersList().add(new Shell("sleep 5"));        
+        project.setAssignedLabel(jenkins.getInstance().getLabel(label));                        
+        
+        // Schedule a build
+        QueueTaskFuture future = project.scheduleBuild2(0);
+        Object scheduleResult = TestUtils.getResult(future.getStartCondition(), 30);
+        TestCase.assertNotNull("30 minutes after job scheduling but no result returned", scheduleResult);
+        ElasticBoxSlave slave = findSlave(label);
+        
+        // Cancel the build
+        future.cancel(true);        
+        FreeStyleBuild result = (FreeStyleBuild) TestUtils.getResult(future, 1);
+        TestCase.assertNotNull("1 minute after job cancellation but no result returned", result);
+        TestCase.assertEquals(Result.ABORTED, result.getResult());
+        
+        // check that slave can no longer accept task
+        Assert.assertFalse("Single-use slave still can accept task even after the build is canceled", slave.getComputer().isAcceptingTasks());
+        
+        // check that slave is removed      
+        Thread.sleep(TimeUnit.SECONDS.toMillis(60));
+        Assert.assertNull("Single-use slave is not removed after build", findSlave(label));
+    }
+
+    
+    private ElasticBoxSlave findSlave(String label) {
+        for (Node node : jenkins.getInstance().getNodes()) {
+            if (node instanceof ElasticBoxSlave && label.equals(node.getLabelString())) {
+                return (ElasticBoxSlave) node;
+            }
+        }
+        return null;
+    }
+    
 }

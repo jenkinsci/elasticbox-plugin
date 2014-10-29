@@ -48,8 +48,7 @@ import org.junit.Assert;
  */
 public class TestUtils {
     static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
-    static final String OPS_PASSWORD_PROPERTY = "elasticbox.jenkins.test.opsPassword";
-    static final String OPS_USER_NAME_PROPERTY = "elasticbox.jenkins.test.opsUsername";
+    static final String OPS_ACCESS_TOKEN = "elasticbox.jenkins.test.opsAccessToken";    
     static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", "tphongio");
     
     static final String TEST_LINUX_BOX_NAME = "test-linux-box";    
@@ -58,8 +57,7 @@ public class TestUtils {
     static final String TEST_BINDING_BOX_INSTANCE_ID = "i-c51bop";
     
     static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
-    static final String PASSWORD = System.getProperty("elasticbox.jenkins.test.password", Scrambler.descramble("dHBob25naW8="));
-    static final String USER_NAME = System.getProperty("elasticbox.jenkins.test.username", Scrambler.descramble("dHBob25naW9AZ21haWwuY29t"));
+    static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
     static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "localhost");
 
     static JSONObject findVariable(JSONArray variables, String name, String scope) {
