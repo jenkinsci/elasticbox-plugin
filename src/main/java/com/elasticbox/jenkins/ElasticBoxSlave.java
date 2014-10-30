@@ -92,7 +92,7 @@ public class ElasticBoxSlave extends Slave {
     private final boolean singleUse;
     private String instanceUrl;
     private String instanceStatusMessage;
-    private final int retentionTime;
+    private int retentionTime;
     private final String cloudName;
     private boolean deletable;
     
@@ -332,7 +332,7 @@ public class ElasticBoxSlave extends Slave {
     }
         
     private static class IdleTimeoutRetentionStrategy extends ElasticBoxRetentionStrategy {
-        private final int retentionTime;
+        private int retentionTime;
 
         @DataBoundConstructor
         public IdleTimeoutRetentionStrategy(int retentionTime) {
@@ -347,6 +347,17 @@ public class ElasticBoxSlave extends Slave {
         @Override
         protected int getRetentionTime() {
             return retentionTime;
+        }
+        
+        public static class ConverterImpl extends RetentionTimeConverter<IdleTimeoutRetentionStrategy> {
+
+            @Override
+            protected void fixZeroRetentionTime(IdleTimeoutRetentionStrategy obj) {
+                if (obj.getRetentionTime() == 0) {
+                    obj.retentionTime = Integer.MAX_VALUE;
+                }
+            }
+            
         }
         
     }
@@ -487,4 +498,20 @@ public class ElasticBoxSlave extends Slave {
         }        
     }
     
+    public static class ConverterImpl extends RetentionTimeConverter<ElasticBoxSlave> {
+
+        @Override
+        protected void fixZeroRetentionTime(ElasticBoxSlave slave) {
+            if (slave.getRetentionTime() == 0) {
+                slave.retentionTime = Integer.MAX_VALUE;
+            }
+            if (slave.getRetentionStrategy() instanceof IdleTimeoutRetentionStrategy) {
+                IdleTimeoutRetentionStrategy retentionStrategy = (IdleTimeoutRetentionStrategy) slave.getRetentionStrategy();
+                if (retentionStrategy.getRetentionTime() == 0) {
+                    retentionStrategy.retentionTime = Integer.MAX_VALUE;
+                }
+            }
+        }
+        
+    }
 }

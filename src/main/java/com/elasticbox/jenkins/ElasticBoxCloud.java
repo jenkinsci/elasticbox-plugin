@@ -76,7 +76,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     private final String endpointUrl;
     private int maxInstances;
     @Deprecated
-    private final int retentionTime;
+    private int retentionTime;
     @Deprecated
     private final String username;
     @Deprecated
@@ -652,5 +652,20 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         
         return null;
     }
-    
+ 
+    public static class ConverterImpl extends RetentionTimeConverter<ElasticBoxCloud> {
+
+        @Override
+        protected void fixZeroRetentionTime(ElasticBoxCloud cloud) {
+            if (cloud.getRetentionTime() == 0) {
+                cloud.retentionTime = Integer.MAX_VALUE;
+            }
+            for (SlaveConfiguration slaveConfig : cloud.getSlaveConfigurations()) {
+                if (slaveConfig.getRetentionTime() == 0) {
+                    slaveConfig.retentionTime = Integer.MAX_VALUE;
+                }
+            }
+        }
+        
+    }
 }

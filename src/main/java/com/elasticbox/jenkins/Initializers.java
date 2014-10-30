@@ -28,7 +28,7 @@ import org.apache.commons.lang.StringUtils;
  */
 public class Initializers {
     private static final Logger LOGGER = Logger.getLogger(Initializers.class.getName());
-
+    
     @Initializer(after = InitMilestone.COMPLETED)
     public static void tagSlaveInstances() throws IOException {
         LOGGER.info("Tagging slave instances");
@@ -42,6 +42,8 @@ public class Initializers {
     @Initializer(after = InitMilestone.COMPLETED)
     public static void setSlaveConfigurationId() throws IOException {
         boolean saveNeeded = false;
+        
+        // set the ID of those slave configurations that don't have an ID assigned yet
         for (Cloud cloud : Jenkins.getInstance().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 ElasticBoxCloud ebxCloud = (ElasticBoxCloud) cloud;

@@ -38,7 +38,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final String remoteFS;
     private final String description;
     private final Node.Mode mode;
-    private final int retentionTime;
+    protected int retentionTime;
     private int executors;
     private final int launchTimeout;
     

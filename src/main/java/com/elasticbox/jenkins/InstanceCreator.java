@@ -136,4 +136,16 @@ public class InstanceCreator extends BuildWrapper {
         }        
         
     }
+    
+    public static class ConverterImpl extends RetentionTimeConverter<InstanceCreator> {
+
+        @Override
+        protected void fixZeroRetentionTime(InstanceCreator obj) {
+            ProjectSlaveConfiguration slaveConfig = obj.getSlaveConfiguration();
+            if (slaveConfig != null && slaveConfig.getRetentionTime() == 0) {
+                slaveConfig.retentionTime = Integer.MAX_VALUE;
+            }
+        }
+        
+    }
 }

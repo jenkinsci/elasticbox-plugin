@@ -44,7 +44,6 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 description, remoteFS, mode, retentionTime, executors, launchTimeout);
     }    
     
-
     @Extension
     public static final class DescriptorImpl extends Descriptor<AbstractSlaveConfiguration> {
 
