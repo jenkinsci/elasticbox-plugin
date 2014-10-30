@@ -12,6 +12,8 @@
 
 package com.elasticbox.jenkins.tests;
 
+import com.elasticbox.Client;
+import com.elasticbox.IProgressMonitor;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -20,17 +22,20 @@ import hudson.model.ParametersAction;
 import hudson.model.Result;
 import hudson.model.TextParameterValue;
 import hudson.model.queue.QueueTaskFuture;
-import hudson.util.Scrambler;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +43,7 @@ import java.util.concurrent.TimeoutException;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
@@ -49,7 +55,8 @@ import org.junit.Assert;
 public class TestUtils {
     static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
     static final String OPS_ACCESS_TOKEN = "elasticbox.jenkins.test.opsAccessToken";    
-    static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", "tphongio");
+    static final String DEFAULT_TEST_WORKSPACE = "tphongio";
+    static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", DEFAULT_TEST_WORKSPACE);
     
     static final String TEST_LINUX_BOX_NAME = "test-linux-box";    
     static final String TEST_NESTED_BOX_NAME = "test-nested-box";    
@@ -59,6 +66,8 @@ public class TestUtils {
     static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
     static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
     static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "localhost");
+    static final String TEST_PROVIDER_TYPE = "Test Provider";
+    static final String NAME_PREFIX = "jenkins-plugin-test-";
 
     static JSONObject findVariable(JSONArray variables, String name, String scope) {
         for (Object variable : variables) {
@@ -108,7 +117,8 @@ public class TestUtils {
     }
     
     static void cleanUp(String testTag, Jenkins jenkins) throws Exception {
-        FreeStyleBuild build = TestUtils.runJob("cleanup", getResourceAsString("CleanupJob.xml"), 
+        FreeStyleBuild build = TestUtils.runJob("cleanup", 
+                getResourceAsString("jobs/cleanup.xml").replace(DEFAULT_TEST_WORKSPACE, TestUtils.TEST_WORKSPACE), 
                 Collections.singletonMap("TEST_TAG", testTag), jenkins);
         TestUtils.assertBuildSuccess(build);                
     }
@@ -135,5 +145,103 @@ public class TestUtils {
         } while (result == null && waitTime < maxWaitTime);
         return result;
     }
+    
+    static String getSchemaVersion(Client client) throws IOException {
+        JSONArray workspaces = client.getWorkspaces();
+        return Client.getSchemaVersion(workspaces.getJSONObject(0).getString("schema"));        
+    }
 
+    static JSONObject createTestProvider(Client client) throws IOException {
+        JSONObject testProvider = new JSONObject();
+        testProvider.put("name", NAME_PREFIX + UUID.randomUUID().toString());
+        testProvider.put("schema", MessageFormat.format("{0}{1}/test/provider", Client.BASE_ELASTICBOX_SCHEMA, getSchemaVersion(client)));
+        testProvider.put("type", TEST_PROVIDER_TYPE);
+        testProvider.put("icon", "images/platform/provider.png");
+        testProvider.put("secret", "secret");
+        testProvider.put("owner", TestUtils.TEST_WORKSPACE);
+        IProgressMonitor monitor = client.createProvider(testProvider);
+        monitor.waitForDone(10);
+        return (JSONObject) client.doGet(monitor.getResourceUrl(), false);        
+    }
+        
+    public static interface TemplateResolver {
+        public String resolve(String template);
+    }
+    
+    private static class TemplateResolverImpl implements TemplateResolver {
+        private final TemplateResolver resolver;
+        private final String schemaVersion;
+
+        public TemplateResolverImpl(Client client, TemplateResolver resolver) throws IOException {
+            schemaVersion = getSchemaVersion(client);
+            this.resolver = resolver;
+        }
+        
+        public String resolve(String template) {
+            template = template.replace("{schema_version}", schemaVersion);
+            if (resolver != null) {
+                template = resolver.resolve(template);
+            }
+            return template;
+        }        
+        
+    }
+
+    static TestBoxData createTestBox(String jsonFilePath, TemplateResolver resolver, Client client) throws Exception {
+        TestBoxData testBoxData = new TestBoxData(jsonFilePath, null);
+        createTestBox(testBoxData, resolver, client);
+        return testBoxData;
+    }
+    
+    static void createTestBox(TestBoxData testBoxData, TemplateResolver resolver, Client client) throws Exception {
+        JSONObject box = JSONObject.fromObject(loadBox(testBoxData.jsonFileName, new TemplateResolverImpl(client, resolver)));
+        box.put("name", box.getString("name") + '-' + UUID.randomUUID().toString());
+        box.put("owner", TestUtils.TEST_WORKSPACE);
+        box.remove("id");
+        box = client.createBox(box);
+        testBoxData.setJson(box);
+    }
+    
+    static JSONObject createTestProfile(TestBoxData testBoxData, JSONObject testProvider, TemplateResolver resolver, Client client) throws IOException {
+        JSONObject testProfile = JSONObject.fromObject(createTestDataFromTemplate("test-profile.json", new TemplateResolverImpl(client, resolver)));
+        testProfile.remove("id");
+        testProfile.put("name", NAME_PREFIX + UUID.randomUUID().toString());
+        testProfile.put("owner", TestUtils.TEST_WORKSPACE);
+        testProfile.put("provider", testProvider.getString("name"));
+        JSONObject profileBox = testProfile.getJSONObject("box");
+        profileBox.put("version", testBoxData.getJson().getString("id"));
+        profileBox.put("name", testBoxData.getJson().getString("name"));
+        testProfile = client.doPost("/services/profiles", testProfile);
+        testBoxData.setNewProfileId(testProfile.getString("id"));
+        return testProfile;
+    }
+    
+    private static JSONObject loadBox(String templatePath, TemplateResolver resolver) throws Exception {
+        URI boxJsonUri = TestUtils.class.getResource(templatePath).toURI();
+        String template = FileUtils.readFileToString(new File(boxJsonUri));
+        JSONObject box = JSONObject.fromObject(resolver.resolve(template));
+        if (box.containsKey("variables")) {
+            for (Object variable : box.getJSONArray("variables")) {
+                JSONObject variableJson = (JSONObject) variable;
+                if (variableJson.getString("type").equals("File")) {
+                    variableJson.put("value", boxJsonUri.resolve(variableJson.getString("value")).toString());
+                }
+            }
+        }
+        if (box.containsKey("events")) {
+            JSONObject events = box.getJSONObject("events");
+            for (Object entry : events.entrySet()) {
+                Map.Entry mapEntry = (Map.Entry) entry;
+                events.put(mapEntry.getKey().toString(), boxJsonUri.resolve(mapEntry.getValue().toString()).toString());
+            }
+        }
+
+        return box;
+    }
+
+    private static String createTestDataFromTemplate(String templatePath, TemplateResolver resolver) throws IOException {
+        String template = TestUtils.getResourceAsString(templatePath);
+        return resolver.resolve(template);
+    }
+        
 }

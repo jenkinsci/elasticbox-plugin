@@ -1,0 +1,28 @@
+{
+    "name": "Linux Jenkins Slave",
+    "service": "Linux Compute",
+    "tags": [],
+    "variables": [
+        {
+            "required": false,
+            "type": "Text",
+            "name": "JENKINS_URL",
+            "value": "",
+            "visibility": "public"
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "JNLP_SLAVE_OPTIONS",
+            "value": "",
+            "visibility": "public"
+        }
+    ],
+    "members": [],
+    "events": {
+        "start": "start.sh",
+        "stop": "stop.sh",
+        "install": "install.sh"
+    },
+    "id": "2fb2d436-6dca-4226-a95e-4ac58fc601f3",
+    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+}
