@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  *
@@ -34,7 +33,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public abstract class ManageObject extends AbstractBuilder {
     private final List<? extends Operation> operations;
     
-    @DataBoundConstructor
     public ManageObject(String cloud, String workspace, List<? extends Operation> operations) {
         super(cloud, workspace);
         this.operations = operations;
