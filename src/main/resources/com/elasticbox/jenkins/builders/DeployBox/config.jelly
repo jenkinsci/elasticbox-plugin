@@ -31,7 +31,7 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Number of Instances}" field="instances">
         <f:textbox clazz="required number" default="1"/>
     </f:entry>
-    <f:entry title="${%Environment}" field="environment">
+    <f:entry title="${%Tags}" field="tags">
         <f:textbox clazz="required"/>
     </f:entry>
     <f:invisibleEntry>
@@ -60,9 +60,6 @@ written permission is obtained from ElasticBox.
     </f:entry>
     <f:advanced>
         <f:section title="Advanced" />
-        <f:entry title="${%Tags}" field="tags">
-            <f:textbox />
-        </f:entry>
         <f:entry title="${%If instance already exists}" field="alternateAction">
             <f:select />
         </f:entry>

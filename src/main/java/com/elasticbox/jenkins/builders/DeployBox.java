@@ -67,12 +67,12 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String box;
     private final String boxVersion;
     private final String profile;
+    @Deprecated
     private final String environment;
     private final int instances;
     private final String variables;
     private final String instanceEnvVariable;
-    private final String tags;
-    
+    private String tags;    
     @Deprecated
     private boolean skipIfExisting;
     private String alternateAction;
@@ -82,7 +82,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
-            int instances, String environment, String instanceEnvVariable, String tags, String variables, String alternateAction, boolean waitForCompletion) {
+            int instances, String instanceEnvVariable, String tags, String variables, String alternateAction, boolean waitForCompletion) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -92,7 +92,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.boxVersion = boxVersion;
         this.profile = profile;
         this.instances = instances;
-        this.environment = environment;
+        this.environment = null;
         this.variables = variables;
         this.alternateAction = alternateAction;
         this.waitForCompletion = waitForCompletion;
@@ -134,7 +134,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
     
     private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) throws IOException {
-        String resolvedEnvironment = resolver.resolve(this.environment);
+        String resolvedEnvironment = resolver.resolve(tags.split(",")[0].trim());
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
         DescriptorHelper.removeInvalidVariables(resolvedVariables, ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, box, boxVersion).getJsonArray());
         IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, resolvedVariables);
@@ -223,13 +223,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         VariableResolver resolver = new VariableResolver(cloud, workspace, build, logger.getTaskListener());
         Client client = ebCloud.getClient();
         if (!alternateAction.equals(ACTION_NONE)) {
-            Set<String> tagSet = new HashSet<String>();
-            Set<String> resolvedTags = resolver.resolveTags(tags);
-            if (resolvedTags.isEmpty()) {
-                tagSet.add(resolver.resolve(environment));
-            } else {
-                tagSet.addAll(resolvedTags);
-            }
+            Set<String> tagSet = resolver.resolveTags(tags);
             CompositeObjectFilter instanceFilter = new CompositeObjectFilter(new DescriptorHelper.InstanceFilterByBox(box));
             if (alternateAction.equals(ACTION_RECONFIGURE)) {
                 instanceFilter.add(ReconfigureOperation.instanceFilter(tagSet));
@@ -308,6 +302,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
             instanceManager = new InstanceManager();
         }
         
+        if (StringUtils.isNotBlank(environment)) {
+            tags = StringUtils.isBlank(tags) ? environment : (environment + ',' + tags);
+        }
+        
         return this;
     }
 
@@ -335,10 +333,6 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return instances;
     }
     
-    public String getEnvironment() {
-        return environment;
-    }        
-
     public String getInstanceEnvVariable() {
         return instanceEnvVariable;
     }        
@@ -372,6 +366,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+        private static final Pattern ENVIRONMENT_PATTERN = Pattern.compile("[a-zA-Z0-9-]+");
         private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
 
         private static final ListBoxModel alternateActionItems = new ListBoxModel();
@@ -408,11 +403,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 throw new FormException(ex.getMessage(), "instances");
             }
             
-            String environment = formData.getString("environment").trim();
-            if (environment.length() == 0) {
-                throw new FormException("Enviroment is required to launch a box in ElasticBox", "environment");
+            String tags = formData.getString("tags").trim();
+            if (tags.length() == 0) {                
+                throw new FormException("Tags are required to launch a box in ElasticBox", "tags");
             }     
-            formData.put("environment", environment);
+            String environment = tags.split(",")[0].trim();
+            if (!ENVIRONMENT_PATTERN.matcher(environment).find()) {
+                throw new FormException("The first tag can contains only alpha-numerical character or dash (-)", "tags");
+            }            
             
             String instanceEnvVariable = formData.getString("instanceEnvVariable").trim();
             if (!instanceEnvVariable.isEmpty() && !ENV_VARIABLE_PATTERN.matcher(instanceEnvVariable).find()) {
