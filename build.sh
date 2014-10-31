@@ -43,7 +43,7 @@ then
     JENKINS_VERSIONS="$(echo ${JENKINS_VERSIONS} | sed -e s/,/\ /g)"
 fi
 
-OLDEST_SUPPORTED_JENKINS_VERSION='1.509.3'
+OLDEST_SUPPORTED_JENKINS_VERSION='1.532.1'
 JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
 
 function escape() {
@@ -70,7 +70,7 @@ function build_with_jenkins_version() {
     fi
     
     cd ${REPOSITORY_FOLDER}
-    mvn -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS} clean install
+    mvn -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS} -DskipTests=false clean install
     
     # keep the test results and logs for the tested Jenkins version
     TEST_RESULTS_FOLDER=${REPOSITORY_FOLDER}/results/${JENKINS_VERSION}
