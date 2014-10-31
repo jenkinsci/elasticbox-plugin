@@ -39,6 +39,7 @@ import org.kohsuke.stapler.StaplerRequest;
 /**
  *
  * @author Phong Nguyen Le
+ * @deprecated 
  */
 public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvider {
     private final String id;

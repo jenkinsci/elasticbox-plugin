@@ -34,6 +34,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  *
  * @author Phong Nguyen Le
+ * @deprecated 
  */
 public class ReinstallBox extends InstanceBuildStep {
 

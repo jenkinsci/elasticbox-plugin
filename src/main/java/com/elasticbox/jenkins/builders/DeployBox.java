@@ -21,11 +21,13 @@ import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.EnvironmentContributingAction;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
@@ -67,18 +70,19 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String environment;
     private final int instances;
     private final String variables;
+    private final String instanceEnvVariable;
+    private final String tags;
     
     @Deprecated
     private boolean skipIfExisting;
     private String alternateAction;
     private boolean waitForCompletion;
-    private final String tags;
     
     private transient InstanceManager instanceManager;
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
-            int instances, String environment, String tags, String variables, String alternateAction, boolean waitForCompletion) {
+            int instances, String environment, String instanceEnvVariable, String tags, String variables, String alternateAction, boolean waitForCompletion) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -93,6 +97,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.alternateAction = alternateAction;
         this.waitForCompletion = waitForCompletion;
         this.tags = tags;
+        this.instanceEnvVariable = instanceEnvVariable;
         
         readResolve();
     }
@@ -151,17 +156,71 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return Client.getResourceId(monitor.getResourceUrl());
     }
     
-    @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {       
-        TaskLogger logger = new TaskLogger(listener);
-        logger.info("Executing Deploy Box build step");
-        
-        ElasticBoxCloud ebCloud = (ElasticBoxCloud) Jenkins.getInstance().getCloud(getCloud());
-        if (ebCloud == null) {
-            throw new IOException("No ElasticBox cloud is configured.");
-        }
+    private void injectEnvVariables(AbstractBuild build, final JSONObject instance, final Client client) throws IOException {
+        final String instanceId = instance.getString("id");
+        final JSONObject service = client.getService(instanceId);
+        build.addAction(new EnvironmentContributingAction() {
 
-        VariableResolver resolver = new VariableResolver(cloud, workspace, build, listener);
+            public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
+                final String instanceUrl = client.getInstanceUrl(instanceId);            
+                env.put(instanceEnvVariable, instanceId);
+                env.put(instanceEnvVariable + "_URL", instanceUrl);
+                env.put(instanceEnvVariable + "_SERVICE_ID", service.getString("id"));
+                env.put(instanceEnvVariable + "_TAGS", StringUtils.join(instance.getJSONArray("tags"), ","));                
+                if (instances == 1) {
+                    JSONObject address = null;
+                    if (service.containsKey("address")) {
+                        address = service.getJSONObject("address");
+                    } else if (service.containsKey("machines")) {
+                        JSONArray machines = service.getJSONArray("machines");
+                        if (!machines.isEmpty()) {
+                            JSONObject machine = machines.getJSONObject(0);
+                            env.put(instanceEnvVariable + "_MACHINE_NAME", machine.getString("name"));
+                            if (machine.containsKey("address")) {
+                                address = machine.getJSONObject("address");
+                            }
+                        }
+                    }
+                    if (address != null) {
+                        env.put(instanceEnvVariable + "_PUBLIC_ADDRESS", address.getString("public"));
+                        env.put(instanceEnvVariable + "_PRIVATE_ADDRESS", address.getString("private"));                   
+                    }
+                } else if (instances > 1 && service.containsKey("machines")) {
+                    List<String> machineNames = new ArrayList<String>();
+                    List<String> publicAddresses = new ArrayList<String>();
+                    List<String> privateAddresses = new ArrayList<String>();
+                    for (Object machine : service.getJSONArray("machines")) {
+                        JSONObject machineJson = (JSONObject) machine;     
+                        machineNames.add(machineJson.getString("name"));
+                        if (machineJson.containsKey("address")) {
+                            JSONObject address = machineJson.getJSONObject("address");
+                            publicAddresses.add(address.getString("public"));
+                            privateAddresses.add(address.getString("private"));
+                        }
+                    }
+                    env.put(instanceEnvVariable + "_MACHINE_NAMES", StringUtils.join(machineNames, " "));
+                    env.put(instanceEnvVariable + "_PUBLIC_ADDRESSES", StringUtils.join(publicAddresses, " "));
+                    env.put(instanceEnvVariable + "_PRIVATE_ADDRESSES", StringUtils.join(privateAddresses, " "));                   
+                }
+            }
+
+            public String getIconFileName() {
+                return null;
+            }
+
+            public String getDisplayName() {
+                return "Instance Environment Variables";
+            }
+
+            public String getUrlName() {
+                return null;
+            }
+
+        });        
+    }
+    
+    private JSONObject doPerform(AbstractBuild<?, ?> build, ElasticBoxCloud ebCloud, TaskLogger logger) throws InterruptedException, IOException {
+        VariableResolver resolver = new VariableResolver(cloud, workspace, build, logger.getTaskListener());
         Client client = ebCloud.getClient();
         if (!alternateAction.equals(ACTION_NONE)) {
             Set<String> tagSet = new HashSet<String>();
@@ -183,13 +242,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }        
             JSONArray existingInstances = DescriptorHelper.getInstances(client, workspace, instanceFilter);
             if (!existingInstances.isEmpty()) {
-                JSONObject instance = performAlternateAction(existingInstances, ebCloud, client, resolver, logger);
-                instanceManager.setInstance(build, instance);
-                return true;            
+                return performAlternateAction(existingInstances, ebCloud, client, resolver, logger);
             }
         }
         
-        String instanceId = deploy(ebCloud, client, resolver, logger);
+        final String instanceId = deploy(ebCloud, client, resolver, logger);
         JSONObject instance = client.getInstance(instanceId);
         Set<String> resolvedTags = resolver.resolveTags(tags);
         if (waitForCompletion && !resolvedTags.isEmpty()) {
@@ -205,7 +262,26 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 instance = client.updateInstance(instance);
             }
         }
+        return instance;
+    }
+    
+    @Override
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {       
+        TaskLogger logger = new TaskLogger(listener);
+        logger.info("Executing Deploy Box build step");
+
+        ElasticBoxCloud ebCloud = (ElasticBoxCloud) Jenkins.getInstance().getCloud(getCloud());
+        if (ebCloud == null) {
+            throw new IOException(MessageFormat.format("Cannod find ElasticBox cloud ''{0}''.", getCloud()));
+        }
+        
+        
+        JSONObject instance = doPerform(build, ebCloud, logger);
         instanceManager.setInstance(build, instance);
+        
+        if (StringUtils.isNotBlank(instanceEnvVariable)) {
+            injectEnvVariables(build, instance, ebCloud.getClient());
+        }
         
         return true;
         
@@ -263,6 +339,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return environment;
     }        
 
+    public String getInstanceEnvVariable() {
+        return instanceEnvVariable;
+    }        
+
     public String getTags() {
         return tags;
     }
@@ -292,6 +372,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+        private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
+
         private static final ListBoxModel alternateActionItems = new ListBoxModel();
         static {
             alternateActionItems.add("still perform deployment", ACTION_NONE);
@@ -331,6 +413,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 throw new FormException("Enviroment is required to launch a box in ElasticBox", "environment");
             }     
             formData.put("environment", environment);
+            
+            String instanceEnvVariable = formData.getString("instanceEnvVariable").trim();
+            if (!instanceEnvVariable.isEmpty() && !ENV_VARIABLE_PATTERN.matcher(instanceEnvVariable).find()) {
+                throw new FormException("Environment variable for the instance can have only alphanumeric characters and begins with a letter or underscore", "instanceEnvVariable");
+            }
             
             if (formData.containsKey("variables")) {
                 JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("box"), formData.getString("boxVersion")).getJsonArray();

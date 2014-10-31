@@ -290,6 +290,10 @@ public class Client {
         }
         return (JSONObject) doGet(MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId), false);
     }
+    
+    public JSONObject getService(String instanceId) throws IOException {
+        return (JSONObject) doGet(MessageFormat.format("/services/instances/{0}/service", instanceId), false);
+    }
 
     public JSONObject getProfile(String profileId) throws IOException {
         if (StringUtils.isBlank(profileId)) {

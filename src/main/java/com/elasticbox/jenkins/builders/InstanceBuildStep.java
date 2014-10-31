@@ -44,6 +44,7 @@ import org.kohsuke.stapler.StaplerRequest;
 /**
  *
  * @author Phong Nguyen Le
+ * @deprecated
  */
 public abstract class InstanceBuildStep extends Builder {
     private String cloud;
