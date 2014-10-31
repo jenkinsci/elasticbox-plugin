@@ -6,6 +6,10 @@ Example:
 
 Options:
     -a ElasticBox address to run tests against
+    -j Jenkins versions to build with
+    -p Package to upgrade ElasticBox appliance
+    -t ElasticBox access token
+    -w ElasticBox workspace
     -? Display this message
 "
 
@@ -19,12 +23,15 @@ function help() {
 }
 
 # Handle options
-while getopts ":a:j:h" ARGUMENT
+while getopts ":a:j:p:t:w:h" ARGUMENT
 do
     case ${ARGUMENT} in
 
         a )  EBX_ADDRESS=$OPTARG;;
         j )  JENKINS_VERSIONS=$OPTARG;;
+        p )  PACKAGE=$OPTARG;;
+        t )  EBX_TOKEN=$OPTARG;;
+        w )  EBX_WORKSPACE=$OPTARG;;
         h )  help; exit 0;;
         : )  help "Missing option argument for -$OPTARG"; exit 1;;
         ? )  help "Option does not exist: $OPTARG"; exit 1;;
@@ -64,13 +71,22 @@ function build_with_jenkins_version() {
     echo ------------------------------------------------
     echo Building with Jenkins version ${JENKINS_VERSION}
     echo ------------------------------------------------
-    if [[ -n ${EBX_ADDRESS} ]]
+    echo Testing against ElasticBox at ${EBX_ADDRESS}
+
+    BUILD_OPTIONS="-DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+
+    if [[ -n ${EBX_TOKEN} ]]
     then
-        echo Testing against ElasticBox at ${EBX_ADDRESS}
+        BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
     fi
+
+    if [[ -n ${EBX_WORKSPACE} ]]
+    then
+        BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
+    fi    
     
     cd ${REPOSITORY_FOLDER}
-    mvn -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS} -DskipTests=false clean install
+    mvn ${BUILD_OPTIONS} clean install
     
     # keep the test results and logs for the tested Jenkins version
     TEST_RESULTS_FOLDER=${REPOSITORY_FOLDER}/results/${JENKINS_VERSION}
@@ -85,6 +101,41 @@ function build_with_jenkins_version() {
         fi
     done
 }
+
+function upgrade_appliance() {
+    echo Uploading package to ${EBX_ADDRESS}
+    UPLOAD_URL="${EBX_ADDRESS}/services/appliance/upload"
+    RESPONSE=$(curl -k# -X POST -H "ElasticBox-Token: ${EBX_TOKEN}" --form blob=@${PACKAGE} ${UPLOAD_URL})
+    if [[ -n $(echo ${RESPONSE} | grep '"message"') ]]
+    then
+        echo Error uploading ${PACKAGE} to ${UPLOAD_URL}: ${RESPONSE}
+        exit 1
+    fi
+
+    echo Start upgrading the appliance
+    curl -ksf -X POST -H "ElasticBox-Token: ${EBX_TOKEN}" ${EBX_ADDRESS}/services/appliance/upgrade
+
+    # Wait for the appliance services to restart
+    sleep 30        
+
+    # Make sure that the appliance is back up
+    curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" https://${EXTERNAL_ADDRESS}/services/workspaces
+    if [[ $? != 0 ]]
+    then
+        echo "Cannot access the ElasticBox appliance at ${EBX_ADDRESS} after upgrade" 
+        exit 1
+    fi
+}
+
+if [[ -n ${PACKAGE} ]]
+then
+    if [[ -z ${EBX_TOKEN} ]]
+    then
+        echo "Please provider admin access token to upgrade ElasticBox appliance at ${EBX_ADDRESS} with package ${PACKAGE}"
+        exit 1
+    fi
+    upgrade_appliance
+fi
 
 cd $(dirname $0)
 REPOSITORY_FOLDER=$(pwd)
