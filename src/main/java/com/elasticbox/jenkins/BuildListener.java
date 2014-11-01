@@ -18,6 +18,8 @@ import hudson.model.AbstractProject;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -25,18 +27,23 @@ import hudson.model.listeners.RunListener;
  */
 @Extension
 public class BuildListener extends RunListener<AbstractBuild> {
+    private static final Logger LOGGER = Logger.getLogger(BuildListener.class.getName());    
 
     @Override
     public void onCompleted(AbstractBuild build, TaskListener listener) {
-        Node node = build.getBuiltOn();
-        if (node instanceof ElasticBoxSlave) {
-            ElasticBoxSlave slave = (ElasticBoxSlave) node;
-            AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
-            if (slave.isSingleUse() || (slaveConfig != null && slaveConfig.getRetentionTime() == 0) || 
-                    requiresGlobalSingleUseSlave(build.getProject())) {
-                ElasticBoxSlaveHandler.markForTermination(slave);
-            }
-        }        
+        try {
+            Node node = build.getBuiltOn();
+            if (node instanceof ElasticBoxSlave) {
+                ElasticBoxSlave slave = (ElasticBoxSlave) node;
+                AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
+                if (slave.isSingleUse() || (slaveConfig != null && slaveConfig.getRetentionTime() == 0) || 
+                        requiresGlobalSingleUseSlave(build.getProject())) {
+                    ElasticBoxSlaveHandler.markForTermination(slave);
+                }
+            }    
+        } catch (RuntimeException ex) {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+        }
     }
     
     private static boolean requiresGlobalSingleUseSlave(AbstractProject project) {

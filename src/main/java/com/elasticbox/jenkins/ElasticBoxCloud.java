@@ -170,6 +170,15 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             
     @Override
     public synchronized Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+        try {
+            return doProvision(label, excessWorkload);
+        } catch (RuntimeException ex) {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            return Collections.EMPTY_LIST;
+        }
+    }
+    
+    private Collection<NodeProvisioner.PlannedNode> doProvision(Label label, int excessWorkload) {    
         List<JSONObject> activeInstances;
         try {
             activeInstances = ElasticBoxSlaveHandler.getActiveInstances(this);
@@ -272,12 +281,17 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
     @Override
     public boolean canProvision(Label label) {
-        if (isLabelForReusableSlave(label)) {
-            ProjectSlaveConfiguration slaveConfig = ProjectSlaveConfiguration.find(label);
-            return slaveConfig != null && slaveConfig.getCloud().equals(name);
+        try {
+            if (isLabelForReusableSlave(label)) {
+                ProjectSlaveConfiguration slaveConfig = ProjectSlaveConfiguration.find(label);
+                return slaveConfig != null && slaveConfig.getCloud().equals(name);
+            }
+
+            return getSlaveConfiguration(label) != null;
+        } catch (RuntimeException ex) {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            return false;
         }
-        
-        return getSlaveConfiguration(label) != null;
     }
 
     public String getEndpointUrl() {

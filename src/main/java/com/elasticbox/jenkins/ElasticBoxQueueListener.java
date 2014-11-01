@@ -14,8 +14,8 @@ package com.elasticbox.jenkins;
 
 import hudson.Extension;
 import hudson.model.AbstractProject;
+import hudson.model.Label;
 import hudson.model.Node;
-import hudson.model.labels.LabelAtom;
 import hudson.model.queue.QueueListener;
 import jenkins.model.Jenkins;
 /**
@@ -32,7 +32,7 @@ public class ElasticBoxQueueListener extends QueueListener {
                 // check if there is a single-use slave being launched for this build, disable it
                 ElasticBoxBuildWrappers ebxBuildWrappers = ElasticBoxBuildWrappers.getElasticBoxBuildWrappers((AbstractProject) li.task);
                 if (ebxBuildWrappers.singleUseSlaveOption != null && ebxBuildWrappers.instanceCreator != null) {
-                    LabelAtom label = ElasticBoxLabelFinder.getLabel(ebxBuildWrappers.instanceCreator.getSlaveConfiguration(), true);
+                    Label label = li.getAssignedLabel();
                     for (Node node : Jenkins.getInstance().getNodes()) {
                         if (node instanceof ElasticBoxSlave && label.matches(node)) {
                             ElasticBoxSlaveHandler.markForTermination(((ElasticBoxSlave) node));

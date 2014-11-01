@@ -18,6 +18,7 @@ import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import java.util.Collection;
 import java.util.Collections;
+import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 
@@ -39,13 +40,15 @@ public class ElasticBoxLabelFinder extends LabelFinder {
     public Collection<LabelAtom> findLabels(Node node) {
         if (node instanceof ElasticBoxSlave) {
             ElasticBoxSlave slave = (ElasticBoxSlave) node;
-            if (slave.isSingleUse()) {
-                AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
-                if (slave.getComputer() != null && slave.getComputer().getBuilds().isEmpty() && slaveConfig != null) {
-                    return Collections.singleton(getLabel(slaveConfig, true));                    
+            AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
+            if (slaveConfig != null) {
+                if (slave.isSingleUse()) {
+                    if (slave.getComputer() != null && slave.getComputer().getBuilds().isEmpty()) {
+                        return Collections.singleton(getLabel(slaveConfig, true));                    
+                    }
+                } else if (StringUtils.isBlank(slave.getLabelString())) {
+                    return Collections.singleton(getLabel(slaveConfig, false));
                 }
-            } else if (StringUtils.isBlank(slave.getLabelString())) {
-                return Collections.singleton(getLabel(slave.getSlaveConfiguration(), false));
             }
         }
         
