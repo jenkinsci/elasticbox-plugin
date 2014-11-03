@@ -38,7 +38,9 @@
       <waitForCompletion>true</waitForCompletion>
     </com.elasticbox.jenkins.builders.DeployBox>
     <hudson.tasks.Shell>
-      <command>echo id: $TEST_LINUX
+      <command>#!/bin/bash
+
+echo id: $TEST_LINUX
 echo url: $TEST_LINUX_URL
 echo service id: $TEST_LINUX_SERVICE_ID
 echo tags: $TEST_LINUX_TAGS
