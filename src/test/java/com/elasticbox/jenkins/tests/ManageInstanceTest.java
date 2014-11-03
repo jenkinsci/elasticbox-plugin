@@ -22,7 +22,7 @@ import org.junit.Test;
  *
  * @author Phong Nguyen Le
  */
-public class ManageInstanceTest extends TestBase {
+public class ManageInstanceTest extends BuildStepTestBase {
 
     @Test
     public void testManageInstance() throws Exception {    

@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -68,6 +69,7 @@ public class TestUtils {
     static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "localhost");
     static final String TEST_PROVIDER_TYPE = "Test Provider";
     static final String NAME_PREFIX = "jenkins-plugin-test-";
+    static final String LINUX_COMPUTE = "Linux Compute";
 
     static JSONObject findVariable(JSONArray variables, String name, String scope) {
         for (Object variable : variables) {
@@ -168,6 +170,21 @@ public class TestUtils {
         public String resolve(String template);
     }
     
+    public static class MappingTemplateResolver implements TemplateResolver {
+        private final Map<String, String> oldValueToNewValueMap = new HashMap<String, String>();
+
+        public String resolve(String template) {
+            for (Map.Entry<String, String> entry : oldValueToNewValueMap.entrySet()) {
+                template = template.replace(entry.getKey(), entry.getValue());
+            }
+            return template;
+        }
+        
+        public void map(String oldValue, String newValue) {
+            oldValueToNewValueMap.put(oldValue, newValue);
+        }
+    }
+    
     private static class TemplateResolverImpl implements TemplateResolver {
         private final TemplateResolver resolver;
         private final String schemaVersion;
@@ -203,18 +220,23 @@ public class TestUtils {
     }
     
     static JSONObject createTestProfile(TestBoxData testBoxData, JSONObject testProvider, TemplateResolver resolver, Client client) throws IOException {
+        JSONObject testProfile = createTestProfile(testBoxData.getJson(), testProvider, resolver, client);
+        testBoxData.setNewProfileId(testProfile.getString("id"));
+        return testProfile;
+    }
+    
+    static JSONObject createTestProfile(JSONObject box, JSONObject testProvider, TemplateResolver resolver, Client client) throws IOException {        
         JSONObject testProfile = JSONObject.fromObject(createTestDataFromTemplate("test-profile.json", new TemplateResolverImpl(client, resolver)));
         testProfile.remove("id");
         testProfile.put("name", NAME_PREFIX + UUID.randomUUID().toString());
         testProfile.put("owner", TestUtils.TEST_WORKSPACE);
         testProfile.put("provider", testProvider.getString("name"));
         JSONObject profileBox = testProfile.getJSONObject("box");
-        profileBox.put("version", testBoxData.getJson().getString("id"));
-        profileBox.put("name", testBoxData.getJson().getString("name"));
+        profileBox.put("version", box.getString("id"));
+        profileBox.put("name", box.getString("name"));
         testProfile = client.doPost("/services/profiles", testProfile);
-        testBoxData.setNewProfileId(testProfile.getString("id"));
         return testProfile;
-    }
+    }        
     
     private static JSONObject loadBox(String templatePath, TemplateResolver resolver) throws Exception {
         URI boxJsonUri = TestUtils.class.getResource(templatePath).toURI();

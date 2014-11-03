@@ -19,7 +19,7 @@ sudo pip install ebcli --upgrade
 PROVIDER_IDS=$(curl -k -H "ElasticBox-Token: ${TOKEN}" ${EBX_ADDRESS}/services/workspaces/tphongio/providers | python -m json.tool | grep /services/providers | sed -e 's|/services/providers/||g' -e 's/"//g' | awk '{ print $2 }')
 for PROVIDER_ID in ${PROVIDER_IDS}
 do
-	if [ ${PROVIDER_ID} != '345b6945-8834-4901-9090-d3e64535fd12' ]
+	if [ ${PROVIDER_ID} != '345b6945-8834-4901-9090-d3e64535fd12' && ${PROVIDER_ID} != '198c6ae0-17f1-4b82-ba78-03c6b6c52e4f' ]
 	then
 		PROVIDER_URL=${EBX_ADDRESS}/services/providers/${PROVIDER_ID}
 		echo Deleting provider ${PROVIDER_URL}

@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>TEST_TAG</name>
+          <description></description>
+          <defaultValue>test-instances-env-vars</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.4-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-ff620703-b8eb-4914-8c94-02aacfa35cb3</id>
+      <cloud>elasticbox</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>f035c580-70b3-49ce-9209-eb90c968060a</boxVersion>
+      <profile>3b348613-5522-4876-b7ea-c0e61388a87a</profile>
+      <instances>2</instances>
+      <variables>[]</variables>
+      <instanceEnvVariable>TEST_LINUX</instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>skip</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+echo id: $TEST_LINUX
+echo url: $TEST_LINUX_URL
+echo service id: $TEST_LINUX_SERVICE_ID
+echo tags: $TEST_LINUX_TAGS
+echo machine names: $TEST_LINUX_MACHINE_NAMES
+echo public addresses: $TEST_LINUX_PUBLIC_ADDRESSES
+echo private addresses: $TEST_LINUX_PRIVATE_ADDRESSES
+echo ----- machines -----
+count=0
+for NAME in $TEST_LINUX_MACHINE_NAMES
+do
+  echo machine: $NAME
+  ((count++))
+done
+if [ $count -ne 2 ]; then
+  echo &quot;Number of machine names is not 2: $count&quot;
+  exit 1
+fi
+echo ----- public addresses -----
+count=0
+for ADDRESS in $TEST_LINUX_PUBLIC_ADDRESSES
+do
+  echo public address: $ADDRESS
+  ((count++))
+done
+if [ $count -ne 2 ]; then
+  echo &quot;Number of public addresses is not 2: $count&quot;
+  exit 1
+fi
+echo ----- private addresses -----
+count=0
+for ADDRESS in $TEST_LINUX_PRIVATE_ADDRESSES
+do
+  echo private address: $ADDRESS
+  ((count++))
+done
+if [ $count -ne 2 ]; then
+  echo &quot;Number of private addresses is not 2: $count&quot;
+  exit 1
+fi
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

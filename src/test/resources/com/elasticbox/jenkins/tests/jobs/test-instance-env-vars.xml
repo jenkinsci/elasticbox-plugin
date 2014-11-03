@@ -1,0 +1,73 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>TEST_TAG</name>
+          <description></description>
+          <defaultValue>test-instance-env-vars</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.4-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-ff620703-b8eb-4914-8c94-02aacfa35cb3</id>
+      <cloud>elasticbox</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>f035c580-70b3-49ce-9209-eb90c968060a</boxVersion>
+      <profile>ca4cf377-7b5b-4456-9c19-2131eee22747</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <instanceEnvVariable>TEST_LINUX</instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>skip</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <hudson.tasks.Shell>
+      <command>echo id: $TEST_LINUX
+echo url: $TEST_LINUX_URL
+echo service id: $TEST_LINUX_SERVICE_ID
+echo tags: $TEST_LINUX_TAGS
+echo machine name: $TEST_LINUX_MACHINE_NAME
+echo public address: $TEST_LINUX_PUBLIC_ADDRESS
+echo private address: $TEST_LINUX_PRIVATE_ADDRESS
+
+function assert_not_empty() {
+  if [ -z &quot;$2&quot; ]; then
+    echo &quot;$1 is not available&quot;
+    exit 1;
+  fi 
+}
+
+assert_not_empty TEST_LINUX $TEST_LINUX
+assert_not_empty TEST_LINUX_URL $TEST_LINUX_URL
+assert_not_empty TEST_LINUX_SERVICE_ID $TEST_LINUX_SERVICE_ID
+assert_not_empty TEST_LINUX_MACHINE_NAME $TEST_LINUX_MACHINE_NAME
+assert_not_empty TEST_LINUX_PUBLIC_ADDRESS $TEST_LINUX_PUBLIC_ADDRESS
+assert_not_empty TEST_LINUX_PRIVATE_ADDRESS $TEST_LINUX_PRIVATE_ADDRESS
+
+if [ ${TEST_TAG} != $TEST_LINUX_TAGS ]; then
+  echo TEST_LINUX_TAGS is not the same as TEST_TAG
+  exit 1;
+fi
+
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

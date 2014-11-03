@@ -30,7 +30,7 @@ import org.junit.Test;
  *
  * @author Phong Nguyen Le
  */
-public class BindingWithTagsTest extends TestBase {
+public class BindingWithTagsTest extends BuildStepTestBase {
     
     @Test
     public void testBindingWithTags() throws Exception {

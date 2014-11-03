@@ -36,7 +36,7 @@ import org.junit.Test;
  *
  * @author Phong Nguyen Le
  */
-public class BuildStepTest extends TestBase {    
+public class BuildStepTest extends BuildStepTestBase {    
     
     @Test
     public void testBuildWithSteps() throws Exception {    
@@ -54,7 +54,6 @@ public class BuildStepTest extends TestBase {
         JSONObject testLinuxBox = getTestBox(TestUtils.TEST_LINUX_BOX_NAME);
         JSONObject testBindingBox = getTestBox(TestUtils.TEST_BINDING_BOX_NAME);
         JSONObject testNestedBox = getTestBox(TestUtils.TEST_NESTED_BOX_NAME);        
-        JSONArray boxes = client.getBoxes(TestUtils.TEST_WORKSPACE);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_LINUX_BOX_NAME), testLinuxBox);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_BINDING_BOX_NAME), testBindingBox);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_NESTED_BOX_NAME), testNestedBox);

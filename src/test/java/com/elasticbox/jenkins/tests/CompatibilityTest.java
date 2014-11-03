@@ -25,7 +25,7 @@ import org.junit.Test;
  *
  * @author Phong Nguyen Le
  */
-public class CompatibilityTest extends TestBase {
+public class CompatibilityTest extends BuildStepTestBase {
     
     @Test
     public void testBuildWithOldSteps() throws Exception {    

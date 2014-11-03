@@ -26,12 +26,9 @@ import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
-import java.io.IOException;
-import java.util.Collections;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
@@ -39,25 +36,19 @@ import org.jvnet.hudson.test.JenkinsRule;
  *
  * @author Phong Nguyen Le
  */
-public class ElasticBoxCloudTest {
-    private ElasticBoxCloud cloud;
+public class ElasticBoxCloudTest extends TestBase {
     private JSONObject provider;
     private TestBoxData testJenkinsSlaveBoxData;
     
-    @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
-        
     @Before    
-    public void setup() throws Exception {
-        cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
-        jenkins.getInstance().clouds.add(cloud);        
+    public void setupTestData() throws Exception {
         Client client = cloud.getClient();
         testJenkinsSlaveBoxData = TestUtils.createTestBox("boxes/linux-jenkins-slave/linux-jenkins-slave.json", null, client);
         provider = TestUtils.createTestProvider(client);
     }
     
     @After
-    public void tearDown() throws Exception {
+    public void cleanUp() throws Exception {
         Client client = cloud.getClient();
         client.doDelete(testJenkinsSlaveBoxData.getJson().getString("uri"));
         client.doDelete(provider.getString("uri"));
