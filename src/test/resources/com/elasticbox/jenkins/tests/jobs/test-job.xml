@@ -171,7 +171,7 @@
         </com.elasticbox.jenkins.builders.StopOperation>
         <com.elasticbox.jenkins.builders.StartOperation>
           <tags> ${TEST_TAG}</tags>
-          <waitForCompletion>false</waitForCompletion>
+          <waitForCompletion>true</waitForCompletion>
         </com.elasticbox.jenkins.builders.StartOperation>
       </operations>
     </com.elasticbox.jenkins.builders.ManageInstance>
