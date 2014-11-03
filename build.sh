@@ -104,8 +104,9 @@ function build_with_jenkins_version() {
 
 function upgrade_appliance() {
     echo Uploading package to ${EBX_ADDRESS}
+    ADMIN_TOKEN=$(curl -k# -H 'Content-Type:application/json' -X POST --data '{"email": "test_admin@elasticbox.com", "password": "elasticbox"}' ${EBX_ADDRESS}/services/security/token)
     UPLOAD_URL="${EBX_ADDRESS}/services/appliance/upload"
-    RESPONSE=$(curl -k# -X POST -H "ElasticBox-Token: ${EBX_TOKEN}" --form blob=@${PACKAGE} ${UPLOAD_URL})
+    RESPONSE=$(curl -k# -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" --form blob=@${PACKAGE} ${UPLOAD_URL})
     if [[ -n $(echo ${RESPONSE} | grep '"message"') ]]
     then
         echo Error uploading ${PACKAGE} to ${UPLOAD_URL}: ${RESPONSE}
@@ -119,8 +120,12 @@ function upgrade_appliance() {
     sleep 30        
 
     # Make sure that the appliance is back up
-    curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" https://${EXTERNAL_ADDRESS}/services/workspaces
-    if [[ $? != 0 ]]
+    if [[ -z ${EBX_TOKEN} ]]
+    then
+        EBX_TOKEN=$(curl -k# -H 'Content-Type:application/json' -X POST --data '{"email": "test_admin@elasticbox.com", "password": "elasticbox"}' ${EBX_ADDRESS}/services/security/token)
+    fi
+    WORKSPACES=$(curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" ${EBX_ADDRESS}/services/workspaces | grep http://elasticbox.net/schemas/)
+    if [[ -z "${WORKSPACES}" ]]
     then
         echo "Cannot access the ElasticBox appliance at ${EBX_ADDRESS} after upgrade" 
         exit 1
@@ -129,11 +134,6 @@ function upgrade_appliance() {
 
 if [[ -n ${PACKAGE} ]]
 then
-    if [[ -z ${EBX_TOKEN} ]]
-    then
-        echo "Please provider admin access token to upgrade ElasticBox appliance at ${EBX_ADDRESS} with package ${PACKAGE}"
-        exit 1
-    fi
     upgrade_appliance
 fi
 
