@@ -262,6 +262,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                                 if (slave.getComputer() != null && slave.getComputer().isOnline()) {
                                     return slave;
                                 } else {
+                                    LOGGER.log(Level.WARNING, MessageFormat.format("The slave {0} did not come online after {1} minutes. It will be terminated and removed.", slave.getDisplayName(), slave.getLaunchTimeout()));
+                                    ElasticBoxSlaveHandler.markForTermination(slave);
                                     throw new Exception(MessageFormat.format("Cannot deploy slave {0}. See the system log for more details.", slave.getDisplayName()));
                                 }                                
                             }

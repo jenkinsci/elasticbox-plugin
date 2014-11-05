@@ -32,6 +32,7 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
     private final long creationTime;
     private final ElasticBoxSlave slave;
     private IProgressMonitor monitor;
+    private long launchTime;
 
     public LaunchSlaveProgressMonitor(ElasticBoxSlave slave) {
         creationTime = System.currentTimeMillis();
@@ -53,7 +54,7 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
         return creationTime;
     }
 
-    public void setMonitor(IProgressMonitor monitor) {
+    void setMonitor(IProgressMonitor monitor) {
         this.monitor = monitor;
         synchronized (waitLock) {
             waitLock.notifyAll();
@@ -118,6 +119,14 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
     @Override
     public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
         return monitor != null ? monitor.isDone(instance) : false;
+    }
+
+    void setLaunched() {
+        launchTime = System.currentTimeMillis();
+    }
+
+    public long getLaunchTime() {
+        return launchTime;
     }
     
 }

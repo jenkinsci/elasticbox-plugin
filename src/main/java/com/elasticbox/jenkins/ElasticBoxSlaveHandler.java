@@ -72,7 +72,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     
     private static class TerminationOfflineCause extends OfflineCause {
         
-        private transient ElasticBoxSlave slave;
+        private final transient ElasticBoxSlave slave;
         
         private TerminationOfflineCause(ElasticBoxSlave slave) {
             this.slave = slave;
@@ -220,6 +220,19 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         return RECURRENT_PERIOD;
     }
     
+    private boolean removeSlaveIfLaunchTimedOut(InstanceCreationRequest request, TaskListener listener) {
+        if (request.monitor.getLaunchTime() > 0) {
+            long launchDuration = System.currentTimeMillis() - request.monitor.getLaunchTime();
+            if (launchDuration >= TimeUnit.MINUTES.toMillis(request.slave.getLaunchTimeout())) {                        
+                markForTermination(request.slave);
+                log(Level.SEVERE, MessageFormat.format("Slave agent {0} didn't contact after {1} minutes.", 
+                        request.slave.getNodeName(), TimeUnit.MILLISECONDS.toMinutes(launchDuration)), null, listener);
+                return true;
+            }  
+        }
+        return false;
+    }
+    
     private void processSubmittedQueue(TaskListener listener) {
         boolean saveNeeded = false;
         for (Iterator<InstanceCreationRequest> iter = submittedQueue.iterator(); iter.hasNext();) {
@@ -234,14 +247,12 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         saveNeeded = true;
                         iter.remove();
                     } else { 
-                        long launchTime = System.currentTimeMillis() - request.monitor.getCreationTime();
-                        if (launchTime >= TimeUnit.MINUTES.toMillis(request.slave.getLaunchTimeout())) {                        
-                            request.slave.setDeletable(true);
+                        if (removeSlaveIfLaunchTimedOut(request, listener)) {
                             iter.remove();
-                            log(Level.SEVERE, MessageFormat.format("Slave agent {0} didn't contact after {1} minutes.", 
-                                    request.slave.getNodeName(), TimeUnit.MILLISECONDS.toMinutes(launchTime)), null, listener);
                         }
                     }
+                } else {
+                    removeSlaveIfLaunchTimedOut(request, listener);
                 }
             } catch (IProgressMonitor.IncompleteException ex) {
                 log(Level.SEVERE, ex.getMessage(), ex, listener);
@@ -296,7 +307,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     }
     
     private boolean purgeSlave(ElasticBoxSlave slave, TaskListener listener) {
-        JSONObject instance = null;
+        JSONObject instance;
         try {
             instance = slave.getInstance();
         } catch (IOException ex) {
@@ -418,6 +429,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>", 
                 request.slave.getInstancePageUrl()));
         request.monitor.setMonitor(monitor);
+        request.monitor.setLaunched();
         submittedQueue.add(request);
     }
     
