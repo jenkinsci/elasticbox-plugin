@@ -16,7 +16,6 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
@@ -27,7 +26,6 @@ import hudson.model.AbstractBuild;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import net.sf.json.JSONArray;
@@ -59,20 +57,28 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
             logger.info("No instance found with the specified tags");
             return;
         }
-
+        
+        reinstall(instances, null, isWaitForCompletion(), client, logger);
+    }
+    
+    static void reinstall(JSONArray instances, JSONArray variables, boolean waitForCompletion, Client client,
+            TaskLogger logger) throws InterruptedException, IOException {
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         for (Object instance : instances) {
+            if (Thread.interrupted()) {
+                throw new InterruptedException();
+            }            
             JSONObject instanceJson = (JSONObject) instance;
-            IProgressMonitor monitor = client.reinstall(instanceJson.getString("id"), null);
+            IProgressMonitor monitor = client.reinstall(instanceJson.getString("id"), variables);
             monitors.add(monitor);
-            String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
+            String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));            
         }
-        if (isWaitForCompletion()) {
+        if (waitForCompletion) {
             logger.info(MessageFormat.format("Waiting for {0} to finish reinstall", instances.size() > 1 ? "the instances" : "the instance"));
-            InstanceBuildStep.waitForCompletion(getDescriptor().getDisplayName(), monitors, cloud, client, logger);
-        }
-    }
+            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger);
+        }        
+    }    
     
     public static final ObjectFilter instanceFilter(Set<String> tags) {
         return new CompositeObjectFilter(new DescriptorHelper.InstanceFilterByTags(tags, false),
@@ -94,10 +100,11 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
     
     @Extension
     public static final class DescriptorImpl extends OperationDescriptor {
+        private static String DISPLAY_NAME = "Reinstall";
 
         @Override
         public String getDisplayName() {
-            return "Reinstall";
+            return DISPLAY_NAME;
         }
         
     }

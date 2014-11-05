@@ -53,7 +53,7 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
     }
 
     @Override
-    public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException {
+    public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException, InterruptedException {
         long startTime = System.currentTimeMillis();
         long remainingTime = timeout * 60000;
         do {
@@ -62,10 +62,7 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
             }
 
             synchronized(waitLock) {
-                try {
-                    waitLock.wait(1000);
-                } catch (InterruptedException ex) {
-                }
+                waitLock.wait(1000);
             }            
 
             long currentTime = System.currentTimeMillis();

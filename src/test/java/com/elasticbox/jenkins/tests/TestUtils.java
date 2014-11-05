@@ -153,7 +153,7 @@ public class TestUtils {
         return Client.getSchemaVersion(workspaces.getJSONObject(0).getString("schema"));        
     }
 
-    static JSONObject createTestProvider(Client client) throws IOException {
+    static JSONObject createTestProvider(Client client) throws IOException, InterruptedException {
         JSONObject testProvider = new JSONObject();
         testProvider.put("name", NAME_PREFIX + UUID.randomUUID().toString());
         testProvider.put("schema", MessageFormat.format("{0}{1}/test/provider", Client.BASE_ELASTICBOX_SCHEMA, getSchemaVersion(client)));
@@ -173,6 +173,7 @@ public class TestUtils {
     public static class MappingTemplateResolver implements TemplateResolver {
         private final Map<String, String> oldValueToNewValueMap = new HashMap<String, String>();
 
+        @Override
         public String resolve(String template) {
             for (Map.Entry<String, String> entry : oldValueToNewValueMap.entrySet()) {
                 template = template.replace(entry.getKey(), entry.getValue());
@@ -194,6 +195,7 @@ public class TestUtils {
             this.resolver = resolver;
         }
         
+        @Override
         public String resolve(String template) {
             template = template.replace("{schema_version}", schemaVersion);
             if (resolver != null) {

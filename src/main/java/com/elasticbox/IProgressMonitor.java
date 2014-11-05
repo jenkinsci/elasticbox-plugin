@@ -35,7 +35,7 @@ public interface IProgressMonitor {
      * @throws com.elasticbox.IProgressMonitor.IncompleteException if the task finished but is not complete
      * @throws IOException if unexpected error occurred
      */
-    void waitForDone(int timeout) throws IncompleteException, IOException;
+    void waitForDone(int timeout) throws IncompleteException, IOException, InterruptedException;
     
     public static final IProgressMonitor DONE_MONITOR = new DoneMonitor(null);
             

@@ -35,7 +35,6 @@ import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -103,26 +102,26 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
     
     private JSONObject performAlternateAction(JSONArray existingInstances, ElasticBoxCloud ebCloud, Client client, 
-            VariableResolver resolver, TaskLogger logger) throws IOException {
-        List<String> instanceIDs = new ArrayList<String>();
-        for (Object instance : existingInstances) {
-            instanceIDs.add(((JSONObject) instance).getString("id"));
-        }
+            VariableResolver resolver, TaskLogger logger) throws IOException, InterruptedException {
         JSONObject instance = existingInstances.getJSONObject(0);
         if (alternateAction.equals(ACTION_SKIP)) {
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), instance);
             logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
         } else if (alternateAction.equals(ACTION_RECONFIGURE)) {            
-            ReconfigureBox.reconfigure(instanceIDs, ebCloud, client, 
-                    resolver.resolveVariables(variables), waitForCompletion, logger);
+            ReconfigureOperation.reconfigure(existingInstances, resolver.resolveVariables(variables), waitForCompletion, 
+                    client, logger);
         } else if (alternateAction.equals(ACTION_REINSTALL)) {
-            ReinstallBox.reinstall(instanceIDs, ebCloud, client, resolver.resolveVariables(variables), 
-                    waitForCompletion, logger);
+            ReinstallOperation.reinstall(existingInstances, resolver.resolveVariables(variables), waitForCompletion, 
+                    client, logger);
+            
         } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
             for (Object existingInstance : existingInstances) {
-                String instanceId = ((JSONObject) existingInstance).getString("id");
-                TerminateBox.terminate(instanceId, ebCloud, client, logger);
-                client.delete(instanceId);
+                if (Thread.interrupted()) {
+                    throw new InterruptedException();
+                }            
+                JSONObject instanceJson = (JSONObject) existingInstance;
+                TerminateOperation.terminate(instanceJson, client, logger);
+                client.delete(instanceJson.getString("id"));
             }
             String instanceId = deploy(ebCloud, client, resolver, logger);
             instance = client.getInstance(instanceId);
@@ -133,11 +132,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return instance;
     }
     
-    private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) throws IOException {
+    private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) 
+            throws IOException, InterruptedException {
         String resolvedEnvironment = resolver.resolve(tags.split(",")[0].trim());
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
-        DescriptorHelper.removeInvalidVariables(resolvedVariables, ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, box, boxVersion).getJsonArray());
-        IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, resolvedVariables);
+        DescriptorHelper.removeInvalidVariables(resolvedVariables, 
+                ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, box, boxVersion).getJsonArray());
+        IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, 
+                resolvedVariables);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
         logger.info("Deploying box instance {0}", instancePageUrl);
@@ -161,6 +163,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         final JSONObject service = client.getService(instanceId);
         build.addAction(new EnvironmentContributingAction() {
 
+            @Override
             public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
                 final String instanceUrl = client.getInstanceUrl(instanceId);            
                 env.put(instanceEnvVariable, instanceId);
@@ -204,14 +207,17 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 }
             }
 
+            @Override
             public String getIconFileName() {
                 return null;
             }
 
+            @Override
             public String getDisplayName() {
                 return "Instance Environment Variables";
             }
 
+            @Override
             public String getUrlName() {
                 return null;
             }
@@ -281,6 +287,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         
     }        
 
+    @Override
     public String getId() {
         return id;
     }

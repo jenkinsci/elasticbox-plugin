@@ -15,6 +15,7 @@ package com.elasticbox.jenkins;
 import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
+import com.elasticbox.jenkins.builders.ReconfigureBox;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
@@ -441,6 +442,13 @@ public class DescriptorHelper {
         }
         
         return variableArray;
+    }
+    
+    public static JSONArray removeInvalidVariables(JSONArray variableArray, String instanceId, Client client) {
+        if (variableArray == null || variableArray.isEmpty()) {
+            return variableArray;
+        }
+        return removeInvalidVariables(variableArray, getInstanceBoxStack(client, instanceId).getJsonArray());
     }
     
     public static String fixVariables(String variables, JSONArray boxStack) {

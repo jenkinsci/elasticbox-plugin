@@ -29,7 +29,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -50,7 +49,8 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
     private transient ElasticBoxCloud ebCloud;
     
     @DataBoundConstructor
-    public ReconfigureBox(String id, String cloud, String workspace, String box, String instance, String variables, String buildStep, String buildStepVariables) {
+    public ReconfigureBox(String id, String cloud, String workspace, String box, String instance, String variables, 
+            String buildStep, String buildStepVariables) {
         super(cloud, workspace, box, instance, buildStep);
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -60,26 +60,22 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         readResolve();
     }
     
-    static void reconfigure(List<String> instanceIDs, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables, 
-            boolean waitForCompletion, TaskLogger logger) throws IOException {
-        List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
-        for (String instanceId : instanceIDs) {
-            JSONArray validVariables = jsonVariables != null ? JSONArray.fromObject(jsonVariables) : new JSONArray();
-            DescriptorHelper.removeInvalidVariables(validVariables, 
-                    ((DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(ReconfigureBox.class)).doGetBoxStack(ebCloud.name, instanceId).getJsonArray());
-            IProgressMonitor monitor = client.reconfigure(instanceId, validVariables);
-            monitors.add(monitor);
-            String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-            logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));            
-        }
+    static void reconfigure(String instanceId, Client client, JSONArray jsonVariables, 
+        boolean waitForCompletion, TaskLogger logger) throws IOException, InterruptedException {
+        DescriptorHelper.removeInvalidVariables(jsonVariables, instanceId, client);
+        IProgressMonitor monitor = client.reconfigure(instanceId, jsonVariables);
+        String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl());
+        logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));            
         if (waitForCompletion) {
-            logger.info(MessageFormat.format("Waiting for {0} to be reconfigured", monitors.size() > 0 ? "the instances" : "the instance"));        
-            InstanceBuildStep.waitForCompletion(Client.InstanceOperation.RECONFIGURE, monitors, ebCloud, client, logger);
+            logger.info("Waiting for the instance to be reconfigured");        
+            LongOperation.waitForCompletion(Client.InstanceOperation.RECONFIGURE, Collections.singletonList(monitor), 
+                    client, logger);
         }
     }
     
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) 
+            throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Reconfigure Box build step");
         
@@ -95,7 +91,7 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         
         Client client = ebCloud.getClient();
         String instanceId = instanceProvider.getInstanceId(build);
-        reconfigure(Collections.singletonList(instanceId), ebCloud, client, jsonVariables, true, logger);
+        reconfigure(instanceId, client, jsonVariables, true, logger);
         instanceManager.setInstance(build, client.getInstance(instanceId));
         return true;
     }    
@@ -145,7 +141,8 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
             } else {
                 formData.remove("buildStepVariables");
                 if (formData.containsKey("variables")) {
-                    JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("instance")).getJsonArray();
+                    JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), 
+                            formData.getString("instance")).getJsonArray();
                     formData.put("variables", DescriptorHelper.fixVariables(formData.getString("variables"), boxStack));
                 }                            
             }

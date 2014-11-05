@@ -38,14 +38,17 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
         this.slave = slave;
     }
 
+    @Override
     public String getResourceUrl() {
         return monitor != null ? monitor.getResourceUrl() : null;
     }
 
+    @Override
     public boolean isDone() throws IncompleteException, IOException {
         return monitor != null ? monitor.isDone() : false;
     }
 
+    @Override
     public long getCreationTime() {
         return creationTime;
     }
@@ -73,13 +76,15 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
         }
     }
 
-    public void waitForDone(int timeout) throws IncompleteException, IOException {
+    @Override
+    public void waitForDone(int timeout) throws IncompleteException, IOException, InterruptedException {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         long timeoutMiliseconds = timeout * 60000;
         long remainingTime = timeoutMiliseconds;
         try {
             wait(new Callable<Boolean>() {
+                @Override
                 public Boolean call() throws Exception {
                     return monitor == null;
                 }
@@ -98,6 +103,7 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
         if (remainingTime > 0) {
             try {
                 wait(new Callable<Boolean>() {
+                    @Override
                     public Boolean call() throws Exception {
                         SlaveComputer computer = slave.getComputer();
                         return computer != null && computer.isOffline();
@@ -109,6 +115,7 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
         }
     }
 
+    @Override
     public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
         return monitor != null ? monitor.isDone(instance) : false;
     }

@@ -59,6 +59,9 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
         }
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         for (Object instance : instances) {
+            if (Thread.interrupted()) {
+                throw new InterruptedException();
+            }            
             JSONObject instanceJson = (JSONObject) instance;
             IProgressMonitor monitor = client.shutdown(instanceJson.getString("id"));
             monitors.add(monitor);
@@ -67,7 +70,7 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
         }
         if (isWaitForCompletion()) {
             logger.info(MessageFormat.format("Waiting for {0} to complete stopping", instances.size() > 1 ? "the instances" : "the instance"));
-            InstanceBuildStep.waitForCompletion(getDescriptor().getDisplayName(), monitors, cloud, client, logger);
+            LongOperation.waitForCompletion(getDescriptor().getDisplayName(), monitors, client, logger);
         }
     }
     

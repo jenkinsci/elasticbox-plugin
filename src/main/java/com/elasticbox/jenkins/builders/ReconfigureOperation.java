@@ -16,7 +16,6 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
@@ -27,7 +26,6 @@ import hudson.model.AbstractBuild;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import net.sf.json.JSONArray;
@@ -47,31 +45,45 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
     }
 
     @Override
-    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
+    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, 
+            TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Reconfigure");
         
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         Client client = cloud.getClient();
         Set<String> resolvedTags = resolver.resolveTags(getTags());
-        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
+        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", 
+                StringUtils.join(resolvedTags, ", ")));
         JSONArray instances = DescriptorHelper.getInstances(client, workspace, instanceFilter(resolvedTags));        
         if (instances.isEmpty()) {
             logger.info("No instance found with the specified tags");
             return;
         }
 
-        List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
+        reconfigure(instances, null, isWaitForCompletion(), cloud.getClient(), logger);
+    }
+    
+    static void reconfigure(JSONArray instances, JSONArray variables, boolean waitForCompletion, Client client, 
+            TaskLogger logger) throws InterruptedException, IOException {
+        List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();        
         for (Object instance : instances) {
+            if (Thread.interrupted()) {
+                throw new InterruptedException();
+            }            
             JSONObject instanceJson = (JSONObject) instance;
-            IProgressMonitor monitor = client.reconfigure(instanceJson.getString("id"), null);
+            String instanceId = instanceJson.getString("id");
+            IProgressMonitor monitor = client.reconfigure(instanceId, 
+                    DescriptorHelper.removeInvalidVariables(variables, instanceId, client));
             monitors.add(monitor);
-            String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
+            String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));            
         }
-        if (isWaitForCompletion()) {
-            logger.info(MessageFormat.format("Waiting for {0} to finish reconfiguration", instances.size() > 1 ? "the instances" : "the instance"));
-            InstanceBuildStep.waitForCompletion(getDescriptor().getDisplayName(), monitors, cloud, client, logger);
+        if (waitForCompletion) {
+            logger.info(MessageFormat.format("Waiting for {0} to finish reconfiguration", 
+                    instances.size() > 1 ? "the instances" : "the instance"));
+            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger);
         }
+        
     }
     
     public static final ObjectFilter instanceFilter(Set<String> tags) {
@@ -93,10 +105,11 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
     
     @Extension
     public static final class DescriptorImpl extends OperationDescriptor {
+        private static String DISPLAY_NAME = "Reconfigure";
 
         @Override
         public String getDisplayName() {
-            return "Reconfigure";
+            return DISPLAY_NAME;
         }
         
     }

@@ -54,25 +54,20 @@ public class ReinstallBox extends InstanceBuildStep {
         }
         
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
-        reinstall(Collections.singletonList(instanceProvider.getInstanceId(build)), ebCloud, ebCloud.getClient(), null, true, logger);
+        reinstall(instanceProvider.getInstanceId(build), ebCloud.getClient(), null, true, logger);
         return true;
     }   
     
-    static void reinstall(List<String> instanceIDs, ElasticBoxCloud ebCloud, Client client, JSONArray jsonVariables, 
-            boolean waitForCompletion, TaskLogger logger) throws IOException {
-        List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
-        for (String instanceId : instanceIDs) {
-            JSONArray validVariables = jsonVariables != null ? JSONArray.fromObject(jsonVariables) : new JSONArray();
-            DescriptorHelper.removeInvalidVariables(validVariables, 
-                    ((ReconfigureBox.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(ReconfigureBox.class)).doGetBoxStack(ebCloud.name, instanceId).getJsonArray());
-            IProgressMonitor monitor = client.reinstall(instanceId, validVariables);
-            monitors.add(monitor);
-            String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
-            logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));            
-        }
+    static void reinstall(String instanceId, Client client, JSONArray jsonVariables, 
+            boolean waitForCompletion, TaskLogger logger) throws IOException, InterruptedException {
+        IProgressMonitor monitor = client.reinstall(instanceId, 
+                DescriptorHelper.removeInvalidVariables(jsonVariables, instanceId, client));
+        String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl());
+        logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));            
         if (waitForCompletion) {
-            logger.info(MessageFormat.format("Waiting for {0} to finish reinstall", instanceIDs.size() > 1 ? "the instances" : "the instance"));
-            InstanceBuildStep.waitForCompletion(Client.InstanceOperation.REINSTALL, monitors, ebCloud, client, logger);
+            logger.info("Waiting for the instance to finish reinstall");
+            LongOperation.waitForCompletion(Client.InstanceOperation.REINSTALL, Collections.singletonList(monitor), 
+                    client, logger);
         }
     }
     
