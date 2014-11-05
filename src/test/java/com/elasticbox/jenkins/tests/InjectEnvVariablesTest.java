@@ -32,6 +32,7 @@ public class InjectEnvVariablesTest extends TestBase {
     private final TestUtils.MappingTemplateResolver templateResolver = new TestUtils.MappingTemplateResolver();
     private JSONObject testProvider;
     private JSONObject testProfile;    
+    private JSONObject vSphereProfile;
     
     @Before
     public void setupTestData() throws Exception {
@@ -48,7 +49,6 @@ public class InjectEnvVariablesTest extends TestBase {
         Assert.assertNotNull(MessageFormat.format("Cannot find public box Linux Compute in workspace ''{0}''", TestUtils.TEST_WORKSPACE), linuxBox);
         String linuxBoxId = linuxBox.getString("id");
         JSONObject linuxBoxVersion = client.getBoxVersions(linuxBoxId).getJSONObject(0);
-        JSONObject vSphereProfile = null;
         for (Object profile : client.getProfiles(TestUtils.TEST_WORKSPACE, linuxBoxId)) {
             JSONObject profileJson = (JSONObject) profile;
             if (profileJson.getString("name").equals("vsphere")) {
@@ -60,12 +60,12 @@ public class InjectEnvVariablesTest extends TestBase {
         deleteAfter(testProvider);
         testProfile = TestUtils.createTestProfile(linuxBoxVersion, testProvider, null, client);
         deleteAfter(testProfile);
-        Assert.assertNotNull(MessageFormat.format("vsphere profile cannot be found for {0} in workspace ''{1}''", 
-                TestUtils.LINUX_COMPUTE, TestUtils.TEST_WORKSPACE), vSphereProfile);
         templateResolver.map("989c760d-4f3e-40bc-8c3b-6d198183b85a", linuxBoxId);
         templateResolver.map("f035c580-70b3-49ce-9209-eb90c968060a", linuxBoxVersion.getString("id"));
         templateResolver.map("ca4cf377-7b5b-4456-9c19-2131eee22747", testProfile.getString("id"));
-        templateResolver.map("3b348613-5522-4876-b7ea-c0e61388a87a", vSphereProfile.getString("id"));
+        if (vSphereProfile != null) {
+            templateResolver.map("3b348613-5522-4876-b7ea-c0e61388a87a", vSphereProfile.getString("id"));            
+        }
     }
     
     @Test
@@ -74,6 +74,8 @@ public class InjectEnvVariablesTest extends TestBase {
     }
     
     public void testEnvVariablesForManyInstances() throws Exception {
+        Assert.assertNotNull(MessageFormat.format("vsphere profile cannot be found for {0} in workspace ''{1}''", 
+                TestUtils.LINUX_COMPUTE, TestUtils.TEST_WORKSPACE), vSphereProfile);        
         runTestJob("jobs/test-instances-env-vars.xml");
     }
     
