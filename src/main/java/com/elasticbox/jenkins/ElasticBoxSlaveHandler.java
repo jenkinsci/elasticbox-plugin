@@ -225,7 +225,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             long launchDuration = System.currentTimeMillis() - request.monitor.getLaunchTime();
             if (launchDuration >= TimeUnit.MINUTES.toMillis(request.slave.getLaunchTimeout())) {                        
                 markForTermination(request.slave);
-                log(Level.SEVERE, MessageFormat.format("Slave agent {0} didn't contact after {1} minutes.", 
+                log(Level.SEVERE, MessageFormat.format("Slave agent {0} did not contact after {1} minutes.", 
                         request.slave.getNodeName(), TimeUnit.MILLISECONDS.toMinutes(launchDuration)), null, listener);
                 return true;
             }  
