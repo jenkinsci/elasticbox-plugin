@@ -64,7 +64,7 @@ public class TestUtils {
     static final String TEST_BINDING_BOX_NAME = "test-binding-box";
     static final String TEST_BINDING_BOX_INSTANCE_ID = "i-c51bop";
     
-    static final String JENKINS_SLAVE_BOX_NAME = "test-linux-jenkins-slave";
+    static final String JENKINS_SLAVE_BOX_NAME = "Linux Jenkins Slave";
     static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
     static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "localhost");
     static final String TEST_PROVIDER_TYPE = "Test Provider";

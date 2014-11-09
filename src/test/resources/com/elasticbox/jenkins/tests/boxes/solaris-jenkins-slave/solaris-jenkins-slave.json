@@ -1,0 +1,25 @@
+{
+    "name": "Solaris Jenkins Slave",
+    "service": "Linux Compute",
+    "tags": [],
+    "variables": [
+        {
+            "required": false,
+            "type": "Text",
+            "name": "JENKINS_URL",
+            "value": "",
+            "visibility": "public"
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "JNLP_SLAVE_OPTIONS",
+            "value": "",
+            "visibility": "public"
+        }
+    ],
+    "events": {
+        "start": "start.sh",
+        "stop": "stop.sh",
+        "install": "install.sh"
+    }
+}

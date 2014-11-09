@@ -1,0 +1,20 @@
+{
+    "profile": {
+        "resource_pool": "testing",
+        "datacenter": "ElasticBox - Development",
+        "network": "Dev Network",
+        "customization_spec": "None",
+        "network_mor": "dvportgroup-45",
+        "instances": 1,
+        "template": "solaris_11_2",
+        "flavor": "Tiny",
+        "datastore": "Development Storage",
+        "schema": "http://elasticbox.net/schemas/{schema_version}/vsphere/compute/profile"
+    },
+    "box": {
+        "name": "Solaris Jenkins Slave"
+    },
+    "name": "solaris_11",
+    "provider": "vsphere",
+    "schema": "http://elasticbox.net/schemas/{schema_version}/deployment-profile"
+}

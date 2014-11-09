@@ -1,0 +1,9 @@
+{
+    "icon": "images/platform/vsphere.png",
+    "type": "VMware vSphere",
+    "schema": "http://elasticbox.net/schemas/{schema_version}/vsphere/provider",
+    "name": "vsphere",
+    "endpoint": "{endpoint}",
+    "username": "{username}",
+    "secret": "{secret}"
+}
