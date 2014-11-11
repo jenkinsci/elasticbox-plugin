@@ -57,10 +57,6 @@ fi
 OLDEST_SUPPORTED_JENKINS_VERSION='1.532.1'
 JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
 
-function escape() {
-    echo $@ | sed -e "s/\./\\\./g"
-}
-
 function set_jenkins_version() {
     sed -i -e "s|\(.*\)\(<version>.*</version>\)\(.*${JENKINS_VERSION_COMMENT}.*\)|\1<version>${1}</version>\3|" ${REPOSITORY_FOLDER}/pom.xml
 }

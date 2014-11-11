@@ -1,0 +1,24 @@
+{
+    "updated": "2014-11-07 20:45:58.066030",
+    "name": "Maven Jenkins Slave",
+    "service": "Linux Compute",
+    "variables": [
+        {
+            "required": false,
+            "type": "Port",
+            "value": "8080",
+            "visibility": "internal",
+            "name": "HTTP"
+        }, {
+            "required": true,
+            "type": "Box",
+            "value": "Linux Jenkins Slave",
+            "visibility": "public",
+            "name": "slave"
+        }
+    ],
+    "events": {
+        "install": "install.sh"
+    },
+    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+}

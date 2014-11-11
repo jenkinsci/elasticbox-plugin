@@ -1,20 +1,19 @@
 {
     "profile": {
-        "resource_pool": "testing",
-        "datacenter": "ElasticBox - Development",
-        "network": "Dev Network",
+        "resource_pool": "{resource_pool}",
+        "datacenter": "{datacenter}",
+        "network": "{network}",
         "customization_spec": "None",
-        "network_mor": "dvportgroup-45",
         "instances": 1,
-        "template": "solaris_11_2",
+        "template": "{template}",
         "flavor": "Tiny",
-        "datastore": "Development Storage",
+        "datastore": "{datastore}",
         "schema": "http://elasticbox.net/schemas/{schema_version}/vsphere/compute/profile"
     },
     "box": {
-        "name": "Solaris Jenkins Slave"
+        "name": "{box_name}"
     },
-    "name": "solaris_11",
+    "name": "{name}",
     "provider": "vsphere",
     "schema": "http://elasticbox.net/schemas/{schema_version}/deployment-profile"
 }
