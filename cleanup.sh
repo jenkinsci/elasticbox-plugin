@@ -32,9 +32,10 @@ EBX_TOKEN=$(ebx_token test_admin@elasticbox.com elasticbox)
 PROVIDER_IDS=$(curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" ${EBX_ADDRESS}/services/workspaces/${EBX_WORKSPACE}/providers | python -m json.tool | grep /services/providers | sed -e 's|/services/providers/||g' -e 's/"//g' | awk '{ print $2 }')
 for PROVIDER_ID in ${PROVIDER_IDS}
 do
-	if [ -z $(echo ${EXCLUDED_PROVIDERS} | grep ${PROVIDER_ID}) ]
+    PROVIDER_URL=${EBX_ADDRESS}/services/providers/${PROVIDER_ID}
+    PROVIDER_NAME=$(curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" ${PROVIDER_URL} | python -m json.tool | grep '^    "name":' | sed -e 's/[ ",]//g' -e 's/name://')
+	if [ -z $(echo ${EXCLUDED_PROVIDERS} | grep ${PROVIDER_NAME}) ]
 	then
-		PROVIDER_URL=${EBX_ADDRESS}/services/providers/${PROVIDER_ID}
 		echo Deleting provider ${PROVIDER_URL}
 		curl -k# -X DELETE -H "ElasticBox-Token: ${EBX_TOKEN}" ${PROVIDER_URL}
 		echo
