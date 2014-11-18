@@ -41,19 +41,24 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class TerminateOperation extends LongOperation implements IOperation.InstanceOperation {
     private final boolean delete;
+    private final boolean force;
 
     @DataBoundConstructor
-    public TerminateOperation(String tags, boolean waitForCompletion, boolean delete) {
+    public TerminateOperation(String tags, boolean waitForCompletion, boolean force, boolean delete) {
         super(tags, waitForCompletion);
         this.delete = delete;
+        this.force = force;
     }
 
     public boolean isDelete() {
         return delete;
     }
 
-    @Override
-    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, 
+    public boolean isForce() {
+        return force;
+    }
+
+    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher,
             TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Terminate");
 
@@ -68,7 +73,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             return;
         }
 
-        List<String> instanceIDs = terminate(instances, isWaitForCompletion(), client, logger);
+        List<String> instanceIDs = terminate(instances, isWaitForCompletion(), isForce(), client, logger);
         
         if (isDelete()) {
             logger.info(MessageFormat.format("Deleting terminated {0}", 
@@ -79,7 +84,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         }
     }
     
-    static List<String> terminate(JSONArray instances, boolean waitForCompletion, Client client, TaskLogger logger) 
+    static List<String> terminate(JSONArray instances, boolean waitForCompletion, boolean force, Client client, TaskLogger logger)
             throws InterruptedException, IOException {
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         List<String> instanceIDs = new ArrayList<String>();
@@ -96,9 +101,9 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
                 logger.info(MessageFormat.format("Instance {0} is already terminated", instancePageUrl));
                 continue;
             }
-            IProgressMonitor monitor = client.terminate(instanceId);
+            IProgressMonitor monitor = force ? client.forceTerminate(instanceId) : client.terminate(instanceId);
             monitors.add(monitor);
-            logger.info(MessageFormat.format("Terminating instance {0}", instancePageUrl));            
+            logger.info(MessageFormat.format(force ? "Force-terminating instance {0}" : "Terminating instance {0}", instancePageUrl));
         }
         
         if (!monitors.isEmpty() && waitForCompletion) {

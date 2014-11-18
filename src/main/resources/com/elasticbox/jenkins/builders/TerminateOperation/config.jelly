@@ -19,6 +19,9 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Wait for completion}" field="waitForCompletion">
         <f:checkbox default="true" />
     </f:entry>
+    <f:entry title="${%Force terminate}" field="force">
+        <f:checkbox default="true" />
+    </f:entry>
     <f:entry title="${%Delete after termination}" field="delete">
         <f:checkbox default="true" />
     </f:entry>

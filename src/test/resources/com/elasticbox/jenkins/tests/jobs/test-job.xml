@@ -22,13 +22,14 @@
   <triggers class="vector"/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
-    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
       <operations>
         <com.elasticbox.jenkins.builders.TerminateOperation>
           <tags>${TEST_TAG}</tags>
           <delete>true</delete>
+          <force>true</force>
         </com.elasticbox.jenkins.builders.TerminateOperation>
       </operations>
     </com.elasticbox.jenkins.builders.ManageInstance>
@@ -92,7 +93,7 @@
       <waitForCompletion>true</waitForCompletion>
       <tags></tags>
     </com.elasticbox.jenkins.builders.DeployBox>
-    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
       <operations>
@@ -113,6 +114,7 @@
         <com.elasticbox.jenkins.builders.TerminateOperation>
           <tags>${BUILD_ID}</tags>
           <delete>false</delete>
+          <force>true</force>
         </com.elasticbox.jenkins.builders.TerminateOperation>
         <com.elasticbox.jenkins.builders.UpdateOperation>
           <tags>${BUILD_NUMBER}</tags>

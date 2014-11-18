@@ -108,7 +108,7 @@
       <waitForCompletion>true</waitForCompletion>
       <tags>test-manage-instance-4, ${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
-    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9-SNAPSHOT">
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
       <operations>
@@ -126,6 +126,7 @@
           <tags>test-manage-instance-2</tags>
           <waitForCompletion>true</waitForCompletion>
           <delete>true</delete>
+          <force>true</force>
         </com.elasticbox.jenkins.builders.TerminateOperation>
       </operations>
     </com.elasticbox.jenkins.builders.ManageInstance>

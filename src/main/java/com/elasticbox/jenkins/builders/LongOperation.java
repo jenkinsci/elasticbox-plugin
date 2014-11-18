@@ -69,7 +69,7 @@ public abstract class LongOperation extends Operation {
                 try {
                     done = monitor.isDone(instanceJson);
                 } catch (IProgressMonitor.IncompleteException ex) {
-                    logger.error("Failed to perform operation {0} for instance {0}: {1}", operationDisplayName, 
+                    logger.error("Failed to perform operation {0} for instance {1}: {1}", operationDisplayName,
                             instancePageUrl, ex.getMessage());
                     throw new AbortException(ex.getMessage());
                 }

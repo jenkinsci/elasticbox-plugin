@@ -22,7 +22,7 @@
   <triggers class="vector"/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
-    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
       <operations>
@@ -30,6 +30,7 @@
           <tags>${TEST_TAG}</tags>
           <waitForCompletion>true</waitForCompletion>
           <delete>true</delete>
+          <force>true</force>
         </com.elasticbox.jenkins.builders.TerminateOperation>
       </operations>
     </com.elasticbox.jenkins.builders.ManageInstance>
