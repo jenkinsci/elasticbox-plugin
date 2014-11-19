@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.Client;
+import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
@@ -45,6 +46,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpStatus;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -120,8 +122,15 @@ public class DeployBox extends Builder implements IInstanceProvider {
                     throw new InterruptedException();
                 }            
                 JSONObject instanceJson = (JSONObject) existingInstance;
-                TerminateOperation.terminate(instanceJson, client, logger);
-                client.delete(instanceJson.getString("id"));
+                // Don't fail if the instance is not found
+                try {
+                    TerminateOperation.terminate(instanceJson, client, logger);
+                    client.delete(instanceJson.getString("id"));
+                } catch (ClientException ex) {
+                    if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                        throw  ex;
+                    }
+                }
             }
             String instanceId = deploy(ebCloud, client, resolver, logger);
             instance = client.getInstance(instanceId);

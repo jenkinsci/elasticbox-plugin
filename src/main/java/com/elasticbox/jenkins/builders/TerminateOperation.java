@@ -117,7 +117,8 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
     
     static void terminate(JSONObject instance, Client client, TaskLogger logger) 
             throws IOException, InterruptedException {
-        IProgressMonitor monitor = client.terminate(instance.getString("id"));
+        String instanceId = instance.getString("id");
+        IProgressMonitor monitor = client.terminate(instanceId);
         String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instance);
         logger.info(MessageFormat.format("Terminating box instance {0}", instancePageUrl));
         try {
@@ -126,9 +127,19 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             logger.info(MessageFormat.format("The box instance {0} has been terminated successfully ", 
                     instancePageUrl));
         } catch (IProgressMonitor.IncompleteException ex) {
-            Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
-            logger.error("Failed to terminate box instance %s: %s", instancePageUrl, ex.getMessage());
-            throw new AbortException(ex.getMessage());
+            logger.info(ex.getMessage());
+            monitor = client.forceTerminate(instanceId);
+            logger.info(MessageFormat.format("Force-terminating instance {0}", instancePageUrl));
+            try {
+                logger.info(MessageFormat.format("Waiting for the box instance {0} to be force-terminated", instancePageUrl));
+                monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
+                logger.info(MessageFormat.format("The box instance {0} has been force-terminated successfully ",
+                        instancePageUrl));
+            } catch (IProgressMonitor.IncompleteException e) {
+                Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, e);
+                logger.error("Failed to terminate box instance {0}: {1}", instancePageUrl, ex.getMessage());
+                throw new AbortException(ex.getMessage());
+            }
         }
     }
     
