@@ -100,7 +100,7 @@ public class BoxStack {
                 if (findOverriddenVariable(variable.getString("name"), scope) == null) {
                     JSONObject overriddenVariable = JSONObject.fromObject(variable);
                     overriddenVariable.put("scope", fullScope);
-                    overriddenVariables.add(variable);
+                    overriddenVariables.add(overriddenVariable);
                 }
             } else if (variable.getString("type").equals("Box")) {
                 boxVariables.add(variable);
