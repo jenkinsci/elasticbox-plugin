@@ -68,7 +68,8 @@ public class TestUtils {
     static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
     static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "localhost");
     static final String TEST_PROVIDER_TYPE = "Test Provider";
-    static final String NAME_PREFIX = "jenkins-plugin-test-";
+    static final String TEST_TAG = System.getProperty("elasticbox.jenkins.test.tag", "jenkins-plugin-test");
+    static final String NAME_PREFIX = TEST_TAG + '-';
     static final String LINUX_COMPUTE = "Linux Compute";
 
     static JSONObject findVariable(JSONArray variables, String name, String scope) {
@@ -173,7 +174,6 @@ public class TestUtils {
     public static class MappingTemplateResolver implements TemplateResolver {
         private final Map<String, String> oldValueToNewValueMap = new HashMap<String, String>();
 
-        @Override
         public String resolve(String template) {
             for (Map.Entry<String, String> entry : oldValueToNewValueMap.entrySet()) {
                 template = template.replace(entry.getKey(), entry.getValue());
@@ -195,7 +195,6 @@ public class TestUtils {
             this.resolver = resolver;
         }
         
-        @Override
         public String resolve(String template) {
             template = template.replace("{schema_version}", schemaVersion);
             if (resolver != null) {
@@ -216,6 +215,16 @@ public class TestUtils {
         JSONObject box = JSONObject.fromObject(loadBox(testBoxData.jsonFileName, new TemplateResolverImpl(client, resolver)));
         box.put("name", box.getString("name") + '-' + UUID.randomUUID().toString());
         box.put("owner", TestUtils.TEST_WORKSPACE);
+        JSONArray tags;
+        if (box.containsKey("tags")) {
+            tags = box.getJSONArray("tags");
+        } else {
+            tags = new JSONArray();
+            box.put("tags", tags);
+        }
+        if (!tags.contains(TEST_TAG)) {
+            tags.add(TEST_TAG);
+        }
         box.remove("id");
         box = client.createBox(box);
         testBoxData.setJson(box);
