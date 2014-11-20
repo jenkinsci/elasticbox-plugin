@@ -58,7 +58,17 @@ OLDEST_SUPPORTED_JENKINS_VERSION='1.532.1'
 JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
 
 function set_jenkins_version() {
-    sed -i -e "s|\(.*\)\(<version>.*</version>\)\(.*${JENKINS_VERSION_COMMENT}.*\)|\1<version>${1}</version>\3|" ${REPOSITORY_FOLDER}/pom.xml
+    # work-around by disabling forking for version 1.532.1 for now until a way to fix error 'Failed to initialize exploded war'
+    JENKINS_VERSION=${1}
+    if [[ ${JENKINS_VERSION} == ${OLDEST_SUPPORTED_JENKINS_VERSION} ]]
+    then
+        FORK_COUNT=0
+    else
+        FORK_COUNT=2C
+    fi
+
+    sed -i.bak -e "s|\(.*\)\(<version>.*</version>\)\(.*${JENKINS_VERSION_COMMENT}.*\)|\1<version>${JENKINS_VERSION}</version>\3|" \
+        -e "s|\(.*\)\(<forkCount>.*</forkCount>\)|\1<forkCount>${FORK_COUNT}</forkCount>|" ${REPOSITORY_FOLDER}/pom.xml
 }
 
 function get_jenkins_version() {
@@ -83,8 +93,8 @@ function build_with_jenkins_version() {
     if [[ -n ${EBX_WORKSPACE} ]]
     then
         BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
-    fi    
-    
+    fi
+
     cd ${REPOSITORY_FOLDER}
     mvn ${BUILD_OPTIONS} clean install
     
@@ -132,7 +142,7 @@ then
     build_with_jenkins_version ${LATEST_JENKINS_VERSION}
 fi
 
-if [[ -f "${REPOSITORY_FOLDER}/pom.xml-e" ]]
+if [[ -f "${REPOSITORY_FOLDER}/pom.xml.bak" ]]
 then
-    mv -f ${REPOSITORY_FOLDER}/pom.xml-e ${REPOSITORY_FOLDER}/pom.xml
+    mv -f ${REPOSITORY_FOLDER}/pom.xml.bak ${REPOSITORY_FOLDER}/pom.xml
 fi
