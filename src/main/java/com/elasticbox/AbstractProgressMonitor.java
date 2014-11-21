@@ -30,12 +30,10 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
         creationTime = System.currentTimeMillis();        
     }
 
-    @Override
     public String getResourceUrl() {
         return resourceUrl;
     }
 
-    @Override
     public long getCreationTime() {
         return this.creationTime;
     }
@@ -47,12 +45,10 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
         return resource.getString("state");
     }
 
-    @Override
     public boolean isDone() throws IProgressMonitor.IncompleteException, IOException {
         return isDone(getResource());
     }
 
-    @Override
     public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException, InterruptedException {
         long startTime = System.currentTimeMillis();
         long remainingTime = timeout * 60000;

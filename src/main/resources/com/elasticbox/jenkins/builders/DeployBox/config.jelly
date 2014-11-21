@@ -64,7 +64,10 @@ written permission is obtained from ElasticBox.
             <f:select />
         </f:entry>
         <f:entry title="${%Wait for completion}" field="waitForCompletion">
-            <f:checkbox default="true" />
+            <f:checkbox default="true"/>
+        </f:entry>
+        <f:entry title="${%Wait timeout}" field="waitForCompletionTimeout">
+            <f:textbox clazz="number" default="60"/>
         </f:entry>
         <f:entry title="Inject environment variables" field="instanceEnvVariable">
             <f:textbox />

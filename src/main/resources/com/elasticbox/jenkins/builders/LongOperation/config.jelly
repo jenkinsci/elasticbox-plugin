@@ -17,6 +17,9 @@ written permission is obtained from ElasticBox.
         <f:textbox clazz="required" />
     </f:entry>
     <f:entry title="${%Wait for completion}" field="waitForCompletion">
-        <f:checkbox default="true" />
+        <f:checkbox default="true"/>
+    </f:entry>
+    <f:entry title="${%Wait timeout}" field="waitForCompletionTimeout">
+        <f:textbox clazz="number" default="60"/>
     </f:entry>
 </j:jelly>

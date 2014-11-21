@@ -44,8 +44,8 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
     private final boolean force;
 
     @DataBoundConstructor
-    public TerminateOperation(String tags, boolean waitForCompletion, boolean force, boolean delete) {
-        super(tags, waitForCompletion);
+    public TerminateOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout, boolean force, boolean delete) {
+        super(tags, waitForCompletion, waitForCompletionTimeout);
         this.delete = delete;
         this.force = force;
     }
@@ -73,7 +73,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             return;
         }
 
-        List<String> instanceIDs = terminate(instances, isWaitForCompletion(), isForce(), client, logger);
+        List<String> instanceIDs = terminate(instances, getWaitForCompletionTimeout(), isForce(), client, logger);
         
         if (isDelete()) {
             logger.info(MessageFormat.format("Deleting terminated {0}", 
@@ -84,7 +84,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         }
     }
     
-    static List<String> terminate(JSONArray instances, boolean waitForCompletion, boolean force, Client client, TaskLogger logger)
+    static List<String> terminate(JSONArray instances, int waitForCompletionTimeout, boolean force, Client client, TaskLogger logger)
             throws InterruptedException, IOException {
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         List<String> instanceIDs = new ArrayList<String>();
@@ -106,10 +106,10 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             logger.info(MessageFormat.format(force ? "Force-terminating instance {0}" : "Terminating instance {0}", instancePageUrl));
         }
         
-        if (!monitors.isEmpty() && waitForCompletion) {
+        if (!monitors.isEmpty() && waitForCompletionTimeout > 0) {
             logger.info(MessageFormat.format("Waiting for {0} to complete terminating", 
                     instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger);
+            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
         }    
         
         return instanceIDs;

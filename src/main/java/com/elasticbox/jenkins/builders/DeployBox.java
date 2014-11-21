@@ -78,12 +78,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private boolean skipIfExisting;
     private String alternateAction;
     private boolean waitForCompletion;
-    
+    private int waitForCompletionTimeout;
+
     private transient InstanceManager instanceManager;
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
-            int instances, String instanceEnvVariable, String tags, String variables, String alternateAction, boolean waitForCompletion) {
+            int instances, String instanceEnvVariable, String tags, String variables, String alternateAction,
+            boolean waitForCompletion, int waitForCompletionTimeout) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -97,6 +99,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.variables = variables;
         this.alternateAction = alternateAction;
         this.waitForCompletion = waitForCompletion;
+        this.waitForCompletionTimeout = waitForCompletionTimeout;
         this.tags = tags;
         this.instanceEnvVariable = instanceEnvVariable;
         
@@ -110,11 +113,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), instance);
             logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
         } else if (alternateAction.equals(ACTION_RECONFIGURE)) {            
-            ReconfigureOperation.reconfigure(existingInstances, resolver.resolveVariables(variables), waitForCompletion, 
-                    client, logger);
+            ReconfigureOperation.reconfigure(existingInstances, resolver.resolveVariables(variables),
+                    waitForCompletionTimeout, client, logger);
         } else if (alternateAction.equals(ACTION_REINSTALL)) {
-            ReinstallOperation.reinstall(existingInstances, resolver.resolveVariables(variables), waitForCompletion, 
-                    client, logger);
+            ReinstallOperation.reinstall(existingInstances, resolver.resolveVariables(variables),
+                    waitForCompletionTimeout, client, logger);
             
         } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
             for (Object existingInstance : existingInstances) {
@@ -172,7 +175,6 @@ public class DeployBox extends Builder implements IInstanceProvider {
         final JSONObject service = client.getService(instanceId);
         build.addAction(new EnvironmentContributingAction() {
 
-            @Override
             public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
                 final String instanceUrl = client.getInstanceUrl(instanceId);            
                 env.put(instanceEnvVariable, instanceId);
@@ -216,17 +218,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 }
             }
 
-            @Override
             public String getIconFileName() {
                 return null;
             }
 
-            @Override
             public String getDisplayName() {
                 return "Instance Environment Variables";
             }
 
-            @Override
             public String getUrlName() {
                 return null;
             }
@@ -296,7 +295,6 @@ public class DeployBox extends Builder implements IInstanceProvider {
         
     }        
 
-    @Override
     public String getId() {
         return id;
     }
@@ -320,6 +318,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         
         if (StringUtils.isNotBlank(environment)) {
             tags = StringUtils.isBlank(tags) ? environment : (environment + ',' + tags);
+        }
+
+        if (waitForCompletion && waitForCompletionTimeout == 0) {
+            waitForCompletionTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
         }
         
         return this;
@@ -369,13 +371,15 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return waitForCompletion;
     }
 
-    @Override
+    public int getWaitForCompletionTimeout() {
+        return waitForCompletionTimeout;
+    }
+
     public String getInstanceId(AbstractBuild build) {
         JSONObject instance = instanceManager.getInstance(build);
         return instance != null ? instance.getString("id") : null;
     }
 
-    @Override
     public ElasticBoxCloud getElasticBoxCloud() {
         return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloud);
     }

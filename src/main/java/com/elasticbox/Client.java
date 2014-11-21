@@ -474,7 +474,6 @@ public class Client {
             this.operations = operations;
         }
         
-        @Override
         public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
             String updated = instance.getString("updated");
             String state = instance.getString("state");
@@ -502,7 +501,6 @@ public class Client {
             super(resourceUrl, lastModified);
         }
 
-        @Override
         public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
             String updated = instance.getString("updated");
             String state = instance.getString("state");

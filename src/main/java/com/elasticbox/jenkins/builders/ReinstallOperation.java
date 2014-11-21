@@ -40,11 +40,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ReinstallOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public ReinstallOperation(String tags, boolean waitForCompletion) {
-        super(tags, waitForCompletion);
+    public ReinstallOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
-    @Override
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Reinstall");
         
@@ -58,10 +57,10 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
             return;
         }
         
-        reinstall(instances, null, isWaitForCompletion(), client, logger);
+        reinstall(instances, null, getWaitForCompletionTimeout(), client, logger);
     }
     
-    static void reinstall(JSONArray instances, JSONArray variables, boolean waitForCompletion, Client client,
+    static void reinstall(JSONArray instances, JSONArray variables, int waitForCompletionTimeout, Client client,
             TaskLogger logger) throws InterruptedException, IOException {
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         for (Object instance : instances) {
@@ -74,9 +73,9 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
             String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));            
         }
-        if (waitForCompletion) {
+        if (waitForCompletionTimeout > 0) {
             logger.info(MessageFormat.format("Waiting for {0} to finish reinstall", instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger);
+            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
         }        
     }    
     
@@ -84,7 +83,6 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
         return new CompositeObjectFilter(new DescriptorHelper.InstanceFilterByTags(tags, false),
             new ObjectFilter() {
 
-            @Override
             public boolean accept(JSONObject instance) {
                 // reject inaccessible instances that cannot be reinstalled                
                 String operation = instance.getString("operation");

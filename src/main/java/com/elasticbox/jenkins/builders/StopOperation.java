@@ -39,12 +39,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class StopOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public StopOperation(String tags, boolean waitForCompletion) {
-        super(tags, waitForCompletion);
+    public StopOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
-    
-    @Override
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Stop");
         
@@ -70,7 +68,7 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
         }
         if (isWaitForCompletion()) {
             logger.info(MessageFormat.format("Waiting for {0} to complete stopping", instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(getDescriptor().getDisplayName(), monitors, client, logger);
+            LongOperation.waitForCompletion(getDescriptor().getDisplayName(), monitors, client, logger, getWaitForCompletionTimeout());
         }
     }
     

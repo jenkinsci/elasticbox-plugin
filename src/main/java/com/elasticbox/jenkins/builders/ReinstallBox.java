@@ -16,6 +16,7 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
 import hudson.Extension;
 import hudson.Launcher;
@@ -24,10 +25,7 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -67,7 +65,7 @@ public class ReinstallBox extends InstanceBuildStep {
         if (waitForCompletion) {
             logger.info("Waiting for the instance to finish reinstall");
             LongOperation.waitForCompletion(Client.InstanceOperation.REINSTALL, Collections.singletonList(monitor), 
-                    client, logger);
+                    client, logger, ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
         }
     }
     

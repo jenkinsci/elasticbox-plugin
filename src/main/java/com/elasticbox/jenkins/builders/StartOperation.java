@@ -39,12 +39,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class StartOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public StartOperation(String tags, boolean waitForCompletion) {
-        super(tags, waitForCompletion);
+    public StartOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
-    
-    @Override
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Start");
         
@@ -71,7 +69,7 @@ public class StartOperation extends LongOperation implements IOperation.Instance
         }
         if (isWaitForCompletion()) {
             logger.info(MessageFormat.format("Waiting for {0} to comlete starting", instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(getDescriptor().getDisplayName(), monitors, client, logger);
+            LongOperation.waitForCompletion(getDescriptor().getDisplayName(), monitors, client, logger, getWaitForCompletionTimeout());
         }
     }
     

@@ -16,6 +16,7 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
+import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
@@ -26,9 +27,7 @@ import hudson.model.BuildListener;
 import hudson.tasks.Builder;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -69,7 +68,7 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         if (waitForCompletion) {
             logger.info("Waiting for the instance to be reconfigured");        
             LongOperation.waitForCompletion(Client.InstanceOperation.RECONFIGURE, Collections.singletonList(monitor), 
-                    client, logger);
+                    client, logger, ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
         }
     }
     

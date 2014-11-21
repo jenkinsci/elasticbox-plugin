@@ -35,25 +35,38 @@ import org.apache.commons.lang.StringUtils;
 public abstract class LongOperation extends Operation {
 
     private final boolean waitForCompletion;
-    
-    protected LongOperation(String tags, boolean waitForCompletion) {
+    private int waitForCompletionTimeout;
+
+    protected LongOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
         super(tags);
         this.waitForCompletion = waitForCompletion;
+        this.waitForCompletionTimeout = waitForCompletionTimeout;
+    }
+
+    protected Object readResolve() {
+        if (waitForCompletion && waitForCompletionTimeout == 0) {
+            waitForCompletionTimeout = 60;
+        }
+        return this;
     }
 
     public boolean isWaitForCompletion() {
         return waitForCompletion;
     }
 
-    static void waitForCompletion(String operationDisplayName, List<IProgressMonitor> monitors, Client client, 
-            TaskLogger logger) throws IOException, InterruptedException {
+    public int getWaitForCompletionTimeout() {
+        return waitForCompletionTimeout;
+    }
+
+    static void waitForCompletion(String operationDisplayName, List<IProgressMonitor> monitors, Client client,
+            TaskLogger logger, int timeoutMinutes) throws IOException, InterruptedException {
         Map<String, IProgressMonitor> instanceIdToMonitorMap = new HashMap<String, IProgressMonitor>();
         for (IProgressMonitor monitor : monitors) {
             instanceIdToMonitorMap.put(Client.getResourceId(monitor.getResourceUrl()), monitor);
         }
         Object waitLock = new Object();
         long startWaitTime = System.currentTimeMillis();
-        while (!instanceIdToMonitorMap.isEmpty() && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime) < ElasticBoxSlaveHandler.TIMEOUT_MINUTES) {
+        while (!instanceIdToMonitorMap.isEmpty() && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime) < timeoutMinutes) {
             synchronized (waitLock) {
                 waitLock.wait(3000);
             }

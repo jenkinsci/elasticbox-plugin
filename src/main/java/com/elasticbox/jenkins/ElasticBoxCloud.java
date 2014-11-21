@@ -375,22 +375,18 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             this.future = future;
         }
 
-        @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
             return future.cancel(mayInterruptIfRunning);
         }
 
-        @Override
         public boolean isCancelled() {
             return future.isCancelled();
         }
 
-        @Override
         public boolean isDone() {
             return future.isDone();
         }
 
-        @Override
         public V get() throws InterruptedException, ExecutionException {
             try {
                 return future.get();
@@ -399,7 +395,6 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
         }
 
-        @Override
         public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
             try {
                 return future.get(timeout, unit);

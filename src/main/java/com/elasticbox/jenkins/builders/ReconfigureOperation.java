@@ -40,12 +40,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ReconfigureOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public ReconfigureOperation(String tags, boolean waitForCompletion) {
-        super(tags, waitForCompletion);
+    public ReconfigureOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
-    @Override
-    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, 
+    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher,
             TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Reconfigure");
         
@@ -60,10 +59,10 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
             return;
         }
 
-        reconfigure(instances, null, isWaitForCompletion(), cloud.getClient(), logger);
+        reconfigure(instances, null, getWaitForCompletionTimeout(), cloud.getClient(), logger);
     }
     
-    static void reconfigure(JSONArray instances, JSONArray variables, boolean waitForCompletion, Client client, 
+    static void reconfigure(JSONArray instances, JSONArray variables, int waitForCompletionTimeout, Client client,
             TaskLogger logger) throws InterruptedException, IOException {
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();        
         for (Object instance : instances) {
@@ -78,10 +77,10 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
             String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));            
         }
-        if (waitForCompletion) {
+        if (waitForCompletionTimeout > 0) {
             logger.info(MessageFormat.format("Waiting for {0} to finish reconfiguration", 
                     instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger);
+            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
         }
         
     }
@@ -90,7 +89,6 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
         return new CompositeObjectFilter(new DescriptorHelper.InstanceFilterByTags(tags, false),
             new ObjectFilter() {
 
-            @Override
             public boolean accept(JSONObject instance) {
                 // reject inaccessible instances that cannot be reconfigured                
                 String operation = instance.getString("operation");

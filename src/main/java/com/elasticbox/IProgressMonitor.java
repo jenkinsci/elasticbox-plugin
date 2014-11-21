@@ -46,26 +46,21 @@ public interface IProgressMonitor {
             this.resourceUrl = resourceUrl;
         }
         
-        @Override
         public String getResourceUrl() {
             return resourceUrl;
         }
 
-        @Override
         public boolean isDone() throws IProgressMonitor.IncompleteException, IOException {
             return true;
         }
 
-        @Override
         public long getCreationTime() {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException {
         }
 
-        @Override
         public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
             return true;
         }        
