@@ -28,6 +28,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Descriptor;
 import hudson.model.EnvironmentContributingAction;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -35,6 +36,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -72,6 +74,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String environment;
     private final int instances;
     private final String variables;
+    private final InstanceExpiration expiration;
     private final String instanceEnvVariable;
     private String tags;    
     @Deprecated
@@ -84,8 +87,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
-            int instances, String instanceEnvVariable, String tags, String variables, String alternateAction,
-            boolean waitForCompletion, int waitForCompletionTimeout) {
+            int instances, String instanceEnvVariable, String tags, String variables, InstanceExpiration expiration,
+            String alternateAction, boolean waitForCompletion, int waitForCompletionTimeout) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -97,6 +100,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.instances = instances;
         this.environment = null;
         this.variables = variables;
+        this.expiration = expiration;
         this.alternateAction = alternateAction;
         this.waitForCompletion = waitForCompletion;
         this.waitForCompletionTimeout = waitForCompletionTimeout;
@@ -150,8 +154,20 @@ public class DeployBox extends Builder implements IInstanceProvider {
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
         DescriptorHelper.removeInvalidVariables(resolvedVariables, 
                 ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, box, boxVersion).getJsonArray());
+        String expirationTime = null, expirationOperation = null;
+        if (getExpiration() instanceof InstanceExpirationSchedule) {
+            InstanceExpirationSchedule expirationSchedule = (InstanceExpirationSchedule) getExpiration();
+            try {
+                expirationTime = expirationSchedule.getUTCDateTime();
+            } catch (ParseException ex) {
+                Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+                logger.error("Error parsing expiration time: {0}", ex.getMessage());
+                throw new AbortException(ex.getMessage());
+            }
+            expirationOperation = expirationSchedule.getOperation();
+        }
         IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, 
-                resolvedVariables);
+                resolvedVariables, expirationTime, expirationOperation);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
         logger.info("Deploying box instance {0}", instancePageUrl);
@@ -363,12 +379,17 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return variables;
     }
 
+    
     public String getAlternateAction() {
         return alternateAction;
     }
 
     public boolean isWaitForCompletion() {
         return waitForCompletion;
+    }
+
+    public InstanceExpiration getExpiration() {
+        return expiration;
     }
 
     public int getWaitForCompletionTimeout() {
@@ -388,6 +409,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         private static final Pattern ENVIRONMENT_PATTERN = Pattern.compile("[a-zA-Z0-9-]+");
         private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
+        
+        private static final InstanceExpiration alwaysOn = new InstanceExpiration() {
+            
+        };
 
         private static final ListBoxModel alternateActionItems = new ListBoxModel();
         static {
@@ -408,6 +433,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
             return "ElasticBox - Deploy Box";
         }
 
+        public List<? extends Descriptor<InstanceExpiration>> getExpirationOptions() {
+            return Jenkins.getInstance().getDescriptorList(InstanceExpiration.class);
+        }
+        
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             if (formData.getString("profile").trim().length() == 0) {
@@ -441,8 +470,34 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("box"), formData.getString("boxVersion")).getJsonArray();
                 formData.put("variables", DescriptorHelper.fixVariables(formData.getString("variables"), boxStack));
             }
+
+            JSONObject expiration = formData.getJSONObject("expiration");
+            if (expiration.containsKey("scheduleType")) {
+                if ("date-time".equals(expiration.get("scheduleType"))) {
+                    expiration.remove("hours");
+                } else {
+                    expiration.remove("date");
+                    expiration.remove("time");
+                }        
+            }
             
-            return super.newInstance(req, formData);
+            DeployBox deployBox = (DeployBox) super.newInstance(req, formData);
+            
+            if (deployBox.getExpiration() instanceof InstanceExpirationSchedule) {
+                InstanceExpirationSchedule expirationSchedule = (InstanceExpirationSchedule) deployBox.getExpiration();
+                if (expirationSchedule.getHours() == null) {
+                    FormValidation validation = InstanceExpirationSchedule.checkDate(expirationSchedule.getDate());
+                    if (validation.kind == FormValidation.Kind.ERROR) {
+                        throw new FormException(MessageFormat.format("Invalid date specified for Expiration of DeployBox build step: {0}", validation.getMessage()), "expiration");
+                    }
+                    validation = InstanceExpirationSchedule.checkTime(expirationSchedule.getTime());
+                    if (validation.kind == FormValidation.Kind.ERROR) {
+                        throw new FormException(MessageFormat.format("Invalid time specified for Expiration of DeployBox build step: {0}", validation.getMessage()), "expiration");
+                    }                    
+                }
+            }
+            
+            return deployBox;
         }                
 
         public ListBoxModel doFillCloudItems() {

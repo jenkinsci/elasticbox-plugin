@@ -424,7 +424,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             }
         }
         IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), 
-                profile.getString("owner"), request.slave.getEnvironment(), 1, variables);
+                profile.getString("owner"), request.slave.getEnvironment(), 1, variables, null, null);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>", 
                 request.slave.getInstancePageUrl()));

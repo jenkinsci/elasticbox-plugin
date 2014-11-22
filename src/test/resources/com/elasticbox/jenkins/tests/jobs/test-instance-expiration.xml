@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.5-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-f0b405cf-8c58-4301-9567-adc608ffcf7b</id>
+      <cloud>elasticbox-b02b1cb8-1560-4c87-a5f2-9e5dfbcceedd</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>f035c580-70b3-49ce-9209-eb90c968060a</boxVersion>
+      <profile>eb87837c-6271-4d51-a6f5-50f9dd0fab09</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <expiration class="com.elasticbox.jenkins.builders.InstanceExpiration$AlwaysOn"/>
+      <instanceEnvVariable></instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <waitForCompletionTimeout>60</waitForCompletionTimeout>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.5-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-220c4f12-3b31-4366-95b4-8a06c6730e20</id>
+      <cloud>elasticbox-b02b1cb8-1560-4c87-a5f2-9e5dfbcceedd</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>989c760d-4f3e-40bc-8c3b-6d198183b85a</boxVersion>
+      <profile>eb87837c-6271-4d51-a6f5-50f9dd0fab09</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <expiration class="com.elasticbox.jenkins.builders.InstanceExpirationSchedule$ShutDown">
+        <operation>shutdown</operation>
+        <hours>1</hours>
+        <date></date>
+        <time></time>
+      </expiration>
+      <instanceEnvVariable></instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <waitForCompletionTimeout>60</waitForCompletionTimeout>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.5-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-f4b7198a-10b3-4fa6-ad9e-847a042985b3</id>
+      <cloud>elasticbox-b02b1cb8-1560-4c87-a5f2-9e5dfbcceedd</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>f035c580-70b3-49ce-9209-eb90c968060a</boxVersion>
+      <profile>eb87837c-6271-4d51-a6f5-50f9dd0fab09</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <expiration class="com.elasticbox.jenkins.builders.InstanceExpirationSchedule$Terminate">
+        <operation>terminate</operation>
+        <date>12/01/2014</date>
+        <time>23:00</time>
+      </expiration>
+      <instanceEnvVariable></instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <waitForCompletionTimeout>60</waitForCompletionTimeout>
+    </com.elasticbox.jenkins.builders.DeployBox>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

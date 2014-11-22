@@ -19,7 +19,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.text.DateFormat;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import net.sf.json.JSON;
@@ -95,7 +97,7 @@ public class Client {
     
     
     private static HttpClient httpClient = null;
-    
+
     public static String getSchemaVersion(String url) {
         return url.substring(BASE_ELASTICBOX_SCHEMA.length(), url.indexOf('/', BASE_ELASTICBOX_SCHEMA.length()));
     }
@@ -516,10 +518,11 @@ public class Client {
     }
     
     public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {
-        return deploy(null, profileId, workspaceId, environment, instances, variables);
+        return deploy(null, profileId, workspaceId, environment, instances, variables, null, null);
     }
     
-    public IProgressMonitor deploy(String boxVersion, String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {        
+    public IProgressMonitor deploy(String boxVersion, String profileId, String workspaceId, String environment, 
+            int instances, JSONArray variables, String expirationTime, String expirationOperation) throws IOException {        
         JSONObject profile = (JSONObject) doGet(MessageFormat.format("/services/profiles/{0}", profileId), false);
         JSONObject deployRequest = new JSONObject();
         
@@ -542,6 +545,13 @@ public class Client {
                 }
             }
             deployRequest.put("variables", variables);
+            
+            if (expirationTime != null && expirationOperation != null) {
+                JSONObject lease = new JSONObject();
+                lease.put("expire", expirationTime);
+                lease.put("operation", expirationOperation);
+                deployRequest.put("lease", lease);
+            }
         } else {
             JSONObject mainInstance = (JSONObject) profile.getJSONArray("instances").get(0);
             JSONArray jsonVars = mainInstance.getJSONArray("variables");
