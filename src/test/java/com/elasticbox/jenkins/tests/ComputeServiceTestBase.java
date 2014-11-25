@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
+import hudson.model.AbstractBuild;
 import hudson.model.FreeStyleBuild;
 import java.text.MessageFormat;
 import java.util.Collections;
@@ -27,11 +28,11 @@ import org.junit.Before;
  *
  * @author Phong Nguyen Le
  */
-public class ComputeServiceTestBase extends TestBase {
-    private final TestUtils.MappingTemplateResolver templateResolver = new TestUtils.MappingTemplateResolver();
-    private JSONObject testProvider;
-    private JSONObject testProfile;    
-    private JSONObject vSphereProfile;
+public abstract class ComputeServiceTestBase extends TestBase {
+    protected final TestUtils.MappingTemplateResolver templateResolver = new TestUtils.MappingTemplateResolver();
+    protected JSONObject testProvider;
+    protected JSONObject testProfile;    
+    protected JSONObject vSphereProfile;
     
     @Before
     public void setupTestData() throws Exception {
@@ -61,10 +62,12 @@ public class ComputeServiceTestBase extends TestBase {
         deleteAfter(testProfile);
         templateResolver.map("{linux-compute-id}", linuxBoxId);
         templateResolver.map("{linux-compute-version}", linuxBoxVersion.getString("id"));
-        templateResolver.map("(linux-compute-test-profile}", testProfile.getString("id"));
+        templateResolver.map("{linux-compute-test-profile}", testProfile.getString("id"));
         if (vSphereProfile != null) {
             templateResolver.map("{linux-compute-vsphere-profile}", vSphereProfile.getString("id"));            
         }
+        
+        templateResolver.map("{workspace}", TestUtils.TEST_WORKSPACE);
     }
     
     protected void runTestJob(String jobTemplatePath) throws Exception {
@@ -74,8 +77,11 @@ public class ComputeServiceTestBase extends TestBase {
             String jobXml = templateResolver.resolve(TestUtils.getResourceAsString(jobTemplatePath));
             FreeStyleBuild build = TestUtils.runJob("test", jobXml, testParameters, jenkins.getInstance());
             TestUtils.assertBuildSuccess(build);   
+            validate(build);
         } finally {
             TestUtils.cleanUp(testTag, Jenkins.getInstance());
         }
     }
+    
+    protected abstract void validate(AbstractBuild build) throws Exception;
 }
