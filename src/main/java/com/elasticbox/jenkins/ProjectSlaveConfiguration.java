@@ -114,8 +114,9 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
             return DescriptorHelper.getBoxes(ClientCache.getClient(cloud), workspace);
         }
 
-        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(ClientCache.getClient(cloud), box);
+        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace,
+                @QueryParameter String box) {
+            return DescriptorHelper.getBoxVersions(ClientCache.getClient(cloud), workspace, box);
         }
         
         public FormValidation doCheckBoxVersion(@QueryParameter String value, @QueryParameter String cloud, 

@@ -95,8 +95,8 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
                 @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(createClient(endpointUrl, username, password, token), box);
+                @QueryParameter String workspace, @QueryParameter String box) {
+            return DescriptorHelper.getBoxVersions(createClient(endpointUrl, username, password, token), workspace, box);
         }
         
         public FormValidation doCheckBoxVersion(@QueryParameter String value,
