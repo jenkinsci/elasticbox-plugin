@@ -512,8 +512,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
             return DescriptorHelper.getBoxes(cloud, workspace);
         }
 
-        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(cloud, box);
+        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace, 
+                @QueryParameter String box) {
+            return DescriptorHelper.getBoxVersions(cloud, workspace, box);
         }
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 

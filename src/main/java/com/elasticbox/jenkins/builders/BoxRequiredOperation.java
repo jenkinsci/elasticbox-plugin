@@ -55,8 +55,8 @@ public abstract class BoxRequiredOperation extends Operation {
         }
 
         public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String cloud, 
-                @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(cloud, box);
+                @QueryParameter String workspace, @QueryParameter String box) {
+            return DescriptorHelper.getBoxVersions(cloud, workspace, box);
         }
 
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(@RelativePath("..") @QueryParameter String cloud, 

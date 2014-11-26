@@ -15,7 +15,6 @@ package com.elasticbox.jenkins;
 import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
-import com.elasticbox.jenkins.builders.ReconfigureBox;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
@@ -153,14 +152,30 @@ public class DescriptorHelper {
         return getBoxes(ClientCache.getClient(cloud), workspace);
     }
     
-    public static ListBoxModel getBoxVersions(Client client, String box) {
+    public static ListBoxModel getBoxVersions(Client client, String workspace, String box) {
         ListBoxModel boxVersions = new ListBoxModel();
         if (StringUtils.isBlank(box) || client == null) {
             return boxVersions;
         }
         
-        boxVersions.add("Latest", box);
         try {
+            JSONObject boxJson = client.getBox(box);
+            boolean canWrite = false;
+            if (boxJson.getString("owner").equals(workspace)) {
+                canWrite = true;
+            } else {
+                Set<String> collaborators = new HashSet<String>();
+                for (Object member : boxJson.getJSONArray("members")) {
+                    JSONObject memberJson = (JSONObject) member;
+                    if (memberJson.getString("role").equals("collaborator")) {
+                        collaborators.add(memberJson.getString("workspace"));
+                    }
+                }
+                canWrite = collaborators.contains(workspace);
+            }
+            if (canWrite) {            
+                boxVersions.add("Latest", box);
+            }
             for (Object json : client.getBoxVersions(box)) {
                 JSONObject boxVersion = (JSONObject) json;
                 boxVersions.add(boxVersion.getJSONObject("version").getString("description"), boxVersion.getString("id"));
@@ -172,8 +187,8 @@ public class DescriptorHelper {
         return boxVersions;
     }
     
-    public static ListBoxModel getBoxVersions(String cloud, String box) {
-        return getBoxVersions(ClientCache.getClient(cloud), box);
+    public static ListBoxModel getBoxVersions(String cloud, String workspace, String box) {
+        return getBoxVersions(ClientCache.getClient(cloud), workspace, box);
     }
 
     public static ListBoxModel getProfiles(Client client, String workspace, String box) {
