@@ -495,7 +495,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         public FormValidation doVerifyToken(@QueryParameter String endpointUrl, @QueryParameter String token) {
             Client client = new Client(endpointUrl, token);
             try {
-                client.doGet("/services/workspaces", true);
+                client.connect();
             } catch (IOException ex) {
                 return FormValidation.error(ex.getMessage());
             }
