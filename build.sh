@@ -10,6 +10,7 @@ Options:
     -p Package to upgrade ElasticBox appliance
     -t ElasticBox access token
     -w ElasticBox workspace
+    -c Fork count
     -? Display this message
 "
 
@@ -27,7 +28,7 @@ function help() {
 }
 
 # Handle options
-while getopts ":a:j:p:t:w:h" ARGUMENT
+while getopts ":a:j:p:t:w:c:h" ARGUMENT
 do
     case ${ARGUMENT} in
 
@@ -36,6 +37,7 @@ do
         p )  PACKAGE=$OPTARG;;
         t )  EBX_TOKEN=$OPTARG;;
         w )  EBX_WORKSPACE=$OPTARG;;
+        c )  FORK_COUNT=$OPTARG;;
         h )  help; exit 0;;
         : )  help "Missing option argument for -$OPTARG"; exit 1;;
         ? )  help "Option does not exist: $OPTARG"; exit 1;;
@@ -60,11 +62,14 @@ JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
 function set_jenkins_version() {
     # work-around by disabling forking for version 1.532.1 for now until a way to fix error 'Failed to initialize exploded war'
     JENKINS_VERSION=${1}
-    if [[ ${JENKINS_VERSION} == ${OLDEST_SUPPORTED_JENKINS_VERSION} ]]
+    if [[ -z "${FORK_COUNT}" ]]
     then
-        FORK_COUNT=0
-    else
-        FORK_COUNT=2C
+        if [[ ${JENKINS_VERSION} == ${OLDEST_SUPPORTED_JENKINS_VERSION} ]]
+        then
+            FORK_COUNT=0
+        else
+            FORK_COUNT=2C
+        fi
     fi
 
     sed -i.bak -e "s|\(.*\)\(<version>.*</version>\)\(.*${JENKINS_VERSION_COMMENT}.*\)|\1<version>${JENKINS_VERSION}</version>\3|" \

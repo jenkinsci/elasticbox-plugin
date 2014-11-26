@@ -121,28 +121,30 @@ public class ClientCache {
             return getElasticBoxCloud().getPassword();
         }
 
+        private void handleException(ClientException ex) {
+            if (ex.getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+                clientCache.remove(cloudName);
+            }            
+        }
+        
         @Override
         public void connect() throws IOException {
             try {
                 super.connect();
             } catch (ClientException ex) {
-                if (ex.getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
-                    clientCache.remove(cloudName);
-                }
-                
+                handleException(ex);
                 throw ex;
             }
         }
-        
-        
 
         @Override
         protected HttpResponse execute(HttpRequestBase request) throws IOException {
-            HttpResponse response = super.execute(request);
-            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
-                clientCache.remove(cloudName);
+            try {
+                return super.execute(request);
+            } catch (ClientException ex) {
+                handleException(ex);                
+                throw ex;                
             }
-            return response;
         }
     }
     

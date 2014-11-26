@@ -19,9 +19,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.text.DateFormat;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import net.sf.json.JSON;
@@ -137,6 +135,7 @@ public class Client {
 
     public void connect() throws IOException {
         if (token != null && username == null) {
+            doGet("/services/workspaces", true);
             return;
         }
         
@@ -546,7 +545,7 @@ public class Client {
             }
             deployRequest.put("variables", variables);
             
-            if (expirationTime != null && expirationOperation != null) {
+            if (expirationTime != null && expirationOperation != null && schemaVersion.compareTo("2014-10-09") >= 0) {
                 JSONObject lease = new JSONObject();
                 lease.put("expire", expirationTime);
                 lease.put("operation", expirationOperation);
