@@ -72,7 +72,11 @@ written permission is obtained from ElasticBox.
 
         <f:entry title="${%Retention Time}" field="retentionTime">
           <f:textbox clazz="required number" default="30" />
-        </f:entry>  
+        </f:entry>
+
+        <f:entry title="${%Max. No. of Builds}" field="maxBuildsText">
+            <f:textbox />
+        </f:entry>
 
         <f:entry title="${%Number of Executors}" field="executors">
           <f:textbox clazz="required number" default="1"/>

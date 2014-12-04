@@ -24,7 +24,9 @@ import hudson.model.Node;
 import hudson.model.Slave;
 import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
+import hudson.slaves.OfflineCause;
 import hudson.slaves.RetentionStrategy;
+import hudson.slaves.SlaveComputer;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collections;
@@ -93,6 +95,7 @@ public class ElasticBoxSlave extends Slave {
     private String instanceUrl;
     private String instanceStatusMessage;
     private int retentionTime;
+    private int builds;
     private final String cloudName;
     private boolean deletable;
     
@@ -289,6 +292,67 @@ public class ElasticBoxSlave extends Slave {
         }
         if (!instanceUrl.startsWith(ebCloud.getEndpointUrl())) {
             throw new IOException(MessageFormat.format("The instance {0} has been created at a different ElasticBox endpoint than the currently configured one. Open {0} in a browser to terminate it.", instanceUrl));
+        }        
+    }
+    
+    
+
+    void markForTermination() {
+        setDeletable(true);
+        SlaveComputer computer = getComputer();        
+        if (computer != null) {
+            computer.setAcceptingTasks(false);
+            computer.setTemporarilyOffline(true, new OfflineCause() {
+                
+                @Override
+                public String toString() {
+                    String message;
+                    ElasticBoxCloud cloud = null;
+                    try {
+                        cloud = getCloud();
+                    } catch (IOException ex) {
+                    }
+                    String instanceUrl = getInstanceUrl();
+                    if (instanceUrl == null || cloud == null) {
+                        message = "This slave will be removed shortly";
+                    } else {
+                        String url = Client.getPageUrl(((ElasticBoxCloud) cloud).getEndpointUrl(), instanceUrl);
+                        if (url != null) {
+                            message = MessageFormat.format("Instance at {0} of ElasticBox cloud ''{1}'' will be terminated and deleted", 
+                                    url, cloud.getDisplayName());
+                        } else {
+                            message = MessageFormat.format("Instance {0} must be terminated but that's not possible because the endpoint URL of ElasticBox cloud ''{1}'' has been changed", instanceUrl, cloud.getDisplayName());
+                        }              
+                    }
+                    return message;
+                }
+                
+            });
+        } else {
+            save();
+        }    
+    }
+    
+    void incrementBuilds() {
+        builds++;
+        save();
+    }
+    
+    boolean hasExpired() {
+        if (isSingleUse() && builds > 0) {
+            return true;
+        }
+        
+        AbstractSlaveConfiguration slaveConfig = getSlaveConfiguration();
+        return slaveConfig != null && (slaveConfig.getRetentionTime() == 0 || 
+                (slaveConfig.getMaxBuilds() > 0 && builds >= slaveConfig.getMaxBuilds()));
+    }
+    
+    private void save() {
+        try {
+            Jenkins.getInstance().save();
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         }        
     }
     

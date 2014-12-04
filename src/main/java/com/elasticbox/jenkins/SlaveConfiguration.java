@@ -39,13 +39,14 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
     @DataBoundConstructor
     public SlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, 
             int minInstances, int maxInstances, String environment, String variables, String labels, String description, 
-            String remoteFS, Node.Mode mode, int retentionTime, int executors, int launchTimeout) {
+            String remoteFS, Node.Mode mode, int retentionTime, String maxBuildsText, int executors, int launchTimeout) {
         super(id, workspace, box, boxVersion, profile, minInstances, maxInstances, environment, variables, labels, 
-                description, remoteFS, mode, retentionTime, executors, launchTimeout);
+                description, remoteFS, mode, retentionTime, 
+                StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors, launchTimeout);
     }    
     
     @Extension
-    public static final class DescriptorImpl extends Descriptor<AbstractSlaveConfiguration> {
+    public static final class DescriptorImpl extends AbstractSlaveConfigurationDescriptor {
 
         @Override
         public String getDisplayName() {

@@ -17,8 +17,11 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
+import hudson.util.FormValidation;
 import java.util.Set;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.QueryParameter;
 
 /**
  *
@@ -39,6 +42,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final String description;
     private final Node.Mode mode;
     protected int retentionTime;
+    private final int maxBuilds;
     private int executors;
     private final int launchTimeout;
     
@@ -46,7 +50,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
 
     public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, int minInstances,
             int maxInstances, String environment, String variables, String labels, String description, String remoteFS, 
-            Node.Mode mode, int retentionTime, int executors, int launchTimeout) {
+            Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout) {
         super();
         this.id = id;
         this.workspace = workspace;
@@ -62,6 +66,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.remoteFS = remoteFS;
         this.mode = mode;
         this.retentionTime = retentionTime;
+        this.maxBuilds = maxBuilds;
         this.executors = executors;
         this.launchTimeout = launchTimeout;
         
@@ -137,6 +142,14 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         return retentionTime;
     }
 
+    public int getMaxBuilds() {
+        return maxBuilds;
+    }
+    
+    public String getMaxBuildsText() {
+        return maxBuilds == 0 ? StringUtils.EMPTY : String.valueOf(maxBuilds);
+    }
+
     public int getLaunchTimeout() {
         return launchTimeout;
     }
@@ -157,4 +170,21 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         return labelSet;
     }
 
+    public static abstract class AbstractSlaveConfigurationDescriptor extends Descriptor<AbstractSlaveConfiguration> {
+
+        public FormValidation doCheckMaxBuildsText(@QueryParameter String value) {
+            if (StringUtils.isNotBlank(value)) {
+                try {
+                    int maxBuilds = Integer.parseInt(value);
+                    if (maxBuilds < 1) {
+                        return FormValidation.error("Enter a positive whole number.");
+                    }
+                } catch (NumberFormatException ex) {
+                    return FormValidation.error("Invalid number, the number must be a positive whole number.");
+                }
+            } 
+            
+            return FormValidation.ok();
+        }
+    }
 }

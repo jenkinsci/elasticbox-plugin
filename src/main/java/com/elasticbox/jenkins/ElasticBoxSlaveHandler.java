@@ -70,39 +70,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         
     }
     
-    private static class TerminationOfflineCause extends OfflineCause {
-        
-        private final transient ElasticBoxSlave slave;
-        
-        private TerminationOfflineCause(ElasticBoxSlave slave) {
-            this.slave = slave;
-        }
-
-        @Override
-        public String toString() {
-            String message;
-            ElasticBoxCloud cloud = null;
-            try {
-                cloud = slave.getCloud();
-            } catch (IOException ex) {
-            }
-            String instanceUrl = slave.getInstanceUrl();
-            if (instanceUrl == null || cloud == null) {
-                message = "This slave will be removed shortly";
-            } else {
-                String url = Client.getPageUrl(((ElasticBoxCloud) cloud).getEndpointUrl(), instanceUrl);
-                if (url != null) {
-                    message = MessageFormat.format("Instance at {0} of ElasticBox cloud ''{1}'' will be terminated and deleted", 
-                            url, cloud.getDisplayName());
-                } else {
-                    message = MessageFormat.format("Instance {0} must be terminated but that's not possible because the endpoint URL of ElasticBox cloud ''{1}'' has been changed", instanceUrl, cloud.getDisplayName());
-                }              
-            }
-            return message;
-        }
-        
-    }
-    
     private static final Queue<InstanceCreationRequest> incomingQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<InstanceCreationRequest> submittedQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<ElasticBoxSlave> terminatedSlaves = new ConcurrentLinkedQueue<ElasticBoxSlave>();
@@ -122,21 +89,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         return false;
     }
     
-    public static final void markForTermination(ElasticBoxSlave slave) {
-        slave.setDeletable(true);
-        SlaveComputer computer = slave.getComputer();        
-        if (computer != null) {
-            computer.setAcceptingTasks(false);
-            computer.setTemporarilyOffline(true, new TerminationOfflineCause(slave));
-        } else {
-            try {
-                Jenkins.getInstance().save();
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-            }
-        }    
-    }
-
     public static final void addToTerminatedQueue(ElasticBoxSlave slave) {
         if (!terminatedSlaves.contains(slave)) {
             terminatedSlaves.add(slave);
@@ -224,7 +176,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         if (request.monitor.getLaunchTime() > 0) {
             long launchDuration = System.currentTimeMillis() - request.monitor.getLaunchTime();
             if (launchDuration >= TimeUnit.MINUTES.toMillis(request.slave.getLaunchTimeout())) {                        
-                markForTermination(request.slave);
+                request.slave.markForTermination();
                 log(Level.SEVERE, MessageFormat.format("Slave agent {0} did not contact after {1} minutes.", 
                         request.slave.getNodeName(), TimeUnit.MILLISECONDS.toMinutes(launchDuration)), null, listener);
                 return true;
@@ -294,7 +246,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             ElasticBoxSlave slave = slaveInstanceManager.getSlave(instanceId);
             if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getString("operation"))) {
                 addToTerminatedQueue(slave);
-            } else if (Client.InstanceState.UNAVAILABLE.equals(state)) {
+            } else if (Client.InstanceState.UNAVAILABLE.equals(state) && !slave.getComputer().isTemporarilyOffline()) {
                 Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO, 
                         MessageFormat.format("The instance {0} is unavailable, it will be terminated.", slave.getInstancePageUrl()));
                 slavesToRemove.add(slave);

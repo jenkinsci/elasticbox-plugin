@@ -263,7 +263,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                                     return slave;
                                 } else {
                                     LOGGER.log(Level.WARNING, MessageFormat.format("The slave {0} did not come online after {1} minutes. It will be terminated and removed.", slave.getDisplayName(), slave.getLaunchTimeout()));
-                                    ElasticBoxSlaveHandler.markForTermination(slave);
+                                    slave.markForTermination();
                                     throw new Exception(MessageFormat.format("Cannot deploy slave {0}. See the system log for more details.", slave.getDisplayName()));
                                 }                                
                             }
@@ -588,14 +588,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             environment = environment.trim();
             if (environment.length() > 30) {
                 throw new FormException(MessageFormat.format("Environment of a slave configuration of ElasticBox cloud {0} is longer than 30 characters.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            }
-            
+            }            
             slaveConfig.setEnvironment(environment);
-            for (SlaveConfiguration config : newCloud.getSlaveConfigurations()) {
-                if (config != slaveConfig && config.getEnvironment() != null && environment.equals(config.getEnvironment().trim())) {
-                    throw new FormException("Duplicate Environment specified for slave configurations", SlaveConfiguration.SLAVE_CONFIGURATIONS);
-                }
-            }
             
             if (slaveConfig.getExecutors() < 1) {
                 slaveConfig.setExecutors(1);

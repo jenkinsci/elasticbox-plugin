@@ -35,10 +35,9 @@ public class BuildListener extends RunListener<AbstractBuild> {
             Node node = build.getBuiltOn();
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
-                AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
-                if (slave.isSingleUse() || (slaveConfig != null && slaveConfig.getRetentionTime() == 0) || 
-                        requiresGlobalSingleUseSlave(build.getProject())) {
-                    ElasticBoxSlaveHandler.markForTermination(slave);
+                slave.incrementBuilds();
+                if (slave.hasExpired() || requiresGlobalSingleUseSlave(build.getProject())) {
+                    slave.markForTermination();
                 }
             }    
         } catch (RuntimeException ex) {

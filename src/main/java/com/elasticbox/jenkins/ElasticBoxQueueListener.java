@@ -35,7 +35,7 @@ public class ElasticBoxQueueListener extends QueueListener {
                     Label label = li.getAssignedLabel();
                     for (Node node : Jenkins.getInstance().getNodes()) {
                         if (node instanceof ElasticBoxSlave && label.matches(node)) {
-                            ElasticBoxSlaveHandler.markForTermination(((ElasticBoxSlave) node));
+                            ((ElasticBoxSlave) node).markForTermination();
                             break;
                         }
                     }

@@ -63,7 +63,8 @@ public class BuildWithProjectSingleUseSlaveTest extends SlaveTestBase {
         String label = UUID.randomUUID().toString();
         
         // Create a slave configuration with retention time of 2 minutes.
-        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId, profile.getString("id"), 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 2, 1, 60);
+        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId, 
+                profile.getString("id"), 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 2, null, 1, 60);
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
         jenkins.getInstance().clouds.remove(ebCloud);
         jenkins.getInstance().clouds.add(newCloud);

@@ -17,19 +17,28 @@ import com.elasticbox.ClientException;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Computer;
+import hudson.model.ComputerPinger;
 import hudson.model.Messages;
 import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.model.TaskListener;
 import hudson.model.labels.LabelAtom;
+import hudson.remoting.Callable;
+import hudson.remoting.VirtualChannel;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.SlaveComputer;
 import hudson.util.RunList;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +51,7 @@ import org.apache.commons.httpclient.HttpStatus;
  *
  * @author Phong Nguyen Le
  */
-final class ElasticBoxComputer extends SlaveComputer {
+public final class ElasticBoxComputer extends SlaveComputer {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxComputer.class.getName());
     
     private boolean terminateOnOffline = false;
@@ -50,10 +59,40 @@ final class ElasticBoxComputer extends SlaveComputer {
     // A reference to the slave is kept here so the computer still can access to it even after it has been removed and
     // getNode() returns null
     private final ElasticBoxSlave slave;
+    
+    private volatile String cachedHostAddress;
+    private volatile boolean hostAddressCached;
 
     public ElasticBoxComputer(ElasticBoxSlave slave) {
         super(slave);
         this.slave = slave;
+    }
+    
+    public String getHostAddress() throws IOException, InterruptedException {
+        if (hostAddressCached) {
+            return cachedHostAddress;
+        }
+
+        VirtualChannel channel = getChannel();
+        if (channel == null) {
+            return null;
+        }
+
+        for(Inet4Address ia : channel.call(new HostAddresses())) {
+            try {
+                if(ComputerPinger.checkIsReachable(ia, 3)) {
+                    cachedHostAddress = ia.getHostAddress();
+                    hostAddressCached = true;
+                    break;
+                } else {                    
+                    LOGGER.fine(MessageFormat.format("{0} didn't respond to ping", ia.getHostAddress()));
+                }
+            } catch (IOException e) {
+                LOGGER.log(Level.FINE, e.getMessage(), e);
+            }
+        }
+
+        return cachedHostAddress;        
     }
 
     @Override
@@ -122,7 +161,7 @@ final class ElasticBoxComputer extends SlaveComputer {
     }
 
     void terminate() {
-        ElasticBoxSlaveHandler.markForTermination(slave);
+        slave.markForTermination();
         if (slave.getInstanceUrl() == null) {
             return;
         }
@@ -182,6 +221,27 @@ final class ElasticBoxComputer extends SlaveComputer {
         return cause instanceof OfflineCause.SimpleOfflineCause && 
                 ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString());        
     }
+    
+    private static class HostAddresses implements Callable<List<Inet4Address>, IOException> {
+
+        public List<Inet4Address> call() throws IOException {
+            List<Inet4Address> inetAddresses = new ArrayList<Inet4Address>();
+
+            Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
+            while (nis.hasMoreElements()) {
+                NetworkInterface ni =  nis.nextElement();
+                Enumeration<InetAddress> e = ni.getInetAddresses();
+                while (e.hasMoreElements()) {
+                    InetAddress ia =  e.nextElement();
+                    if (ia instanceof Inet4Address && !ia.isLoopbackAddress()) {
+                        inetAddresses.add((Inet4Address) ia);
+                    }
+                }
+            }
+            return inetAddresses;
+        }
+
+    }
 
     @Extension
     public static final class ComputerListenerImpl extends ComputerListener {
@@ -204,13 +264,14 @@ final class ElasticBoxComputer extends SlaveComputer {
                     if (slave.isDeletable()) {
                         SlaveComputer computer = slave.getComputer();
                         if (computer != null && computer.isAcceptingTasks()) {
-                            ElasticBoxSlaveHandler.markForTermination(slave);
+                            slave.markForTermination();
                         }
                     }
                 }
             }
         }
 
+        
     }
     
 }
