@@ -23,8 +23,6 @@ import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
-import hudson.slaves.OfflineCause;
-import hudson.slaves.SlaveComputer;
 import hudson.util.DaemonThreadFactory;
 import hudson.util.ExceptionCatchingThreadFactory;
 import java.io.IOException;
@@ -46,6 +44,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang.StringUtils;
 
 /**
  *
@@ -363,14 +362,16 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         ElasticBoxCloud cloud = request.slave.getCloud();        
         Client ebClient = cloud.getClient();
         JSONObject profile = ebClient.getProfile(request.slave.getProfileId());     
-        JSONArray variables = SlaveInstance.createJenkinsVariables(ebClient, Jenkins.getInstance().getRootUrl(), request.slave);
-        String scope = variables.getJSONObject(0).getString("scope");
+        JSONArray variables = SlaveInstance.createJenkinsVariables(ebClient, request.slave);
+        JSONObject jenkinsVariable = variables.getJSONObject(0);
+        String scope = jenkinsVariable.containsKey("scope") ? jenkinsVariable.getString("scope") : StringUtils.EMPTY;
         AbstractSlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
         if (slaveConfig != null && slaveConfig.getVariables() != null) {
             JSONArray configuredVariables = VariableResolver.parseVariables(slaveConfig.getVariables());
             for (int i = 0; i < configuredVariables.size(); i++) {
                 JSONObject variable = configuredVariables.getJSONObject(i);
-                if (!scope.equals(variable.getString("scope")) || !SlaveInstance.REQUIRED_VARIABLES.contains(variable.getString("name"))) {
+                if (!scope.equals(variable.getString("scope")) || 
+                        !SlaveInstance.REQUIRED_VARIABLES.contains(variable.getString("name"))) {
                     variables.add(variable);
                 }
             }

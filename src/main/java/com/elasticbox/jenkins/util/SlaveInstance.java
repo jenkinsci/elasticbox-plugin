@@ -56,7 +56,7 @@ public class SlaveInstance {
         return variables;
     }
 
-    public static JSONArray createJenkinsVariables(Client client, String jenkinsUrl, ElasticBoxSlave slave) throws IOException {
+    public static JSONArray createJenkinsVariables(Client client, ElasticBoxSlave slave) throws IOException {
         Map<String, JSONObject> requiredVariables = Collections.EMPTY_MAP;
         JSONArray boxStack = DescriptorHelper.getBoxStack(client, slave.getBoxVersion()).getJsonArray();
         for (int i = 0; i < boxStack.size(); i++) {
@@ -73,6 +73,7 @@ public class SlaveInstance {
         
         JSONObject jenkinsUrlVariable = requiredVariables.get(JENKINS_URL_VARIABLE);
         String scope = jenkinsUrlVariable.containsKey("scope") ? jenkinsUrlVariable.getString("scope") : null;
+        String jenkinsUrl = Jenkins.getInstance().getRootUrl();
         JSONArray variables = new JSONArray();
         JSONObject variable = new JSONObject();
         variable.put("name", JENKINS_URL_VARIABLE);

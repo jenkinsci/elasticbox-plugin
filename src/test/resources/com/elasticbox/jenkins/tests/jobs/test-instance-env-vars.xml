@@ -33,8 +33,7 @@
       <variables>[]</variables>
       <instanceEnvVariable>TEST_LINUX</instanceEnvVariable>
       <tags>${TEST_TAG}</tags>
-      <skipIfExisting>false</skipIfExisting>
-      <alternateAction>skip</alternateAction>
+      <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
     </com.elasticbox.jenkins.builders.DeployBox>
     <hudson.tasks.Shell>
@@ -47,11 +46,12 @@ echo tags: $TEST_LINUX_TAGS
 echo machine name: $TEST_LINUX_MACHINE_NAME
 echo public address: $TEST_LINUX_PUBLIC_ADDRESS
 echo private address: $TEST_LINUX_PRIVATE_ADDRESS
+echo is existing: $TEST_LINUX_IS_EXISTING
 
 function assert_not_empty() {
   if [ -z &quot;$2&quot; ]; then
     echo &quot;$1 is not available&quot;
-    exit 1;
+    exit 1
   fi 
 }
 
@@ -64,11 +64,108 @@ assert_not_empty TEST_LINUX_PRIVATE_ADDRESS $TEST_LINUX_PRIVATE_ADDRESS
 
 if [ ${TEST_TAG} != $TEST_LINUX_TAGS ]; then
   echo TEST_LINUX_TAGS is not the same as TEST_TAG
-  exit 1;
+  exit 1
 fi
 
+if [ &quot;${TEST_LINUX_IS_EXISTING}&quot; != &quot;false&quot; ]
+then
+  echo TEST_LINUX_IS_EXISTING is &quot;&apos;${TEST_LINUX_IS_EXISTING}&apos;&quot;, expected &apos;false&apos;
+  exit 1
+fi
 </command>
     </hudson.tasks.Shell>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.4-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-d5c2f9d2-cb4f-4586-82ca-683d82247cac</id>
+      <cloud>elasticbox</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>f035c580-70b3-49ce-9209-eb90c968060a</boxVersion>
+      <profile>ca4cf377-7b5b-4456-9c19-2131eee22747</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <instanceEnvVariable>TEST_LINUX</instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <alternateAction>skip</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+    </com.elasticbox.jenkins.builders.DeployBox>    
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+if [ &quot;${TEST_LINUX_IS_EXISTING}&quot; != &quot;true&quot; ]
+then
+  echo TEST_LINUX_IS_EXISTING is &quot;&apos;${TEST_LINUX_IS_EXISTING}&apos;&quot;, expected &apos;true&apos;
+  exit 1
+fi</command>
+    </hudson.tasks.Shell>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.4-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-d5c2f9d2-cb4f-4586-82ca-683d82247cac</id>
+      <cloud>elasticbox</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>f035c580-70b3-49ce-9209-eb90c968060a</boxVersion>
+      <profile>ca4cf377-7b5b-4456-9c19-2131eee22747</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <instanceEnvVariable>TEST_LINUX</instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <alternateAction>reconfigure</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+    </com.elasticbox.jenkins.builders.DeployBox>    
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+if [ &quot;${TEST_LINUX_IS_EXISTING}&quot; != &quot;true&quot; ]
+then
+  echo TEST_LINUX_IS_EXISTING is &quot;&apos;${TEST_LINUX_IS_EXISTING}&apos;&quot;, expected &apos;true&apos;
+  exit 1
+fi</command>
+    </hudson.tasks.Shell>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.4-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-05c7c0c8-d4cb-42ca-88d5-7b7006594b34</id>
+      <cloud>elasticbox</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>f035c580-70b3-49ce-9209-eb90c968060a</boxVersion>
+      <profile>ca4cf377-7b5b-4456-9c19-2131eee22747</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <instanceEnvVariable>TEST_LINUX</instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <alternateAction>reinstall</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+    </com.elasticbox.jenkins.builders.DeployBox>    
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+if [ &quot;${TEST_LINUX_IS_EXISTING}&quot; != &quot;true&quot; ]
+then
+  echo TEST_LINUX_IS_EXISTING is &quot;&apos;${TEST_LINUX_IS_EXISTING}&apos;&quot;, expected &apos;true&apos;
+  exit 1
+fi</command>
+    </hudson.tasks.Shell>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.4-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-1935961b-1248-4eab-9fa9-1f09e0b18b8e</id>
+      <cloud>elasticbox</cloud>
+      <workspace>test_admin</workspace>
+      <box>989c760d-4f3e-40bc-8c3b-6d198183b85a</box>
+      <boxVersion>f035c580-70b3-49ce-9209-eb90c968060a</boxVersion>
+      <profile>ca4cf377-7b5b-4456-9c19-2131eee22747</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <instanceEnvVariable>TEST_LINUX</instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <alternateAction>deleteAndDeploy</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+    </com.elasticbox.jenkins.builders.DeployBox>    
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+if [ &quot;${TEST_LINUX_IS_EXISTING}&quot; != &quot;false&quot; ]
+then
+  echo TEST_LINUX_IS_EXISTING is &quot;&apos;${TEST_LINUX_IS_EXISTING}&apos;&quot;, expected &apos;false&apos;
+  exit 1
+fi</command>
+    </hudson.tasks.Shell>        
   </builders>
   <publishers/>
   <buildWrappers/>

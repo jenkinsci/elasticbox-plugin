@@ -110,9 +110,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         readResolve();
     }
     
-    private JSONObject performAlternateAction(JSONArray existingInstances, ElasticBoxCloud ebCloud, Client client, 
+    private Result performAlternateAction(JSONArray existingInstances, ElasticBoxCloud ebCloud, Client client, 
             VariableResolver resolver, TaskLogger logger) throws IOException, InterruptedException {
         JSONObject instance = existingInstances.getJSONObject(0);
+        boolean existing = true;
         if (alternateAction.equals(ACTION_SKIP)) {
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), instance);
             logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
@@ -141,11 +142,12 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
             String instanceId = deploy(ebCloud, client, resolver, logger);
             instance = client.getInstance(instanceId);
+            existing = false;
         } else {
             throw new IOException(MessageFormat.format("Invalid alternate action: ''{0}''", alternateAction));
         }
         
-        return instance;
+        return new Result(instance, existing);
     }
     
     private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) 
@@ -186,8 +188,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return Client.getResourceId(monitor.getResourceUrl());
     }
     
-    private void injectEnvVariables(AbstractBuild build, final JSONObject instance, final Client client) throws IOException {
-        final String instanceId = instance.getString("id");
+    private void injectEnvVariables(AbstractBuild build, final Result result, final Client client) throws IOException {
+        final String instanceId = result.instance.getString("id");
         final JSONObject service = client.getService(instanceId);
         build.addAction(new EnvironmentContributingAction() {
 
@@ -196,7 +198,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 env.put(instanceEnvVariable, instanceId);
                 env.put(instanceEnvVariable + "_URL", instanceUrl);
                 env.put(instanceEnvVariable + "_SERVICE_ID", service.getString("id"));
-                env.put(instanceEnvVariable + "_TAGS", StringUtils.join(instance.getJSONArray("tags"), ","));                
+                env.put(instanceEnvVariable + "_TAGS", StringUtils.join(result.instance.getJSONArray("tags"), ",")); 
+                env.put(instanceEnvVariable + "_IS_EXISTING", String.valueOf(result.existing));
                 if (instances == 1) {
                     JSONObject address = null;
                     if (service.containsKey("address")) {
@@ -249,7 +252,17 @@ public class DeployBox extends Builder implements IInstanceProvider {
         });        
     }
     
-    private JSONObject doPerform(AbstractBuild<?, ?> build, ElasticBoxCloud ebCloud, TaskLogger logger) throws InterruptedException, IOException {
+    private static class Result {
+        JSONObject instance;
+        boolean existing;
+
+        public Result(JSONObject instance, boolean existing) {
+            this.instance = instance;
+            this.existing = existing;
+        }
+    }
+    
+    private Result doPerform(AbstractBuild<?, ?> build, ElasticBoxCloud ebCloud, TaskLogger logger) throws InterruptedException, IOException {
         VariableResolver resolver = new VariableResolver(cloud, workspace, build, logger.getTaskListener());
         Client client = ebCloud.getClient();
         if (!alternateAction.equals(ACTION_NONE)) {
@@ -286,7 +299,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 instance = client.updateInstance(instance);
             }
         }
-        return instance;
+        return new Result(instance, false);
     }
     
     @Override
@@ -300,11 +313,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
         
         
-        JSONObject instance = doPerform(build, ebCloud, logger);
-        instanceManager.setInstance(build, instance);
+        Result result = doPerform(build, ebCloud, logger);
+        instanceManager.setInstance(build, result.instance);
         
         if (StringUtils.isNotBlank(instanceEnvVariable)) {
-            injectEnvVariables(build, instance, ebCloud.getClient());
+            injectEnvVariables(build, result, ebCloud.getClient());
         }
         
         return true;

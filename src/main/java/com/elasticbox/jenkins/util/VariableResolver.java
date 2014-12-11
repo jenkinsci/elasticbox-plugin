@@ -15,7 +15,7 @@ package com.elasticbox.jenkins.util;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxComputer;
 import com.elasticbox.jenkins.builders.IInstanceProvider;
-import hudson.EnvVars;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.Computer;
 import hudson.model.Project;
@@ -29,8 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -40,7 +38,6 @@ import org.apache.commons.lang.StringUtils;
  * @author Phong Nguyen Le
  */
 public final class VariableResolver {
-    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{[a-zA-Z0-9_\\-.]+\\}");
 
     public static JSONArray parseVariables(String variables) {
         return StringUtils.isBlank(variables) ? new JSONArray() : JSONArray.fromObject(variables);
@@ -49,8 +46,6 @@ public final class VariableResolver {
     private final String cloudName;
     private final String workspace;
     private final List<IInstanceProvider> instanceProviders;
-    private final hudson.util.VariableResolver<String> resolver;
-    private final EnvVars envVars;
     private final AbstractBuild build;
     private final Map<String, String> variableValueLookup;
 
@@ -63,11 +58,11 @@ public final class VariableResolver {
                 instanceProviders.add((IInstanceProvider) builder);
             }
         }
-        resolver = build.getBuildVariableResolver();
-        envVars = build.getEnvironment(listener);
         this.build = build;    
+        variableValueLookup = new HashMap<String, String>();  
+        variableValueLookup.putAll(build.getBuildVariables());
+        variableValueLookup.putAll(build.getEnvironment(listener));
         Computer computer = build.getBuiltOn().toComputer();
-        variableValueLookup = new HashMap<String, String>();        
         variableValueLookup.put("SLAVE_HOST_NAME", computer.getHostName());
         if (computer instanceof ElasticBoxComputer) {
             variableValueLookup.put("SLAVE_HOST_ADDRESS", ((ElasticBoxComputer) computer).getHostAddress());        
@@ -75,26 +70,7 @@ public final class VariableResolver {
     }
     
     public String resolve(String value) {
-        Matcher matcher = VARIABLE_PATTERN.matcher(value);
-        StringBuffer resolved = new StringBuffer();
-        while (matcher.find()) {
-            String match = matcher.group();
-            String varName = match.substring(2, match.length() - 1);
-            String varValue = resolver.resolve(varName);
-            if (varValue == null) {
-                varValue = envVars.get(varName);
-            }
-            if (varValue == null) {
-                varValue = variableValueLookup.get(varName);
-            }
-            if (varValue == null) {
-                varValue = match;
-            }
-            
-            matcher.appendReplacement(resolved, Matcher.quoteReplacement(varValue));
-        }        
-        matcher.appendTail(resolved);                
-        return resolved.toString();
+        return Util.replaceMacro(value, variableValueLookup);
     }
     
     public JSONObject resolve(JSONObject variable) throws IOException {

@@ -77,7 +77,7 @@ public class BuildWithSingleUseViaLabelSlaveTest extends SlaveTestBase {
         // check that slave can no longer accept task
         Assert.assertFalse("Single-use slave still can accept task even after the build is canceled", slave.getComputer().isAcceptingTasks());
         // check that slave is removed      
-        Thread.sleep(TimeUnit.SECONDS.toMillis(60));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(120));
         Assert.assertNull("Single-use slave is not removed after build", findSlave(label));
     }
     
