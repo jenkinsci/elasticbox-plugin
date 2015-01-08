@@ -26,8 +26,8 @@
       <id>com.elasticbox.jenkins.builders.DeployBox-cccdcb46-c9d5-48d5-8415-7e2e0fe070c8</id>
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
-      <box>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</box>
-      <boxVersion>00e7f1c3-9549-4c33-87c0-c3048de7a7c3</boxVersion>
+      <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
+      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>e14460b4-c288-46f4-8a45-bea58e492428</profile>
       <environment>jenkins-plugin-test-binding</environment>
       <instances>1</instances>
@@ -41,8 +41,8 @@
       <id>com.elasticbox.jenkins.builders.DeployBox-9e541abf-98db-48e4-81c0-fead772049c6</id>
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
-      <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
-      <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+      <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
+      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744</profile>
       <environment>jenkins-plugin-test-binding</environment>
       <instances>1</instances>
@@ -56,8 +56,8 @@
       <id>com.elasticbox.jenkins.builders.DeployBox-079d92d8-d1ca-4e4c-bc19-cdca9798e661</id>
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
-      <box>112fe05b-1cb7-4eb8-9ffe-777ef4c2825e</box>
-      <boxVersion>112fe05b-1cb7-4eb8-9ffe-777ef4c2825e</boxVersion>
+      <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
+      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
       <profile>e155115d-6e4e-4027-b4a7-89eb3ae6ef58</profile>
       <environment>jenkins-plugin-test-binding</environment>
       <instances>1</instances>
@@ -73,8 +73,8 @@
       <operations>
         <com.elasticbox.jenkins.builders.UpdateOperation>
           <tags>test-linux-box, ${TEST_TAG}</tags>
-          <box>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</box>
-          <boxVersion>5ddd6fc0-0c9c-4aab-8933-629ddeef843f</boxVersion>
+          <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
+          <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
           <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;(${TEST_TAG})&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}]</variables>
         </com.elasticbox.jenkins.builders.UpdateOperation>
       </operations>

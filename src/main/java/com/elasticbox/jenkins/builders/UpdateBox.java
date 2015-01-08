@@ -12,38 +12,99 @@
 
 package com.elasticbox.jenkins.builders;
 
-import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.Client;
+import com.elasticbox.jenkins.DescriptorHelper;
+import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.TaskLogger;
+import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.util.ListBoxModel;
+import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 /**
  *
  * @author Phong Nguyen Le
  */
-public class UpdateBox extends BoxRequiredOperation implements IOperation.BoxOperation {
+public class UpdateBox extends AbstractBuilder {
+    private final String box;
+    private final String variables;
 
     @DataBoundConstructor
-    public UpdateBox(String box, String boxVersion, String tags, String variables) {
-        super(box, boxVersion, tags, variables);
+    public UpdateBox(String cloud, String workspace, String box, String variables) {
+        super(cloud, workspace);
+        this.box = box;
+        this.variables = variables;
     }
 
-    @Override
-    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public String getBox() {
+        return box;
     }
-    
+
+    public String getVariables() {
+        return variables;
+    }        
+
+    @Override
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) 
+            throws InterruptedException, IOException {
+        TaskLogger logger = new TaskLogger(listener);
+        logger.info("Executing Update Box");
+        
+        VariableResolver resolver = new VariableResolver(getCloud(), getWorkspace(), build, logger.getTaskListener());
+        JSONArray resolvedVariables = resolver.resolveVariables(variables);
+        Client client = ClientCache.getClient(getCloud());
+        DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, box).getJsonArray());
+        for (Object variable : resolvedVariables) {
+            JSONObject variableJson = (JSONObject) variable;
+            variableJson.put("value", new File(variableJson.getString("value")).toURI().toString());
+        }
+        JSONObject boxJson = client.updateBox(box, resolvedVariables);
+        String boxPageUrl = Client.getPageUrl(client.getEndpointUrl(), boxJson);
+        logger.info(MessageFormat.format("Updated box {0}", boxPageUrl));    
+        
+        return true;
+    }
+        
     @Extension
-    public static final class DescriptorImpl extends Descriptor {
+    public static class DescriptorImpl extends AbstractBuilderDescriptor {
 
         @Override
         public String getDisplayName() {
-            return "Update";
+            return "ElasticBox - Update Box";
+        }
+
+        public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
+            return DescriptorHelper.getBoxes(cloud, workspace);
+        }
+        
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
+                @QueryParameter String box) {            
+            DescriptorHelper.JSONArrayResponse response = DescriptorHelper.getBoxStack(cloud, box);
+            // reset the variable of all variable to empty string so the UI will save only variables with non-empty value
+            for (Object boxObject : response.getJsonArray()) {
+                JSONObject boxJson = (JSONObject) boxObject;
+                JSONArray fileVariables = new JSONArray();
+                for (Object variable : boxJson.getJSONArray("variables")) {
+                    JSONObject variableJson = (JSONObject) variable;
+                    if ("File".equals(variableJson.get("type"))) {
+                        variableJson.put("value", StringUtils.EMPTY);
+                        fileVariables.add(variableJson);
+                    }
+                }
+                boxJson.put("variables", fileVariables);
+            }
+            return response;
         }
         
     }
-    
 }

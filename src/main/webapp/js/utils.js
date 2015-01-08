@@ -54,7 +54,7 @@ var ElasticBoxUtils = (function() {
         DeployBoxBuildStepName: DeployBoxBuildStepName,
         ReconfigureBoxDescriptorId: DescriptorIdPrefix + 'ReconfigureBox',
         ManageInstanceDescriptorId: DescriptorIdPrefix + 'ManageInstance',
-        ManageBoxDescriptorId: DescriptorIdPrefix + 'ManageInstance',
+        ManageBoxDescriptorId: DescriptorIdPrefix + 'ManageBox',
         ElasticBoxCloudDescriptorId: 'com.elasticbox.jenkins.ElasticBoxCloud',
         
         getDescriptorElement: function (childElement) {

@@ -42,7 +42,7 @@ public class BuildStepTestBase extends TestBase {
         new TestBoxData("boxes/test-nested-box.json", "e155115d-6e4e-4027-b4a7-89eb3ae6ef58"),
         new TestBoxData("boxes/test-deeply-nested-box.json", "74cd448d-1e1b-4afb-8d92-c11eab38c99a")
     });
-    private Map<String, TestBoxData> testBoxDataLookup;
+    protected Map<String, TestBoxData> testBoxDataLookup;
     protected String newTestBindingBoxInstanceId = TestUtils.TEST_BINDING_BOX_INSTANCE_ID;
     private JSONObject testProvider;
     private TestUtils.TemplateResolver templateResolver;

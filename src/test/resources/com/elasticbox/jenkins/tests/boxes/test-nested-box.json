@@ -17,16 +17,21 @@
             "required": true,
             "type": "Box",
             "name": "nested",
-            "value": "5ddd6fc0-0c9c-4aab-8933-629ddeef843f"
+            "value": "com.elasticbox.jenkins.tests.boxes.test-linux-box"
         }, {
             "required": true,
             "type": "Binding",
             "name": "REQUIRED_BINDING",
             "value": "AnyBox"
+        }, {
+            "required": false,
+            "type": "File",
+            "name": "VAR_FILE",
+            "value": ""
         }
     ],
     "events": {},
     "members": [],
-    "id": "112fe05b-1cb7-4eb8-9ffe-777ef4c2825e",
+    "id": "com.elasticbox.jenkins.tests.boxes.test-nested-box",
     "schema": "http://elasticbox.net/schemas/{schema_version}/box"
 }

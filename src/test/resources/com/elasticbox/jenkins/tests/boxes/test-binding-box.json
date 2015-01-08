@@ -22,6 +22,6 @@
     ],
     "events": {},
     "members": [],
-    "id": "00e7f1c3-9549-4c33-87c0-c3048de7a7c3",
+    "id": "com.elasticbox.jenkins.tests.boxes.test-binding-box",
     "schema": "http://elasticbox.net/schemas/{schema_version}/box"
 }

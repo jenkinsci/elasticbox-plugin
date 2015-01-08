@@ -14,6 +14,7 @@ package com.elasticbox;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -443,6 +444,58 @@ public class Client {
         
         return updateInstance(instance, variablesWithFullScope);
     }    
+
+    public JSONObject updateBox(String boxId, JSONArray variables) throws IOException {
+        String boxUrl = MessageFormat.format("/services/boxes/{0}", boxId);
+        JSONObject box = (JSONObject) doGet(boxUrl, false);
+        if (box.containsKey("version")) {
+            throw new IOException("Cannot update a box version");
+        }
+        
+        if (variables != null && !variables.isEmpty()) {
+            JSONArray boxStack = new BoxStack(boxId, getBoxStack(boxId), this).toJSONArray();
+            JSONArray boxVariables = new JSONArray();
+            for (Object stackBox : boxStack) {
+                boxVariables.addAll(((JSONObject) stackBox).getJSONArray("variables"));
+            }
+            JSONArray existingVariables = box.getJSONArray("variables");
+            List<JSONObject> newVariables = new ArrayList<JSONObject>();
+            for (Object variable : variables) {
+                JSONObject variableJson = (JSONObject) variable;
+                JSONObject instanceVariable = findVariable(variableJson, existingVariables);            
+                if (instanceVariable == null) {
+                    JSONObject boxVariable = findVariable(variableJson, boxVariables);
+                    if (boxVariable != null) {
+                        instanceVariable = JSONObject.fromObject(boxVariable);
+                        if (instanceVariable.getString("scope").isEmpty()) {
+                            instanceVariable.remove("scope");
+                        }
+                        newVariables.add(instanceVariable);
+                    }
+                }
+                if (instanceVariable != null) {
+                    if ("File".equals(variableJson.getString("type"))) {
+                        String value = variableJson.getString("value");
+                        if (StringUtils.isNotBlank(value)) {
+                            URI fileUri;
+                            try {
+                                fileUri = new URI(value);
+                            } catch (URISyntaxException ex) {
+                                throw new IOException(MessageFormat.format("Invalid file URI specified for variable {0}: {1}", variableJson.getString("name"), value), ex);
+                            }
+                            JSONObject blobInfo = uploadFile(fileUri, null);
+                            variableJson.put("value", blobInfo.getString("url"));
+                        }                        
+                    }
+                    instanceVariable.put("value", variableJson.getString("value"));
+                }
+            }
+            existingVariables.addAll(newVariables);
+            box.put("variables", existingVariables);
+        }
+        
+        return doUpdate(boxUrl, box);
+    }
     
     protected abstract class ProgressMonitor extends AbstractProgressMonitor {
         protected final String lastModified;
@@ -681,6 +734,30 @@ public class Client {
             post.reset();
         }                        
     }
+
+    public JSONObject doUpdate(String url, JSONObject resource) throws IOException {
+        HttpPut put = new HttpPut(prepareUrl(url));
+        put.setEntity(new StringEntity(resource.toString(), ContentType.APPLICATION_JSON));
+        try {
+            HttpResponse response = execute(put);
+            return JSONObject.fromObject(getResponseBodyAsString(response));
+        } finally {
+            put.reset();
+        }                        
+    }
+    
+    public void writeTo(String url, OutputStream output) throws IOException {
+        HttpGet get = new HttpGet(prepareUrl(url));
+        try {
+            HttpResponse response = execute(get);
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                entity.writeTo(output);
+            }
+        } finally {
+            get.reset();
+        }        
+    }
     
     public void doDelete(String url) throws IOException {
         HttpDelete delete = new HttpDelete(prepareUrl(url));
@@ -722,9 +799,16 @@ public class Client {
         String resourceUri = resource.getString("uri");
         if (resourceUri.startsWith("/services/instances/")) {
             return MessageFormat.format("{0}/#/instances/{1}/{2}", endpointUrl, resource.getString("id"),
-                    resource.getString("name").toLowerCase().replaceAll("[^a-z0-9-]", "-"));
+                    dasherize(resource.getString("name").toLowerCase()));
+        } else if (resourceUri.startsWith("/services/boxes")) {
+            return MessageFormat.format("{0}/#/boxes/{1}/{2}", endpointUrl, resource.getString("id"),
+                    dasherize(resource.getString("name").toLowerCase()));            
         }
         return null;
+    }
+    
+    private static String dasherize(String str) {
+        return str.replaceAll("[^a-z0-9-]", "-");
     }
 
     private JSONObject findVariable(JSONObject variable, JSONArray variables) {

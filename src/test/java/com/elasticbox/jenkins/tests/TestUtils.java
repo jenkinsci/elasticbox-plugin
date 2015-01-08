@@ -109,6 +109,10 @@ public class TestUtils {
 
     static FreeStyleBuild runJob(String name, String projectXml, Map<String, String> textParameters, Jenkins jenkins) throws Exception {
         FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML(name, new ByteArrayInputStream(projectXml.getBytes()));
+        return runJob(project, textParameters, jenkins);
+    }
+    
+    static FreeStyleBuild runJob(FreeStyleProject project, Map<String, String> textParameters, Jenkins jenkins) throws Exception {
         List<ParameterValue> parameters = new ArrayList<ParameterValue>();
         for (Map.Entry<String, String> entry : textParameters.entrySet()) {
             parameters.add(new TextParameterValue(entry.getKey(), entry.getValue()));
@@ -256,8 +260,9 @@ public class TestUtils {
         if (box.containsKey("variables")) {
             for (Object variable : box.getJSONArray("variables")) {
                 JSONObject variableJson = (JSONObject) variable;
-                if (variableJson.getString("type").equals("File")) {
-                    variableJson.put("value", boxJsonUri.resolve(variableJson.getString("value")).toString());
+                String value = variableJson.getString("value");
+                if (variableJson.getString("type").equals("File") && StringUtils.isNotBlank(value)) {
+                    variableJson.put("value", boxJsonUri.resolve(value).toString());
                 }
             }
         }

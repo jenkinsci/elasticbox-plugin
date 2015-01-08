@@ -33,6 +33,11 @@
             "type": "Number",
             "name": "CONFIGURE_EXIT_CODE",
             "value": "0"
+        }, {
+            "required": false,
+            "type": "File",
+            "name": "VAR_FILE",
+            "value": ""
         }
     ],
     "events": {
@@ -40,6 +45,6 @@
         "install": "install.sh"
     },
     "members": [],
-    "id": "5ddd6fc0-0c9c-4aab-8933-629ddeef843f",
+    "id": "com.elasticbox.jenkins.tests.boxes.test-linux-box",
     "schema": "http://elasticbox.net/schemas/{schema_version}/box"
 }

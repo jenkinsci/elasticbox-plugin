@@ -8,7 +8,7 @@
         "schema": "http://elasticbox.net/schemas/{schema_version}/test/compute/profile"
     },
     "box": {
-        "version": "5ddd6fc0-0c9c-4aab-8933-629ddeef843f",
+        "version": "com.elasticbox.jenkins.tests.boxes.test-linux-box",
         "name": "test-linux-box"
     },
     "name": "test",

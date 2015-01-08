@@ -7,7 +7,7 @@
             "required": true,
             "type": "Box",
             "name": "nested",
-            "value": "112fe05b-1cb7-4eb8-9ffe-777ef4c2825e"
+            "value": "com.elasticbox.jenkins.tests.boxes.test-nested-box"
         }, {
             "required": false,
             "type": "Text",
