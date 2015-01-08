@@ -216,8 +216,19 @@ public class DescriptorHelper {
     public static JSONArrayResponse getBoxStack(Client client, String boxId) {
         if (client != null && StringUtils.isNotBlank(boxId)) {
             try {
-                return new JSONArrayResponse(new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray());
-                
+                JSONArray boxStack = new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray();
+                for (Object boxJson : boxStack) {
+                    for (Object variable : ((JSONObject) boxJson).getJSONArray("variables")) {
+                        JSONObject variableJson = (JSONObject) variable;
+                        if ("File".equals(variableJson.get("type"))) {
+                            String value = variableJson.getString("value");
+                            if (StringUtils.isNotBlank(value) && value.startsWith("/services/blobs/download/")) {
+                                variableJson.put("value", client.getEndpointUrl() + value);
+                            }
+                        }
+                    }
+                }
+                return new JSONArrayResponse(boxStack);
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for box {0}", boxId), ex);
             }

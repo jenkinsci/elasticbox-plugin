@@ -14,8 +14,13 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.util.VariableResolver;
+import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
+import hudson.model.FreeStyleProject;
 import hudson.model.TaskListener;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +35,8 @@ import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.io.FileUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -40,9 +47,19 @@ public class BuildStepTest extends BuildStepTestBase {
     
     @Test
     public void testBuildWithSteps() throws Exception {    
+        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test", 
+                new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-job.xml").getBytes()));
+        
+        // copy files for file variables
+        FilePath workspace = jenkins.getInstance().getWorkspaceFor(project);
+        File testNestedBoxJsonFile = new File(workspace.getRemote(), "test-nested-box.json");
+        File jenkinsImageFile = new File(workspace.getRemote(), "jenkins.png");
+        FileUtils.copyURLToFile(TestUtils.class.getResource("boxes/test-nested-box.json"), testNestedBoxJsonFile);
+        FileUtils.copyURLToFile(TestUtils.class.getResource("jenkins.png"), jenkinsImageFile);
+
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
-        FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("jobs/test-job.xml"), testParameters, jenkins.getInstance());
+        FreeStyleBuild build = TestUtils.runJob(project, testParameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
         
         // validate the results of executed build steps   
@@ -132,7 +149,28 @@ public class BuildStepTest extends BuildStepTestBase {
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_INSIDE").getString("value"));
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_WHOLE").getString("value"));
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_INSIDE", "nested").getString("value"));
-        assertNull(TestUtils.findVariable(variables, "HTTP", "nested"));
+        assertNull(TestUtils.findVariable(variables, "HTTP", "nested"));        
+        JSONObject variable = TestUtils.findVariable(variables, "VAR_FILE");
+        Assert.assertNotNull(variable);
+        Assert.assertNotNull("VAR_FILE is not updated", variable.getString("value"));
+        File file = File.createTempFile(testTag, null);
+        FileOutputStream fileOutput = new FileOutputStream(file);
+        try {
+            client.writeTo(variable.getString("value"), fileOutput);
+        } finally {
+            fileOutput.close();;
+        }
+        FileUtils.contentEquals(file, testNestedBoxJsonFile);
+        variable = TestUtils.findVariable(variables, "VAR_FILE", "nested");
+        Assert.assertNotNull(variable);
+        Assert.assertNotNull("VAR_FILE is not updated", variable.getString("value"));
+        fileOutput = new FileOutputStream(file);
+        try {
+            client.writeTo(variable.getString("value"), fileOutput);
+        } finally {
+            fileOutput.close();;
+        }
+        FileUtils.contentEquals(file, jenkinsImageFile);                
         
         TestUtils.cleanUp(testTag, jenkins.getInstance());
     }    

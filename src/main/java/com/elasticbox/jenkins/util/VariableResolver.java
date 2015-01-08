@@ -20,6 +20,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.Computer;
 import hudson.model.Project;
 import hudson.model.TaskListener;
+import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -76,7 +77,8 @@ public final class VariableResolver {
     public JSONObject resolve(JSONObject variable) throws IOException {
         String value = resolve(variable.getString("value"));
         variable.put("value", value);
-        if ("Binding".equals(variable.getString("type"))) {
+        String type = variable.getString("type");
+        if ("Binding".equals(type)) {
             if (value.startsWith("com.elasticbox.jenkins.builders.")) {
                 for (IInstanceProvider instanceProvider : instanceProviders) {
                     if (value.equals(instanceProvider.getId())) {
@@ -104,6 +106,10 @@ public final class VariableResolver {
                     throw new IOException(errorMessage);
                 }
             }            
+        } else if ("File".equals(type)) {
+            if (StringUtils.isNotBlank(value)) {
+                variable.put("value", new File(value).toURI().toString());            
+            }
         }
 
         if (variable.getString("scope").isEmpty()) {

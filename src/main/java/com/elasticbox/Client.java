@@ -215,10 +215,8 @@ public class Client {
         if (box.containsKey("variables")) {
             for (Object variable : box.getJSONArray("variables")) {
                 JSONObject variableJson = (JSONObject) variable;
-                String value = variableJson.getString("value");
-                if (variableJson.getString("type").equals("File") && StringUtils.isNotBlank(value)) {
-                    JSONObject blobInfo = uploadFile(new URI(value), null);
-                    variableJson.put("value", blobInfo.getString("url"));
+                if (variableJson.getString("type").equals("File")) {
+                    uploadFileVariable(variableJson);
                 }
             }
         }
@@ -393,6 +391,9 @@ public class Client {
                     }
                 }
                 if (instanceVariable != null) {
+                    if ("File".equals(variableJson.getString("type"))) {
+                        uploadFileVariable(variableJson);
+                    }
                     instanceVariable.put("value", variableJson.getString("value"));
                 }
             }
@@ -444,6 +445,22 @@ public class Client {
         
         return updateInstance(instance, variablesWithFullScope);
     }    
+    
+    private void uploadFileVariable(JSONObject fileVariable) throws IOException {
+        String value = fileVariable.getString("value");
+        if (StringUtils.isBlank(value)) {
+            return;
+        }
+        URI fileUri;
+        try {
+            fileUri = new URI(value);
+        } catch (URISyntaxException ex) {
+            throw new IOException(MessageFormat.format("Invalid file URI specified for variable {0}: {1}", 
+                    fileVariable.getString("name"), value), ex);
+        }
+        JSONObject blobInfo = uploadFile(fileUri, null);
+        fileVariable.put("value", blobInfo.getString("url"));
+    }
 
     public JSONObject updateBox(String boxId, JSONArray variables) throws IOException {
         String boxUrl = MessageFormat.format("/services/boxes/{0}", boxId);
@@ -475,17 +492,7 @@ public class Client {
                 }
                 if (instanceVariable != null) {
                     if ("File".equals(variableJson.getString("type"))) {
-                        String value = variableJson.getString("value");
-                        if (StringUtils.isNotBlank(value)) {
-                            URI fileUri;
-                            try {
-                                fileUri = new URI(value);
-                            } catch (URISyntaxException ex) {
-                                throw new IOException(MessageFormat.format("Invalid file URI specified for variable {0}: {1}", variableJson.getString("name"), value), ex);
-                            }
-                            JSONObject blobInfo = uploadFile(fileUri, null);
-                            variableJson.put("value", blobInfo.getString("url"));
-                        }                        
+                        uploadFileVariable(variableJson);
                     }
                     instanceVariable.put("value", variableJson.getString("value"));
                 }
@@ -594,6 +601,9 @@ public class Client {
                 JSONObject variable = (JSONObject) json;
                 if (variable.containsKey("scope") && variable.getString("scope").isEmpty()) {
                     variable.remove("scope");
+                }
+                if ("File".equals(variable.getString("type"))) {
+                    uploadFileVariable(variable);
                 }
             }
             deployRequest.put("variables", variables);

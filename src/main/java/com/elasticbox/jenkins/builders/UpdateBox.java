@@ -22,12 +22,10 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.util.ListBoxModel;
-import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -64,10 +62,6 @@ public class UpdateBox extends AbstractBuilder {
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
         Client client = ClientCache.getClient(getCloud());
         DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, box).getJsonArray());
-        for (Object variable : resolvedVariables) {
-            JSONObject variableJson = (JSONObject) variable;
-            variableJson.put("value", new File(variableJson.getString("value")).toURI().toString());
-        }
         JSONObject boxJson = client.updateBox(box, resolvedVariables);
         String boxPageUrl = Client.getPageUrl(client.getEndpointUrl(), boxJson);
         logger.info(MessageFormat.format("Updated box {0}", boxPageUrl));    
@@ -97,7 +91,6 @@ public class UpdateBox extends AbstractBuilder {
                 for (Object variable : boxJson.getJSONArray("variables")) {
                     JSONObject variableJson = (JSONObject) variable;
                     if ("File".equals(variableJson.get("type"))) {
-                        variableJson.put("value", StringUtils.EMPTY);
                         fileVariables.add(variableJson);
                     }
                 }

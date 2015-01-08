@@ -75,7 +75,8 @@ public class UpdateBoxTest extends BuildStepTestBase {
             client.writeTo(variable.getString("value"), fileOutput);
         } finally {
             fileOutput.close();;
-        }        FileUtils.contentEquals(file, jenkinsImageFile);        
+        }
+        FileUtils.contentEquals(file, jenkinsImageFile);        
         
         TestUtils.cleanUp(testTag, jenkins.getInstance());        
     }

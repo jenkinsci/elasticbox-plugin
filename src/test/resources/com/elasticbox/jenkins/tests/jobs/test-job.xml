@@ -87,7 +87,12 @@
       <profile>e155115d-6e4e-4027-b4a7-89eb3ae6ef58</profile>
       <environment>${TEST_TAG}</environment>
       <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;REQUIRED_BINDING&quot;,&quot;value&quot;:&quot;com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Binding&quot;}]</variables>
+      <variables>
+        [
+          {"name": "REQUIRED_BINDING", "value": "com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075", "scope": "", "type": "Binding"},
+          {"name": "VAR_FILE", "value": "${WORKSPACE}/test-nested-box.json", "scope": "", "type": "File"}
+        ]
+      </variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
@@ -165,7 +170,13 @@
           <tags> ${TEST_TAG}</tags>
           <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
           <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
-          <variables>[{&quot;name&quot;: &quot;REQUIRED_BINDING&quot;, &quot;value&quot;: &quot;com.elasticbox.jenkins.builders.DeployBox-ad677e58-fb68-4c51-97a1-f2e62e913771&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;nested&quot;, &quot;type&quot;: &quot;Binding&quot;}]</variables>
+          <variables>
+              [
+                {"name": "REQUIRED_BINDING", "value": "com.elasticbox.jenkins.builders.DeployBox-ad677e58-fb68-4c51-97a1-f2e62e913771", "scope": "", "type": "Binding"}, 
+                {"name": "ANY_BINDING", "value": "", "scope": "nested", "type": "Binding"},
+                {"name": "VAR_FILE", "value": "${WORKSPACE}/jenkins.png", "scope": "nested", "type": "File"}                       
+              ]
+          </variables>
         </com.elasticbox.jenkins.builders.UpdateOperation>
         <com.elasticbox.jenkins.builders.StopOperation>
           <tags> ${TEST_TAG}</tags>
