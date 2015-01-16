@@ -111,7 +111,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
     
     private Result performAlternateAction(JSONArray existingInstances, ElasticBoxCloud ebCloud, Client client, 
-            VariableResolver resolver, TaskLogger logger) throws IOException, InterruptedException {
+            VariableResolver resolver, TaskLogger logger, AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         JSONObject instance = existingInstances.getJSONObject(0);
         boolean existing = true;
         if (alternateAction.equals(ACTION_SKIP)) {
@@ -140,7 +140,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
                     }
                 }
             }
-            String instanceId = deploy(ebCloud, client, resolver, logger);
+            String instanceId = deploy(ebCloud, client, resolver, logger, build);
             instance = client.getInstance(instanceId);
             existing = false;
         } else {
@@ -150,7 +150,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return new Result(instance, existing);
     }
     
-    private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger) 
+    private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger, 
+            AbstractBuild<?, ?> build) 
             throws IOException, InterruptedException {
         String resolvedEnvironment = resolver.resolve(tags.split(",")[0].trim());
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
@@ -173,6 +174,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
         logger.info("Deploying box instance {0}", instancePageUrl);
+        notifyDeploying(build, instanceId, ebCloud);
         if (waitForCompletion) {
             try {
                 logger.info("Waiting for the deployment of the box instance {0} to finish", instancePageUrl);
@@ -279,11 +281,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }        
             JSONArray existingInstances = DescriptorHelper.getInstances(client, workspace, instanceFilter);
             if (!existingInstances.isEmpty()) {
-                return performAlternateAction(existingInstances, ebCloud, client, resolver, logger);
+                return performAlternateAction(existingInstances, ebCloud, client, resolver, logger, build);
             }
         }
         
-        final String instanceId = deploy(ebCloud, client, resolver, logger);
+        final String instanceId = deploy(ebCloud, client, resolver, logger, build);
         JSONObject instance = client.getInstance(instanceId);
         Set<String> resolvedTags = resolver.resolveTags(tags);
         if (waitForCompletion && !resolvedTags.isEmpty()) {
@@ -300,6 +302,16 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
         }
         return new Result(instance, false);
+    }
+    
+    private void notifyDeploying(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud ebxCloud) throws InterruptedException {
+        for (BuilderListener listener: Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
+            try {
+                listener.onDeploying(build, instanceId, ebxCloud);
+            } catch (IOException ex) {
+                Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+            }
+        }
     }
     
     @Override

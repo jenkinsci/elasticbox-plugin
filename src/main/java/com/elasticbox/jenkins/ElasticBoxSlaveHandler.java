@@ -15,16 +15,14 @@ package com.elasticbox.jenkins;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
+import static com.elasticbox.jenkins.ElasticBoxExecutor.threadPool;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
-import hudson.model.AsyncPeriodicWork;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
-import hudson.util.DaemonThreadFactory;
-import hudson.util.ExceptionCatchingThreadFactory;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -35,8 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,12 +47,10 @@ import org.apache.commons.lang.StringUtils;
  * @author Phong Nguyen Le
  */
 @Extension
-public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
+public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlaveHandler.class.getName());
-    private static final ExecutorService threadPool = Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(new DaemonThreadFactory()));
     
     public static final int TIMEOUT_MINUTES = Integer.getInteger("elasticbox.jenkins.deploymentTimeout", 60);
-    private static final long RECURRENT_PERIOD = Long.getLong("elasticbox.jenkins.ElasticBoxSlaveHandler.recurrentPeriod", 10000);
 
     private static class InstanceCreationRequest {
         private final ElasticBoxSlave slave;
@@ -72,6 +66,10 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
     private static final Queue<InstanceCreationRequest> incomingQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<InstanceCreationRequest> submittedQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
     private static final Queue<ElasticBoxSlave> terminatedSlaves = new ConcurrentLinkedQueue<ElasticBoxSlave>();
+    
+    public static final ElasticBoxSlaveHandler getInstance() {
+        return Jenkins.getInstance().getExtensionList(ElasticBoxExecutor.Workload.class).get(ElasticBoxSlaveHandler.class);
+    }
     
     public static final IProgressMonitor submit(ElasticBoxSlave slave) {
         InstanceCreationRequest request = new InstanceCreationRequest(slave);
@@ -104,7 +102,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         return new SlaveInstanceManager().getInstances(cloud);
     }
     
-    public static void tagSlaveInstance(JSONObject instance, ElasticBoxSlave slave) throws IOException {
+    public void tagSlaveInstance(JSONObject instance, ElasticBoxSlave slave) throws IOException {
         if (instance.getJSONArray("tags").contains(slave.getNodeName())) {
             return;
         }
@@ -112,16 +110,17 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         instance.getJSONArray("tags").add(slave.getNodeName());
         Client client = slave.getCloud().getClient();
         client.updateInstance(instance);
-        LOGGER.fine(MessageFormat.format("Slave instance {0} has been tagged with slave name {1}",
+        log(Level.FINE, MessageFormat.format("Slave instance {0} has been tagged with slave name {1}",
                 Client.getPageUrl(client.getEndpointUrl(), instance), slave.getNodeName()));        
-    }
-    
-    public ElasticBoxSlaveHandler() {
-        super("ElasticBox Slave Handler");
     }
 
     @Override
-    protected void execute(TaskListener listener) throws IOException, InterruptedException {
+    protected ElasticBoxExecutor.ExecutionType getExecutionType() {
+        return ElasticBoxExecutor.ExecutionType.SYNC;
+    }
+    
+    @Override
+    protected void execute(TaskListener listener) throws IOException {
         SlaveInstanceManager slaveInstanceManager = new SlaveInstanceManager();
         purgeSlaves(slaveInstanceManager, listener);    
         Map<ElasticBoxCloud, Integer> cloudToMaxNewInstancesMap = new HashMap<ElasticBoxCloud, Integer>();
@@ -166,11 +165,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
         launchMinimumSlaves();
     }
 
-    @Override
-    public long getRecurrencePeriod() {
-        return RECURRENT_PERIOD;
-    }
-    
     private boolean removeSlaveIfLaunchTimedOut(InstanceCreationRequest request, TaskListener listener) {
         if (request.monitor.getLaunchTime() > 0) {
             long launchDuration = System.currentTimeMillis() - request.monitor.getLaunchTime();
@@ -311,7 +305,7 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         try {
                             slaveToTerminate.terminate();
                         } catch (IOException ex) {
-                            LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slaveToTerminate.getDisplayName()), ex);
+                            log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slaveToTerminate.getDisplayName()), ex);
                         }
                     }
                 });
@@ -347,15 +341,6 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
             });
             
         }
-    }
-    
-    private void log(String message, TaskListener listener) {
-        this.log(Level.INFO, message, null, listener);
-    }
-    
-    private void log(Level level, String message, Throwable exception, TaskListener listener) {
-        listener.getLogger().println(message);
-        LOGGER.log(level, message, exception);       
     }
     
     private void deployInstance(InstanceCreationRequest request) throws IOException {
@@ -413,9 +398,9 @@ public class ElasticBoxSlaveHandler extends AsyncPeriodicWork {
                         ElasticBoxSlaveHandler.submit(slave);
                         break;
                     } catch (IOException ex) {
-                        LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                        log(Level.SEVERE, ex.getMessage(), ex);
                     } catch (Descriptor.FormException ex) {
-                        LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                        log(Level.SEVERE, ex.getMessage(), ex);
                     }
                 }
             }

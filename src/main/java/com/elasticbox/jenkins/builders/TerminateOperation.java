@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -40,6 +41,18 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @author Phong Nguyen Le
  */
 public class TerminateOperation extends LongOperation implements IOperation.InstanceOperation {
+
+    private static void notifyTerminating(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud) 
+            throws InterruptedException {
+        for (BuilderListener listener: Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
+            try {
+                listener.onDeploying(build, instanceId, cloud);
+            } catch (IOException ex) {
+                Logger.getLogger(TerminateOperation.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+            }
+        }
+    }
+    
     private final boolean delete;
     private final boolean force;
 
@@ -73,7 +86,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             return;
         }
 
-        List<String> instanceIDs = terminate(instances, getWaitForCompletionTimeout(), isForce(), client, logger);
+        List<String> instanceIDs = terminate(instances, getWaitForCompletionTimeout(), isForce(), cloud, logger, build);
         
         if (isDelete()) {
             logger.info(MessageFormat.format("Deleting terminated {0}", 
@@ -84,8 +97,10 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         }
     }
     
-    static List<String> terminate(JSONArray instances, int waitForCompletionTimeout, boolean force, Client client, TaskLogger logger)
+    static List<String> terminate(JSONArray instances, int waitForCompletionTimeout, boolean force, 
+            ElasticBoxCloud cloud, TaskLogger logger, AbstractBuild<?, ?> build)
             throws InterruptedException, IOException {
+        Client client = cloud.getClient();
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         List<String> instanceIDs = new ArrayList<String>();
         for (Object instance : instances) {
@@ -104,6 +119,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             IProgressMonitor monitor = force ? client.forceTerminate(instanceId) : client.terminate(instanceId);
             monitors.add(monitor);
             logger.info(MessageFormat.format(force ? "Force-terminating instance {0}" : "Terminating instance {0}", instancePageUrl));
+            notifyTerminating(build, instanceId, cloud);
         }
         
         if (!monitors.isEmpty() && waitForCompletionTimeout > 0) {

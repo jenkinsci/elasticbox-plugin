@@ -35,7 +35,7 @@ public class Initializers {
         SlaveInstanceManager manager = new SlaveInstanceManager();
         for (JSONObject instance : manager.getInstances()) {
             ElasticBoxSlave slave = manager.getSlave(instance.getString("id"));
-            ElasticBoxSlaveHandler.tagSlaveInstance(instance, slave);
+            ElasticBoxSlaveHandler.getInstance().tagSlaveInstance(instance, slave);
         }        
     }
     

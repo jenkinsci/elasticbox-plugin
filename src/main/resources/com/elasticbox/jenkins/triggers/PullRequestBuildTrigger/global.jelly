@@ -1,0 +1,7 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:section title="${%ElasticBox GitHub Pull Request Lifecycle Management}">
+      <f:entry title="WebHook External URL" field="webHookExternalUrl">
+          <f:textbox default="${descriptor.getWebHookUrl()}"/>
+      </f:entry>
+  </f:section>
+</j:jelly>

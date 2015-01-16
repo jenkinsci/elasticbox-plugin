@@ -49,6 +49,10 @@ public final class VariableResolver {
     private final List<IInstanceProvider> instanceProviders;
     private final AbstractBuild build;
     private final Map<String, String> variableValueLookup;
+    
+    public VariableResolver(AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {
+        this(null, null, build, listener);
+    }
 
     public VariableResolver(String cloudName, String workspace, AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {
         this.cloudName = cloudName;

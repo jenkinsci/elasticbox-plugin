@@ -38,14 +38,14 @@ written permission is obtained from ElasticBox.
     </f:invisibleEntry>
 
     <f:entry title="${%Slave Configurations}" description="${%Configuration of boxes to be launched as slaves}">
-      <f:repeatable field="slaveConfigurations">
+        <f:repeatable field="slaveConfigurations">
             <st:include page="config.jelly" class="${descriptor.clazz}" />
-      </f:repeatable>
+        </f:repeatable>
 
-      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
-      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
-      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
-      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
-      <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/slave-config.js" />
+        <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
+        <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
+        <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
+        <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
+        <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/slave-config.js" />
     </f:entry>
 </j:jelly>

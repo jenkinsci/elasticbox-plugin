@@ -14,7 +14,6 @@ package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
-import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
 import hudson.AbortException;
 import java.io.IOException;
