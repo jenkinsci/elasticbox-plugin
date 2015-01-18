@@ -149,7 +149,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
     
     private GHHook createWebHook() throws IOException {
         final GitHubRepositoryName gitHubRepoName = GitHubRepositoryName.create(gitHubRepositoryUrl);
-        String webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookExternalUrl();
+        PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class);
+        String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl()) ? descriptor.getWebHookUrl() : descriptor.getWebHookExternalUrl();
         LOGGER.info(MessageFormat.format("Adding webhook {0} to GitHub repository {1}", webhookUrl, gitHubRepositoryUrl));
         for (GHRepository repo : gitHubRepoName.resolve()) {
             // check if the webhook already exists
@@ -190,17 +191,20 @@ public class PullRequestBuildHandler implements IBuildHandler {
         
         PullRequestManager pullRequestManager = PullRequestManager.getInstance();
         PullRequestData pullRequestData = pullRequestManager.getPullRequestData(pullRequestUrl, project);
-        boolean isNew = false;
+        boolean startBuild = false;
         if (pullRequestData == null) {
             if (PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction())) {
                 LOGGER.info(MessageFormat.format("Pull request {0} was not built previously", pullRequestUrl));
                 return;
             }
             pullRequestData = pullRequestManager.addPullRequestData(pullRequest, project);
-            isNew = pullRequestData.getLastUpdated().equals(pullRequest.getUpdatedAt());            
+            startBuild = pullRequestData.getLastUpdated().equals(pullRequest.getUpdatedAt());            
+        } else if (pullRequestData.update(pullRequest)) {
+            pullRequestData.save();
+            startBuild = true;
         }
         
-        if (isNew || pullRequestData.update(pullRequest)) {
+        if (startBuild) {
             cancelBuilds(pullRequestData);
             build(pullRequest, null, new TriggerCause(prEventPayload));
         }

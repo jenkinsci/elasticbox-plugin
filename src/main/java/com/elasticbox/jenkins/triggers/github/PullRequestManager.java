@@ -24,12 +24,17 @@ import com.elasticbox.jenkins.ElasticBoxExecutor;
 import com.elasticbox.jenkins.builders.BuilderListener;
 import com.elasticbox.jenkins.triggers.BuildManager;
 import com.elasticbox.jenkins.util.ClientCache;
+import com.elasticbox.jenkins.util.ProjectData;
+import com.elasticbox.jenkins.util.ProjectDataListener;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Cause;
 import hudson.model.Hudson;
+import hudson.model.Item;
 import hudson.model.Run;
+import hudson.model.listeners.ItemListener;
+import hudson.model.listeners.SaveableListener;
 import hudson.security.ACL;
 import java.io.IOException;
 import java.io.StringReader;
@@ -79,38 +84,46 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 PullRequestBuildTrigger.class)).getBuildManager();        
     }
     
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, PullRequestData>> projectPullRequestDataLookup = 
-            new ConcurrentHashMap<String, ConcurrentHashMap<String, PullRequestData>>();
+    private final ConcurrentHashMap<AbstractProject, ConcurrentHashMap<String, PullRequestData>> projectPullRequestDataLookup = 
+            new ConcurrentHashMap<AbstractProject, ConcurrentHashMap<String, PullRequestData>>();
     
     @Override
     public PullRequestBuildHandler createBuildHandler(AbstractProject<?, ?> project, boolean newTrigger) throws IOException {
         return new PullRequestBuildHandler(project, newTrigger);
     }
         
-    public PullRequestData addPullRequestData(GHPullRequest pullRequest, AbstractProject project) {
-        ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project.getFullName());
+    public PullRequestData addPullRequestData(GHPullRequest pullRequest, AbstractProject project) throws IOException {
+        ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project);
         if (pullRequestDataMap == null) {
-            projectPullRequestDataLookup.putIfAbsent(project.getFullName(), 
+            projectPullRequestDataLookup.putIfAbsent(project, 
                     new ConcurrentHashMap<String, PullRequestData>());
-            pullRequestDataMap = projectPullRequestDataLookup.get(project.getFullName());
+            pullRequestDataMap = projectPullRequestDataLookup.get(project);
         }
         PullRequestData data = pullRequestDataMap.get(pullRequest.getUrl().toString());
         if (data == null) {
             String pullRequestUrl = pullRequest.getUrl().toString();
-            pullRequestDataMap.putIfAbsent(pullRequestUrl, new PullRequestData(pullRequest, project));
+            PullRequestData newPullRequestData = new PullRequestData(pullRequest, ProjectData.getInstance(project, true));
+            pullRequestDataMap.putIfAbsent(pullRequestUrl, newPullRequestData);
             data = pullRequestDataMap.get(pullRequestUrl);
+            if (data == newPullRequestData) {
+                data.save();
+            }
         } 
         return data;
     }
     
     public PullRequestData getPullRequestData(String url, AbstractProject project) {
-        ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project.getFullName());    
+        ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project);
         return pullRequestDataMap != null ? pullRequestDataMap.get(url) : null;
     }
     
-    public PullRequestData removePullRequestData(String pullRequestUrl, AbstractProject project) {
-        ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project.getFullName());    
-        return pullRequestDataMap != null ? pullRequestDataMap.remove(pullRequestUrl) : null;        
+    public PullRequestData removePullRequestData(String pullRequestUrl, AbstractProject project) throws IOException {
+        ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project);    
+        PullRequestData pullRequestData = pullRequestDataMap != null ? pullRequestDataMap.remove(pullRequestUrl) : null;
+        if (pullRequestData != null) {
+            pullRequestData.remove();
+        }
+        return pullRequestData;
     }
     
     private String getHost(Credential credential) {
@@ -198,7 +211,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             Authentication old = SecurityContextHolder.getContext().getAuthentication();
             SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
             try {
-                for (AbstractProject<?,?> job : Hudson.getInstance().getAllItems(AbstractProject.class)) {
+                for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
                     PullRequestBuildTrigger trigger = job.getTrigger(PullRequestBuildTrigger.class);
                     if (trigger != null) {
                         ((PullRequestBuildHandler) trigger.getBuildHandler()).handle(pullRequest, gitHub);
@@ -240,8 +253,8 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
 
     }
 
-    private void deleteInstances(GHEventPayload.PullRequest prEventPayload) {
-        Collection<PullRequestData.Instance> prInstances = new ArrayList<PullRequestData.Instance>();
+    private void deleteInstances(GHEventPayload.PullRequest prEventPayload) throws IOException {
+        Collection<PullRequestInstance> prInstances = new ArrayList<PullRequestInstance>();
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
@@ -256,7 +269,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         }                            
         
         List<String> terminatingInstanceURLs = new ArrayList<String>();
-        for (PullRequestData.Instance instance : prInstances) {
+        for (PullRequestInstance instance : prInstances) {
             Client client = ClientCache.getClient(instance.cloud);
             if (client != null) {
                 String instanceId = Client.getResourceId(instance.id);
@@ -310,11 +323,12 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             if (cause == null) {
                 return;
             }
-            ConcurrentHashMap<String, PullRequestData> prDataLookup = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject().getFullName());
+            ConcurrentHashMap<String, PullRequestData> prDataLookup = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject());
             if (prDataLookup != null) {
                 PullRequestData data = prDataLookup.get(cause.getPullRequest().getUrl().toString());
                 if (data != null) {
-                    data.getInstances().add(new PullRequestData.Instance(instanceId, cloud.name));
+                    data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
+                    data.save();
                 }
             }
         }
@@ -323,9 +337,10 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         public void onTerminating(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud) throws IOException, InterruptedException {
             for (ConcurrentHashMap<String, PullRequestData> prDataLookup : getInstance().projectPullRequestDataLookup.values()) {
                 for (PullRequestData data : prDataLookup.values()) {
-                    for (Iterator<PullRequestData.Instance> it = data.getInstances().iterator(); it.hasNext();) {
+                    for (Iterator<PullRequestInstance> it = data.getInstances().iterator(); it.hasNext();) {
                         if (it.next().id.equals(instanceId)) {
                             it.remove();
+                            data.save();
                             return;
                         }                        
                     }
@@ -333,6 +348,36 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             }
         }
         
-    }        
+    }      
+    
+    @Extension
+    public static class ProjectDataListenerImpl extends ProjectDataListener {
+
+        @Override
+        protected void onLoad(ProjectData projectData) {
+            PullRequestManager manager = PullRequestManager.getInstance();
+            PullRequests pullRequests = projectData.get(PullRequests.class);
+            if (pullRequests != null) {
+                ConcurrentHashMap<String, PullRequestData> pullRequestDataLookup = new ConcurrentHashMap<String, PullRequestData>();
+                for (PullRequestData pullRequestData : pullRequests.getData()) {
+                    pullRequestDataLookup.put(pullRequestData.pullRequestUrl.toString(), pullRequestData);
+                }
+                manager.projectPullRequestDataLookup.put(projectData.getProject(), pullRequestDataLookup);
+            }                    
+        }
+
+    }
+    
+    @Extension
+    public static class ProjectListener extends ItemListener {
+
+        @Override
+        public void onDeleted(Item item) {
+            if (item instanceof AbstractProject) {
+                ProjectData.removeInstance((AbstractProject) item);
+            }
+        }
+               
+    }
     
 }

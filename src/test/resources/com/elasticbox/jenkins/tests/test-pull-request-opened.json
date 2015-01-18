@@ -1,16 +1,16 @@
 {
   "action": "opened",
-  "number": 12,
+  "number": 13,
   "pull_request": {
-    "url": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/12",
-    "id": 2517,
-    "html_url": "https://git.elasticbox.com/ple/master/pull/12",
-    "diff_url": "https://git.elasticbox.com/ple/master/pull/12.diff",
-    "patch_url": "https://git.elasticbox.com/ple/master/pull/12.patch",
-    "issue_url": "https://git.elasticbox.com/api/v3/repos/ple/master/issues/12",
-    "number": 12,
+    "url": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/13",
+    "id": 2770,
+    "html_url": "https://git.elasticbox.com/ple/master/pull/13",
+    "diff_url": "https://git.elasticbox.com/ple/master/pull/13.diff",
+    "patch_url": "https://git.elasticbox.com/ple/master/pull/13.patch",
+    "issue_url": "https://git.elasticbox.com/api/v3/repos/ple/master/issues/13",
+    "number": 13,
     "state": "open",
-    "title": "Better handled yaml to work with local appliance",
+    "title": "Restore openstack e2e tests",
     "user": {
       "login": "ple",
       "id": 7,
@@ -31,22 +31,22 @@
       "site_admin": false
     },
     "body": "",
-    "created_at": "2014-12-09T00:34:39Z",
-    "updated_at": "2014-12-09T00:34:39Z",
+    "created_at": "2015-01-17T00:44:38Z",
+    "updated_at": "2015-01-17T00:44:39Z",
     "closed_at": null,
     "merged_at": null,
-    "merge_commit_sha": null,
+    "merge_commit_sha": "102651f9d416b6a0668434e864fe668dfbe17772",
     "assignee": null,
     "milestone": null,
-    "commits_url": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/12/commits",
-    "review_comments_url": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/12/comments",
+    "commits_url": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/13/commits",
+    "review_comments_url": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/13/comments",
     "review_comment_url": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/comments/{number}",
-    "comments_url": "https://git.elasticbox.com/api/v3/repos/ple/master/issues/12/comments",
-    "statuses_url": "https://git.elasticbox.com/api/v3/repos/ple/master/statuses/3133ad7b8644127cc61b3b7a4a33cfff9e04af35",
+    "comments_url": "https://git.elasticbox.com/api/v3/repos/ple/master/issues/13/comments",
+    "statuses_url": "https://git.elasticbox.com/api/v3/repos/ple/master/statuses/86d3cb6daa72332a830039686db3a8bf12aa1e8f",
     "head": {
-      "label": "ple:improve-test-script",
-      "ref": "improve-test-script",
-      "sha": "3133ad7b8644127cc61b3b7a4a33cfff9e04af35",
+      "label": "ple:restore_openstack_e2e_tests",
+      "ref": "restore_openstack_e2e_tests",
+      "sha": "86d3cb6daa72332a830039686db3a8bf12aa1e8f",
       "user": {
         "login": "ple",
         "id": 7,
@@ -130,14 +130,14 @@
         "labels_url": "https://git.elasticbox.com/api/v3/repos/ple/master/labels{/name}",
         "releases_url": "https://git.elasticbox.com/api/v3/repos/ple/master/releases{/id}",
         "created_at": "2014-03-11T22:35:30Z",
-        "updated_at": "2014-12-09T00:34:39Z",
-        "pushed_at": "2014-12-09T00:34:06Z",
+        "updated_at": "2015-01-17T00:44:39Z",
+        "pushed_at": "2015-01-17T00:43:57Z",
         "git_url": "git://git.elasticbox.com/ple/master.git",
         "ssh_url": "git@git.elasticbox.com:ple/master.git",
         "clone_url": "https://git.elasticbox.com/ple/master.git",
         "svn_url": "https://git.elasticbox.com/ple/master",
         "homepage": null,
-        "size": 358612,
+        "size": 358684,
         "stargazers_count": 0,
         "watchers_count": 0,
         "language": "Python",
@@ -146,9 +146,9 @@
         "has_wiki": false,
         "forks_count": 0,
         "mirror_url": null,
-        "open_issues_count": 1,
+        "open_issues_count": 2,
         "forks": 0,
-        "open_issues": 1,
+        "open_issues": 2,
         "watchers": 0,
         "default_branch": "catapult"
       }
@@ -156,7 +156,7 @@
     "base": {
       "label": "ple:catapult",
       "ref": "catapult",
-      "sha": "ef39c7f826eff077271863dd0a9d8eca555057eb",
+      "sha": "512a67e68fee196392d903c3f3823dda5eb7b66e",
       "user": {
         "login": "ple",
         "id": 7,
@@ -240,14 +240,14 @@
         "labels_url": "https://git.elasticbox.com/api/v3/repos/ple/master/labels{/name}",
         "releases_url": "https://git.elasticbox.com/api/v3/repos/ple/master/releases{/id}",
         "created_at": "2014-03-11T22:35:30Z",
-        "updated_at": "2014-12-09T00:34:39Z",
-        "pushed_at": "2014-12-09T00:34:06Z",
+        "updated_at": "2015-01-17T00:44:39Z",
+        "pushed_at": "2015-01-17T00:43:57Z",
         "git_url": "git://git.elasticbox.com/ple/master.git",
         "ssh_url": "git@git.elasticbox.com:ple/master.git",
         "clone_url": "https://git.elasticbox.com/ple/master.git",
         "svn_url": "https://git.elasticbox.com/ple/master",
         "homepage": null,
-        "size": 358612,
+        "size": 358684,
         "stargazers_count": 0,
         "watchers_count": 0,
         "language": "Python",
@@ -256,49 +256,49 @@
         "has_wiki": false,
         "forks_count": 0,
         "mirror_url": null,
-        "open_issues_count": 1,
+        "open_issues_count": 2,
         "forks": 0,
-        "open_issues": 1,
+        "open_issues": 2,
         "watchers": 0,
         "default_branch": "catapult"
       }
     },
     "_links": {
       "self": {
-        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/12"
+        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/13"
       },
       "html": {
-        "href": "https://git.elasticbox.com/ple/master/pull/12"
+        "href": "https://git.elasticbox.com/ple/master/pull/13"
       },
       "issue": {
-        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/issues/12"
+        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/issues/13"
       },
       "comments": {
-        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/issues/12/comments"
+        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/issues/13/comments"
       },
       "review_comments": {
-        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/12/comments"
+        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/13/comments"
       },
       "review_comment": {
         "href": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/comments/{number}"
       },
       "commits": {
-        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/12/commits"
+        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/pulls/13/commits"
       },
       "statuses": {
-        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/statuses/3133ad7b8644127cc61b3b7a4a33cfff9e04af35"
+        "href": "https://git.elasticbox.com/api/v3/repos/ple/master/statuses/86d3cb6daa72332a830039686db3a8bf12aa1e8f"
       }
     },
     "merged": false,
-    "mergeable": null,
-    "mergeable_state": "unknown",
+    "mergeable": true,
+    "mergeable_state": "clean",
     "merged_by": null,
     "comments": 0,
     "review_comments": 0,
-    "commits": 1,
-    "additions": 13,
-    "deletions": 14,
-    "changed_files": 2
+    "commits": 2,
+    "additions": 18,
+    "deletions": 11,
+    "changed_files": 4
   },
   "repository": {
     "id": 31,
@@ -364,14 +364,14 @@
     "labels_url": "https://git.elasticbox.com/api/v3/repos/ple/master/labels{/name}",
     "releases_url": "https://git.elasticbox.com/api/v3/repos/ple/master/releases{/id}",
     "created_at": "2014-03-11T22:35:30Z",
-    "updated_at": "2014-12-09T00:34:39Z",
-    "pushed_at": "2014-12-09T00:34:06Z",
+    "updated_at": "2015-01-17T00:44:39Z",
+    "pushed_at": "2015-01-17T00:43:57Z",
     "git_url": "git://git.elasticbox.com/ple/master.git",
     "ssh_url": "git@git.elasticbox.com:ple/master.git",
     "clone_url": "https://git.elasticbox.com/ple/master.git",
     "svn_url": "https://git.elasticbox.com/ple/master",
     "homepage": null,
-    "size": 358612,
+    "size": 358684,
     "stargazers_count": 0,
     "watchers_count": 0,
     "language": "Python",
@@ -380,9 +380,9 @@
     "has_wiki": false,
     "forks_count": 0,
     "mirror_url": null,
-    "open_issues_count": 1,
+    "open_issues_count": 2,
     "forks": 0,
-    "open_issues": 1,
+    "open_issues": 2,
     "watchers": 0,
     "default_branch": "catapult"
   },

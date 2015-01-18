@@ -105,13 +105,13 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
         }
         String message;
         if (build.getResult() == Result.ABORTED) {
-            message = "Build was aborted";
+            message = "Build was ABORTED";
         } else if (build.getResult() == Result.NOT_BUILT) {
-            message = "Build was not performed";
+            message = "Build was NOT PERFORMED";
         } else if (build.getResult() == Result.SUCCESS) {
-            message = "Build finished successfully";
+            message = "Build finished SUCCESSFULLY";
         } else {
-            message = "Build failed";
+            message = "Build FAILED";
         }
         postComment(build, pullRequest, message);        
         postStatus(build, pullRequest, status, message);

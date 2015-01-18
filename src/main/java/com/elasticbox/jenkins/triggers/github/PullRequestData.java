@@ -12,7 +12,8 @@
 
 package com.elasticbox.jenkins.triggers.github;
 
-import hudson.model.AbstractProject;
+import com.elasticbox.jenkins.util.ProjectData;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,42 +25,20 @@ import org.kohsuke.github.GHPullRequest;
  * @author Phong Nguyen Le
  */
 public class PullRequestData {
-    public static class Instance {
-        public final String id;
-        public final String cloud;
-
-        public Instance(String id, String cloud) {
-            assert id != null & cloud != null;
-            this.id = id;
-            this.cloud = cloud;
-        }    
-
-        @Override
-        public boolean equals(Object obj) {
-            if (super.equals(obj)) {
-                return true;
-            }
-            if (obj instanceof Instance) {
-                Instance instance = (Instance) obj;
-                return id.equals(instance.id) && cloud.equals(instance.cloud);
-            }
-            return false;
-        }                
-        
-    }
     
     public final URL pullRequestUrl;   
-    public final String projectFullName;
     private Date lastUpdated;
     private String headSha;
-    private final List<Instance> instances;
-
-    public PullRequestData(GHPullRequest pullRequest, AbstractProject project) {
+    private final List<PullRequestInstance> instances;
+    
+    private transient ProjectData projectData;
+    
+    public PullRequestData(GHPullRequest pullRequest, ProjectData projectData) {
         this.pullRequestUrl = pullRequest.getUrl();
-        this.projectFullName = project.getFullName();
         this.headSha = pullRequest.getHead().getSha();
         this.lastUpdated = pullRequest.getUpdatedAt();
-        this.instances = new ArrayList<Instance>();
+        this.instances = new ArrayList<PullRequestInstance>();
+        this.projectData = projectData;
     }     
 
     public Date getLastUpdated() {
@@ -70,7 +49,7 @@ public class PullRequestData {
         return headSha;
     }        
 
-    public List<Instance> getInstances() {
+    public List<PullRequestInstance> getInstances() {
         return instances;
     }
         
@@ -81,9 +60,35 @@ public class PullRequestData {
         if (pullRequest.getUpdatedAt().compareTo(lastUpdated) <= 0) {
             return false;
         }
+        boolean updated = !pullRequest.getHead().getSha().equals(headSha);
         lastUpdated = pullRequest.getUpdatedAt();
         headSha = pullRequest.getHead().getSha();
-        return !pullRequest.getHead().getSha().equals(headSha);
+        return updated;
+    }
+    
+    protected void setProjectData(ProjectData projectData) {
+        this.projectData = projectData;
+    }
+    
+    public void save() throws IOException {
+        PullRequests pullRequests = projectData.get(PullRequests.class);
+        if (pullRequests == null) {
+            projectData.add(new PullRequests());
+            pullRequests = projectData.get(PullRequests.class);
+        }
+        List<PullRequestData> dataList = pullRequests.getData();
+        if (dataList == null) {
+            projectData.add(new PullRequests());            
+        }
+        if (!dataList.contains(this)) {
+            dataList.add(this);
+        }
+        projectData.save();        
+    }
+    
+    public void remove() throws IOException {
+        projectData.get(PullRequests.class).getData().remove(this);
+        projectData.save();
     }
     
 }

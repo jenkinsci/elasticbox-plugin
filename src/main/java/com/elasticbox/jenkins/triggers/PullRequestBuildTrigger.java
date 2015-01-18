@@ -111,12 +111,7 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-            webHookExternalUrl = json.getString("webHookExternalUrl");
-            if (StringUtils.isBlank(webHookExternalUrl)) {
-                webHookExternalUrl = getWebHookUrl();
-            } else {
-                webHookExternalUrl = webHookExternalUrl.trim();
-            }
+            webHookExternalUrl = json.getString("webHookExternalUrl").trim();
             save();
             return true;
         }                
@@ -140,11 +135,11 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
             if (!jenkinsUrl.endsWith("/")) {
                 jenkinsUrl += '/';
             }
-            return jenkinsUrl + Jenkins.getInstance().getExtensionList(RootAction.class).get(WebHook.class).getUrlName();
+            return jenkinsUrl + Jenkins.getInstance().getExtensionList(RootAction.class).get(WebHook.class).getUrlName() + '/';
         }
 
         public String getWebHookExternalUrl() {
-            return StringUtils.isBlank(webHookExternalUrl) ? getWebHookUrl() : webHookExternalUrl;
+            return webHookExternalUrl;
         }
                 
     }

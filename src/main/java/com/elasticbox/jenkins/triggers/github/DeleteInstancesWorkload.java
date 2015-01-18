@@ -33,9 +33,9 @@ import org.apache.commons.httpclient.HttpStatus;
  */
 @Extension
 public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
-    private final Queue<PullRequestData.Instance> terminatingInstances = new ConcurrentLinkedQueue<PullRequestData.Instance>();
+    private final Queue<PullRequestInstance> terminatingInstances = new ConcurrentLinkedQueue<PullRequestInstance>();
 
-    public void add(PullRequestData.Instance terminatingInstance) {
+    public void add(PullRequestInstance terminatingInstance) {
         if (!terminatingInstances.contains(terminatingInstance)) {
             terminatingInstances.add(terminatingInstance);
         }
@@ -48,14 +48,14 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
 
     @Override
     protected void execute(TaskListener listener) throws IOException {
-        for (Iterator<PullRequestData.Instance> iter = terminatingInstances.iterator(); iter.hasNext();) {
+        for (Iterator<PullRequestInstance> iter = terminatingInstances.iterator(); iter.hasNext();) {
             if (deleteInstance(iter.next(), listener)) {
                 iter.remove();
             }
         }
     }
         
-    private boolean deleteInstance(PullRequestData.Instance instance, TaskListener listener) {
+    private boolean deleteInstance(PullRequestInstance instance, TaskListener listener) {
         Client client = ClientCache.getClient(instance.cloud);
         
         JSONObject instanceJson;
