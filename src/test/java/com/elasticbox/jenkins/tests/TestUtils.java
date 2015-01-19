@@ -14,6 +14,7 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
+import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -47,6 +48,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.StopWatch;
 import org.junit.Assert;
 
 /**
@@ -71,6 +73,9 @@ public class TestUtils {
     static final String TEST_TAG = System.getProperty("elasticbox.jenkins.test.tag", "jenkins-plugin-test");
     static final String NAME_PREFIX = TEST_TAG + '-';
     static final String LINUX_COMPUTE = "Linux Compute";
+    static final String GITHUB_USER = System.getProperty("com.elasticbox.jenkins.test.GitHubUser");
+    static final String GITHUB_ACCESS_TOKEN = System.getProperty("com.elasticbox.jenkins.test.GitHubAccessToken");
+    
 
     static JSONObject findVariable(JSONArray variables, String name, String scope) {
         for (Object variable : variables) {
@@ -129,11 +134,15 @@ public class TestUtils {
                 Collections.singletonMap("TEST_TAG", testTag), jenkins);
         TestUtils.assertBuildSuccess(build);                
     }
-
-    static void assertBuildSuccess(FreeStyleBuild build) throws IOException {
+    
+    static String getLog(AbstractBuild build) throws IOException {
         ByteArrayOutputStream log = new ByteArrayOutputStream();
         build.getLogText().writeLogTo(0, log);
-        Assert.assertEquals(log.toString(), Result.SUCCESS, build.getResult());
+        return log.toString();
+    }
+
+    static void assertBuildSuccess(AbstractBuild build) throws IOException {
+        Assert.assertEquals(getLog(build), Result.SUCCESS, build.getResult());
     }
 
     static Object getResult(Future<?> future, int waitMinutes) throws ExecutionException {
@@ -282,4 +291,19 @@ public class TestUtils {
         return resolver.resolve(template);
     }
         
+    public interface Condition {
+        boolean satisfied();
+    }
+    
+    public static void waitUntil(Condition condition, long timeoutSeconds) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        while (!condition.satisfied() && stopWatch.getTime() < TimeUnit.SECONDS.toMillis(timeoutSeconds)) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ex) {                
+            }
+        }        
+    }
+    
 }

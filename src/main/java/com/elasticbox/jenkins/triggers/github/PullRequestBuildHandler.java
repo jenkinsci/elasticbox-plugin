@@ -62,6 +62,16 @@ import org.kohsuke.github.GitHub;
  * @author Phong Nguyen Le
  */
 public class PullRequestBuildHandler implements IBuildHandler {
+    public static final String PR_NUMBER = "PR_NUMBER";
+    public static final String PR_BRANCH = "PR_BRANCH";
+    public static final String BUILD_REQUESTER = "BUILD_REQUESTER";
+    public static final String BUILD_REQUEST_EMAIL = "BUILD_REQUEST_EMAIL";
+    public static final String PR_COMMIT = "PR_COMMIT";
+    public static final String PR_MERGE_BRANCH = "PR_MERGE_BRANCH";
+    public static final String PR_OWNER = "PR_OWNER";
+    public static final String PR_OWNER_EMAIL = "PR_OWNER_EMAIL";
+    public static final String PR_URL = "PR_URL";
+    
     private static final Logger LOGGER = Logger.getLogger(PullRequestBuildHandler.class.getName());
     private static final SequentialExecutionQueue sequentialExecutionQueue = new SequentialExecutionQueue(ElasticBoxExecutor.threadPool);    
     private static final Collection<GHEvent> WEBHOOK_EVENTS = Arrays.asList(GHEvent.PULL_REQUEST, GHEvent.ISSUE_COMMENT);
@@ -211,11 +221,6 @@ public class PullRequestBuildHandler implements IBuildHandler {
     }
     
     void handle(GHEventPayload.IssueComment issueComment, GitHub gitHub) throws IOException {
-        if (!"created".equals(issueComment.getAction())) {
-            LOGGER.finest(MessageFormat.format("Unsupported issue_comment action: ''{0}''", issueComment.getAction()));
-            return;
-        }
-
         // check the trigger phrase
         PullRequestBuildTrigger trigger = project.getTrigger(PullRequestBuildTrigger.class);
         if (StringUtils.isBlank(trigger.getTriggerPhrase())) {
@@ -242,6 +247,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
             PullRequestData pullRequestData = PullRequestManager.getInstance().addPullRequestData(pullRequest, project);
             cancelBuilds(pullRequestData);
             build(pullRequest, buildRequester, new TriggerCause(pullRequest, buildRequester));
+        } else {
+            LOGGER.finest(MessageFormat.format("Pull request {0} is not opene, no build is triggered", pullRequest.getUrl()));
         }
     }    
     
@@ -312,21 +319,21 @@ public class PullRequestBuildHandler implements IBuildHandler {
     
     private void build(GHPullRequest pr, GHUser buildRequester, TriggerCause cause) throws IOException {
         ArrayList<ParameterValue> parameters = getDefaultBuildParameters();
-        parameters.add(new StringParameterValue("PR_COMMIT", pr.getHead().getSha()));
-        parameters.add(new StringParameterValue("PR_BRANCH", pr.getHead().getRef()));
+        parameters.add(new StringParameterValue(PR_COMMIT, pr.getHead().getSha()));
+        parameters.add(new StringParameterValue(PR_BRANCH, pr.getHead().getRef()));
         if (buildRequester != null) {
-            parameters.add(new StringParameterValue("BUILD_REQUESTER", buildRequester.getLogin()));
+            parameters.add(new StringParameterValue(BUILD_REQUESTER, buildRequester.getLogin()));
             if (buildRequester.getEmail() != null) {
-                parameters.add(new StringParameterValue("BUILD_REQUEST_EMAIL", buildRequester.getEmail()));
+                parameters.add(new StringParameterValue(BUILD_REQUEST_EMAIL, buildRequester.getEmail()));
             }
         }
-        parameters.add(new StringParameterValue("PR_NUMBER", String.valueOf(pr.getNumber())));
-        parameters.add(new StringParameterValue("PR_MERGE_BRANCH", pr.getBase().getRef()));
-        parameters.add(new StringParameterValue("PR_OWNER", pr.getUser().getLogin()));
+        parameters.add(new StringParameterValue(PR_NUMBER, String.valueOf(pr.getNumber())));
+        parameters.add(new StringParameterValue(PR_MERGE_BRANCH, pr.getBase().getRef()));
+        parameters.add(new StringParameterValue(PR_OWNER, pr.getUser().getLogin()));
         if (pr.getUser().getEmail() != null) {
-            parameters.add(new StringParameterValue("PR_OWNER_EMAIL", pr.getUser().getEmail()));
+            parameters.add(new StringParameterValue(PR_OWNER_EMAIL, pr.getUser().getEmail()));
         }
-        final StringParameterValue prUrlParam = new StringParameterValue("PR_URL", pr.getUrl().toString());
+        final StringParameterValue prUrlParam = new StringParameterValue(PR_URL, pr.getUrl().toString());
         parameters.add(prUrlParam);
 
         project.scheduleBuild2(project.getQuietPeriod(), cause, new ParametersAction(parameters), 

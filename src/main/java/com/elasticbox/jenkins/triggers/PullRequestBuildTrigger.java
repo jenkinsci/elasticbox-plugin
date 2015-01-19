@@ -27,7 +27,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -51,7 +50,7 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
     public String getTriggerPhrase() {
         return triggerPhrase;
-    }    
+    }   
 
     public String getWhitelist() {
         return whitelist;
@@ -68,12 +67,12 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
     @Override
     public void start(AbstractProject<?, ?> project, boolean newInstance) {
-        if (!getDescriptor().isGitHubPluginInstalled()) {
-            LOGGER.severe(MessageFormat.format("{0} requires GitHub plugin.", getDescriptor().getDisplayName()));
+        BuildManager buildManager = getDescriptor().getBuildManager();
+        if (buildManager == null) {
+            LOGGER.severe(MessageFormat.format("Cannot retrieve build manager. {0} requires GitHub plugin, you need to install GitHub plugin in order to use it.", getDescriptor().getDisplayName()));
             return;
         }
         
-        super.start(project, newInstance);
         try {
             buildHandler = getDescriptor().getBuildManager().createBuildHandler(project, newInstance);
         } catch (IOException ex) {
@@ -103,8 +102,8 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
         @Override
         public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            if (!isGitHubPluginInstalled()) {
-                throw new FormException(MessageFormat.format("{0} requires GitHub plugin.", getDisplayName()), "all");
+            if (getBuildManager() == null) {
+                throw new FormException(MessageFormat.format("Cannot retrieve build manager. {0} requires GitHub plugin, you need to install GitHub plugin in order to use it.", getDisplayName()), "all");
             }
             return super.newInstance(req, formData);
         }
@@ -116,10 +115,6 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
             return true;
         }                
         
-        public boolean isGitHubPluginInstalled() {
-            return Jenkins.getInstance().getDescriptor("com.cloudbees.jenkins.GitHubPushTrigger") != null;
-        }
-
         public BuildManager<?> getBuildManager() {
             if (buildManager == null) {
                 ExtensionList<BuildManager> buildManagers = Jenkins.getInstance().getExtensionList(BuildManager.class);

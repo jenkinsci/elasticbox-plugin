@@ -1,0 +1,46 @@
+<project>
+    <actions/>
+    <description/>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>TEST_TAG</name>
+          <description></description>
+          <defaultValue>${TEST_TAG}</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    </properties>
+    <scm class="hudson.scm.NullSCM"/>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+        <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.7-SNAPSHOT">
+            <id>
+                com.elasticbox.jenkins.builders.DeployBox-f15791ac-12c5-438f-af07-3774fde9e2e8
+            </id>
+            <cloud>elasticbox</cloud>
+            <workspace>tphongio</workspace>
+            <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
+            <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
+            <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
+            <instances>1</instances>
+            <variables>[]</variables>
+            <expiration class="com.elasticbox.jenkins.builders.InstanceExpiration$AlwaysOn"/>
+            <instanceEnvVariable/>
+            <tags>${TEST_TAG}, ${JOB_NAME}_${PR_NUMBER}</tags>
+            <skipIfExisting>false</skipIfExisting>
+            <alternateAction>none</alternateAction>
+            <waitForCompletion>true</waitForCompletion>
+            <waitForCompletionTimeout>60</waitForCompletionTimeout>
+        </com.elasticbox.jenkins.builders.DeployBox>
+    </builders>
+    <publishers/>
+    <buildWrappers/>
+</project>

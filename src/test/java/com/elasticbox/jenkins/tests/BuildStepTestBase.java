@@ -37,7 +37,7 @@ public class BuildStepTestBase extends TestBase {
 
     private String schemaVersion;
     private final List<TestBoxData> testBoxDataList = Arrays.asList(new TestBoxData[] {
-        new TestBoxData("boxes/test-linux-box/test-linux-box.json", "9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744"),
+        new TestBoxData("boxes/test-linux-box/test-linux-box.json", "com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile"),
         new TestBoxData("boxes/test-binding-box.json", "e14460b4-c288-46f4-8a45-bea58e492428"),
         new TestBoxData("boxes/test-nested-box.json", "e155115d-6e4e-4027-b4a7-89eb3ae6ef58"),
         new TestBoxData("boxes/test-deeply-nested-box.json", "74cd448d-1e1b-4afb-8d92-c11eab38c99a")
@@ -48,29 +48,15 @@ public class BuildStepTestBase extends TestBase {
     private TestUtils.TemplateResolver templateResolver;
     
     @Before
-    public void setupTestData() throws Exception {
+    @Override
+    public void setup() throws Exception {
+        super.setup();
         Client client = cloud.getClient();
         JSONObject workspace = (JSONObject) client.doGet(MessageFormat.format("/services/workspaces/{0}", TestUtils.TEST_WORKSPACE), false);
         schemaVersion = Client.getSchemaVersion(workspace.getString("schema"));
         testProvider = TestUtils.createTestProvider(client);
         testBoxDataLookup = new HashMap<String, TestBoxData>();
-        templateResolver = new TestUtils.TemplateResolver() {
-
-            public String resolve(String template) {
-                template = template.replace("{schema_version}", schemaVersion).replace(TestUtils.DEFAULT_TEST_WORKSPACE,
-                        TestUtils.TEST_WORKSPACE);
-                for (TestBoxData testBoxData : testBoxDataList) {
-                    try {
-                        template = template.replace(testBoxData.boxId, testBoxData.getJson().getString("id")).
-                                replace(testBoxData.profileId, testBoxData.getNewProfileId());
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                }
-                return template.replace(TestUtils.TEST_BINDING_BOX_INSTANCE_ID, newTestBindingBoxInstanceId);
-            }
-            
-        };
+        templateResolver = createTemplateResolver();
                 
         for (TestBoxData testBoxData : testBoxDataList) {
             testBoxDataLookup.put(testBoxData.getJson().getString("name"), testBoxData);
@@ -89,29 +75,17 @@ public class BuildStepTestBase extends TestBase {
                 "jenkins-plugin-test", 1, variables, null, null);
         monitor.waitForDone(10);
         JSONObject testBindingBoxInstance = client.getInstance(Client.getResourceId(monitor.getResourceUrl()));
+        deleteAfter(testBindingBoxInstance);
         newTestBindingBoxInstanceId = testBindingBoxInstance.getString("id");
     }
     
     @After
-    public void cleanUp() throws Exception {
-        Client client = cloud.getClient();
-        if (!newTestBindingBoxInstanceId.equals(TestUtils.TEST_BINDING_BOX_INSTANCE_ID)) {
-            try {
-                IProgressMonitor monitor = client.terminate(newTestBindingBoxInstanceId);
-                monitor.waitForDone(10);
-                if (monitor.isDone()) {
-                    client.delete(newTestBindingBoxInstanceId);
-                } else {
-                    // this will force-terminate
-                    monitor = client.terminate(newTestBindingBoxInstanceId);
-                    monitor.waitForDone(1);
-                    client.delete(newTestBindingBoxInstanceId);
-                }
-            } catch (Exception ex) {
-                LOGGER.log(Level.WARNING, MessageFormat.format("Cannot delete test instance {0}", newTestBindingBoxInstanceId), ex);
-            }
-        }
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
         
+        Client client = cloud.getClient();
+
         for (int i = testBoxDataList.size() - 1; i > -1; i--) {
             TestBoxData testBoxData = testBoxDataList.get(i);
             if (testBoxData.getJson().containsKey("uri")) {
@@ -132,6 +106,30 @@ public class BuildStepTestBase extends TestBase {
     protected String createTestDataFromTemplate(String templatePath) throws IOException {
         String template = TestUtils.getResourceAsString(templatePath);
         return templateResolver.resolve(template);
+    }
+    
+    protected class TemplateResolveImpl implements TestUtils.TemplateResolver {
+        public String resolve(String template) {
+            template = template.replace("{schema_version}", schemaVersion).replace(TestUtils.DEFAULT_TEST_WORKSPACE,
+                    TestUtils.TEST_WORKSPACE);
+            for (TestBoxData testBoxData : testBoxDataList) {
+                try {
+                    template = template.replace(testBoxData.profileId, testBoxData.getNewProfileId())
+                            .replace(testBoxData.boxId, testBoxData.getJson().getString("id"));
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+            return template.replace(TestUtils.TEST_BINDING_BOX_INSTANCE_ID, newTestBindingBoxInstanceId);
+        }        
+    }
+    
+    protected TestUtils.TemplateResolver createTemplateResolver() {
+        return new TemplateResolveImpl();
+    }
+
+    protected TestUtils.TemplateResolver getTemplateResolver() {
+        return templateResolver;
     }
     
 }

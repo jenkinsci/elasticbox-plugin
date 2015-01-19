@@ -231,10 +231,10 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             return;
         }
         GHEventPayload.IssueComment issueComment = gitHub.parseEventPayload(new StringReader(payload), GHEventPayload.IssueComment.class);
-        int id = issueComment.getIssue().getNumber();
         LOGGER.finest(MessageFormat.format("Comment on {0} from {1}: {2}", 
                 issueComment.getIssue().getUrl(), issueComment.getComment().getUser(), issueComment.getComment().getBody()));
         if (!"created".equals(issueComment.getAction())) {
+            LOGGER.finest(MessageFormat.format("Unsupported issue_comment action: ''{0}''", issueComment.getAction()));
             return;
         }
         

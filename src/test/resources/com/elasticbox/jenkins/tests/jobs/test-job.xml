@@ -39,7 +39,7 @@
       <workspace>tphongio</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
-      <profile>9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744</profile>
+      <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
       <environment>${BUILD_ID}</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;HTTP&quot;,&quot;value&quot;:&quot;80&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Port&quot;}]</variables>

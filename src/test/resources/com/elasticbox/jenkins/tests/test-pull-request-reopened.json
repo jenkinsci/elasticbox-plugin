@@ -1,5 +1,5 @@
 {
-  "action": "opened",
+  "action": "reopened",
   "number": 1,
   "pull_request": {
     "url": "https://api.github.com/repos/tphongio/elasticbox-plugin/pulls/1",

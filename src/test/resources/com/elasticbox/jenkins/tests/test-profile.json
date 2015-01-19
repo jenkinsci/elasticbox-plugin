@@ -14,6 +14,6 @@
     "name": "test",
     "members": [],
     "provider": "test",
-    "id": "9af0eb3a-4d4b-4110-8ed0-1cbb3d5b2744",
+    "id": "com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile",
     "schema": "http://elasticbox.net/schemas/{schema_version}/deployment-profile"
 }

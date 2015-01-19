@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.9.1">
+      <projectUrl>${GITHUB_PROJECT_URL}</projectUrl>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>TEST_TAG</name>
+          <description></description>
+          <defaultValue>${TEST_TAG}</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <com.elasticbox.jenkins.triggers.PullRequestBuildTrigger plugin="elasticbox@0.9.7-SNAPSHOT">
+      <spec></spec>
+      <triggerPhrase></triggerPhrase>
+      <whitelist></whitelist>
+    </com.elasticbox.jenkins.triggers.PullRequestBuildTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.7-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-c50079e4-6e13-405d-bce1-f26ec76a0044</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
+      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
+      <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <expiration class="com.elasticbox.jenkins.builders.InstanceExpiration$AlwaysOn"/>
+      <instanceEnvVariable></instanceEnvVariable>
+      <tags>${TEST_TAG}, ${JOB_NAME}_${PR_NUMBER}</tags>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <waitForCompletionTimeout>60</waitForCompletionTimeout>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <hudson.plugins.parameterizedtrigger.TriggerBuilder plugin="parameterized-trigger@2.25">
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>TEST_TAG=${TEST_TAG}
+PR_NUMBER=${PR_NUMBER}</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>test-pull-request-downstream</projects>
+          <condition>ALWAYS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <block>
+            <buildStepFailureThreshold>
+              <name>FAILURE</name>
+              <ordinal>2</ordinal>
+              <color>RED</color>
+              <completeBuild>true</completeBuild>
+            </buildStepFailureThreshold>
+            <unstableThreshold>
+              <name>UNSTABLE</name>
+              <ordinal>1</ordinal>
+              <color>YELLOW</color>
+              <completeBuild>true</completeBuild>
+            </unstableThreshold>
+            <failureThreshold>
+              <name>FAILURE</name>
+              <ordinal>2</ordinal>
+              <color>RED</color>
+              <completeBuild>true</completeBuild>
+            </failureThreshold>
+          </block>
+          <buildAllNodesWithLabel>false</buildAllNodesWithLabel>
+        </hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.TriggerBuilder>
+  </builders>
+  <publishers>
+  </publishers>
+  <buildWrappers/>
+</project>

@@ -22,6 +22,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
 import java.util.*;
+import javax.net.ssl.SSLContext;
 
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
@@ -41,13 +42,18 @@ import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContextBuilder;
+import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 
 
@@ -107,7 +113,7 @@ public class Client {
     private String token = null;
 
     protected Client(String endpointUrl, String username, String password, String token) {
-        createHttpClient();
+        getHttpClient();
         this.endpointUrl = endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl;
         this.username = username;
         this.password = password;
@@ -771,10 +777,14 @@ public class Client {
     
     public void doDelete(String url) throws IOException {
         HttpDelete delete = new HttpDelete(prepareUrl(url));
+        HttpResponse response = null;
         try {
-            execute(delete);
+            response = execute(delete);
         } finally {
             delete.reset();
+            if (response != null && response.getEntity() != null) {
+                EntityUtils.consumeQuietly(response.getEntity());
+            }
         }        
     }
     
@@ -850,7 +860,7 @@ public class Client {
         request.setHeader("ElasticBox-Token", token);
     }
     
-    private static String getResponseBodyAsString(HttpResponse response) throws IOException {
+    public static String getResponseBodyAsString(HttpResponse response) throws IOException {
         HttpEntity entity = response.getEntity();
         return entity != null ? EntityUtils.toString(entity) : null;
     }
@@ -882,9 +892,33 @@ public class Client {
 
         return response;
     }
-    
-    private static synchronized HttpClient createHttpClient() {
-        if (httpClient == null) {
+
+    public static final HttpClient createHttpClient() throws Exception {
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
+//        clientBuilder.setUserAgent("jenkins/elasticbox");
+        clientBuilder.setHostnameVerifier(SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+        final SSLContextBuilder contextBuilder = SSLContexts.custom();
+        contextBuilder.loadTrustMaterial(null, new TrustStrategy() {
+
+            public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                return true;
+            }
+            
+        });
+        SSLContext sslContext = contextBuilder.build();
+        clientBuilder.setSslcontext(sslContext);
+        clientBuilder.setConnectionManager(new PoolingHttpClientConnectionManager());
+        return clientBuilder.build();        
+    }
+        
+    public static synchronized HttpClient getHttpClient() {
+        if (httpClient == null) {            
+//            try {
+//                httpClient = createHttpClient();
+//            } catch (Exception e) {
+//                httpClient = HttpClientBuilder.create().build();
+//            }
+            
             try {
                 SSLSocketFactory sslSocketFactory = new SSLSocketFactory(new TrustStrategy() {
 
@@ -892,7 +926,7 @@ public class Client {
                         return true;
                     }
 
-                }, SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+                }, SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
 
                 SchemeRegistry registry = new SchemeRegistry();
                 registry.register(
@@ -906,8 +940,10 @@ public class Client {
             } catch (Exception e) {
                 httpClient = new DefaultHttpClient();
             }
+            
         }
         
         return httpClient;
     }
+    
 }
