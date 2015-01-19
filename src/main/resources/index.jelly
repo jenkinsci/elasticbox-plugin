@@ -2,5 +2,6 @@
   This view is used to render the installed plugins page.
 -->
 <div>
-  This plugin allows project to be built on slave instances deployed and managed by ElasticBox.
+    This plugin provides full integration between Jenkins and ElasticBox (http://elasticbox.com). With this plugin, Jenkins can launch, provision, and manage Jenkins slaves on-demand in different cloud providers via ElasticBox. 
+    It also provides build steps to deploy and manage your applications, including complex, multi-tier applications that are defined as boxes in ElasticBox.
 </div>
