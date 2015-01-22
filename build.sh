@@ -1,4 +1,7 @@
 #/bin/bash
+
+set -e
+
 USAGE="Usage : build.sh -a ELASTICBOX_ADDRESS [-j JENKINS_VERSION,JENKINS_VERSION...]
 
 Example:
@@ -11,6 +14,7 @@ Options:
     -t ElasticBox access token
     -w ElasticBox workspace
     -c Fork count
+    -g GitHub access token
     -? Display this message
 "
 
@@ -28,7 +32,7 @@ function help() {
 }
 
 # Handle options
-while getopts ":a:j:p:t:w:c:h" ARGUMENT
+while getopts ":a:j:p:t:w:c:g:h" ARGUMENT
 do
     case ${ARGUMENT} in
 
@@ -38,6 +42,7 @@ do
         t )  EBX_TOKEN=$OPTARG;;
         w )  EBX_WORKSPACE=$OPTARG;;
         c )  FORK_COUNT=$OPTARG;;
+        g )  GITHUB_TOKEN=$OPTARG;;
         h )  help; exit 0;;
         : )  help "Missing option argument for -$OPTARG"; exit 1;;
         ? )  help "Option does not exist: $OPTARG"; exit 1;;
@@ -56,7 +61,6 @@ then
     JENKINS_VERSIONS="$(echo ${JENKINS_VERSIONS} | sed -e s/,/\ /g)"
 fi
 
-OLDEST_SUPPORTED_JENKINS_VERSION='1.532.1'
 JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
 
 function set_jenkins_version() {
@@ -64,7 +68,7 @@ function set_jenkins_version() {
     JENKINS_VERSION=${1}
     if [[ -z "${FORK_COUNT}" ]]
     then
-        if [[ ${JENKINS_VERSION} == ${OLDEST_SUPPORTED_JENKINS_VERSION} ]]
+        if [[ ${JENKINS_VERSION} == ${SAVED_JENKINS_VERSION} ]]
         then
             FORK_COUNT=0
         else
@@ -100,6 +104,11 @@ function build_with_jenkins_version() {
         BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
     fi
 
+    if [[ -n ${GITHUB_TOKEN} ]]
+    then
+        BUILD_OPTIONS="${BUILD_OPTIONS} -Dcom.elasticbox.jenkins.test.GitHubAccessToken=${GITHUB_TOKEN}"
+    fi
+
     cd ${REPOSITORY_FOLDER}
     mvn ${BUILD_OPTIONS} clean install
     
@@ -128,12 +137,6 @@ for VERSION in ${JENKINS_VERSIONS}
 do
     build_with_jenkins_version ${VERSION}	
 done
-
-if [[ -z $(echo ${JENKINS_VERSIONS} | grep "${OLDEST_SUPPORTED_JENKINS_VERSION}") ]]
-then
-    build_with_jenkins_version ${OLDEST_SUPPORTED_JENKINS_VERSION}
-    JENKINS_VERSIONS="${JENKINS_VERSIONS} ${OLDEST_SUPPORTED_JENKINS_VERSION}"
-fi
 
 if [[ -z $(echo ${JENKINS_VERSIONS} | grep "${SAVED_JENKINS_VERSION}") ]]
 then

@@ -46,6 +46,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import org.apache.commons.httpclient.HttpStatus;
+import org.jenkinsci.remoting.RoleChecker;
 
 /**
  *
@@ -239,6 +240,9 @@ public final class ElasticBoxComputer extends SlaveComputer {
                 }
             }
             return inetAddresses;
+        }
+
+        public void checkRoles(RoleChecker rc) throws SecurityException {
         }
 
     }

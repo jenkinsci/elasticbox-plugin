@@ -73,7 +73,7 @@ public class TestUtils {
     static final String TEST_TAG = System.getProperty("elasticbox.jenkins.test.tag", "jenkins-plugin-test");
     static final String NAME_PREFIX = TEST_TAG + '-';
     static final String LINUX_COMPUTE = "Linux Compute";
-    static final String GITHUB_USER = System.getProperty("com.elasticbox.jenkins.test.GitHubUser");
+    static final String GITHUB_USER = System.getProperty("com.elasticbox.jenkins.test.GitHubUser", "tphongio");
     static final String GITHUB_ACCESS_TOKEN = System.getProperty("com.elasticbox.jenkins.test.GitHubAccessToken");
     
 
