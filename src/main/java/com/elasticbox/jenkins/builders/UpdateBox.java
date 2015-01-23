@@ -61,7 +61,7 @@ public class UpdateBox extends AbstractBuilder {
         VariableResolver resolver = new VariableResolver(getCloud(), getWorkspace(), build, logger.getTaskListener());
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
         Client client = ClientCache.getClient(getCloud());
-        DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, box).getJsonArray());
+        DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, getWorkspace(), box, box).getJsonArray());
         JSONObject boxJson = client.updateBox(box, resolvedVariables);
         String boxPageUrl = Client.getPageUrl(client.getEndpointUrl(), boxJson);
         logger.info(MessageFormat.format("Updated box {0}", boxPageUrl));    
@@ -82,8 +82,8 @@ public class UpdateBox extends AbstractBuilder {
         }
         
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
-                @QueryParameter String box) {            
-            DescriptorHelper.JSONArrayResponse response = DescriptorHelper.getBoxStack(cloud, box);
+                @QueryParameter String workspace, @QueryParameter String box) {            
+            DescriptorHelper.JSONArrayResponse response = DescriptorHelper.getBoxStack(cloud, workspace, box, box);
             // reset the variable of all variable to empty string so the UI will save only variables with non-empty value
             for (Object boxObject : response.getJsonArray()) {
                 JSONObject boxJson = (JSONObject) boxObject;

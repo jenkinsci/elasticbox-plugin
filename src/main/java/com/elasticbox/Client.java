@@ -361,7 +361,7 @@ public class Client {
         return (JSONArray) doGet(MessageFormat.format("/services/boxes/{0}/stack", boxId), true);
     }
     
-    public JSONArray getLatestVersionBoxStack(String workspace, String boxId) throws IOException {
+    public String getLatestBoxVersion(String workspace, String boxId) throws IOException {
         JSONObject boxJson = getBox(boxId);
         boolean canWrite = false;
         if (boxJson.getString("owner").equals(workspace)) {
@@ -386,9 +386,8 @@ public class Client {
             } else {
                 boxVersion = boxVersions.getJSONObject(0).getString("id");
             }
-        }
-        
-        return getBoxStack(boxVersion);
+        }        
+        return boxVersion;
     }
     
     public JSONObject updateInstance(JSONObject instance) throws IOException {

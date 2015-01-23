@@ -49,7 +49,12 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         JSONArray resolvedVariables = resolver.resolveVariables(getVariables());
         Client client = cloud.getClient();
-        DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, getBoxVersion()).getJsonArray());
+        String boxVersion = getBoxVersion();
+        if (DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion)) {
+            boxVersion = client.getLatestBoxVersion(workspace, getBox());
+        }
+        DescriptorHelper.removeInvalidVariables(resolvedVariables, 
+                DescriptorHelper.getBoxStack(client, workspace, getBox(), boxVersion).getJsonArray());
         // remove empty variables and resolve binding with tags
         for (Iterator iter = resolvedVariables.iterator(); iter.hasNext();) {
             JSONObject variable = (JSONObject) iter.next();
@@ -60,15 +65,16 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
         }
         
         Set<String> resolvedTags = resolver.resolveTags(getTags());
-        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
-        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, getBoxVersion());        
+        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", 
+                StringUtils.join(resolvedTags, ", ")));
+        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, boxVersion);        
         if (!canPerform(instances, logger)) {
             return;
         }
 
         for (Object instance : instances) {
             JSONObject instanceJson = (JSONObject) instance;            
-            client.updateInstance(instanceJson, resolvedVariables, getBoxVersion());
+            client.updateInstance(instanceJson, resolvedVariables, boxVersion);
             String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Updated instance {0}", instancePageUrl));            
         }

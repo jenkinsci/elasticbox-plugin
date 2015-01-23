@@ -59,9 +59,10 @@ public abstract class BoxRequiredOperation extends Operation {
             return DescriptorHelper.getBoxVersions(cloud, workspace, box);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@RelativePath("..") @QueryParameter String cloud, 
-                @QueryParameter String box, @QueryParameter String boxVersion) {
-            DescriptorHelper.JSONArrayResponse response = DescriptorHelper.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@RelativePath("..") @QueryParameter String cloud,
+                @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
+            DescriptorHelper.JSONArrayResponse response = DescriptorHelper.getBoxStack(cloud, workspace, box,
+                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
             // reset the variable of all variable to empty string so the UI will save variables with non-empty value and
             // only those variables will be updated for every instance with matching tags
             for (Object boxJson : response.getJsonArray()) {

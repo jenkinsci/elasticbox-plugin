@@ -216,11 +216,13 @@ public class DescriptorHelper {
         return getProfiles(ClientCache.getClient(cloud), workspace, box);
     }
     
-    public static JSONArrayResponse getBoxStack(Client client, String workspace, String boxId) {
+    public static JSONArrayResponse getBoxStack(Client client, String workspace, String boxId, String boxVersion) {
         if (client != null && StringUtils.isNotBlank(boxId)) {
             try {
-                JSONArray boxes = client.getBoxStack(boxId);
-                JSONArray boxStack = new BoxStack(boxId, boxes, client).toJSONArray();
+                if (LATEST_BOX_VERSION.equals(boxVersion)) {
+                    boxVersion = client.getLatestBoxVersion(workspace, boxId);
+                }
+                JSONArray boxStack = new BoxStack(boxId, client.getBoxStack(boxVersion), client).toJSONArray();
                 for (Object boxJson : boxStack) {
                     for (Object variable : ((JSONObject) boxJson).getJSONArray("variables")) {
                         JSONObject variableJson = (JSONObject) variable;
@@ -241,8 +243,8 @@ public class DescriptorHelper {
         return new JSONArrayResponse(new JSONArray());        
     }
     
-    public static JSONArrayResponse getBoxStack(String cloud, String workspace, String boxId) {
-        return getBoxStack(ClientCache.getClient(cloud), workspace, boxId);
+    public static JSONArrayResponse getBoxStack(String cloud, String workspace, String boxId, String boxVersion) {
+        return getBoxStack(ClientCache.getClient(cloud), workspace, boxId, boxVersion);
     }
     
     public static JSONArrayResponse getInstanceBoxStack(Client client, String instance) {
@@ -408,7 +410,17 @@ public class DescriptorHelper {
     }
     
     public static FormValidation checkSlaveBox(Client client, String box) {
-        JSONArray stack = getBoxStack(client, box).getJsonArray();
+        if (client == null || StringUtils.isNotBlank(box)) {
+            return FormValidation.ok();
+        }
+        
+        JSONArray stack;
+        try {
+            stack = client.getBoxStack(box);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            return FormValidation.error("Error fetching box stack of box {0}", box);
+        }
         if (stack.isEmpty()) {
             return FormValidation.ok();
         }

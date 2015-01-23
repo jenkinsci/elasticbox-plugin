@@ -132,10 +132,11 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(
-                @QueryParameter String cloud, 
+                @QueryParameter String cloud,
+                @QueryParameter String workspace,
                 @QueryParameter String box, 
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getBoxStack(ClientCache.getClient(cloud),
+            return DescriptorHelper.getBoxStack(ClientCache.getClient(cloud), workspace, box,
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 

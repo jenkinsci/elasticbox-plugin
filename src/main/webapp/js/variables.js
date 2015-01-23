@@ -147,8 +147,9 @@ var ElasticBoxVariables = (function () {
             descriptorUrl = fillUrl.substring(0, fillUrl.lastIndexOf('/'));
             
             if (variableHolder.info.type === 'boxVersion') {
-                return ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}&box={3}&{4}', descriptorUrl, 
-                    variableHolder.info.type, variableHolderId, variableHolder.boxSelect.value, getCloudParameters(variableHolder));
+                return ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}&box={3}&workspace={4}&{5}', descriptorUrl, 
+                    variableHolder.info.type, variableHolderId, variableHolder.boxSelect.value, 
+                    variableHolder.workspaceSelect.value, getCloudParameters(variableHolder));
             } else {
                 return ElasticBoxUtils.format('{0}/getBoxStack?{1}={2}&{3}', descriptorUrl, 
                     variableHolder.info.type, variableHolderId, getCloudParameters(variableHolder));

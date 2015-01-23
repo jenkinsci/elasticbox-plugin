@@ -123,9 +123,10 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 @RelativePath("..") @QueryParameter String username, 
                 @RelativePath("..") @QueryParameter String password, 
                 @RelativePath("..") @QueryParameter String token,
+                @QueryParameter String workspace,
                 @QueryParameter String box, 
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getBoxStack(createClient(endpointUrl, username, password, token),
+            return DescriptorHelper.getBoxStack(createClient(endpointUrl, username, password, token), workspace, box,
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 

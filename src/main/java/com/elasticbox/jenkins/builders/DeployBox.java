@@ -156,7 +156,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         String resolvedEnvironment = resolver.resolve(tags.split(",")[0].trim());
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
         DescriptorHelper.removeInvalidVariables(resolvedVariables, 
-                ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, box, boxVersion).getJsonArray());
+                ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, workspace, box, boxVersion).getJsonArray());
         String expirationTime = null, expirationOperation = null;
         if (getExpiration() instanceof InstanceExpirationSchedule) {
             InstanceExpirationSchedule expirationSchedule = (InstanceExpirationSchedule) getExpiration();
@@ -492,7 +492,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
             
             if (formData.containsKey("variables")) {
-                JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("box"), formData.getString("boxVersion")).getJsonArray();
+                JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("workspace"), 
+                        formData.getString("box"), formData.getString("boxVersion")).getJsonArray();
                 formData.put("variables", DescriptorHelper.fixVariables(formData.getString("variables"), boxStack));
             }
 
@@ -548,8 +549,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
 
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
-                @QueryParameter String box, @QueryParameter String boxVersion) {
-            return DescriptorHelper.getBoxStack(cloud, StringUtils.isBlank(boxVersion) ? box : boxVersion);
+                @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
+            return DescriptorHelper.getBoxStack(cloud, workspace, box, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
         public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 

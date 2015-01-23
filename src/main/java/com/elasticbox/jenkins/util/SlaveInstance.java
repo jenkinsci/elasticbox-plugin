@@ -58,7 +58,7 @@ public class SlaveInstance {
 
     public static JSONArray createJenkinsVariables(Client client, ElasticBoxSlave slave) throws IOException {
         Map<String, JSONObject> requiredVariables = Collections.EMPTY_MAP;
-        JSONArray boxStack = DescriptorHelper.getBoxStack(client, slave.getBoxVersion()).getJsonArray();
+        JSONArray boxStack = client.getBoxStack(slave.getBoxVersion());
         for (int i = 0; i < boxStack.size(); i++) {
             requiredVariables = getRequiredVariables(boxStack.getJSONObject(i));
             if (requiredVariables.size() == REQUIRED_VARIABLES.size()) {
