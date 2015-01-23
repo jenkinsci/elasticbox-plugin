@@ -19,6 +19,7 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -39,8 +40,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class StopOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public StopOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, waitForCompletion, waitForCompletionTimeout);
+    public StopOperation(String tags, boolean failIfNoneFound, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, failIfNoneFound, waitForCompletion, waitForCompletionTimeout);
     }
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
@@ -51,10 +52,10 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
         Set<String> resolvedTags = resolver.resolveTags(getTags());
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, true); 
-        if (instances.isEmpty()) {
-            logger.info("No instance found with the specified tags");
+        if (!canPerform(instances, logger)) {
             return;
         }
+
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         for (Object instance : instances) {
             if (Thread.interrupted()) {

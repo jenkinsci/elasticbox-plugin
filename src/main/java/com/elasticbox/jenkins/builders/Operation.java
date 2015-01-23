@@ -12,9 +12,12 @@
 
 package com.elasticbox.jenkins.builders;
 
+import com.elasticbox.jenkins.util.TaskLogger;
+import hudson.AbortException;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONArray;
 
 /**
  *
@@ -22,13 +25,33 @@ import jenkins.model.Jenkins;
  */
 public abstract class Operation implements IOperation, Describable<Operation> {
     private final String tags;
+    private final boolean failIfNoneFound;
     
-    protected Operation(String tags) {
+    protected Operation(String tags, boolean failIfNoneFound) {
         this.tags = tags;
+        this.failIfNoneFound = failIfNoneFound;
     }
 
     public String getTags() {
         return tags;
+    }
+
+    public boolean isFailIfNoneFound() {
+        return failIfNoneFound;
+    }        
+    
+    protected boolean canPerform(JSONArray instances, TaskLogger logger) throws AbortException {
+        if (!instances.isEmpty()) {
+            return true;
+        }
+        
+        final String message = "No instance found with the specified tags";
+        if (isFailIfNoneFound()) {
+            throw new AbortException(message);
+        } 
+        
+        logger.info(message);
+        return false;
     }
 
     @Override

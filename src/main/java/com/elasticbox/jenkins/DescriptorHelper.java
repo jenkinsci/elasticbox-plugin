@@ -55,6 +55,7 @@ public class DescriptorHelper {
     private static final Logger LOGGER = Logger.getLogger(DescriptorHelper.class.getName());
     
     public static final String ANY_BOX = "AnyBox";
+    public static final String LATEST_BOX_VERSION = "LATEST";
     
     public static class JSONArrayResponse implements HttpResponse {
         private final JSONArray jsonArray;
@@ -159,23 +160,25 @@ public class DescriptorHelper {
         }
         
         try {
-            JSONObject boxJson = client.getBox(box);
-            boolean canWrite = false;
-            if (boxJson.getString("owner").equals(workspace)) {
-                canWrite = true;
-            } else {
-                Set<String> collaborators = new HashSet<String>();
-                for (Object member : boxJson.getJSONArray("members")) {
-                    JSONObject memberJson = (JSONObject) member;
-                    if (memberJson.getString("role").equals("collaborator")) {
-                        collaborators.add(memberJson.getString("workspace"));
-                    }
-                }
-                canWrite = collaborators.contains(workspace);
-            }
-            if (canWrite) {            
-                boxVersions.add("Latest", box);
-            }
+//            JSONObject boxJson = client.getBox(box);
+//            boolean canWrite = false;
+//            if (boxJson.getString("owner").equals(workspace)) {
+//                canWrite = true;
+//            } else {
+//                Set<String> collaborators = new HashSet<String>();
+//                for (Object member : boxJson.getJSONArray("members")) {
+//                    JSONObject memberJson = (JSONObject) member;
+//                    if (memberJson.getString("role").equals("collaborator")) {
+//                        collaborators.add(memberJson.getString("workspace"));
+//                    }
+//                }
+//                canWrite = collaborators.contains(workspace);
+//            }
+//            if (canWrite) {            
+//                boxVersions.add("Latest", box);
+//            }
+            
+            boxVersions.add("Latest", LATEST_BOX_VERSION);
             for (Object json : client.getBoxVersions(box)) {
                 JSONObject boxVersion = (JSONObject) json;
                 boxVersions.add(boxVersion.getJSONObject("version").getString("description"), boxVersion.getString("id"));
@@ -213,10 +216,11 @@ public class DescriptorHelper {
         return getProfiles(ClientCache.getClient(cloud), workspace, box);
     }
     
-    public static JSONArrayResponse getBoxStack(Client client, String boxId) {
+    public static JSONArrayResponse getBoxStack(Client client, String workspace, String boxId) {
         if (client != null && StringUtils.isNotBlank(boxId)) {
             try {
-                JSONArray boxStack = new BoxStack(boxId, client.getBoxStack(boxId), client).toJSONArray();
+                JSONArray boxes = client.getBoxStack(boxId);
+                JSONArray boxStack = new BoxStack(boxId, boxes, client).toJSONArray();
                 for (Object boxJson : boxStack) {
                     for (Object variable : ((JSONObject) boxJson).getJSONArray("variables")) {
                         JSONObject variableJson = (JSONObject) variable;
@@ -237,8 +241,8 @@ public class DescriptorHelper {
         return new JSONArrayResponse(new JSONArray());        
     }
     
-    public static JSONArrayResponse getBoxStack(String cloud, String boxId) {
-        return getBoxStack(ClientCache.getClient(cloud), boxId);
+    public static JSONArrayResponse getBoxStack(String cloud, String workspace, String boxId) {
+        return getBoxStack(ClientCache.getClient(cloud), workspace, boxId);
     }
     
     public static JSONArrayResponse getInstanceBoxStack(Client client, String instance) {

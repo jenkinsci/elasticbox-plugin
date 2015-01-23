@@ -17,6 +17,7 @@ import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -28,6 +29,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
@@ -36,8 +38,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class UpdateOperation extends BoxRequiredOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public UpdateOperation(String box, String boxVersion, String tags, String variables) {
-        super(box, boxVersion, tags, variables);
+    public UpdateOperation(String box, String boxVersion, String tags, boolean failIfNoneFound, String variables) {
+        super(box, boxVersion, tags, failIfNoneFound, variables);
     }
 
     @Override
@@ -60,8 +62,7 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
         Set<String> resolvedTags = resolver.resolveTags(getTags());
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, getBoxVersion());        
-        if (instances.isEmpty()) {
-            logger.info("No instance found with the specified tags");
+        if (!canPerform(instances, logger)) {
             return;
         }
 
@@ -79,6 +80,25 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
         @Override
         public String getDisplayName() {
             return "Update";
+        }
+
+        @Override
+        public Operation newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            String variablesStr = formData.getString("variables");
+            JSONArray variables = VariableResolver.parseVariables(variablesStr);
+            boolean update = false;
+            for (Object variable : variables) {
+                JSONObject variableJson = (JSONObject) variable;
+                if (StringUtils.isNotBlank(variableJson.getString("value"))) {
+                    update = true;
+                    break;
+                }
+            }
+            if (!update) {
+                throw new FormException("No variable is changed for Update operation.", "variables");
+            }
+            
+            return super.newInstance(req, formData);
         }
 
     }

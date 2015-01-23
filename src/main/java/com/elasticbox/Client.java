@@ -361,6 +361,36 @@ public class Client {
         return (JSONArray) doGet(MessageFormat.format("/services/boxes/{0}/stack", boxId), true);
     }
     
+    public JSONArray getLatestVersionBoxStack(String workspace, String boxId) throws IOException {
+        JSONObject boxJson = getBox(boxId);
+        boolean canWrite = false;
+        if (boxJson.getString("owner").equals(workspace)) {
+            canWrite = true;
+        } else {
+            Set<String> collaborators = new HashSet<String>();
+            for (Object member : boxJson.getJSONArray("members")) {
+                JSONObject memberJson = (JSONObject) member;
+                if (memberJson.getString("role").equals("collaborator")) {
+                    collaborators.add(memberJson.getString("workspace"));
+                }
+            }
+            canWrite = collaborators.contains(workspace);
+        }       
+        String boxVersion;
+        if (canWrite) {            
+            boxVersion = boxId;
+        } else {
+            JSONArray boxVersions = getBoxVersions(boxId);
+            if (boxVersions.isEmpty()) {
+                throw new IOException(MessageFormat.format("Box ''{0}'' does not have any version.", boxJson.getString("name")));
+            } else {
+                boxVersion = boxVersions.getJSONObject(0).getString("id");
+            }
+        }
+        
+        return getBoxStack(boxVersion);
+    }
+    
     public JSONObject updateInstance(JSONObject instance) throws IOException {
         HttpPut put = new HttpPut(getInstanceUrl(instance.getString("id")));
         put.setEntity(new StringEntity(instance.toString(), ContentType.APPLICATION_JSON));

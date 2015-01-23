@@ -20,6 +20,7 @@ import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -40,8 +41,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ReconfigureOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public ReconfigureOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, waitForCompletion, waitForCompletionTimeout);
+    public ReconfigureOperation(String tags, boolean failIfNoneFound, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, failIfNoneFound, waitForCompletion, waitForCompletionTimeout);
     }
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher,
@@ -54,8 +55,7 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", 
                 StringUtils.join(resolvedTags, ", ")));
         JSONArray instances = DescriptorHelper.getInstances(client, workspace, instanceFilter(resolvedTags));        
-        if (instances.isEmpty()) {
-            logger.info("No instance found with the specified tags");
+        if (!canPerform(instances, logger)) {
             return;
         }
 

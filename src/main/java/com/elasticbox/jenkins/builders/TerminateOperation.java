@@ -57,8 +57,8 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
     private final boolean force;
 
     @DataBoundConstructor
-    public TerminateOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout, boolean force, boolean delete) {
-        super(tags, waitForCompletion, waitForCompletionTimeout);
+    public TerminateOperation(String tags, boolean failIfNoneFound, boolean waitForCompletion, int waitForCompletionTimeout, boolean force, boolean delete) {
+        super(tags, failIfNoneFound, waitForCompletion, waitForCompletionTimeout);
         this.delete = delete;
         this.force = force;
     }
@@ -81,8 +81,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", 
                 StringUtils.join(resolvedTags, ", ")));
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, false);        
-        if (instances.isEmpty()) {
-            logger.info("No instance found with the specified tags");
+        if (!canPerform(instances, logger)) {
             return;
         }
 

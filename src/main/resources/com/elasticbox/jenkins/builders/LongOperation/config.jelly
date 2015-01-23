@@ -16,10 +16,15 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Tags}" field="tags">
         <f:textbox clazz="required" />
     </f:entry>
-    <f:entry title="${%Wait for completion}" field="waitForCompletion">
-        <f:checkbox default="true"/>
-    </f:entry>
-    <f:entry title="${%Wait timeout}" field="waitForCompletionTimeout">
-        <f:textbox clazz="number" default="60"/>
-    </f:entry>
+    <f:advanced>
+        <f:entry title="${%Wait for completion}" field="waitForCompletion">
+            <f:checkbox default="true"/>
+        </f:entry>
+        <f:entry title="${%Wait timeout}" field="waitForCompletionTimeout">
+            <f:textbox clazz="number" default="60"/>
+        </f:entry>
+        <f:entry title="Fail if no instance found" field="failIfNoneFound">
+            <f:checkbox />
+        </f:entry>
+    </f:advanced>
 </j:jelly>

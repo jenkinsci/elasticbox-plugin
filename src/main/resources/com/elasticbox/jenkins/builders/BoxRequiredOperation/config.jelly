@@ -43,4 +43,9 @@ written permission is obtained from ElasticBox.
             <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
         </f:block>
     </f:entry>
+    <f:advanced>
+        <f:entry title="Fail if no instance found" field="failIfNoneFound">
+            <f:checkbox />
+        </f:entry>
+    </f:advanced>
 </j:jelly>
