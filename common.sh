@@ -17,7 +17,7 @@ function upgrade_appliance() {
     fi
 
     echo Start upgrading the appliance
-    curl -ksf -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" ${EBX_ADDRESS}/services/appliance/upgrade
+    curl -ksf -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" ${EBX_ADDRESS}/services/appliance/upgrade || true
 
     # Wait for the appliance services to restart
     sleep 30
