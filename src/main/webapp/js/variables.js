@@ -94,8 +94,8 @@ var ElasticBoxVariables = (function () {
                     }
                 }, variableHolder.info.changeListenerType);
 
-                if (variableHolder.info.type === 'boxVersion') {
-                    Event.addListener(variableHolder.profileSelect, 'change', function () {
+                if (variableHolder.info.type === 'boxVersion' && variableHolder.boxSelect) {
+                    Event.addListener(variableHolder.boxSelect, 'change', function () {
                         refreshVariables(variableHolder);
                     });
                 }
@@ -472,15 +472,10 @@ var ElasticBoxVariables = (function () {
                 Connect.asyncRequest('GET', boxStackUrl, {
                     success: function (response) {
                         var boxes = response.responseText.evalJSON(),
-                            savedVariables = null;
+                            savedVariablesJson = Dom.getAttribute(variableHolder.varTextBox, 'value'),
+                            savedVariables = savedVariablesJson ? removeInvalidVariables(savedVariablesJson.evalJSON(), boxes) : [];
                         
-                        if (populate) {
-                            savedVariables = Dom.getAttribute(variableHolder.varTextBox, 'value').evalJSON();
-                            savedVariables = removeInvalidVariables(savedVariables, boxes);
-                            Dom.setAttribute(variableHolder.varTextBox, 'value', savedVariables.toJSON());   
-                        } else {
-                            Dom.setAttribute(variableHolder.varTextBox, 'value', '[]');
-                        }
+                        Dom.setAttribute(variableHolder.varTextBox, 'value', savedVariables.toJSON());
                         
                         clearVariables();
                         addVariables(boxes, savedVariables, variableHolder);
