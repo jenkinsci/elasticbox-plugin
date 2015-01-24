@@ -65,7 +65,7 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
             return;
         }
         GHPullRequest pullRequest = cause.getPullRequest();
-        final String message = "Build started";
+        final String message = "Build STARTED";
         if (!postStatus(build, pullRequest, GHCommitState.PENDING, message)) {
             postComment(build, pullRequest, message);
         }

@@ -30,11 +30,9 @@ import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Cause;
-import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.listeners.ItemListener;
-import hudson.model.listeners.SaveableListener;
 import hudson.security.ACL;
 import java.io.IOException;
 import java.io.StringReader;
@@ -213,7 +211,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             try {
                 for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
                     PullRequestBuildTrigger trigger = job.getTrigger(PullRequestBuildTrigger.class);
-                    if (trigger != null) {
+                    if (trigger != null && trigger.getBuildHandler() instanceof PullRequestBuildHandler) {
                         ((PullRequestBuildHandler) trigger.getBuildHandler()).handle(pullRequest, gitHub);
                     }
                 }
@@ -241,9 +239,9 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
-            for (AbstractProject<?,?> job : Hudson.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
                 PullRequestBuildTrigger trigger = job.getTrigger(PullRequestBuildTrigger.class);
-                if (trigger != null) {
+                if (trigger != null && trigger.getBuildHandler() instanceof PullRequestBuildHandler) {
                     ((PullRequestBuildHandler) trigger.getBuildHandler()).handle(issueComment, gitHub);
                 }
             }
@@ -258,7 +256,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
-            for (AbstractProject<?,?> project : Hudson.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?,?> project : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
                 PullRequestData data = removePullRequestData(prEventPayload.getPullRequest().getUrl().toString(), project);
                 if (data != null) {
                     prInstances.addAll(data.getInstances());
