@@ -1,9 +1,22 @@
 <div>
-    The following will be performed for this job
+    The following will be performed for this job:
     <ul>
-        <li>A build of this job will be triggered every time a pull request is updated or created.</li>
         <li>Configure Git to check out source code for the pull request if Git is selected in Source Code Management section of this job and not yet configured.</li>
-        <li>Instances deployed by ElasticBox - Deploy Box build step for a pull request in this job will be terminated and deleted after the pull request is merged or closed.</li>
+        <li>A build of this job will be triggered every time a pull request is updated or created.</li>
         <li>Cancel older in-progress builds of a pull request when a new build for that same pull request is scheduled.</li>
-    </ul>    
+        <li>Instances deployed by ElasticBox - Deploy Box build step for a pull request in this job or its downstream jobs will be terminated and deleted after the pull request is merged or closed.</li>
+    </ul>
+    <p> The following parameters are available to the triggered build:
+        <ul>
+            <li><b>PR_NUMBER</b> - Pull request number</li>
+            <li><b>PR_URL</b> - Pull request URL (e.g. https://github.com/jenkinsci/elasticbox-plugin/pull/1)</li>
+            <li><b>PR_OWNER</b> - GitHub login of the pull request owner</li>
+            <li><b>PR_OWNER_EMAIL</b> - Pull request owner's email address</li>
+            <li><b>PR_MERGE_BRANCH</b> - Branch that the pull request wants to be merged to (e.g. master)</li>
+            <li><b>PR_BRANCH</b> - Git branch of the pull request (e.g. fix-unit-tests)</li>
+            <li><b>PR_COMMIT</b> - Git commit for the triggered build (e.g. fe982b7082035025bef4e851b5bd250a21aae18e)</li>
+            <li><b>BUILD_REQUESTER</b> - GitHub login of the person requesting this build via a trigger phrase like <i>“Jenkins test this please”</i></li>
+            <li><b>BUILD_REQUESTER_EMAIL</b> - Email address of the build requester</li>
+        </ul>
+    </p>
 </div>
