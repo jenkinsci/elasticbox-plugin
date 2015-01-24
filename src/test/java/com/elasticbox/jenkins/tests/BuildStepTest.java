@@ -64,7 +64,7 @@ public class BuildStepTest extends BuildStepTestBase {
         
         // validate the results of executed build steps   
         VariableResolver variableResolver = new VariableResolver(cloud.name, TestUtils.TEST_WORKSPACE, build, TaskListener.NULL);
-        String buildNumber = variableResolver.resolve("${BUILD_NUMBER}");
+        String jobNameAndBuildId = MessageFormat.format("{0}-{1}", variableResolver.resolve("${JOB_NAME}"), variableResolver.resolve("${BUILD_ID}"));
         String buildId = variableResolver.resolve("${BUILD_ID}");
         String buildTag = variableResolver.resolve("${BUILD_TAG}");
         Client client = new Client(cloud.getEndpointUrl(), cloud.getToken());
@@ -91,7 +91,7 @@ public class BuildStepTest extends BuildStepTestBase {
         JSONObject testBindingBoxInstance3 = null;
         JSONObject testNestedBoxInstance = null;   
         Collection<String> testBindingBoxInstanceEnvironments = Arrays.asList(new String[] {
-            testTag, buildNumber, buildTag
+            testTag, jobNameAndBuildId, buildTag
         });
         for (Object instance : instances) {
             JSONObject instanceJson = (JSONObject) instance;
@@ -111,8 +111,8 @@ public class BuildStepTest extends BuildStepTestBase {
                 if (environment.equals(testTag)) {
                     assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, testTag), testBindingBoxInstance1);
                     testBindingBoxInstance1 = instanceJson;
-                } else if (environment.equals(buildNumber)) {
-                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, buildNumber), testBindingBoxInstance2);
+                } else if (environment.equals(jobNameAndBuildId)) {
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, jobNameAndBuildId), testBindingBoxInstance2);
                     testBindingBoxInstance2 = instanceJson;
                 } else if (environment.equals(buildTag)) {                        
                     assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, buildTag), testBindingBoxInstance3);
