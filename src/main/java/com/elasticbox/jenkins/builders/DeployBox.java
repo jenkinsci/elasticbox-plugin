@@ -178,7 +178,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         if (waitForCompletion) {
             try {
                 logger.info("Waiting for the deployment of the box instance {0} to finish", instancePageUrl);
-                monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
+                monitor.waitForDone(getWaitForCompletionTimeout());
                 logger.info("The box instance {0} has been deployed successfully ", instancePageUrl);
             } catch (IProgressMonitor.IncompleteException ex) {
                 Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
