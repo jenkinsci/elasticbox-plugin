@@ -127,6 +127,10 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
         
         public String getWebHookUrl() {
             String jenkinsUrl = Jenkins.getInstance().getRootUrl();
+            if (jenkinsUrl == null) {
+                return null;
+            }
+            
             if (!jenkinsUrl.endsWith("/")) {
                 jenkinsUrl += '/';
             }

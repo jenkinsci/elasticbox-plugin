@@ -119,16 +119,26 @@ public class PullRequestBuildHandler implements IBuildHandler {
         if (newTrigger) {
             configureGit(gitHubRepoName, trigger);
             
-            sequentialExecutionQueue.execute(new Runnable() {
+            // The construction of webhook URL requires Jenkins root URL which might be null if it is not manually 
+            // configured and it is retrieved in a separate thread without request context. So the webhook URL is first
+            // retrieved here.
+            PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class);            
+            final String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl()) ? descriptor.getWebHookUrl() : descriptor.getWebHookExternalUrl();
+            if (webhookUrl == null) {
+                LOGGER.warning(MessageFormat.format("Cannot add webhook to GitHub repository {0}. Please configure Jenkins URL or Webhook External URL for {1}", gitHubRepositoryUrl, descriptor.getDisplayName()));
+            } else {
+                LOGGER.info(MessageFormat.format("Adding webhook {0} to GitHub repository {1}", webhookUrl, gitHubRepositoryUrl));
+                sequentialExecutionQueue.execute(new Runnable() {
 
-                public void run() {
-                    try {
-                        createWebHook();
-                    } catch (IOException ex) {
-                        LOGGER.log(Level.SEVERE, MessageFormat.format("Error adding webhook to GitHub repository {0}", gitHubRepositoryUrl), ex);
+                    public void run() {
+                        try {
+                            createWebHook(webhookUrl);
+                        } catch (Throwable ex) {
+                            LOGGER.log(Level.SEVERE, MessageFormat.format("Error adding webhook to GitHub repository {0}", gitHubRepositoryUrl), ex);
+                        }
                     }
-                }
-            });
+                });
+            }
         }
     }
 
@@ -157,11 +167,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
         }        
     }
     
-    private GHHook createWebHook() throws IOException {
+    private GHHook createWebHook(String webhookUrl) throws IOException {
         final GitHubRepositoryName gitHubRepoName = GitHubRepositoryName.create(gitHubRepositoryUrl);
-        PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class);
-        String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl()) ? descriptor.getWebHookUrl() : descriptor.getWebHookExternalUrl();
-        LOGGER.info(MessageFormat.format("Adding webhook {0} to GitHub repository {1}", webhookUrl, gitHubRepositoryUrl));
         for (GHRepository repo : gitHubRepoName.resolve()) {
             // check if the webhook already exists
             for (GHHook hook : repo.getHooks()) {
