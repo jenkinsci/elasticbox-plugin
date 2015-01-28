@@ -16,7 +16,6 @@ import com.elasticbox.Client;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.RelativePath;
-import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;

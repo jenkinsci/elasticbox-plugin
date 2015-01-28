@@ -119,7 +119,8 @@ public class ElasticBoxSlave extends Slave {
             StringUtils.isBlank(config.getRemoteFS()) ? getRemoteFS(config.getProfile(), cloud) : config.getRemoteFS(), 
             config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), retentionStrategy, 
             Collections.EMPTY_LIST);
-        this.boxVersion = config.getBoxVersion();
+        this.boxVersion = DescriptorHelper.LATEST_BOX_VERSION.equals(config.getBoxVersion()) ? 
+                cloud.getClient().getLatestBoxVersion(config.getWorkspace(), config.getBox()): config.getBoxVersion();
         this.profileId = config.getProfile();
         this.singleUse = singleUse;
         this.cloudName = cloud.name;

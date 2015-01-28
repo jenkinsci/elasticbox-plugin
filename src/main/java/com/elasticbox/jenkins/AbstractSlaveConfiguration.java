@@ -33,7 +33,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final String box;
     private final String profile;
     private final String variables;
-    private final String boxVersion;
+    private String boxVersion;
     private final int minInstances;
     private final int maxInstances;
     private String environment;
@@ -71,7 +71,15 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.launchTimeout = launchTimeout;
         
         this.labelSet = getLabelSet();
-    }    
+    }  
+    
+    protected Object readResolve() {
+        if (boxVersion != null && boxVersion.equals(box)) {
+            boxVersion = DescriptorHelper.LATEST_BOX_VERSION;
+        }
+        
+        return this;
+    }
     
     @Override
     public Descriptor<AbstractSlaveConfiguration> getDescriptor() {

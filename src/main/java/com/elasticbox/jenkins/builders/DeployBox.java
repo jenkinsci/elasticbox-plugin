@@ -68,7 +68,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private String cloud;
     private final String workspace;
     private final String box;
-    private final String boxVersion;
+    private String boxVersion;
     private final String profile;
     @Deprecated
     private final String environment;
@@ -169,7 +169,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
             expirationOperation = expirationSchedule.getOperation();
         }
-        IProgressMonitor monitor = client.deploy(boxVersion, profile, workspace, resolvedEnvironment, instances, 
+        String boxId = DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion) ? 
+                client.getLatestBoxVersion(workspace, box) : boxVersion;
+        IProgressMonitor monitor = client.deploy(boxId, profile, workspace, resolvedEnvironment, instances, 
                 resolvedVariables, expirationTime, expirationOperation);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
@@ -340,7 +342,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return id;
     }
 
-    protected Object readResolve() {
+    protected final Object readResolve() {
         if (alternateAction == null) {
             alternateAction = skipIfExisting ? ACTION_SKIP : ACTION_NONE;
             waitForCompletion = true;
@@ -363,6 +365,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         if (waitForCompletion && waitForCompletionTimeout == 0) {
             waitForCompletionTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
+        }
+        
+        if (boxVersion != null && boxVersion.equals(box)) {
+            boxVersion = DescriptorHelper.LATEST_BOX_VERSION;
         }
         
         return this;
