@@ -25,8 +25,9 @@ import org.kohsuke.github.GHUser;
  * @author Phong Nguyen Le
  */
 public class TriggerCause extends Cause {
-    private final GHPullRequest pullRequest;
     private final String shortDescription;
+
+    private final transient GHPullRequest pullRequest;
 
     public TriggerCause(GHEventPayload.PullRequest prEventPayload) throws IOException {
         this(prEventPayload.getPullRequest(), MessageFormat.format("GitHub pull request {0} is {1} by {2}", 

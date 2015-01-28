@@ -11,10 +11,8 @@ written permission is obtained from ElasticBox.
 -->
 <?jelly escape-by-default='true'?>
 
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <f:section title="${descriptor.getDisplayName()}">
-      <f:entry title="Webhook External URL" field="webHookExternalUrl">
-          <f:textbox/>
-      </f:entry>
-  </f:section>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+	<f:entry title="Comment" field="comment">
+		<f:textarea clazz="required" />
+	</f:entry>
 </j:jelly>
