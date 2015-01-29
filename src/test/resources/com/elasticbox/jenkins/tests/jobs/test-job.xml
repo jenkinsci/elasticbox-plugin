@@ -85,7 +85,7 @@
       <workspace>tphongio</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
-      <profile>e155115d-6e4e-4027-b4a7-89eb3ae6ef58</profile>
+      <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
       <environment>${TEST_TAG}</environment>
       <instances>1</instances>
       <variables>

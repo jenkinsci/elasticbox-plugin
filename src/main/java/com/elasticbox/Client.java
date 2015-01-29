@@ -215,6 +215,18 @@ public class Client {
             post.reset();
         }
     }
+    
+    private String getSchemaVersion() throws IOException {
+        JSONArray workspaces = (JSONArray) doGet("/services/workspaces", true);
+        return getSchemaVersion(workspaces.getJSONObject(0).getString("schema"));
+    }
+    
+    public JSONObject createWorkspace(String name) throws IOException {
+        JSONObject workspace = new JSONObject();
+        workspace.put("name", name);
+        workspace.put("schema", BASE_ELASTICBOX_SCHEMA + getSchemaVersion() + "/workspaces/team");
+        return doPost("/services/workspaces", workspace);
+    }
 
     public JSONObject createBox(JSONObject box) throws IOException, URISyntaxException {
         // upload files

@@ -64,7 +64,7 @@ public class TestUtils {
     static final String TEST_LINUX_BOX_NAME = "test-linux-box";    
     static final String TEST_NESTED_BOX_NAME = "test-nested-box";    
     static final String TEST_BINDING_BOX_NAME = "test-binding-box";
-    static final String TEST_BINDING_BOX_INSTANCE_ID = "i-c51bop";
+    static final String TEST_BINDING_BOX_INSTANCE_ID = "com.elasticbox.jenkins.tests.instances." + TEST_BINDING_BOX_NAME;
     
     static final String JENKINS_SLAVE_BOX_NAME = "Linux Jenkins Slave";
     static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
@@ -111,6 +111,10 @@ public class TestUtils {
     static String getResourceAsString(String resourcePath) throws IOException {
         return IOUtils.toString((InputStream) TestUtils.class.getResource(resourcePath).getContent());
     }
+    
+    static FreeStyleProject createProject(String name, String projectXml, Jenkins jenkins) throws IOException {
+        return (FreeStyleProject) jenkins.createProjectFromXML(name, new ByteArrayInputStream(projectXml.getBytes()));        
+    }
 
     static FreeStyleBuild runJob(String name, String projectXml, Map<String, String> textParameters, Jenkins jenkins) throws Exception {
         FreeStyleProject project = (FreeStyleProject) jenkins.createProjectFromXML(name, new ByteArrayInputStream(projectXml.getBytes()));
@@ -129,11 +133,15 @@ public class TestUtils {
     }
     
     static void cleanUp(String testTag, Jenkins jenkins) throws Exception {
-        FreeStyleBuild build = TestUtils.runJob("cleanup", 
-                getResourceAsString("jobs/cleanup.xml").replace(DEFAULT_TEST_WORKSPACE, TestUtils.TEST_WORKSPACE), 
+        cleanUp(testTag, TEST_WORKSPACE, jenkins);
+    }
+    
+    static void cleanUp(String testTag, String workspace, Jenkins jenkins) throws Exception {
+        FreeStyleBuild build = TestUtils.runJob(MessageFormat.format("cleanup-{0}", UUID.randomUUID()), 
+                getResourceAsString("jobs/cleanup.xml").replace(DEFAULT_TEST_WORKSPACE, workspace), 
                 Collections.singletonMap("TEST_TAG", testTag), jenkins);
         TestUtils.assertBuildSuccess(build);                
-    }
+    }        
     
     static String getLog(AbstractBuild build) throws IOException {
         ByteArrayOutputStream log = new ByteArrayOutputStream();

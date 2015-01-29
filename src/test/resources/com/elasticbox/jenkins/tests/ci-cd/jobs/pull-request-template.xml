@@ -18,7 +18,7 @@
         </userRemoteConfigs>
         <branches>
             <hudson.plugins.git.BranchSpec>
-                <name>${sha1}</name>
+                <name>${PR_COMMIT}</name>
             </hudson.plugins.git.BranchSpec>
         </branches>
         <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -30,29 +30,11 @@
     <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
     <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
     <triggers>
-        <org.jenkinsci.plugins.ghprb.GhprbTrigger plugin="ghprb@1.16-2">
-            <spec>H/5 * * * *</spec>
-            <adminlist/>
-            <allowMembersOfWhitelistedOrgsAsAdmin>false</allowMembersOfWhitelistedOrgsAsAdmin>
-            <orgslist/>
-            <cron>H/5 * * * *</cron>
-            <triggerPhrase>.*test\W+this\W+please.*</triggerPhrase>
-            <onlyTriggerPhrase>false</onlyTriggerPhrase>
-            <useGitHubHooks>true</useGitHubHooks>
-            <permitAll>true</permitAll>
-            <commentFilePath/>
-            <whitelist>{{ GITHUB_USER }}</whitelist>
-            <autoCloseFailedPullRequests>false</autoCloseFailedPullRequests>
-            <displayBuildErrorsOnDownstreamBuilds>false</displayBuildErrorsOnDownstreamBuilds>
-            <whiteListTargetBranches>
-                <org.jenkinsci.plugins.ghprb.GhprbBranch>
-                    <branch/>
-                </org.jenkinsci.plugins.ghprb.GhprbBranch>
-            </whiteListTargetBranches>
-            <msgSuccess>You rock!</msgSuccess>
-            <msgFailure>Sorry, keep trying.</msgFailure>
-            <project>pull-request-template</project>
-        </org.jenkinsci.plugins.ghprb.GhprbTrigger>
+        <com.elasticbox.jenkins.triggers.PullRequestBuildTrigger plugin="elasticbox@0.9.7">
+          <spec></spec>
+          <triggerPhrase>.*test\W+this\W+please.*</triggerPhrase>
+          <whitelist></whitelist>
+        </com.elasticbox.jenkins.triggers.PullRequestBuildTrigger>
     </triggers>
     <concurrentBuild>false</concurrentBuild>
     <builders/>

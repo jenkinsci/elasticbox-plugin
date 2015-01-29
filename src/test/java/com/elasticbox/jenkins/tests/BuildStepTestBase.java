@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -39,12 +38,12 @@ public class BuildStepTestBase extends TestBase {
     private final List<TestBoxData> testBoxDataList = Arrays.asList(new TestBoxData[] {
         new TestBoxData("boxes/test-linux-box/test-linux-box.json", "com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile"),
         new TestBoxData("boxes/test-binding-box.json", "e14460b4-c288-46f4-8a45-bea58e492428"),
-        new TestBoxData("boxes/test-nested-box.json", "e155115d-6e4e-4027-b4a7-89eb3ae6ef58"),
+        new TestBoxData("boxes/test-nested-box.json", "com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile"),
         new TestBoxData("boxes/test-deeply-nested-box.json", "74cd448d-1e1b-4afb-8d92-c11eab38c99a")
     });
     protected Map<String, TestBoxData> testBoxDataLookup;
     protected String newTestBindingBoxInstanceId = TestUtils.TEST_BINDING_BOX_INSTANCE_ID;
-    private JSONObject testProvider;
+    protected JSONObject testProvider;
     private TestUtils.TemplateResolver templateResolver;
     
     @Before

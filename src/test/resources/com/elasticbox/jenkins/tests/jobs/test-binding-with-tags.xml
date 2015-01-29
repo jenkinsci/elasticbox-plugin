@@ -58,7 +58,7 @@
       <workspace>tphongio</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
-      <profile>e155115d-6e4e-4027-b4a7-89eb3ae6ef58</profile>
+      <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
       <environment>jenkins-plugin-test-binding</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;REQUIRED_BINDING&quot;,&quot;value&quot;:&quot;(test-linux-box, ${TEST_TAG})&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Binding&quot;},{&quot;name&quot;:&quot;ANY_BINDING&quot;,&quot;value&quot;:&quot;(test-binding-box, ${TEST_TAG})&quot;,&quot;scope&quot;:&quot;nested&quot;,&quot;type&quot;:&quot;Binding&quot;}]</variables>

@@ -63,7 +63,7 @@
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
       <box>AnyBox</box>
-      <instance>i-c51bop</instance>
+      <instance>com.elasticbox.jenkins.tests.instances.test-binding-box</instance>
       <id>com.elasticbox.jenkins.builders.ReconfigureBox-30864f7d-19fb-45fd-87a4-d95fae2490b2</id>
       <variables>[{&quot;name&quot;: &quot;CONNECTION&quot;, &quot;value&quot;: &quot;${eb_test_build_parameter}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}, {&quot;name&quot;: &quot;HTTPS&quot;, &quot;value&quot;: &quot;${BUILD_ID}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Port&quot;}]</variables>
     </com.elasticbox.jenkins.builders.ReconfigureBox>
