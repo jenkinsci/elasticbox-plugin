@@ -127,7 +127,8 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
     private String getHost(Credential credential) {
         if (StringUtils.isNotBlank(credential.apiUrl)) {
             try {
-                return new URL(credential.apiUrl).getHost();
+                String host = new URL(credential.apiUrl).getHost();
+                return "api.github.com".equals(host) ? "github.com" : host;
             } catch (MalformedURLException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Invalid GitHub API URL: {0}", credential.apiUrl), ex);
             }
@@ -162,11 +163,15 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             }
         }
         
-        // try other credentials for the same host
-        for (Credential credential : hostMatchedCredentials) {
-            GitHub gitHub = connect(credential);
-            if (gitHub != null) {
-                return gitHub;
+        if (hostMatchedCredentials.isEmpty()) {
+            LOGGER.warning(MessageFormat.format("Cannot find any credential for GitHub at {0}", gitHubRepoName.host));
+        } else {        
+            // try other credentials for the same host
+            for (Credential credential : hostMatchedCredentials) {
+                GitHub gitHub = connect(credential);
+                if (gitHub != null) {
+                    return gitHub;
+                }
             }
         }
         
@@ -182,7 +187,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
     GitHub createGitHub(GitHubRepositoryName gitHubRepoName) {
         GitHub gitHub = connect(gitHubRepoName);
         if (gitHub == null) {
-            LOGGER.warning(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHub));
+            LOGGER.warning(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
         }
         return gitHub;        
     }

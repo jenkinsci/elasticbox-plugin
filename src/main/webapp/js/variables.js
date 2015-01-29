@@ -446,7 +446,7 @@ var ElasticBoxVariables = (function () {
             });
         },
         
-        refreshVariables = function (variableHolder, populate) {
+        refreshVariables = function (variableHolder) {
             var varHeader = _.first(Dom.getChildren(variableHolder.varTBody)),
                 varTBodyElement = new Element(variableHolder.varTBody),
                 boxStackUrl = getBoxStackUrl(variableHolder),
@@ -498,7 +498,7 @@ var ElasticBoxVariables = (function () {
                 return;
             }
             
-            refreshVariables(variableHolder, true);
+            refreshVariables(variableHolder);
         },
         
         getVariableHolderInfo = function (type) {
