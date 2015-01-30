@@ -31,7 +31,8 @@ public class TriggerCause extends Cause {
 
     public TriggerCause(GHEventPayload.PullRequest prEventPayload) throws IOException {
         this(prEventPayload.getPullRequest(), MessageFormat.format("GitHub pull request {0} is {1} by {2}", 
-                prEventPayload.getPullRequest().getUrl(), prEventPayload.getAction(), 
+                prEventPayload.getPullRequest().getUrl(), 
+                PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction()) ? "updated" : prEventPayload.getAction(), 
                 getUserInfo(prEventPayload.getPullRequest().getUser())));
     }
 

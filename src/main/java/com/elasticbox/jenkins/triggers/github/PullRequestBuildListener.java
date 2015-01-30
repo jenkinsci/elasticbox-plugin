@@ -70,8 +70,10 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
             postComment(build, pullRequest, message);
         }
         try {
-            build.setDescription(MessageFormat.format("<a title=''{0}'' href=''{1}''>PR #{2}</a>: {3}", 
-                    pullRequest.getTitle(), pullRequest.getUrl(), pullRequest.getNumber(), StringUtils.abbreviate(pullRequest.getTitle(), 50)));
+            String prLinkText = MessageFormat.format("PR #{0}", pullRequest.getNumber());
+            build.setDescription(MessageFormat.format("<a title=''{0}'' href=''{1}''>{2}</a>: {3}", 
+                    pullRequest.getTitle(), pullRequest.getUrl(), prLinkText, 
+                    StringUtils.abbreviate(pullRequest.getTitle(), 58 - prLinkText.length())));
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, MessageFormat.format("Error updating description of build {0}", build.getUrl()), ex);
         }
