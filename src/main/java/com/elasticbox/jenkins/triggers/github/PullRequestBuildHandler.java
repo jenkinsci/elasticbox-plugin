@@ -211,8 +211,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         boolean startBuild = false;
         if (pullRequestData == null) {
             if (PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction())) {
-                LOGGER.info(MessageFormat.format("Pull request {0} was not built previously", pullRequestUrl));
-                return;
+                LOGGER.info(MessageFormat.format("Updated pull request {0} was not built previously", pullRequestUrl));
             }
             pullRequestData = pullRequestManager.addPullRequestData(pullRequest, project);
             startBuild = pullRequestData.getLastUpdated().equals(pullRequest.getUpdatedAt());            

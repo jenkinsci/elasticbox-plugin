@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins.tests;
 
+import com.elasticbox.jenkins.util.Condition;
 import com.cloudbees.jenkins.Credential;
 import com.cloudbees.jenkins.GitHubPushTrigger;
 import com.elasticbox.Client;
@@ -59,6 +60,7 @@ import org.kohsuke.github.GHHook;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GitHub;
+import org.mortbay.util.ajax.WaitingContinuation;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
@@ -172,29 +174,29 @@ public class PullRequestLifecycleManagementTest extends BuildStepTestBase {
     
     private AbstractBuild waitForNextBuild(long timeoutSeconds) {
         final AbstractBuild build = project.getLastBuild();
-        TestUtils.waitUntil(new TestUtils.Condition() {
+        new Condition() {
 
             public boolean satisfied() {
                 return build.getNextBuild() != null;
             }
             
-        }, timeoutSeconds);
+        }.waitUntilSatisfied(timeoutSeconds);
         return build.getNextBuild();
     }
     
     private void waitForCompletion(long timeoutSeconds) {
         final AbstractBuild build = project.getLastBuild();
-        TestUtils.waitUntil(new TestUtils.Condition() {
+        new Condition() {
 
             public boolean satisfied() {
                 return !build.isBuilding();
             }
             
-        }, timeoutSeconds);        
+        }.waitUntilSatisfied(timeoutSeconds);
     }
     
     private void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds) {
-        TestUtils.waitUntil(new TestUtils.Condition() {
+        new Condition() {
 
             public boolean satisfied() {
                 try {
@@ -219,7 +221,7 @@ public class PullRequestLifecycleManagementTest extends BuildStepTestBase {
                 }
             }
             
-        }, TimeUnit.MINUTES.toSeconds(timeoutSeconds));        
+        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(timeoutSeconds));        
     }
     
     private class MockPullRequest {
@@ -317,13 +319,13 @@ public class PullRequestLifecycleManagementTest extends BuildStepTestBase {
         pullRequest.open();
         
         // check that the job is triggered
-        TestUtils.waitUntil(new TestUtils.Condition() {
+        new Condition() {
 
             public boolean satisfied() {
                 return project.getLastBuild() != null;
             }
             
-        }, 60);
+        }.waitUntilSatisfied(60);
         Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getUrl()), project.getLastBuild());        
         
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15));

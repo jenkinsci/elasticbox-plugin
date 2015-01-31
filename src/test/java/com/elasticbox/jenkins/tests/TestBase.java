@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins.tests;
 
+import com.elasticbox.jenkins.util.Condition;
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
@@ -73,7 +74,7 @@ public class TestBase {
             }
         }
         List<String> instanceIDs = new ArrayList<String>(terminatingInstancIdToMonitorMap.keySet());
-        TestUtils.waitUntil(new TestUtils.Condition() {
+        new Condition() {
 
             public boolean satisfied() {
                 JSONArray instances;
@@ -107,7 +108,7 @@ public class TestBase {
                 return terminatingInstancIdToMonitorMap.isEmpty();
             }
             
-        }, 180);
+        }.waitUntilSatisfied(180);
         for (String instanceId : instanceIDs) {
             try {
                 client.delete(instanceId);

@@ -298,20 +298,5 @@ public class TestUtils {
         String template = TestUtils.getResourceAsString(templatePath);
         return resolver.resolve(template);
     }
-        
-    public interface Condition {
-        boolean satisfied();
-    }
-    
-    public static void waitUntil(Condition condition, long timeoutSeconds) {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        while (!condition.satisfied() && stopWatch.getTime() < TimeUnit.SECONDS.toMillis(timeoutSeconds)) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {                
-            }
-        }        
-    }
     
 }

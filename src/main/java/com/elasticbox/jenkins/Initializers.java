@@ -12,11 +12,13 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.jenkins.util.Condition;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.slaves.Cloud;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -29,17 +31,37 @@ import org.apache.commons.lang.StringUtils;
 public class Initializers {
     private static final Logger LOGGER = Logger.getLogger(Initializers.class.getName());
     
-    @Initializer(after = InitMilestone.COMPLETED)
-    public static void tagSlaveInstances() throws IOException {
+    @Initializer(before = InitMilestone.COMPLETED)
+    public static void tagSlaveInstances() throws IOException {        
         LOGGER.info("Tagging slave instances");
-        SlaveInstanceManager manager = new SlaveInstanceManager();
-        for (JSONObject instance : manager.getInstances()) {
-            ElasticBoxSlave slave = manager.getSlave(instance.getString("id"));
-            ElasticBoxSlaveHandler.getInstance().tagSlaveInstance(instance, slave);
-        }        
+        
+        // wait for nodes to be set
+        new Condition() {
+
+            @Override
+            public boolean satisfied() {
+                return Jenkins.getInstance().getNodes() != null;
+            }
+        }.waitUntilSatisfied(3000);
+        
+        ElasticBoxExecutor.threadPool.submit(new Runnable() {
+
+            public void run() {
+                try {
+                    SlaveInstanceManager manager = new SlaveInstanceManager();
+                    for (JSONObject instance : manager.getInstances()) {
+                        ElasticBoxSlave slave = manager.getSlave(instance.getString("id"));
+                        ElasticBoxSlaveHandler.getInstance().tagSlaveInstance(instance, slave);        
+                    }
+                } catch (IOException ex) {
+                    LOGGER.log(Level.SEVERE, "Error tagging slave instances", ex);
+                }
+            }
+            
+        });
     }
     
-    @Initializer(after = InitMilestone.COMPLETED)
+    @Initializer(before = InitMilestone.COMPLETED)
     public static void setSlaveConfigurationId() throws IOException {
         boolean saveNeeded = false;
         

@@ -41,7 +41,7 @@ public class ProjectData implements Saveable {
     
     private final List<Datum> data;
 
-    private final transient AbstractProject<?, ?> project;
+    private transient AbstractProject<?, ?> project;
 
     private ProjectData(AbstractProject<?, ?>  project) {
         this.project = project;
@@ -94,6 +94,7 @@ public class ProjectData implements Saveable {
                     datum.setProjectData(projectData);
                 }
             }
+            projectData.project = project;
             return projectData;
         }
         return null;
@@ -122,7 +123,7 @@ public class ProjectData implements Saveable {
         return projectDataLookup.remove(project);
     }
     
-    @Initializer(after = InitMilestone.COMPLETED)
+    @Initializer(before = InitMilestone.COMPLETED)
     public static void loadAll() {
         List<ProjectDataListener> listeners = Jenkins.getInstance().getExtensionList(ProjectDataListener.class);
         for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
