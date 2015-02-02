@@ -18,10 +18,6 @@ Options:
     -? Display this message
 "
 
-cd $(dirname $0)
-REPOSITORY_FOLDER=$(pwd)
-source ${REPOSITORY_FOLDER}/common.sh
-
 function help() {
     echo "${USAGE}"
 
@@ -61,10 +57,15 @@ then
     JENKINS_VERSIONS="$(echo ${JENKINS_VERSIONS} | sed -e s/,/\ /g)"
 fi
 
-JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
+cd $(dirname $0)
+REPOSITORY_FOLDER=$(pwd)
+
+source ${REPOSITORY_FOLDER}/common.sh
+
+SAVED_JENKINS_VERSION=$(get_jenkins_version ${REPOSITORY_FOLDER})
 
 function set_jenkins_version() {
-    # work-around by disabling forking for version 1.532.1 for now until a way to fix error 'Failed to initialize exploded war'
+    # work-around by disabling forking for version 1.532.2 for now until a way to fix error 'Failed to initialize exploded war'
     JENKINS_VERSION=${1}
     if [[ -z "${FORK_COUNT}" ]]
     then
@@ -80,50 +81,38 @@ function set_jenkins_version() {
         -e "s|\(.*\)\(<forkCount>.*</forkCount>\)|\1<forkCount>${FORK_COUNT}</forkCount>|" ${REPOSITORY_FOLDER}/pom.xml
 }
 
-function get_jenkins_version() {
-    grep "${JENKINS_VERSION_COMMENT}" ${REPOSITORY_FOLDER}/pom.xml | sed -e "s|<version>\(.*\)</version>.*|\1|" -e "s/ //g"
-}
-
 function build_with_jenkins_version() {
     JENKINS_VERSION=${1}
-    set_jenkins_version ${JENKINS_VERSION}
-    echo ------------------------------------------------
-    echo Building with Jenkins version ${JENKINS_VERSION}
-    echo ------------------------------------------------
-    echo Testing against ElasticBox at ${EBX_ADDRESS}
 
-    BUILD_OPTIONS="-DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+    # work-around by disabling forking for oldest supported Jenkins version for now until there is a way to fix error 'Failed to initialize exploded war'
+    if [[ -z "${FORK_COUNT}" ]]
+    then
+        if [[ ${JENKINS_VERSION} == ${SAVED_JENKINS_VERSION} ]]
+        then
+            FORK_COUNT=0
+        else
+            FORK_COUNT=2C
+        fi
+    fi
+
+    BUILD_OPTIONS="-a ${EBX_ADDRESS} -j ${JENKINS_VERSION} -c ${FORK_COUNT}"
 
     if [[ -n ${EBX_TOKEN} ]]
     then
-        BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
+        BUILD_OPTIONS="${BUILD_OPTIONS} -t ${EBX_TOKEN}"
     fi
 
     if [[ -n ${EBX_WORKSPACE} ]]
     then
-        BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
+        BUILD_OPTIONS="${BUILD_OPTIONS} -w ${EBX_WORKSPACE}"
     fi
 
     if [[ -n ${GITHUB_TOKEN} ]]
     then
-        BUILD_OPTIONS="${BUILD_OPTIONS} -Dcom.elasticbox.jenkins.test.GitHubAccessToken=${GITHUB_TOKEN}"
+        BUILD_OPTIONS="${BUILD_OPTIONS} -g ${GITHUB_TOKEN}"
     fi
 
-    cd ${REPOSITORY_FOLDER}
-    mvn ${BUILD_OPTIONS} clean install
-    
-    # keep the test results and logs for the tested Jenkins version
-    TEST_RESULTS_FOLDER=${REPOSITORY_FOLDER}/results/${JENKINS_VERSION}
-    rm -rf ${TEST_RESULTS_FOLDER}
-    mkdir -p ${TEST_RESULTS_FOLDER}
-    cd target/surefire-reports
-    for FILE in $(ls)
-    do
-        if [ -f "${FILE}" ]
-        then
-            cp ${FILE} ${TEST_RESULTS_FOLDER}/${JENKINS_VERSION}_${FILE}
-        fi
-    done
+    bash $(dirname $0)/version-build.sh ${BUILD_OPTIONS}
 }
 
 if [[ -n ${PACKAGE} ]]
@@ -131,7 +120,6 @@ then
     upgrade_appliance ${PACKAGE}
 fi
 
-SAVED_JENKINS_VERSION=$(get_jenkins_version)
 
 for VERSION in ${JENKINS_VERSIONS}
 do
@@ -148,9 +136,4 @@ LATEST_JENKINS_VERSION=$(curl -s http://repo.jenkins-ci.org/public/org/jenkins-c
 if [[ -z $(echo ${JENKINS_VERSIONS} | grep "${LATEST_JENKINS_VERSION}") ]]
 then
     build_with_jenkins_version ${LATEST_JENKINS_VERSION}
-fi
-
-if [[ -f "${REPOSITORY_FOLDER}/pom.xml.bak" ]]
-then
-    mv -f ${REPOSITORY_FOLDER}/pom.xml.bak ${REPOSITORY_FOLDER}/pom.xml
 fi

@@ -34,3 +34,25 @@ function upgrade_appliance() {
         exit 1
     fi
 }
+
+JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
+
+function get_jenkins_version() {
+    REPOSITORY=$1
+
+    grep "${JENKINS_VERSION_COMMENT}" ${REPOSITORY_FOLDER}/pom.xml | sed -e "s|<version>\(.*\)</version>.*|\1|" -e "s/ //g"
+}
+
+function update_pom() {
+    POM_FILE=$1
+    JENKINS_VERSION=$2
+    FORK_COUNT=$3
+
+    if [[ -z "${FORK_COUNT}" ]]
+    then
+        FORK_COUNT=2C
+    fi
+
+    sed -i.bak -e "s|\(.*\)\(<version>.*</version>\)\(.*${JENKINS_VERSION_COMMENT}.*\)|\1<version>${JENKINS_VERSION}</version>\3|" \
+        -e "s|\(.*\)\(<forkCount>.*</forkCount>\)|\1<forkCount>${FORK_COUNT}</forkCount>|" ${POM_FILE}
+}
