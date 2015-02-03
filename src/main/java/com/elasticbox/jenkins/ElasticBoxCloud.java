@@ -600,7 +600,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
             
             FormValidation result = ((SlaveConfiguration.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(SlaveConfiguration.class)).doCheckBoxVersion(slaveConfig.getBoxVersion(), 
-                    newCloud.getEndpointUrl(), newCloud.getUsername(), newCloud.getPassword(), newCloud.getToken(), slaveConfig.getBox());
+                    newCloud.getEndpointUrl(), newCloud.getUsername(), newCloud.getPassword(), newCloud.getToken(), 
+                    slaveConfig.getWorkspace(), slaveConfig.getBox());
             if (result.kind == FormValidation.Kind.ERROR) {
                 throw new FormException(result.getMessage(), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }

@@ -160,24 +160,6 @@ public class DescriptorHelper {
         }
         
         try {
-//            JSONObject boxJson = client.getBox(box);
-//            boolean canWrite = false;
-//            if (boxJson.getString("owner").equals(workspace)) {
-//                canWrite = true;
-//            } else {
-//                Set<String> collaborators = new HashSet<String>();
-//                for (Object member : boxJson.getJSONArray("members")) {
-//                    JSONObject memberJson = (JSONObject) member;
-//                    if (memberJson.getString("role").equals("collaborator")) {
-//                        collaborators.add(memberJson.getString("workspace"));
-//                    }
-//                }
-//                canWrite = collaborators.contains(workspace);
-//            }
-//            if (canWrite) {            
-//                boxVersions.add("Latest", box);
-//            }
-            
             boxVersions.add("Latest", LATEST_BOX_VERSION);
             for (Object json : client.getBoxVersions(box)) {
                 JSONObject boxVersion = (JSONObject) json;
@@ -192,6 +174,10 @@ public class DescriptorHelper {
     
     public static ListBoxModel getBoxVersions(String cloud, String workspace, String box) {
         return getBoxVersions(ClientCache.getClient(cloud), workspace, box);
+    }
+    
+    public static String getResolvedBoxVersion(Client client, String workspace, String box, String boxVersion) throws IOException {
+        return LATEST_BOX_VERSION.equals(boxVersion) ? client.getLatestBoxVersion(workspace, box) : boxVersion;
     }
 
     public static ListBoxModel getProfiles(Client client, String workspace, String box) {
@@ -217,12 +203,12 @@ public class DescriptorHelper {
     }
     
     public static JSONArrayResponse getBoxStack(Client client, String workspace, String boxId, String boxVersion) {
-        if (client != null && StringUtils.isNotBlank(boxId)) {
+        if (client != null && StringUtils.isNotBlank(boxVersion)) {
             try {
                 if (LATEST_BOX_VERSION.equals(boxVersion)) {
                     boxVersion = client.getLatestBoxVersion(workspace, boxId);
                 }
-                JSONArray boxStack = new BoxStack(boxId, client.getBoxStack(boxVersion), client).toJSONArray();
+                JSONArray boxStack = new BoxStack(boxVersion, client.getBoxStack(boxVersion), client).toJSONArray();
                 for (Object boxJson : boxStack) {
                     for (Object variable : ((JSONObject) boxJson).getJSONArray("variables")) {
                         JSONObject variableJson = (JSONObject) variable;
@@ -410,7 +396,7 @@ public class DescriptorHelper {
     }
     
     public static FormValidation checkSlaveBox(Client client, String box) {
-        if (client == null || StringUtils.isNotBlank(box)) {
+        if (client == null || StringUtils.isBlank(box)) {
             return FormValidation.ok();
         }
         

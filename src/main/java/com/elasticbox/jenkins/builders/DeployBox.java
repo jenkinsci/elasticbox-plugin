@@ -169,8 +169,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
             expirationOperation = expirationSchedule.getOperation();
         }
-        String boxId = DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion) ? 
-                client.getLatestBoxVersion(workspace, box) : boxVersion;
+        String boxId = DescriptorHelper.getResolvedBoxVersion(client, workspace, box, boxVersion);
         IProgressMonitor monitor = client.deploy(boxId, profile, workspace, resolvedEnvironment, instances, 
                 resolvedVariables, expirationTime, expirationOperation);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());

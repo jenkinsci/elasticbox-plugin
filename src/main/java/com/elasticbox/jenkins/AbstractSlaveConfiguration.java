@@ -12,12 +12,14 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.Client;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
+import java.io.IOException;
 import java.util.Set;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
@@ -47,6 +49,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final int launchTimeout;
     
     private transient Set<LabelAtom> labelSet;
+    private transient String resolvedBoxVersion;
 
     public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, int minInstances,
             int maxInstances, String environment, String variables, String labels, String description, String remoteFS, 
@@ -177,6 +180,16 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         
         return labelSet;
     }
+    
+    String resolveBoxVersion(Client client) throws IOException {
+        resolvedBoxVersion = DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion) ? 
+                client.getLatestBoxVersion(workspace, box) : boxVersion;
+        return resolvedBoxVersion;
+    }
+
+    public String getResolvedBoxVersion() {
+        return resolvedBoxVersion;
+    }        
 
     public static abstract class AbstractSlaveConfigurationDescriptor extends Descriptor<AbstractSlaveConfiguration> {
 

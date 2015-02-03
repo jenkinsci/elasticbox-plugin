@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins.util;
 
+import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.AbstractSlaveConfiguration;
 import com.elasticbox.jenkins.DescriptorHelper;
@@ -58,7 +59,7 @@ public class SlaveInstance {
 
     public static JSONArray createJenkinsVariables(Client client, ElasticBoxSlave slave) throws IOException {
         Map<String, JSONObject> requiredVariables = Collections.EMPTY_MAP;
-        JSONArray boxStack = client.getBoxStack(slave.getBoxVersion());
+        JSONArray boxStack = new BoxStack(slave.getBoxVersion(), client.getBoxStack(slave.getBoxVersion()), client).toJSONArray();
         for (int i = 0; i < boxStack.size(); i++) {
             requiredVariables = getRequiredVariables(boxStack.getJSONObject(i));
             if (requiredVariables.size() == REQUIRED_VARIABLES.size()) {
