@@ -6,6 +6,9 @@ function ebx_token() {
 
 function upgrade_appliance() {
     PACKAGE=${1}
+    EBX_ADDRESS=${2}
+    EBX_TOKEN=${3}
+
     echo Uploading package to ${EBX_ADDRESS}
     ADMIN_TOKEN=$(ebx_token test_admin@elasticbox.com elasticbox)
     UPLOAD_URL="${EBX_ADDRESS}/services/appliance/upload"
@@ -38,7 +41,7 @@ function upgrade_appliance() {
 JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
 
 function get_jenkins_version() {
-    REPOSITORY=$1
+    REPOSITORY_FOLDER=$1
 
     grep "${JENKINS_VERSION_COMMENT}" ${REPOSITORY_FOLDER}/pom.xml | sed -e "s|<version>\(.*\)</version>.*|\1|" -e "s/ //g"
 }
@@ -55,4 +58,8 @@ function update_pom() {
 
     sed -i.bak -e "s|\(.*\)\(<version>.*</version>\)\(.*${JENKINS_VERSION_COMMENT}.*\)|\1<version>${JENKINS_VERSION}</version>\3|" \
         -e "s|\(.*\)\(<forkCount>.*</forkCount>\)|\1<forkCount>${FORK_COUNT}</forkCount>|" ${POM_FILE}
+}
+
+function get_latest_jenkins_version() {
+    curl -s http://repo.jenkins-ci.org/public/org/jenkins-ci/plugins/plugin/maven-metadata.xml | grep latest | sed -e "s|<latest>\(.*\)</latest>.*|\1|" -e "s/ //g"
 }
