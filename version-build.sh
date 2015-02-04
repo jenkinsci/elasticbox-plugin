@@ -14,7 +14,6 @@ Options:
     -w ElasticBox workspace
     -c Fork count
     -g GitHub access token
-    -s Skip tests with 'yes'
     -? Display this message
 "
 
@@ -32,7 +31,7 @@ function help() {
 }
 
 # Handle options
-while getopts ":a:j:t:w:c:g:s:h" ARGUMENT
+while getopts ":a:j:t:w:c:g:h" ARGUMENT
 do
     case ${ARGUMENT} in
 
@@ -43,7 +42,6 @@ do
         w )  EBX_WORKSPACE=$OPTARG;;
         c )  FORK_COUNT=$OPTARG;;
         g )  GITHUB_TOKEN=$OPTARG;;
-        s )  SKIP_TESTS=$OPTARG;;
         h )  help; exit 0;;
         : )  help "Missing option argument for -$OPTARG"; exit 1;;
         ? )  help "Option does not exist: $OPTARG"; exit 1;;
@@ -51,9 +49,9 @@ do
     esac
 done
 
-if [[ -z ${EBX_ADDRESS} && ${SKIP_TESTS} != 'yes' ]]
+if [[ -z ${EBX_ADDRESS} ]]
 then
-    help "ElasticBox address or option to skip tests must be specified"
+    help "ElasticBox address must be specified"
     exit 1
 fi
 
@@ -72,28 +70,23 @@ fi
 echo ------------------------------------------------
 echo Building with Jenkins version ${JENKINS_VERSION}
 echo ------------------------------------------------
-if [[ ${SKIP_TESTS} == 'yes' ]]
+echo Testing against ElasticBox at ${EBX_ADDRESS}
+
+BUILD_OPTIONS="-DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+
+if [[ -n ${EBX_TOKEN} ]]
 then
-    BUILD_OPTIONS="-DskipTests=true"
-else
-    echo Testing against ElasticBox at ${EBX_ADDRESS}
+    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
+fi
 
-    BUILD_OPTIONS="-DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+if [[ -n ${EBX_WORKSPACE} ]]
+then
+    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
+fi
 
-    if [[ -n ${EBX_TOKEN} ]]
-    then
-        BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
-    fi
-
-    if [[ -n ${EBX_WORKSPACE} ]]
-    then
-        BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
-    fi
-
-    if [[ -n ${GITHUB_TOKEN} ]]
-    then
-        BUILD_OPTIONS="${BUILD_OPTIONS} -Dcom.elasticbox.jenkins.test.GitHubAccessToken=${GITHUB_TOKEN}"
-    fi
+if [[ -n ${GITHUB_TOKEN} ]]
+then
+    BUILD_OPTIONS="${BUILD_OPTIONS} -Dcom.elasticbox.jenkins.test.GitHubAccessToken=${GITHUB_TOKEN}"
 fi
 
 cd ${REPOSITORY_FOLDER}
@@ -116,5 +109,4 @@ if [[ -f "${REPOSITORY_FOLDER}/pom.xml.bak" ]]
 then
     mv -f ${REPOSITORY_FOLDER}/pom.xml.bak ${REPOSITORY_FOLDER}/pom.xml
 fi
-
 
