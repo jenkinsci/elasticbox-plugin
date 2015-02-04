@@ -117,7 +117,7 @@ function build_with_jenkins_version() {
 
 if [[ -n ${PACKAGE} ]]
 then
-    upgrade_appliance ${PACKAGE}
+    upgrade_appliance ${PACKAGE} ${EBX_ADDRESS} ${EBX_TOKEN}
 fi
 
 
@@ -132,8 +132,8 @@ then
     JENKINS_VERSIONS="${JENKINS_VERSIONS} ${SAVED_JENKINS_VERSION}"
 fi
 
-LATEST_JENKINS_VERSION=$(curl -s http://repo.jenkins-ci.org/public/org/jenkins-ci/plugins/plugin/maven-metadata.xml | grep latest | sed -e "s|<latest>\(.*\)</latest>.*|\1|" -e "s/ //g")
-if [[ -z $(echo ${JENKINS_VERSIONS} | grep "${LATEST_JENKINS_VERSION}") ]]
+LATEST_JENKINS_VERSION=$(get_latest_jenkins_version)
+if [[ -z $(echo ${JENKINS_VERSIONS} | grep "${LATEST_JENKINS_VERSION}") && -z $(echo ${JENKINS_VERSIONS} | grep latest) ]]
 then
     build_with_jenkins_version ${LATEST_JENKINS_VERSION}
 fi

@@ -14,6 +14,7 @@ Options:
     -w ElasticBox workspace
     -c Fork count
     -g GitHub access token
+    -s Skip tests with 'yes'
     -? Display this message
 "
 
@@ -31,7 +32,7 @@ function help() {
 }
 
 # Handle options
-while getopts ":a:j:t:w:c:g:h" ARGUMENT
+while getopts ":a:j:t:w:c:g:s:h" ARGUMENT
 do
     case ${ARGUMENT} in
 
@@ -42,6 +43,7 @@ do
         w )  EBX_WORKSPACE=$OPTARG;;
         c )  FORK_COUNT=$OPTARG;;
         g )  GITHUB_TOKEN=$OPTARG;;
+        s )  SKIP_TESTS=$OPTARG;;
         h )  help; exit 0;;
         : )  help "Missing option argument for -$OPTARG"; exit 1;;
         ? )  help "Option does not exist: $OPTARG"; exit 1;;
@@ -49,39 +51,49 @@ do
     esac
 done
 
-if [[ -z ${EBX_ADDRESS} ]]
+if [[ -z ${EBX_ADDRESS} && ${SKIP_TESTS} != 'yes' ]]
 then
-    help "ElasticBox address must be specified"
+    help "ElasticBox address or option to skip tests must be specified"
     exit 1
 fi
 
-if [[ -z ${JENKINS_VERSION} ]]
+if [[ ${JENKINS_VERSION} == 'latest' ]]
 then
-    JENKINS_VERSION=$(curl -s http://repo.jenkins-ci.org/public/org/jenkins-ci/plugins/plugin/maven-metadata.xml | grep latest | sed -e "s|<latest>\(.*\)</latest>.*|\1|" -e "s/ //g")
+    JENKINS_VERSION=$(get_latest_jenkins_version)
 fi
 
-update_pom ${REPOSITORY_FOLDER}/pom.xml ${JENKINS_VERSION} ${FORK_COUNT}
+if [[ -n ${JENKINS_VERSION} ]]
+then
+    update_pom ${REPOSITORY_FOLDER}/pom.xml ${JENKINS_VERSION} ${FORK_COUNT}
+else
+    JENKINS_VERSION=$(get_jenkins_version ${REPOSITORY_FOLDER})
+fi
 
 echo ------------------------------------------------
 echo Building with Jenkins version ${JENKINS_VERSION}
 echo ------------------------------------------------
-echo Testing against ElasticBox at ${EBX_ADDRESS}
-
-BUILD_OPTIONS="-DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
-
-if [[ -n ${EBX_TOKEN} ]]
+if [[ ${SKIP_TESTS} == 'yes' ]]
 then
-    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
-fi
+    BUILD_OPTIONS="-DskipTests=true"
+else
+    echo Testing against ElasticBox at ${EBX_ADDRESS}
 
-if [[ -n ${EBX_WORKSPACE} ]]
-then
-    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
-fi
+    BUILD_OPTIONS="-DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
 
-if [[ -n ${GITHUB_TOKEN} ]]
-then
-    BUILD_OPTIONS="${BUILD_OPTIONS} -Dcom.elasticbox.jenkins.test.GitHubAccessToken=${GITHUB_TOKEN}"
+    if [[ -n ${EBX_TOKEN} ]]
+    then
+        BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
+    fi
+
+    if [[ -n ${EBX_WORKSPACE} ]]
+    then
+        BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
+    fi
+
+    if [[ -n ${GITHUB_TOKEN} ]]
+    then
+        BUILD_OPTIONS="${BUILD_OPTIONS} -Dcom.elasticbox.jenkins.test.GitHubAccessToken=${GITHUB_TOKEN}"
+    fi
 fi
 
 cd ${REPOSITORY_FOLDER}
