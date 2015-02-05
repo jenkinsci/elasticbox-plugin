@@ -41,7 +41,7 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
 
     @DataBoundConstructor
     public StopOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, true, waitForCompletion, waitForCompletionTimeout);
+        super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
@@ -71,6 +71,11 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
             logger.info(MessageFormat.format("Waiting for {0} to complete stopping", instances.size() > 1 ? "the instances" : "the instance"));
             LongOperation.waitForCompletion(getDescriptor().getDisplayName(), monitors, client, logger, getWaitForCompletionTimeout());
         }
+    }
+
+    @Override
+    protected boolean failIfNoInstanceFound() {
+        return true;
     }
     
     @Extension

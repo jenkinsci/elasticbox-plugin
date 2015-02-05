@@ -41,7 +41,7 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
 
     @DataBoundConstructor
     public ReconfigureOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, true, waitForCompletion, waitForCompletionTimeout);
+        super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher,
@@ -98,6 +98,11 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
                 return !Client.TERMINATE_OPERATIONS.contains(operation);
             }
         });
+    }
+
+    @Override
+    protected boolean failIfNoInstanceFound() {
+        return true;
     }
     
     @Extension

@@ -41,7 +41,7 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
 
     @DataBoundConstructor
     public ReinstallOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, true, waitForCompletion, waitForCompletionTimeout);
+        super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
@@ -93,6 +93,11 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
                 return !Client.TERMINATE_OPERATIONS.contains(operation);
             }
         });
+    }
+
+    @Override
+    protected boolean failIfNoInstanceFound() {
+        return true;
     }
     
     @Extension

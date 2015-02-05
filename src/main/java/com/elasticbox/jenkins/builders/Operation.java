@@ -25,20 +25,16 @@ import net.sf.json.JSONArray;
  */
 public abstract class Operation implements IOperation, Describable<Operation> {
     private final String tags;
-    private final transient boolean failIfNoneFound;
     
-    protected Operation(String tags, boolean failIfNoneFound) {
+    protected Operation(String tags) {
         this.tags = tags;
-        this.failIfNoneFound = failIfNoneFound;
     }
 
     public String getTags() {
         return tags;
     }
 
-    public boolean isFailIfNoneFound() {
-        return failIfNoneFound;
-    }        
+    protected abstract boolean failIfNoInstanceFound();
     
     protected boolean canPerform(JSONArray instances, TaskLogger logger) throws AbortException {
         if (!instances.isEmpty()) {
@@ -46,7 +42,7 @@ public abstract class Operation implements IOperation, Describable<Operation> {
         }
         
         final String message = "No instance found with the specified tags";
-        if (isFailIfNoneFound()) {
+        if (failIfNoInstanceFound()) {
             throw new AbortException(message);
         } 
         

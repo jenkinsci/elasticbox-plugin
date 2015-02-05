@@ -58,7 +58,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
 
     @DataBoundConstructor
     public TerminateOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout, boolean force, boolean delete) {
-        super(tags, false, waitForCompletion, waitForCompletionTimeout);
+        super(tags, waitForCompletion, waitForCompletionTimeout);
         this.delete = delete;
         this.force = force;
     }
@@ -156,6 +156,11 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
                 throw new AbortException(ex.getMessage());
             }
         }
+    }
+
+    @Override
+    protected boolean failIfNoInstanceFound() {
+        return false;
     }
     
     
