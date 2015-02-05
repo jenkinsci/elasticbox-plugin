@@ -37,18 +37,26 @@ import org.kohsuke.stapler.StaplerRequest;
 public class UpdateOperation extends BoxRequiredOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public UpdateOperation(String box, String boxVersion, String tags, boolean failIfNoneFound, String variables) {
-        super(box, boxVersion, tags, failIfNoneFound, variables);
+    public UpdateOperation(String box, String boxVersion, String tags, String variables) {
+        super(box, boxVersion, tags, variables);
     }
 
     @Override
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
-        logger.info("Executing Update");
+        logger.info(MessageFormat.format("Executing {0}", getDescriptor().getDisplayName()));
         
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         JSONArray resolvedVariables = resolver.resolveVariables(getVariables());
         Client client = cloud.getClient();
-        String boxVersion = DescriptorHelper.getResolvedBoxVersion(client, workspace, getBox(), getBoxVersion());
+        String boxVersion = DescriptorHelper.getResolvedBoxVersion(client, workspace, getBox(), getBoxVersion());        
+        Set<String> resolvedTags = resolver.resolveTags(getTags());
+        logger.info(MessageFormat.format("Looking for instances with box version {0} and the following tags: {1}", 
+                boxVersion, StringUtils.join(resolvedTags, ", ")));
+        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, boxVersion);        
+        if (!canPerform(instances, logger)) {
+            return;
+        }
+
         DescriptorHelper.removeInvalidVariables(resolvedVariables, 
                 DescriptorHelper.getBoxStack(client, workspace, getBox(), boxVersion).getJsonArray());
         // remove empty variables and resolve binding with tags
@@ -59,15 +67,7 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
                 iter.remove();
             }
         }
-        
-        Set<String> resolvedTags = resolver.resolveTags(getTags());
-        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", 
-                StringUtils.join(resolvedTags, ", ")));
-        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, boxVersion);        
-        if (!canPerform(instances, logger)) {
-            return;
-        }
-
+        logger.info(MessageFormat.format("Updating the instances with variables: {0}", resolvedVariables));                
         for (Object instance : instances) {
             JSONObject instanceJson = (JSONObject) instance;            
             client.updateInstance(instanceJson, resolvedVariables, boxVersion);

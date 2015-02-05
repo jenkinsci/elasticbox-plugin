@@ -40,12 +40,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class StopOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public StopOperation(String tags, boolean failIfNoneFound, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, failIfNoneFound, waitForCompletion, waitForCompletionTimeout);
+    public StopOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, true, waitForCompletion, waitForCompletionTimeout);
     }
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
-        logger.info("Executing Stop");
+        logger.info(MessageFormat.format("Executing {0}", getDescriptor().getDisplayName()));
         
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         Client client = cloud.getClient();
