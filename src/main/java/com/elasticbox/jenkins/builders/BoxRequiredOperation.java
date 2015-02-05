@@ -29,11 +29,16 @@ public abstract class BoxRequiredOperation extends Operation {
     private final String variables;    
     
     public BoxRequiredOperation(String box, String boxVersion, String tags, String variables) {
-        super(tags, true);
+        super(tags);
         this.box = box;
         this.boxVersion = boxVersion;    
         this.variables = variables;
     }
+
+    @Override
+    protected boolean failIfNoInstanceFound() {
+        return true;
+    }        
 
     public String getBox() {
         return box;

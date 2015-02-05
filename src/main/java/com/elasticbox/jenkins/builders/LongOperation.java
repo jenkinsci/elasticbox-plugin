@@ -36,8 +36,8 @@ public abstract class LongOperation extends Operation {
     private final boolean waitForCompletion;
     private int waitForCompletionTimeout;
 
-    protected LongOperation(String tags, boolean failIfNoneFound, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, failIfNoneFound);
+    protected LongOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags);
         this.waitForCompletion = waitForCompletion;
         this.waitForCompletionTimeout = waitForCompletionTimeout;
     }
