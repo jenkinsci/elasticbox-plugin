@@ -57,8 +57,8 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
     private final boolean force;
 
     @DataBoundConstructor
-    public TerminateOperation(String tags, boolean failIfNoneFound, boolean waitForCompletion, int waitForCompletionTimeout, boolean force, boolean delete) {
-        super(tags, failIfNoneFound, waitForCompletion, waitForCompletionTimeout);
+    public TerminateOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout, boolean force, boolean delete) {
+        super(tags, false, waitForCompletion, waitForCompletionTimeout);
         this.delete = delete;
         this.force = force;
     }

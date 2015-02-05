@@ -28,8 +28,8 @@ public abstract class BoxRequiredOperation extends Operation {
     private final String boxVersion;
     private final String variables;    
     
-    public BoxRequiredOperation(String box, String boxVersion, String tags, boolean failIfNoneFound, String variables) {
-        super(tags, failIfNoneFound);
+    public BoxRequiredOperation(String box, String boxVersion, String tags, String variables) {
+        super(tags, true);
         this.box = box;
         this.boxVersion = boxVersion;    
         this.variables = variables;

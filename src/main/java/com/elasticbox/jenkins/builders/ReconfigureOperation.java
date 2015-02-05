@@ -20,7 +20,6 @@ import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
-import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -41,8 +40,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ReconfigureOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public ReconfigureOperation(String tags, boolean failIfNoneFound, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, failIfNoneFound, waitForCompletion, waitForCompletionTimeout);
+    public ReconfigureOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, true, waitForCompletion, waitForCompletionTimeout);
     }
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher,

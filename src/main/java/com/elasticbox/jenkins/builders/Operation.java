@@ -25,7 +25,7 @@ import net.sf.json.JSONArray;
  */
 public abstract class Operation implements IOperation, Describable<Operation> {
     private final String tags;
-    private final boolean failIfNoneFound;
+    private final transient boolean failIfNoneFound;
     
     protected Operation(String tags, boolean failIfNoneFound) {
         this.tags = tags;

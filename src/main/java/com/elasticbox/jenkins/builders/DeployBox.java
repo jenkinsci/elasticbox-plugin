@@ -170,20 +170,21 @@ public class DeployBox extends Builder implements IInstanceProvider {
             expirationOperation = expirationSchedule.getOperation();
         }
         String boxId = DescriptorHelper.getResolvedBoxVersion(client, workspace, box, boxVersion);
+        logger.info("Deploying box {0}", client.getBoxPageUrl(boxId));
         IProgressMonitor monitor = client.deploy(boxId, profile, workspace, resolvedEnvironment, instances, 
                 resolvedVariables, expirationTime, expirationOperation);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
-        logger.info("Deploying box instance {0}", instancePageUrl);
+        logger.info("Instance {0} is being deployed", instancePageUrl);
         notifyDeploying(build, instanceId, ebCloud);
         if (waitForCompletion) {
             try {
-                logger.info("Waiting for the deployment of the box instance {0} to finish", instancePageUrl);
+                logger.info("Waiting for the deployment of the instance {0} to finish", instancePageUrl);
                 monitor.waitForDone(getWaitForCompletionTimeout());
-                logger.info("The box instance {0} has been deployed successfully ", instancePageUrl);
+                logger.info("The instance {0} has been deployed successfully ", instancePageUrl);
             } catch (IProgressMonitor.IncompleteException ex) {
                 Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
-                logger.error("Failed to deploy box instance {0}: {1}", instancePageUrl, ex.getMessage());
+                logger.error("Failed to deploy instance {0}: {1}", instancePageUrl, ex.getMessage());
                 throw new AbortException(ex.getMessage());
             }      
         }

@@ -18,7 +18,6 @@ import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
-import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -39,8 +38,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class StartOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
-    public StartOperation(String tags, boolean failIfNoneFound, boolean waitForCompletion, int waitForCompletionTimeout) {
-        super(tags, failIfNoneFound, waitForCompletion, waitForCompletionTimeout);
+    public StartOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
+        super(tags, true, waitForCompletion, waitForCompletionTimeout);
     }
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {

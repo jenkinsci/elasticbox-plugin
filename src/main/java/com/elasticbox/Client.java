@@ -551,6 +551,10 @@ public class Client {
         return doUpdate(boxUrl, box);
     }
     
+    public String getBoxPageUrl(String boxId) {
+        return getPageUrl(endpointUrl, MessageFormat.format("/services/boxes/{0}", boxId));
+    }    
+    
     protected abstract class ProgressMonitor extends AbstractProgressMonitor {
         protected final String lastModified;
 
