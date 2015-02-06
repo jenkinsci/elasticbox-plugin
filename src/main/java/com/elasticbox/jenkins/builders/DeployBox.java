@@ -153,7 +153,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger, 
             AbstractBuild<?, ?> build) 
             throws IOException, InterruptedException {
+        Set<String> resolvedTags = resolver.resolveTags(tags);
         String resolvedEnvironment = resolver.resolve(tags.split(",")[0].trim());
+        resolvedTags.remove(resolvedEnvironment);
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
         DescriptorHelper.removeInvalidVariables(resolvedVariables, 
                 ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, workspace, box, boxVersion).getJsonArray());
@@ -171,8 +173,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
         String boxId = DescriptorHelper.getResolvedBoxVersion(client, workspace, box, boxVersion);
         logger.info("Deploying box {0}", client.getBoxPageUrl(boxId));
-        IProgressMonitor monitor = client.deploy(boxId, profile, workspace, resolvedEnvironment, instances, 
-                resolvedVariables, expirationTime, expirationOperation);
+        IProgressMonitor monitor = client.deploy(boxId, profile, workspace, resolvedEnvironment, 
+                new ArrayList(resolvedTags), instances, resolvedVariables, expirationTime, expirationOperation);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
         logger.info("Instance {0} is being deployed", instancePageUrl);

@@ -176,7 +176,15 @@ public class Client {
     }
     
     public JSONArray getBoxes(String workspaceId) throws IOException {
-        return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl, URLEncoder.encode(workspaceId, UTF_8)), true);
+        JSONArray boxes = (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl, URLEncoder.encode(workspaceId, UTF_8)), true);
+        // remove the profile boxes
+        for (Iterator iter = boxes.iterator(); iter.hasNext();) {
+            if (isProfile((JSONObject) iter.next())) {
+                iter.remove();
+            }
+        }
+        
+        return boxes;
     }
     
     public JSONArray getBoxVersions(String boxId) throws IOException {
@@ -258,43 +266,24 @@ public class Client {
         return new ProviderProgressMonitor(endpointUrl + provider.getString("uri"), provider.getString("updated"));
     }
     
-    private boolean canChange(String workspaceId, String boxId) throws IOException {
-        JSONObject box = (JSONObject) doGet(MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId), false);
-        if (workspaceId.equals(box.getString("owner"))) {
-            return true;
-        }
-        
-        for (Object json : box.getJSONArray("members")) {
-            JSONObject member = (JSONObject) json;
-            if (workspaceId.equals(member.getString("workspace")) && "collaborator".equals(member.getString("role"))) {
-                return true;
-            }
-        }
-        
-        return false;
+    private boolean isProfile(JSONObject boxJson) {
+        return boxJson.getString("schema").endsWith("/box/profile");
     }
     
     public JSONArray getProfiles(String workspaceId, String boxId) throws IOException {
-        if (StringUtils.isBlank(workspaceId)) {
-            throw new IOException("workspaceId cannot be blank");
+        JSONObject box = getBox(boxId);
+        if (isProfile(box)) {
+            throw new IOException("Cannot get profiles for a profile box");
         }
-
-        JSONArray profiles = (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles?box_version={2}", endpointUrl, URLEncoder.encode(workspaceId, UTF_8), boxId), true);
-        if (!canChange(workspaceId, boxId)) {
-            // this is a read-only box that could have profiles associated with the its versions
-            JSONArray versions = getBoxVersions(boxId);
-            if (!versions.isEmpty()) {
-                Set<String> versionIDs = new HashSet<String>();
-                for(Object version : versions) {
-                    versionIDs.add(((JSONObject) version).getString("id"));
-                }          
-
-                JSONArray allProfiles = (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/profiles", endpointUrl, URLEncoder.encode(workspaceId, UTF_8), boxId), true);
-                for (Object json : allProfiles) {
-                    JSONObject profile = (JSONObject) json;
-                    if (versionIDs.contains(profile.getJSONObject("box").getString("version"))) {
-                        profiles.add(profile);
-                    }
+        JSONArray requiredServices = box.getJSONArray("service_tags");
+        JSONArray profiles = new JSONArray();
+        for (Object b : getBoxes(workspaceId)) {
+            JSONObject boxJson = (JSONObject) b;
+            if (isProfile(boxJson)) {
+                Set<String> providedServices = new HashSet(boxJson.getJSONArray("service_tags"));
+                providedServices.add(boxJson.getString("service"));
+                if (providedServices.containsAll(requiredServices)) {
+                    profiles.add(boxJson);
                 }
             }
         }
@@ -628,64 +617,44 @@ public class Client {
     }
     
     public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {
-        return deploy(null, profileId, workspaceId, environment, instances, variables, null, null);
+        return deploy(null, profileId, workspaceId, environment, null, instances, variables, null, null);
     }
     
     public IProgressMonitor deploy(String boxVersion, String profileId, String workspaceId, String environment, 
-            int instances, JSONArray variables, String expirationTime, String expirationOperation) throws IOException {        
-        JSONObject profile = (JSONObject) doGet(MessageFormat.format("/services/profiles/{0}", profileId), false);
-        JSONObject deployRequest = new JSONObject();
-        
-        String profileSchema = profile.getString("schema");
-        String schemaVersion = getSchemaVersion(profileSchema);
-        if (schemaVersion.compareTo("2014-05-23") > 0) {
-            if (boxVersion != null) {
-                profile.getJSONObject("box").put("version", boxVersion);
+            List<String> tags, int instances, JSONArray variables, String expirationTime, String expirationOperation) 
+            throws IOException {        
+        JSONObject box = new JSONObject();        
+        box.put("id", boxVersion);
+        for (Object json : variables) {
+            JSONObject variable = (JSONObject) json;
+            if (variable.containsKey("scope") && variable.getString("scope").isEmpty()) {
+                variable.remove("scope");
             }
-            
-            JSONObject serviceProfile = profile.getJSONObject("profile");
-            if (serviceProfile.containsKey("instances")) {
-                serviceProfile.put("instances", instances);
-            }            
-            deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + '/' + DEPLOYMENT_REQUEST_SCHEMA_NAME);
-            for (Object json : variables) {
-                JSONObject variable = (JSONObject) json;
-                if (variable.containsKey("scope") && variable.getString("scope").isEmpty()) {
-                    variable.remove("scope");
-                }
-                if ("File".equals(variable.getString("type"))) {
-                    uploadFileVariable(variable);
-                }
+            if ("File".equals(variable.getString("type"))) {
+                uploadFileVariable(variable);
             }
-            deployRequest.put("variables", variables);
-            
-            if (expirationTime != null && expirationOperation != null && schemaVersion.compareTo("2014-10-09") >= 0) {
-                JSONObject lease = new JSONObject();
-                lease.put("expire", expirationTime);
-                lease.put("operation", expirationOperation);
-                deployRequest.put("lease", lease);
-            }
-        } else {
-            JSONObject mainInstance = (JSONObject) profile.getJSONArray("instances").get(0);
-            JSONArray jsonVars = mainInstance.getJSONArray("variables");
-            for (Object json : variables) {
-                JSONObject variable = (JSONObject) json;
-                JSONObject jsonVar = findVariable(variable, jsonVars);
-                if (jsonVar == null) {
-                    jsonVars.add(variable);
-                } else {
-                    jsonVar.put("value", variable.getString("value"));
-                }
-            }
-            JSONObject serviceProfile = mainInstance.getJSONObject("profile");
-            if (serviceProfile.containsKey("instances")) {
-                serviceProfile.put("instances", instances);
-            }                        
-            deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + "/deploy-service-request");
         }
+        box.put("variables", variables);
+        JSONObject profile = new JSONObject();
+        profile.put("id", profileId);
+        JSONObject profileBox = getBox(profileId);
+        String profileSchema = profileBox.getString("schema");
+        String schemaVersion = getSchemaVersion(profileSchema);            
+        JSONObject deployRequest = new JSONObject();
+        deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + '/' + DEPLOYMENT_REQUEST_SCHEMA_NAME);
+        deployRequest.put("box", box);
         deployRequest.put("environment", environment);
         deployRequest.put("profile", profile);
         deployRequest.put("owner", workspaceId);        
+        if (expirationTime != null && expirationOperation != null) {
+            JSONObject lease = new JSONObject();
+            lease.put("expire", expirationTime);
+            lease.put("operation", expirationOperation);
+            deployRequest.put("lease", lease);
+        }
+        if (tags != null) {
+            deployRequest.put("instance_tags", tags);
+        }
         
         JSONObject instance = doPost("/services/instances", deployRequest);
         return new InstanceProgressMonitor(endpointUrl + instance.getString("uri"), 

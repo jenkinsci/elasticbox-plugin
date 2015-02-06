@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -184,8 +185,6 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             InstanceCreationRequest request = iter.next();
             try {
                 if (request.monitor.isDone()) {
-                    tagSlaveInstance(request.slave.getInstance(), request.slave);
-                    
                     if (request.slave.getComputer() != null && request.slave.getComputer().isOnline()) {
                         request.slave.setInstanceStatusMessage(MessageFormat.format("Successfully deployed at <a href=\"{0}\">{0}</a>", 
                                 request.slave.getInstancePageUrl()));
@@ -363,7 +362,8 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
         }
         LOGGER.info(MessageFormat.format("Deploying box {0}", ebClient.getBoxPageUrl(request.slave.getBoxVersion())));
         IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), 
-                profile.getString("owner"), request.slave.getEnvironment(), 1, variables, null, null);
+                profile.getString("owner"), request.slave.getEnvironment(), 
+                Collections.singletonList(request.slave.getNodeName()), 1, variables, null, null);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>", 
                 request.slave.getInstancePageUrl()));
