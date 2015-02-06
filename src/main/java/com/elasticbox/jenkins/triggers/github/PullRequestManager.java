@@ -358,6 +358,8 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
 
         @Override
         protected void onLoad(ProjectData projectData) {
+            LOGGER.finest(MessageFormat.format("Loaded ElasticBox specific data of project ''{0}''", 
+                    projectData.getProject().getName()));
             PullRequestManager manager = PullRequestManager.getInstance();
             PullRequests pullRequests = projectData.get(PullRequests.class);
             if (pullRequests != null) {
