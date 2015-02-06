@@ -31,9 +31,9 @@ import org.apache.commons.lang.StringUtils;
 public class Initializers {
     private static final Logger LOGGER = Logger.getLogger(Initializers.class.getName());
     
-    @Initializer(before = InitMilestone.COMPLETED)
+    @Initializer(after = InitMilestone.JOB_LOADED)
     public static void tagSlaveInstances() throws IOException {        
-        LOGGER.info("Tagging slave instances");
+        LOGGER.finest("Tagging slave instances");
         
         // wait for nodes to be set
         new Condition() {
@@ -61,8 +61,9 @@ public class Initializers {
         });
     }
     
-    @Initializer(before = InitMilestone.COMPLETED)
+    @Initializer(after = InitMilestone.JOB_LOADED)
     public static void setSlaveConfigurationId() throws IOException {
+        LOGGER.finest("Fixing old slave configurations");
         boolean saveNeeded = false;
         
         // set the ID of those slave configurations that don't have an ID assigned yet

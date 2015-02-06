@@ -123,8 +123,9 @@ public class ProjectData implements Saveable {
         return projectDataLookup.remove(project);
     }
     
-    @Initializer(before = InitMilestone.COMPLETED)
+    @Initializer(after = InitMilestone.JOB_LOADED)
     public static void loadAll() {
+        LOGGER.info("Loading ElasticBox specific project data");
         List<ProjectDataListener> listeners = Jenkins.getInstance().getExtensionList(ProjectDataListener.class);
         for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
             ProjectData data = null;
