@@ -203,7 +203,7 @@ public class DescriptorHelper {
     }
     
     public static JSONArrayResponse getBoxStack(Client client, String workspace, String boxId, String boxVersion) {
-        if (client != null && StringUtils.isNotBlank(boxVersion)) {
+        if (client != null && StringUtils.isNotBlank(boxId) && StringUtils.isNotBlank(boxVersion)) {
             try {
                 if (LATEST_BOX_VERSION.equals(boxVersion)) {
                     boxVersion = client.getLatestBoxVersion(workspace, boxId);
