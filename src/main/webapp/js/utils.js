@@ -19,6 +19,22 @@ var ElasticBoxUtils = (function() {
         
         startsWith = function (str, prefix) {
             return str && str.substr(0, prefix.length) === prefix;
+        },
+
+        waitUtil = function (condition, method, scope, timeout, elapsedTime) {
+            var interval = 100,
+                satisfied = condition.call(scope);
+
+            if (satisfied || elapsedTime >= timeout) {
+                if (satisfied && method) {
+                    method.call(scope);
+                }
+                return;
+            }
+
+            setTimeout(function () {
+                waitUtil(condition, method, scope, timeout, elapsedTime - interval);
+            }, interval);
         };
         
     return {
@@ -37,6 +53,10 @@ var ElasticBoxUtils = (function() {
         },
         
         startsWith: startsWith,
+        
+        waitUtil: function (condition, method, timeout) {
+            waitUtil(condition, method, this, timeout, 0);
+        },
         
         uuid: function () {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {

@@ -23,7 +23,7 @@
                         boxFirstOption =  ElasticBoxUtils.getElementByTag('option', boxSelect),
                         boxVersionFirstOption = ElasticBoxUtils.getElementByTag('option', boxVersionSelect);
                 
-                    return _.isUndefined(boxFirstOption) || _.isUndefined(boxVersionFirstOption) ||
+                    return !boxFirstOption || !boxVersionFirstOption ||
                         (boxFirstOption.value !== boxFirstOption.innerText && boxVersionFirstOption.value !== boxVersionFirstOption.innerText);
                 },
                 

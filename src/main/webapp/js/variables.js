@@ -655,11 +655,104 @@ var ElasticBoxVariables = (function () {
                 });
                 
             return _variableHolders;
-        };
+        },
+    
+    validateSavedOptions = function () {
+        var itemsFilled = function (select) {
+                var children = Dom.getChildren(select);
+
+                if (children.length === 1 && _.first(children).innerHTML === Dom.getAttribute(select, 'value')) {
+                    return false;
+                }
+                return true;
+            },
+
+            setValidationMessage = function (select, message) {
+                var validationErrorArea = Dom.getNextSiblingBy(Dom.getAncestorByTagName(select, 'tr'), function (sibling) {
+                        return Dom.hasClass(sibling, 'validation-error-area');
+                    });
+                
+                if (validationErrorArea) {
+                    validationErrorArea = _.last(Dom.getChildren(validationErrorArea));
+                    validationErrorArea.innerHTML = message ? ElasticBoxUtils.format('<div class="error">{0}</div>', message) : '';
+                    return true;
+                }
+                return false;
+            },
+
+            validate = function (select, errorMessage, dependencies) {
+                if (!Dom.getAttribute(select, 'value')) {
+                    return;
+                }
+                ElasticBoxUtils.waitUtil(function () {
+                    return itemsFilled(select);
+                }, 
+                function () {
+                    var savedValue = Dom.getAttribute(select, 'value'),
+                        options = Dom.getChildren(select),  
+                        nextDependency = _.first(dependencies),
+                        descriptorElement = ElasticBoxUtils.getDescriptorElement(select),
+                        clearValidationMessage = function () {
+                            var firstOption = Dom.getFirstChild(select);
+
+                            if (firstOption && Dom.getAttribute(firstOption, 'value') === savedValue) {
+                                select.removeChild(firstOption);
+                            }
+                            setValidationMessage(select);  
+                            Event.removeListener(select, 'change', clearValidationMessage);                                                                     
+                        },
+                                                
+                        invalidOption;
+                    
+                    if (Dom.hasClass(select, 'ebx-validate')) {
+                        return;
+                    }
+                    
+                    Dom.addClass(select, 'ebx-validate');
+                    if (!Dom.getElementBy(function (option) {
+                            return Dom.getAttribute(option, 'value') === savedValue;
+                        }, 'option', select)) {                        
+                        if (setValidationMessage(select, errorMessage)) {
+                            if (options.length === 0) {
+                                select.innerHTML = ElasticBoxUtils.format('<option value="{0}">{0}</option>', savedValue);
+                            } else {
+                                invalidOption = document.createElement('option');
+                                invalidOption.innerHTML = savedValue;
+                                Dom.setAttribute(invalidOption, 'value', savedValue);                                    
+                                Dom.insertBefore(invalidOption, Dom.getFirstChild(select));
+                            }
+                            select.value = savedValue;
+                            setTimeout(function () {
+                                fireEvent(select, 'change');                                
+                                // add an event listener to 'select' element to clear the error message if new option is selected
+                                Event.addListener(select, 'change', clearValidationMessage);                                                                
+                            }, 1000);
+                        }
+                    } else if (_.isObject(nextDependency)) {
+                        Dom.getElementsByClassName(nextDependency.class, 'select', descriptorElement, 
+                            function (dependentSelect) {
+                                validate(dependentSelect, ElasticBoxUtils.format(nextDependency.errorMessageTemplate, Dom.getAttribute(dependentSelect, 'value')),
+                                    _.rest(dependencies));
+                            });                                    
+                    }
+                }, 1000);
+            };
+
+        Dom.getElementsByClassName('eb-cloud', 'select', null, function (select) {
+            validate(select, ElasticBoxUtils.format('The previously selected cloud {0} is not valid', Dom.getAttribute(select, 'value')),
+                [
+                    { class: 'eb-workspace', errorMessageTemplate: 'The previously selected workspace {0} is not available in the selected cloud' },
+                    { class: 'eb-box', errorMessageTemplate: 'The previously selected box with id {0} is not available in the selected workspace' },
+                    { class: 'eb-boxVersion', errorMessageTemplate: 'The previously selected box version with id {0} is not valid' },
+                    { class: 'eb-profile', errorMessageTemplate: 'The previously selected profile with id {0} is not valid' }
+                ]);
+        });
+    };
 
     return {
         initialize: function () {
             ElasticBoxUtils.initializeBuildSteps();
+            validateSavedOptions();
             variableHolders = getVariableHolders();
             _.each(variableHolders, function (variableHolder) {
                 populateVariables(variableHolder);
