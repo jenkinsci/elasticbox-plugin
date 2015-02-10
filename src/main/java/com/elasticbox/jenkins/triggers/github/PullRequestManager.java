@@ -16,14 +16,9 @@ import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.cloudbees.jenkins.Credential;
 import com.cloudbees.jenkins.GitHubPushTrigger;
 import com.cloudbees.jenkins.GitHubRepositoryName;
-import com.elasticbox.Client;
-import com.elasticbox.ClientException;
-import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.ElasticBoxExecutor;
 import com.elasticbox.jenkins.builders.BuilderListener;
 import com.elasticbox.jenkins.triggers.BuildManager;
-import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.ProjectData;
 import com.elasticbox.jenkins.util.ProjectDataListener;
 import hudson.Extension;
@@ -41,7 +36,6 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -53,7 +47,6 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHPullRequest;
@@ -74,8 +67,8 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         public static final String CLOSED = "closed";
     }
     
-    private static final Set<String> TRIGGER_EVENTS = new HashSet<String>(
-            Arrays.asList(PullRequestAction.OPENED, PullRequestAction.REOPENED, PullRequestAction.SYNCHRONIZE));
+    private static final Set<String> SUPPORTED_EVENTS = new HashSet<String>(
+            Arrays.asList(PullRequestAction.OPENED, PullRequestAction.REOPENED, PullRequestAction.SYNCHRONIZE, PullRequestAction.CLOSED));
     
     public static final PullRequestManager getInstance() {
         return (PullRequestManager) ((PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(
@@ -208,9 +201,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             return;
         }
         GHEventPayload.PullRequest pullRequest = gitHub.parseEventPayload(new StringReader(payload), GHEventPayload.PullRequest.class);
-        if (PullRequestAction.CLOSED.equals(pullRequest.getAction())) {
-            deleteInstances(pullRequest);
-        } else if (TRIGGER_EVENTS.contains(pullRequest.getAction())) {
+        if (SUPPORTED_EVENTS.contains(pullRequest.getAction())) {
             Authentication old = SecurityContextHolder.getContext().getAuthentication();
             SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
             try {
@@ -222,7 +213,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 }
             } finally {
                 SecurityContextHolder.getContext().setAuthentication(old);
-            }                            
+            }   
         } else {
             LOGGER.warning(MessageFormat.format("Unsupported pull request action: ''{0}''", pullRequest.getAction()));
         }
@@ -256,58 +247,6 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
 
     }
 
-    private void deleteInstances(GHEventPayload.PullRequest prEventPayload) throws IOException {
-        Collection<PullRequestInstance> prInstances = new ArrayList<PullRequestInstance>();
-        Authentication old = SecurityContextHolder.getContext().getAuthentication();
-        SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
-        try {
-            for (AbstractProject<?,?> project : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
-                PullRequestData data = removePullRequestData(prEventPayload.getPullRequest().getUrl().toString(), project);
-                if (data != null) {
-                    prInstances.addAll(data.getInstances());
-                }
-            }
-        } finally {
-            SecurityContextHolder.getContext().setAuthentication(old);
-        }                            
-        
-        List<String> terminatingInstanceURLs = new ArrayList<String>();
-        for (PullRequestInstance instance : prInstances) {
-            Client client = ClientCache.getClient(instance.cloud);
-            if (client != null) {
-                String instanceId = Client.getResourceId(instance.id);
-                IProgressMonitor monitor = null;
-                try {
-                    monitor = client.terminate(instanceId);
-                } catch (ClientException ex) {
-                    if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
-                        try {
-                            monitor = client.forceTerminate(instanceId);
-                        } catch (IOException ex1) {
-                            LOGGER.log(Level.SEVERE, 
-                                    MessageFormat.format("Error force-terminating instance {0}", instance.id), ex1);
-                        }
-                    }
-                } catch (IOException ex) {
-                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error terminating instance {0}", instance.id), ex);
-                }
-                if (monitor != null) {
-                    // add the terminating instance to the DeleteInstancesWorkload so it will be deleted after its termination
-                    Jenkins.getInstance().getExtensionList(ElasticBoxExecutor.Workload.class).get(DeleteInstancesWorkload.class).add(instance);
-                    terminatingInstanceURLs.add(monitor.getResourceUrl());
-                }
-            }
-        }
-        if (!terminatingInstanceURLs.isEmpty()) {
-            try {
-                prEventPayload.getPullRequest().comment(MessageFormat.format("The following instances are being terminated: {0}",
-                        StringUtils.join(terminatingInstanceURLs, ", ")));
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", prEventPayload.getPullRequest().getUrl(), ex));
-            }
-        }
-    }
-    
     @Extension
     public static final class BuilderListenerImpl extends BuilderListener {
 
