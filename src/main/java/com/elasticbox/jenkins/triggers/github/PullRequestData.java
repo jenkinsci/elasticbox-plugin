@@ -70,7 +70,7 @@ public class PullRequestData {
         this.projectData = projectData;
     }
     
-    public void save() throws IOException {
+    public synchronized void save() throws IOException {
         PullRequests pullRequests = projectData.get(PullRequests.class);
         if (pullRequests == null) {
             projectData.add(new PullRequests());

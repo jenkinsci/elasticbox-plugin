@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.junit.After;
@@ -32,8 +31,6 @@ import org.junit.Before;
  * @author Phong Nguyen Le
  */
 public class BuildStepTestBase extends TestBase {
-    private static final Logger LOGGER = Logger.getLogger(BuildStepTestBase.class.getName());
-
     private String schemaVersion;
     private final List<TestBoxData> testBoxDataList = Arrays.asList(new TestBoxData[] {
         new TestBoxData("boxes/test-linux-box/test-linux-box.json", "com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile"),

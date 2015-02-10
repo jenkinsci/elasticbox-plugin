@@ -128,6 +128,7 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
         public String getWebHookUrl() {
             String jenkinsUrl = Jenkins.getInstance().getRootUrl();
             if (jenkinsUrl == null) {
+                LOGGER.severe("Jenkins URL is not configured");
                 return null;
             }
             

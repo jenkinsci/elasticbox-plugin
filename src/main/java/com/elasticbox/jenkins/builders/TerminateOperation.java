@@ -46,7 +46,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             throws InterruptedException {
         for (BuilderListener listener: Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
             try {
-                listener.onDeploying(build, instanceId, cloud);
+                listener.onTerminating(build, instanceId, cloud);
             } catch (IOException ex) {
                 Logger.getLogger(TerminateOperation.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
             }
