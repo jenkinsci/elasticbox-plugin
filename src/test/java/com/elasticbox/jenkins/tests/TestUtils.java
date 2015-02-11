@@ -14,6 +14,8 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.Condition;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
@@ -125,10 +127,32 @@ public class TestUtils {
         for (Map.Entry<String, String> entry : textParameters.entrySet()) {
             parameters.add(new TextParameterValue(entry.getKey(), entry.getValue()));
         }
-        QueueTaskFuture future = project.scheduleBuild2(0, new Cause.LegacyCodeCause(), new ParametersAction(parameters));
+        final QueueTaskFuture future = project.scheduleBuild2(0, new Cause.LegacyCodeCause(), new ParametersAction(parameters));
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
-        return (FreeStyleBuild) future.get(60, TimeUnit.MINUTES);
+        final FreeStyleBuild[]  buildHolder = new FreeStyleBuild[1];
+        new Condition() {
+
+            @Override
+            public boolean satisfied() {
+                try {
+                    buildHolder[0] = (FreeStyleBuild) future.get(60, TimeUnit.MINUTES);
+                    return true;
+                } catch (InterruptedException ex) {
+                    return false;
+                } catch (ExecutionException ex) {
+                    throw new RuntimeException(ex);
+                } catch (TimeoutException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(ElasticBoxSlaveHandler.TIMEOUT_MINUTES));
+        if (buildHolder[0] == null) {
+            throw new Exception(MessageFormat.format("Cannot retrieve build after {0} minites", 
+                    ElasticBoxSlaveHandler.TIMEOUT_MINUTES));
+        }
+
+        return buildHolder[0];
     }
     
     static void cleanUp(String testTag, Jenkins jenkins) throws Exception {
@@ -182,8 +206,18 @@ public class TestUtils {
         testProvider.put("icon", "images/platform/provider.png");
         testProvider.put("secret", "secret");
         testProvider.put("owner", TestUtils.TEST_WORKSPACE);
-        IProgressMonitor monitor = client.createProvider(testProvider);
-        monitor.waitForDone(10);
+        final IProgressMonitor monitor = client.createProvider(testProvider);
+        new Condition() {
+
+            @Override
+            public boolean satisfied() {
+                try {
+                    return monitor.isDone();
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(10));
         return (JSONObject) client.doGet(monitor.getResourceUrl(), false);        
     }
         

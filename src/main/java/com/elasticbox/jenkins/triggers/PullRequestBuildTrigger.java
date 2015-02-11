@@ -97,13 +97,13 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
         @Override
         public String getDisplayName() {
-            return "ElasticBox GitHub Pull Request Lifecycle Management";
+            return "Manage GitHub pull request lifecycle with ElasticBox";
         }
 
         @Override
         public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             if (getBuildManager() == null) {
-                throw new FormException(MessageFormat.format("Cannot retrieve build manager. {0} requires GitHub plugin, you need to install GitHub plugin in order to use it.", getDisplayName()), "all");
+                throw new FormException(MessageFormat.format("Cannot retrieve build manager. ''{0}'' requires GitHub plugin, you need to install GitHub plugin in order to use it.", getDisplayName()), "all");
             }
             return super.newInstance(req, formData);
         }

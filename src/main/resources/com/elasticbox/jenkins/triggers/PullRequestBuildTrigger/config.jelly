@@ -13,7 +13,7 @@ written permission is obtained from ElasticBox.
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="${%Build trigger phrase}" field="triggerPhrase">
+    <f:entry title="${%Phrase to trigger builds}" field="triggerPhrase">
         <f:textbox default="test this please"/>
     </f:entry>
     <f:entry title="${%Whitelist}" field="whitelist">

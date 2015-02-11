@@ -21,7 +21,6 @@ import net.sf.json.JSONObject;
  * @author Phong Nguyen Le
  */
 public abstract class AbstractProgressMonitor implements IProgressMonitor {
-    private final Object waitLock = new Object();
     private final String resourceUrl;
     private final long creationTime;
 
@@ -56,10 +55,10 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
             if (isDone()) {
                 return;
             }
-
-            synchronized(waitLock) {
-                waitLock.wait(1000);
-            }            
+            
+            synchronized(this) {
+                wait(1000);
+            }
 
             long currentTime = System.currentTimeMillis();
             remainingTime =  remainingTime - (currentTime - startTime);
