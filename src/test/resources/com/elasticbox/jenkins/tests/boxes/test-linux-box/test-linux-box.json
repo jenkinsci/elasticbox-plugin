@@ -38,7 +38,19 @@
             "type": "File",
             "name": "VAR_FILE",
             "value": ""
-        }
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "JENKINS_URL",
+            "value": "",
+            "visibility": "public"
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "JNLP_SLAVE_OPTIONS",
+            "value": "",
+            "visibility": "public"
+        }        
     ],
     "events": {
         "configure": "configure.sh",

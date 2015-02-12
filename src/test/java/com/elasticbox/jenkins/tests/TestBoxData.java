@@ -19,7 +19,7 @@ import net.sf.json.JSONObject;
  *
  * @author Phong Nguyen Le
  */
-class TestBoxData {
+public class TestBoxData {
     public final String jsonFileName;
     public final String profileId;
     public final String boxId;

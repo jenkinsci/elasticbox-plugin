@@ -17,7 +17,7 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SingleUseSlaveBuildOption;
 import com.elasticbox.jenkins.SlaveConfiguration;
-import static com.elasticbox.jenkins.tests.SlaveTestBase.LOGGER;
+import static com.elasticbox.jenkins.tests.SlaveBuildTestBase.LOGGER;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
@@ -37,7 +37,7 @@ import org.junit.Test;
  *
  * @author Phong Nguyen Le
  */
-public class BuildWithProjectSingleUseSlaveTest extends SlaveTestBase {
+public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
     
     @Test
     public void testBuildWithProjectWithSingleUseSlaveOption() throws Exception {

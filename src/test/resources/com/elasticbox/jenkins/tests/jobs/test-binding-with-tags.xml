@@ -28,7 +28,7 @@
       <workspace>tphongio</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
-      <profile>e14460b4-c288-46f4-8a45-bea58e492428</profile>
+      <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
       <environment>jenkins-plugin-test-binding</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connection&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>

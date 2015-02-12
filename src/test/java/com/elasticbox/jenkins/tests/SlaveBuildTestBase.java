@@ -54,8 +54,8 @@ import org.jvnet.hudson.test.JenkinsRule;
  *
  * @author Phong Nguyen Le
  */
-public class SlaveTestBase {
-    protected static final Logger LOGGER = Logger.getLogger(SlaveTestBase.class.getName());
+public class SlaveBuildTestBase {
+    protected static final Logger LOGGER = Logger.getLogger(SlaveBuildTestBase.class.getName());
     
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();

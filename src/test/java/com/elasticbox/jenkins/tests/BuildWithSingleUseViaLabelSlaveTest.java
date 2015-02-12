@@ -35,7 +35,7 @@ import org.junit.Test;
  *
  * @author Phong Nguyen Le
  */
-public class BuildWithSingleUseViaLabelSlaveTest extends SlaveTestBase {
+public class BuildWithSingleUseViaLabelSlaveTest extends SlaveBuildTestBase {
     
     @Test
     public void testBuildWithSingleUseSlaveViaLabel() throws Exception {

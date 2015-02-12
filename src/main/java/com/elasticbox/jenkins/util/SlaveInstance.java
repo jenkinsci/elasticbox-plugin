@@ -15,7 +15,6 @@ package com.elasticbox.jenkins.util;
 import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.AbstractSlaveConfiguration;
-import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import hudson.model.Node;
 import java.io.IOException;
@@ -56,6 +55,11 @@ public class SlaveInstance {
         variables.add(variable);
         return variables;
     }
+    
+    public static String createJnlpSlaveOptions(ElasticBoxSlave slave) {
+        return MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp -secret {2}", 
+                Jenkins.getInstance().getRootUrl(), slave.getNodeName(), slave.getComputer().getJnlpMac());
+    }
 
     public static JSONArray createJenkinsVariables(Client client, ElasticBoxSlave slave) throws IOException {
         Map<String, JSONObject> requiredVariables = Collections.EMPTY_MAP;
@@ -85,11 +89,10 @@ public class SlaveInstance {
         }
         variables.add(variable);
 
-        String options = MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp -secret {2}", jenkinsUrl, slave.getNodeName(), slave.getComputer().getJnlpMac());
         variable = new JSONObject();
         variable.put("name", SlaveInstance.JNLP_SLAVE_OPTIONS_VARIABLE);
         variable.put("type", "Text");
-        variable.put("value", options);
+        variable.put("value", createJnlpSlaveOptions(slave));
         if (scope != null) {
             variable.put("scope", scope);
         }        

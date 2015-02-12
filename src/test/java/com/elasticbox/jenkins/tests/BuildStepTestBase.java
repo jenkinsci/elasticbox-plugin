@@ -34,9 +34,9 @@ public class BuildStepTestBase extends TestBase {
     private String schemaVersion;
     private final List<TestBoxData> testBoxDataList = Arrays.asList(new TestBoxData[] {
         new TestBoxData("boxes/test-linux-box/test-linux-box.json", "com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile"),
-        new TestBoxData("boxes/test-binding-box.json", "e14460b4-c288-46f4-8a45-bea58e492428"),
+        new TestBoxData("boxes/test-binding-box.json", "com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile"),
         new TestBoxData("boxes/test-nested-box.json", "com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile"),
-        new TestBoxData("boxes/test-deeply-nested-box.json", "74cd448d-1e1b-4afb-8d92-c11eab38c99a")
+        new TestBoxData("boxes/test-deeply-nested-box.json", "com.elasticbox.jenkins.tests.boxes.test-deeply-nested-box.test-profile")
     });
     protected Map<String, TestBoxData> testBoxDataLookup;
     protected String newTestBindingBoxInstanceId = TestUtils.TEST_BINDING_BOX_INSTANCE_ID;
