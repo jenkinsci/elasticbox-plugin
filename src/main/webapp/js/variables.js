@@ -513,7 +513,7 @@ var ElasticBoxVariables = (function () {
             };
         },
         
-        createVariableHoder = function (variableHolderSelect, variableHolderInfo, buildStepElement, varTBody, varTextBox) {
+        createVariableHolder = function (variableHolderSelect, variableHolderInfo, buildStepElement, varTBody, varTextBox) {
             var descriptorElement = ElasticBoxUtils.getDescriptorElement(variableHolderSelect);
             
             if (_.isUndefined(varTBody)) {
@@ -531,8 +531,8 @@ var ElasticBoxVariables = (function () {
                 select: variableHolderSelect,
                 cloudSelect: _.first(Dom.getElementsByClassName('eb-cloud', 'select', buildStepElement)),
                 workspaceSelect: _.first(Dom.getElementsByClassName('eb-workspace', 'select', buildStepElement)),
-                boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', buildStepElement)),
-                profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', buildStepElement)),
+                boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', descriptorElement)),
+                profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', descriptorElement)),
                 getPriorDeployBoxSteps: function () {
                     var cloudName = this.cloudSelect ? this.cloudSelect.value : undefined;
                     return ElasticBoxUtils.getPriorDeployBoxSteps(buildStepElement, cloudName);
@@ -550,7 +550,7 @@ var ElasticBoxVariables = (function () {
             boxVersionSelects = Dom.getElementsByClassName('eb-boxVersion', 'select', buildStepElement);
             if (boxVersionSelects.length > 0) {
                 _.each(boxVersionSelects, function (boxVersionSelect) {
-                    _variableHolders.push(createVariableHoder(boxVersionSelect, getVariableHolderInfo('boxVersion'), buildStepElement));
+                    _variableHolders.push(createVariableHolder(boxVersionSelect, getVariableHolderInfo('boxVersion'), buildStepElement));
                 });
             } else {    
                 // TODO: remove this code after we remove obsolete build step Reconfigure Box and Reinstall Box
@@ -558,7 +558,7 @@ var ElasticBoxVariables = (function () {
                 select = _.first(Dom.getElementsByClassName(variableHolderInfo.class, 'select', buildStepElement));
                 varTBodies = Dom.getElementsByClassName('eb-variable-inputs', 'tbody', buildStepElement);
                 varTextBoxes = Dom.getElementsByClassName('eb-variables', 'input', buildStepElement),
-                _variableHolders.push(createVariableHoder(select, variableHolderInfo, buildStepElement, varTBody[0], varTextBoxes[0]));
+                _variableHolders.push(createVariableHolder(select, variableHolderInfo, buildStepElement, varTBody[0], varTextBoxes[0]));
                 if (descriptorId === ElasticBoxUtils.ReconfigureBoxDescriptorId) {
                     _variableHolders.push({
                         buildStepId: buildStepId,
