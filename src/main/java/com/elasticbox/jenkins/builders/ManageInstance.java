@@ -12,10 +12,14 @@
 
 package com.elasticbox.jenkins.builders;
 
+import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.tasks.Builder;
 import java.util.List;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
@@ -41,5 +45,17 @@ public class ManageInstance extends ManageObject {
             return getOperationDescriptors(IOperation.InstanceOperation.class);
         }
 
+        @Override
+        public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            ManageInstance manageInstance = (ManageInstance) super.newInstance(req, formData);
+            for (Operation operation : manageInstance.getOperations()) {
+                if (operation instanceof UpdateOperation && 
+                        VariableResolver.parseVariables(((UpdateOperation) operation).getVariables()).isEmpty()) {                    
+                    throw new FormException("Update operation must update at least one variable.", "operations");
+                }
+            }
+            return manageInstance;
+        }
+        
     }
 }

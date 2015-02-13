@@ -21,6 +21,7 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.tasks.Builder;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -28,6 +29,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
@@ -76,6 +78,15 @@ public class UpdateBox extends AbstractBuilder {
         public String getDisplayName() {
             return "ElasticBox - Update Box";
         }
+
+        @Override
+        public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            UpdateBox updateBox = (UpdateBox) super.newInstance(req, formData);
+            if (VariableResolver.parseVariables(updateBox.getVariables()).isEmpty()) {
+                throw new FormException("Update Box build step must update at least one variable", "variables");
+            }
+            return updateBox;
+        }                
 
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
             return DescriptorHelper.getBoxes(cloud, workspace);

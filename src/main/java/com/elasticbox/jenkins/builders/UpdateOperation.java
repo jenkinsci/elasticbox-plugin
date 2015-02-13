@@ -28,7 +28,6 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
@@ -82,25 +81,6 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
         @Override
         public String getDisplayName() {
             return "Update";
-        }
-
-        @Override
-        public Operation newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            String variablesStr = formData.getString("variables");
-            JSONArray variables = VariableResolver.parseVariables(variablesStr);
-            boolean update = false;
-            for (Object variable : variables) {
-                JSONObject variableJson = (JSONObject) variable;
-                if (StringUtils.isNotBlank(variableJson.getString("value"))) {
-                    update = true;
-                    break;
-                }
-            }
-            if (!update) {
-                throw new FormException("No variable is changed for Update operation.", "variables");
-            }
-            
-            return super.newInstance(req, formData);
         }
 
     }
