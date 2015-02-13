@@ -216,23 +216,24 @@ var ElasticBoxVariables = (function () {
         },
         
         createVariableRow = function (variable, savedVariable, variableHolder) {
-            var saveVariable = function (name, value, scope, type, varTextBox) {
+            var saveVariable = function (name, value, scope, type, varTextBox, variableInput) {
                     var savedVariables = Dom.getAttribute(varTextBox, 'value').evalJSON(),
+                        modified = type === 'Binding' ? value !== '' && value !== '()' : 
+                            value !== Dom.getAttribute(variableInput, 'data-original-value'),
                         modifiedVariable;
 
-                    if (type !== 'Binding' && value === Dom.getAttribute(this, 'data-original-value')) {
-                         savedVariables = _.filter( savedVariables, function (savedVar) {
-                            return savedVar.name === name && savedVar.scope === scope;
-                        });
-                    } else {
+                    if (modified) {
                         modifiedVariable = _.findWhere( savedVariables, { name: name, scope: scope });
                         if (modifiedVariable) {
                             modifiedVariable.value = value;
                         } else {
-                             savedVariables.push({ name: name, value: value, scope: scope, type: type });
+                            savedVariables.push({ name: name, value: value, scope: scope, type: type });
                         }
+                    } else {
+                        savedVariables = _.reject(savedVariables, function (savedVar) {
+                            return savedVar.name === name && savedVar.scope === scope;
+                        });                            
                     }
-
                     Dom.setAttribute(varTextBox, 'value',  savedVariables.toJSON());                    
                 },
 
@@ -242,7 +243,7 @@ var ElasticBoxVariables = (function () {
                         descriptorElement = ElasticBoxUtils.getDescriptorElement(bindingSelect),
                         descriptorId = Dom.getAttribute(descriptorElement, 'descriptorid'),
                         tagsOption = Dom.getElementBy(function (option) {
-                            return Dom.getAttribute(option, 'value') === 'tags';
+                            return Dom.getAttribute(option, 'value') === '()';
                         }, 'option', bindingSelect),
 
                         selectedOption, noneOption, noneOptionText;
@@ -277,7 +278,7 @@ var ElasticBoxVariables = (function () {
                         bindingSelect.removeChild(child);
                     } 
 
-                    bindingSelect.innerHTML = '<option value="tags">Instances with tags</option>' +
+                    bindingSelect.innerHTML = '<option value="()">Instances with tags</option>' +
                             _.map(deployBoxSteps, function (step) {
                                 return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
                             }).join(' ') + bindingSelect.innerHTML;
@@ -300,7 +301,8 @@ var ElasticBoxVariables = (function () {
                     }, 'option', bindingSelect);
                     if (!selectedOption) {
                         selectedOption = _.first(Dom.getChildren(bindingSelect));
-                        saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type, variableHolder.varTextBox);
+                        saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type, 
+                            variableHolder.varTextBox, bindingSelect);
                     }
                     bindingSelect.selectedIndex = selectedOption ? Dom.getChildren(bindingSelect).indexOf(selectedOption) : 0;                    
                 },
@@ -309,7 +311,7 @@ var ElasticBoxVariables = (function () {
                     var tagsInput = Dom.getNextSibling(bindingSelect);
                     
                     // Toggle tags input text box
-                    if (bindingSelect.value === 'tags') {
+                    if (bindingSelect.value === '()') {
                         Dom.setAttribute(tagsInput, 'style', '');
                         tagsInput.focus();
                     } else {
@@ -329,7 +331,7 @@ var ElasticBoxVariables = (function () {
                 isBindingWithTags = savedValue.charAt(0) === '(' && savedValue.charAt(savedValue.length - 1) === ')';
                     
                 row.innerHTML = ElasticBoxUtils.format(BINDING_VARIABLE_TEMPLATE, 
-                    variable.name, '_' + variable.name, isBindingWithTags ? 'tags' : savedValue, variable.value, variable.scope,
+                    variable.name, '_' + variable.name, isBindingWithTags ? '()' : savedValue, variable.value, variable.scope,
                     '_' + variable.name + '_tags', isBindingWithTags ? savedValue.substr(1, savedValue.length - 2) : '');
             } else {
                 row.innerHTML = ElasticBoxUtils.format(TEXT_VARIABLE_TEMPLATE, variable.name, '_' + variable.name, 
@@ -341,7 +343,8 @@ var ElasticBoxVariables = (function () {
                     instancesUrl, savedValue;
 
                 Event.addListener(variableInput, 'change', function () {
-                    saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, variableHolder.varTextBox);
+                    saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type, 
+                        variableHolder.varTextBox, this);
                     toggleVariableDecorators(Dom.getAncestorByTagName(variableInput, 'tr'), variable);
                     if (variable.type === 'Binding') {
                         toggleBindingTagsInput(this);
@@ -355,9 +358,10 @@ var ElasticBoxVariables = (function () {
                     });
                     
                     Event.addListener(Dom.getNextSibling(variableInput), 'change', function () {
-                        if (variableInput.value === 'tags') {
+                        if (variableInput.value === '()') {
                             saveVariable(variable.name, ElasticBoxUtils.format('({0})', this.value), 
-                                Dom.getAttribute(variableInput, 'data-scope'), variable.type, variableHolder.varTextBox);
+                                Dom.getAttribute(variableInput, 'data-scope'), variable.type, 
+                                variableHolder.varTextBox, this);
                         }
                     });
 
@@ -509,7 +513,7 @@ var ElasticBoxVariables = (function () {
             };
         },
         
-        createVariableHoder = function (variableHolderSelect, variableHolderInfo, buildStepElement, varTBody, varTextBox) {
+        createVariableHolder = function (variableHolderSelect, variableHolderInfo, buildStepElement, varTBody, varTextBox) {
             var descriptorElement = ElasticBoxUtils.getDescriptorElement(variableHolderSelect);
             
             if (_.isUndefined(varTBody)) {
@@ -527,8 +531,8 @@ var ElasticBoxVariables = (function () {
                 select: variableHolderSelect,
                 cloudSelect: _.first(Dom.getElementsByClassName('eb-cloud', 'select', buildStepElement)),
                 workspaceSelect: _.first(Dom.getElementsByClassName('eb-workspace', 'select', buildStepElement)),
-                boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', buildStepElement)),
-                profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', buildStepElement)),
+                boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', descriptorElement)),
+                profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', descriptorElement)),
                 getPriorDeployBoxSteps: function () {
                     var cloudName = this.cloudSelect ? this.cloudSelect.value : undefined;
                     return ElasticBoxUtils.getPriorDeployBoxSteps(buildStepElement, cloudName);
@@ -546,7 +550,7 @@ var ElasticBoxVariables = (function () {
             boxVersionSelects = Dom.getElementsByClassName('eb-boxVersion', 'select', buildStepElement);
             if (boxVersionSelects.length > 0) {
                 _.each(boxVersionSelects, function (boxVersionSelect) {
-                    _variableHolders.push(createVariableHoder(boxVersionSelect, getVariableHolderInfo('boxVersion'), buildStepElement));
+                    _variableHolders.push(createVariableHolder(boxVersionSelect, getVariableHolderInfo('boxVersion'), buildStepElement));
                 });
             } else {    
                 // TODO: remove this code after we remove obsolete build step Reconfigure Box and Reinstall Box
@@ -554,7 +558,7 @@ var ElasticBoxVariables = (function () {
                 select = _.first(Dom.getElementsByClassName(variableHolderInfo.class, 'select', buildStepElement));
                 varTBodies = Dom.getElementsByClassName('eb-variable-inputs', 'tbody', buildStepElement);
                 varTextBoxes = Dom.getElementsByClassName('eb-variables', 'input', buildStepElement),
-                _variableHolders.push(createVariableHoder(select, variableHolderInfo, buildStepElement, varTBody[0], varTextBoxes[0]));
+                _variableHolders.push(createVariableHolder(select, variableHolderInfo, buildStepElement, varTBody[0], varTextBoxes[0]));
                 if (descriptorId === ElasticBoxUtils.ReconfigureBoxDescriptorId) {
                     _variableHolders.push({
                         buildStepId: buildStepId,
