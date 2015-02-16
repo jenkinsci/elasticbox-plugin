@@ -55,7 +55,7 @@ public class SingleUseSlaveBuildOption extends BuildWrapper {
 
         @Override
         public String getDisplayName() {
-            return "ElasticBox Single-Use Slave";
+            return "Delete ElasticBox slave after single use";
         }
     }
 }

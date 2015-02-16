@@ -119,7 +119,7 @@ public class InstanceCreator extends BuildWrapper {
 
         @Override
         public String getDisplayName() {
-            return "ElasticBox On-Demand Slave Creation";
+            return "Launch dedicated slave via ElasticBox";
         }
 
         @Override
