@@ -7,7 +7,7 @@
     </parent>
 
     <artifactId>elasticbox</artifactId>
-    <version>0.9.8.3-SNAPSHOT</version>
+    <version>0.9.9</version>
     <packaging>hpi</packaging>
 
     <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
@@ -42,7 +42,7 @@
         <connection>scm:git:ssh://github.com/jenkinsci/elasticbox-plugin.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/jenkinsci/elasticbox-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/elasticbox-plugin</url>
-        <tag>HEAD</tag>
+        <tag>elasticbox-0.9.9</tag>
     </scm>
     <dependencies>
         <dependency>
