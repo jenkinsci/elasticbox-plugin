@@ -29,8 +29,11 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Version}" field="boxVersion">
         <f:select clazz="required eb-boxVersion" />
     </f:entry>
-    <f:entry title="${%Deployment Profile}" field="profile">
+    <f:entry title="${%Deployment Policy}" field="profile">
         <f:select clazz="required eb-profile" />
+    </f:entry>
+    <f:entry title="${%Deployment Policy Tags}" field="policyTags">
+        <f:textbox clazz="eb-policy-tags" />
     </f:entry>
     <f:entry title="${%Min. No. of Instances}" field="minInstances">
         <f:textbox clazz="number" default="0"/>

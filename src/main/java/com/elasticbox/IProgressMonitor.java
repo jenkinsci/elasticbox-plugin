@@ -24,7 +24,7 @@ public interface IProgressMonitor {
     
     boolean isDone() throws IncompleteException, IOException;
     
-    boolean isDone(JSONObject instance) throws IncompleteException, IOException;
+    boolean isDone(JSONObject resource) throws IncompleteException, IOException;
     
     long getCreationTime();
     
@@ -34,6 +34,7 @@ public interface IProgressMonitor {
      * @param timeout in minutes
      * @throws com.elasticbox.IProgressMonitor.IncompleteException if the task finished but is not complete
      * @throws IOException if unexpected error occurred
+     * @throws InterruptedException if the waiting is canceled
      */
     void waitForDone(int timeout) throws IncompleteException, IOException, InterruptedException;
     

@@ -60,7 +60,7 @@ public class SlaveProvisionTest extends BuildStepTestBase {
     private SlaveConfiguration createSlaveConfiguration(String slaveBoxName, JSONArray variables) throws IOException {
         TestBoxData testBoxData = testBoxDataLookup.get(slaveBoxName);
         return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE, 
-                testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION, 
+                testBoxData.getJson().getString("id"), null, DescriptorHelper.LATEST_BOX_VERSION, 
                 testBoxData.getNewProfileId(), 1, 2, slaveBoxName, variables.toString(), UUID.randomUUID().toString(), 
                 "", null, Node.Mode.NORMAL, 0, null, 1, 60);        
     }

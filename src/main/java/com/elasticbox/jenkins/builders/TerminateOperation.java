@@ -130,7 +130,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         return instanceIDs;
     }
     
-    static void terminate(JSONObject instance, Client client, TaskLogger logger) 
+    public static void terminate(JSONObject instance, Client client, TaskLogger logger) 
             throws IOException, InterruptedException {
         String instanceId = instance.getString("id");
         IProgressMonitor monitor = client.terminate(instanceId);

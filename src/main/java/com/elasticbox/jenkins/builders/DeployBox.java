@@ -507,7 +507,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
             JSONObject expiration = formData.getJSONObject("expiration");
             if (expiration.containsKey("scheduleType")) {
-                if ("date-time".equals(expiration.get("scheduleType"))) {
+                if ("date-time".equals(expiration.getString("scheduleType"))) {
                     expiration.remove("hours");
                 } else {
                     expiration.remove("date");

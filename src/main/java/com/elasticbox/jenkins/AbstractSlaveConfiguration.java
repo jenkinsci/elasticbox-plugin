@@ -21,10 +21,13 @@ import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -39,6 +42,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final String workspace;
     private final String box;
     private final String profile;
+    private final String policyTags;    
     private final String variables;
     private String boxVersion;
     private final int minInstances;
@@ -55,8 +59,9 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     
     private transient Set<LabelAtom> labelSet;
     private transient String resolvedBoxVersion;
+    private transient String resolvedDeploymentPolicy;
 
-    public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, int minInstances,
+    public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, String policyTags, int minInstances,
             int maxInstances, String environment, String variables, String labels, String description, String remoteFS, 
             Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout) {
         super();
@@ -65,6 +70,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.box = box;
         this.boxVersion = boxVersion;
         this.profile = profile;
+        this.policyTags = policyTags;
         this.minInstances = minInstances;
         this.maxInstances = maxInstances;
         this.environment = environment;
@@ -113,6 +119,10 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     public String getProfile() {
         return profile;
     }
+
+    public String getPolicyTags() {
+        return policyTags;
+    }        
 
     public String getVariables() {
         return variables;
@@ -186,15 +196,37 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         return labelSet;
     }
     
+    public String getResolvedBoxVersion() {
+        return resolvedBoxVersion;
+    }        
+
+    public String getResolvedDeploymentPolicy() {
+        return resolvedDeploymentPolicy;
+    }
+    
     String resolveBoxVersion(Client client) throws IOException {
         resolvedBoxVersion = DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion) ? 
                 client.getLatestBoxVersion(workspace, box) : boxVersion;
         return resolvedBoxVersion;
     }
-
-    public String getResolvedBoxVersion() {
-        return resolvedBoxVersion;
-    }        
+    
+    String resolveDeploymentPolicy(Client client) throws IOException {
+        if (DescriptorHelper.TAGS.equals(profile)) {
+            if (StringUtils.isNotBlank(policyTags)) {
+                Set<String> tags = new HashSet<String>();
+                for (String tag : policyTags.split(",")) {
+                    tags.add(tag.trim());
+                }
+                List<JSONObject> policies = client.getPolicies(workspace, tags);
+                resolvedDeploymentPolicy = policies.isEmpty() ? null : policies.get(0).getString("id");                
+            } else {
+                resolvedDeploymentPolicy = null;
+            }
+        } else {
+            resolvedDeploymentPolicy = profile;
+        }
+        return resolvedDeploymentPolicy;
+    }
 
     public static abstract class AbstractSlaveConfigurationDescriptor extends Descriptor<AbstractSlaveConfiguration> {
 

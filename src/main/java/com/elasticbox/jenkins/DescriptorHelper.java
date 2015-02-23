@@ -56,6 +56,7 @@ public class DescriptorHelper {
     
     public static final String ANY_BOX = "AnyBox";
     public static final String LATEST_BOX_VERSION = "LATEST";
+    public static final String TAGS = "tags";
     
     public static class JSONArrayResponse implements HttpResponse {
         private final JSONArray jsonArray;
@@ -182,19 +183,17 @@ public class DescriptorHelper {
 
     public static ListBoxModel getProfiles(Client client, String workspace, String box) {
         ListBoxModel profiles = new ListBoxModel();
-        if (StringUtils.isBlank(workspace) || StringUtils.isBlank(box) || client == null) {
-            return profiles;
+        if (StringUtils.isNotBlank(workspace) && StringUtils.isNotBlank(box) && client != null) {
+            try {
+                for (Object profile : client.getProfiles(workspace, box)) {
+                    JSONObject json = (JSONObject) profile;
+                    profiles.add(json.getString("name"), json.getString("id"));
+                }                    
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, "Error fetching profiles", ex);
+            }
         }
-
-        try {
-            for (Object profile : client.getProfiles(workspace, box)) {
-                JSONObject json = (JSONObject) profile;
-                profiles.add(json.getString("name"), json.getString("id"));
-            }                    
-        } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, "Error fetching profiles", ex);
-        }
-
+        profiles.add("matches specific service tags", TAGS);
         return sort(profiles);        
     }
     

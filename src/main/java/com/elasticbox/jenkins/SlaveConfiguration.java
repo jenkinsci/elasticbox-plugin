@@ -37,10 +37,11 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
     private static final Logger LOGGER = Logger.getLogger(SlaveConfiguration.class.getName());
 
     @DataBoundConstructor
-    public SlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, 
-            int minInstances, int maxInstances, String environment, String variables, String labels, String description, 
-            String remoteFS, Node.Mode mode, int retentionTime, String maxBuildsText, int executors, int launchTimeout) {
-        super(id, workspace, box, boxVersion, profile, minInstances, maxInstances, environment, variables, labels, 
+    public SlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile,
+            String policyTags, int minInstances, int maxInstances, String environment, String variables, String labels,
+            String description, String remoteFS, Node.Mode mode, int retentionTime, String maxBuildsText, int executors,
+            int launchTimeout) {
+        super(id, workspace, box, boxVersion, profile, policyTags, minInstances, maxInstances, environment, variables, labels, 
                 description, remoteFS, mode, retentionTime, 
                 StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors, launchTimeout);
     }    

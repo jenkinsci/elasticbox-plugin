@@ -99,7 +99,14 @@ public class Client {
         String UNAVAILABLE = "unavailable";
     }
     private static final Set<String> PROVIDER_FINISH_STATES = new HashSet<String>(Arrays.asList(ProviderState.READY, ProviderState.UNAVAILABLE));
-    
+
+    public static interface TaskState {
+        String SUBMITTED = "submitted";
+        String PROCESSING = "processing";
+        String DONE = "done";
+        String UNSUCCESSFUL = "unsuccessful";
+    }
+    private static final Set<String> TASK_FINISH_STATES = new HashSet<String>(Arrays.asList(TaskState.DONE, TaskState.UNSUCCESSFUL));
     
     private static HttpClient httpClient = null;
 
@@ -175,8 +182,13 @@ public class Client {
         return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces", endpointUrl), true);
     }
     
+    private JSONArray getAllBoxes(String workspaceId) throws IOException {
+        return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl, 
+                URLEncoder.encode(workspaceId, UTF_8)), true);
+    }
+    
     public JSONArray getBoxes(String workspaceId) throws IOException {
-        JSONArray boxes = (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl, URLEncoder.encode(workspaceId, UTF_8)), true);
+        JSONArray boxes = getAllBoxes(workspaceId);
         // remove the profile boxes
         for (Iterator iter = boxes.iterator(); iter.hasNext();) {
             if (isProfile((JSONObject) iter.next())) {
@@ -195,6 +207,14 @@ public class Client {
         return (JSONObject) doGet(MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId), false);
     }
 
+    public JSONObject getProvider(String providerId) throws IOException {
+        return (JSONObject) doGet(getProviderUrl(providerId), false);
+    }
+    
+    public JSONArray getProviders(String workspaceId) throws IOException {
+        return (JSONArray) doGet(MessageFormat.format("/services/workspaces/{0}/providers", workspaceId), true);
+    }
+    
     private JSONObject uploadFile(URI fileUri, ContentType contentType) throws IOException {
         MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create().setLaxMode();
         if (fileUri.getScheme().equalsIgnoreCase("file")) {
@@ -267,7 +287,7 @@ public class Client {
     }
     
     private boolean isProfile(JSONObject boxJson) {
-        return boxJson.getString("schema").endsWith("/box/profile");
+        return boxJson.getString("schema").endsWith("/boxes/profile");
     }
     
     public JSONArray getProfiles(String workspaceId, String boxId) throws IOException {
@@ -277,7 +297,7 @@ public class Client {
         }
         JSONArray requiredServices = box.getJSONArray("service_tags");
         JSONArray profiles = new JSONArray();
-        for (Object b : getBoxes(workspaceId)) {
+        for (Object b : getAllBoxes(workspaceId)) {
             JSONObject boxJson = (JSONObject) b;
             if (isProfile(boxJson)) {
                 Set<String> providedServices = new HashSet(boxJson.getJSONArray("service_tags"));
@@ -290,6 +310,32 @@ public class Client {
         
         return profiles;
     }
+    
+    public JSONArray getProfiles(String workspaceId) throws IOException {
+        JSONArray profiles = new JSONArray();
+        for (Object b : getAllBoxes(workspaceId)) {
+            JSONObject boxJson = (JSONObject) b;
+            if (isProfile(boxJson)) {
+                profiles.add(boxJson);
+            }
+        }
+        
+        return profiles;
+    }
+    
+    public List<JSONObject> getPolicies(String workspaceId, Collection<String> tags) throws IOException {
+        List<JSONObject> profiles = new ArrayList<JSONObject>();
+        if (!tags.isEmpty()) {
+            for (Object profile : getProfiles(workspaceId)) {
+                JSONObject profileJson = (JSONObject) profile;
+                if (profileJson.getJSONArray("service_tags").containsAll(tags)) {
+                    profiles.add(profileJson);
+                }
+            }   
+        }
+        
+        return profiles;
+    }    
     
     public JSONObject getInstance(String instanceId) throws IOException {
         if (StringUtils.isBlank(instanceId)) {
@@ -364,7 +410,7 @@ public class Client {
     
     public String getLatestBoxVersion(String workspace, String boxId) throws IOException {
         JSONObject boxJson = getBox(boxId);
-        boolean canWrite = false;
+        boolean canWrite;
         if (boxJson.getString("owner").equals(workspace)) {
             canWrite = true;
         } else {
@@ -602,18 +648,38 @@ public class Client {
             super(resourceUrl, lastModified);
         }
 
-        public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
-            String updated = instance.getString("updated");
-            String state = instance.getString("state");
+        public boolean isDone(JSONObject provider) throws IncompleteException, IOException {
+            String updated = provider.getString("updated");
+            String state = provider.getString("state");
             if (lastModified.equals(updated) || !PROVIDER_FINISH_STATES.contains(state)) {
                 return false;
             }
-            if (state.equals(InstanceState.UNAVAILABLE)) {
-                throw new IProgressMonitor.IncompleteException(MessageFormat.format("The instance at {0} is unavailable", getResourceUrl()));
+            if (state.equals(ProviderState.UNAVAILABLE)) {
+                throw new IProgressMonitor.IncompleteException(MessageFormat.format("The provider at {0} is unavailable", getResourceUrl()));
             } 
             return true;            
+        }        
+    }
+    
+    protected class TaskProgressMonitor extends ProgressMonitor {
+
+        public TaskProgressMonitor(JSONObject task) {
+            super(task.getString("uri"), task.getString("updated"));
         }
         
+        public boolean isDone(JSONObject task) throws IncompleteException, IOException {
+            String updated = task.getString("updated");
+            String state = task.getString("state");
+            if (lastModified.equals(updated) || !TASK_FINISH_STATES.contains(state)) {
+                return false;
+            }
+            if (state.equals(TaskState.UNSUCCESSFUL)) {
+                throw new IProgressMonitor.IncompleteException(
+                        MessageFormat.format("Failed to perform task {0} with the following parameters: {1}. Details: {2}", 
+                                task.getString("name"), task.getJSONObject("input"), task.getString("log")));
+            } 
+            return true;            
+        }                
     }
     
     public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {
@@ -740,6 +806,30 @@ public class Client {
             instance.getString("updated"));
     }
     
+    public IProgressMonitor createTemplate(String name, JSONObject instance, String datacenter, String folder, String datastore) throws IOException {
+        JSONObject taskInput = new JSONObject();
+        taskInput.put("schema", BASE_ELASTICBOX_SCHEMA + getSchemaVersion(instance.getString("schema")) + "/vsphere/tasks/create-template");
+        taskInput.put("name", name);
+        taskInput.put("instance_id", instance.getString("id"));
+        if (datacenter != null) {
+            taskInput.put("datacenter", datacenter);
+            if (folder != null) {
+                taskInput.put("folder", folder);
+            }
+            if (datastore != null) {
+                taskInput.put("datastore", datastore);
+            }
+        }        
+        JSONObject task = doPost(MessageFormat.format("{0}/template", instance.getString("uri")), taskInput);
+        return new TaskProgressMonitor(task);
+    }
+    
+    public IProgressMonitor syncProvider(String providerId) throws IOException {
+        JSONObject provider = getProvider(providerId);
+        doUpdate(MessageFormat.format("/services/providers/{0}/sync", providerId));
+        return new ProviderProgressMonitor(endpointUrl + provider.getString("uri"), provider.getString("updated"));
+    }
+    
     private String prepareUrl (String url) {
         return url.startsWith("/") ? endpointUrl + url : url;
     }
@@ -767,13 +857,26 @@ public class Client {
 
     public JSONObject doUpdate(String url, JSONObject resource) throws IOException {
         HttpPut put = new HttpPut(prepareUrl(url));
-        put.setEntity(new StringEntity(resource.toString(), ContentType.APPLICATION_JSON));
+        if (resource != null) {
+            put.setEntity(new StringEntity(resource.toString(), ContentType.APPLICATION_JSON));
+        }
         try {
             HttpResponse response = execute(put);
-            return JSONObject.fromObject(getResponseBodyAsString(response));
+            String responseBody = getResponseBodyAsString(response);
+            return JSONObject.fromObject(responseBody);
         } finally {
             put.reset();
         }                        
+    }
+    
+    public int doUpdate(String url) throws IOException {
+        HttpPut put = new HttpPut(prepareUrl(url));
+        try {
+            HttpResponse response = execute(put);
+            return response.getStatusLine().getStatusCode();
+        } finally {
+            put.reset();
+        }                                
     }
     
     public void writeTo(String url, OutputStream output) throws IOException {
@@ -802,11 +905,22 @@ public class Client {
         }        
     }
     
+    public String getPageUrl(JSONObject resource) {
+        return getPageUrl(endpointUrl, resource);
+    }
+    
     public String getInstanceUrl(String instanceId) {
         return getInstanceUrl(endpointUrl, instanceId);
     }
     
+    public String getProviderUrl(String providerId) {
+        return MessageFormat.format("{0}/services/providers/{1}", endpointUrl, providerId);
+    }
     
+    public String getProviderPageUrl(String providerId) {
+        return getPageUrl(endpointUrl, getProviderUrl(providerId));
+    }
+
     public static final String getInstanceUrl(String endpointUrl, String instanceId) {
         return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);        
     }
@@ -826,6 +940,8 @@ public class Client {
                 return MessageFormat.format("{0}/#/instances/{1}/i", endpointUrl, resourceId);
             } else if (resourceUrl.startsWith(MessageFormat.format("{0}/services/boxes/", endpointUrl))) {
                 return MessageFormat.format("{0}/#/boxes/{1}/b", endpointUrl, resourceId);
+            } else if (resourceUrl.startsWith(MessageFormat.format("{0}/services/providers/", endpointUrl))) {
+                return MessageFormat.format("{0}/#/providers/{1}/p", endpointUrl, resourceId);
             }
         }
         return null;
@@ -836,9 +952,12 @@ public class Client {
         if (resourceUri.startsWith("/services/instances/")) {
             return MessageFormat.format("{0}/#/instances/{1}/{2}", endpointUrl, resource.getString("id"),
                     dasherize(resource.getString("name").toLowerCase()));
-        } else if (resourceUri.startsWith("/services/boxes")) {
+        } else if (resourceUri.startsWith("/services/boxes/")) {
             return MessageFormat.format("{0}/#/boxes/{1}/{2}", endpointUrl, resource.getString("id"),
                     dasherize(resource.getString("name").toLowerCase()));            
+        } else if (resourceUri.startsWith("/services/providers/")) {
+            return MessageFormat.format("{0}/#/providers/{1}/{2}", endpointUrl, resource.getString("id"),
+                    dasherize(resource.getString("name").toLowerCase()));                        
         }
         return null;
     }

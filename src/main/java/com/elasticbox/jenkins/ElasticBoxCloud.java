@@ -577,7 +577,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
 
             if (StringUtils.isBlank(slaveConfig.getProfile())) {
-                throw new FormException(MessageFormat.format("No Deployment Profile is selected for a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                throw new FormException(MessageFormat.format("No Deployment Policy is selected for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+            } else if (DescriptorHelper.TAGS.equals(slaveConfig.getProfile())) {
+                throw new FormException(MessageFormat.format("Tags must be specified to select a Deployment Policy for for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             String environment = slaveConfig.getEnvironment();

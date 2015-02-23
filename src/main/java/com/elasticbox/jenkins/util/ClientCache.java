@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
 import jenkins.model.Jenkins;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
@@ -64,6 +65,7 @@ public class ClientCache {
         return client;        
     }
     
+    @CheckForNull
     public static final Client getClient(String cloudName) {
         try {
             return findOrCreateClient(cloudName);
