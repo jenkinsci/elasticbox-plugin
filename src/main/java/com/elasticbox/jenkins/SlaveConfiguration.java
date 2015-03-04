@@ -108,16 +108,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 @QueryParameter String workspace,
                 @QueryParameter String box) {
             Client client = createClient(endpointUrl, username, password, token);
-            String boxVersion = StringUtils.isBlank(value) ? box : value;
-            if (DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion)) {
-                try {
-                    boxVersion = client.getLatestBoxVersion(workspace, box);
-                } catch (IOException ex) {
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-                    return FormValidation.error(MessageFormat.format("Error retrieving latest version of box {0}", box));
-                }
-            }
-            return DescriptorHelper.checkSlaveBox(client, boxVersion);
+            return checkBoxVersion(value, box, workspace, client);
         }
 
         public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl, 

@@ -20,7 +20,10 @@ import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
@@ -30,6 +33,8 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Phong Nguyen Le
  */
 public abstract class AbstractSlaveConfiguration implements Describable<AbstractSlaveConfiguration> {
+    private static final Logger LOGGER = Logger.getLogger(AbstractSlaveConfiguration.class.getName());
+    
     private String id;
     private final String workspace;
     private final String box;
@@ -206,6 +211,21 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
             } 
             
             return FormValidation.ok();
+        }
+        
+        protected FormValidation checkBoxVersion(String boxVersion, String box, String workspace, Client client) {
+            if (StringUtils.isBlank(boxVersion)) {
+                boxVersion = box;
+            }
+            if (DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion)) {
+                try {
+                    boxVersion = client.getLatestBoxVersion(workspace, box);
+                } catch (IOException ex) {
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                    return FormValidation.error(MessageFormat.format("Error retrieving latest version of box {0}", box));
+                }
+            }
+            return DescriptorHelper.checkSlaveBox(client, boxVersion);            
         }
     }
 }
