@@ -36,6 +36,8 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -75,14 +77,14 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 PullRequestBuildTrigger.class)).getBuildManager();        
     }
     
-    private final ConcurrentHashMap<AbstractProject, ConcurrentHashMap<String, PullRequestData>> projectPullRequestDataLookup = 
+    final ConcurrentHashMap<AbstractProject, ConcurrentHashMap<String, PullRequestData>> projectPullRequestDataLookup = 
             new ConcurrentHashMap<AbstractProject, ConcurrentHashMap<String, PullRequestData>>();
     
     @Override
     public PullRequestBuildHandler createBuildHandler(AbstractProject<?, ?> project, boolean newTrigger) throws IOException {
         return new PullRequestBuildHandler(project, newTrigger);
     }
-        
+    
     public PullRequestData addPullRequestData(GHPullRequest pullRequest, AbstractProject project) throws IOException {
         ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project);
         if (pullRequestDataMap == null) {
@@ -117,6 +119,14 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         return pullRequestData;
     }
     
+    public GitHub createGitHub(GitHubRepositoryName gitHubRepoName) {
+        GitHub gitHub = connect(gitHubRepoName);
+        if (gitHub == null) {
+            LOGGER.warning(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
+        }
+        return gitHub;        
+    }
+        
     private String getHost(Credential credential) {
         if (StringUtils.isNotBlank(credential.apiUrl)) {
             try {
@@ -171,18 +181,9 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         return null;
     }
     
-    private GitHub createGitHub(String payload) {
-        JSONObject payloadJson = JSONObject.fromObject(payload);
-        String repoUrl = payloadJson.getJSONObject("repository").getString("html_url");        
+    private GitHub createGitHub(JSONObject payload) {
+        String repoUrl = payload.getJSONObject("repository").getString("html_url");        
         return createGitHub(GitHubRepositoryName.create(repoUrl));
-    }
-    
-    GitHub createGitHub(GitHubRepositoryName gitHubRepoName) {
-        GitHub gitHub = connect(gitHubRepoName);
-        if (gitHub == null) {
-            LOGGER.warning(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
-        }
-        return gitHub;        
     }
     
     void handleEvent(String event, String payload) throws IOException {
@@ -196,7 +197,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
     }
 
     private void handlePullRequestEvent(String payload) throws IOException {
-        GitHub gitHub = createGitHub(payload);
+        GitHub gitHub = createGitHub(JSONObject.fromObject(payload));
         if (gitHub == null) {
             return;
         }
@@ -220,7 +221,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
     }
 
     private void handleIssueCommentEvent(String payload) throws IOException {
-        GitHub gitHub = createGitHub(payload);
+        GitHub gitHub = createGitHub(JSONObject.fromObject(payload));
         if (gitHub == null) {
             return;
         }

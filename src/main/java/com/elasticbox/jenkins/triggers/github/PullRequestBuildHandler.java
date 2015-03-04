@@ -15,12 +15,8 @@ package com.elasticbox.jenkins.triggers.github;
 import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import com.coravy.hudson.plugins.github.GithubProjectProperty;
-import com.elasticbox.Client;
-import com.elasticbox.ClientException;
-import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxExecutor;
 import com.elasticbox.jenkins.triggers.IBuildHandler;
-import com.elasticbox.jenkins.util.ClientCache;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Executor;
@@ -53,7 +49,6 @@ import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHEventPayload;
@@ -208,7 +203,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
                     pullRequestUrl, project.getFullName(), gitHubRepositoryUrl));
             return;
         }
-        
+        LOGGER.info(MessageFormat.format("Handling event ''{0}'' of pull request {1} for project {2}", prEventPayload.getAction(), pullRequestUrl, project.getFullName()));
         PullRequestManager pullRequestManager = PullRequestManager.getInstance();
         PullRequestData pullRequestData = pullRequestManager.getPullRequestData(pullRequestUrl, project);
         if (pullRequestData != null && PullRequestManager.PullRequestAction.CLOSED.equals(prEventPayload.getAction())) {
@@ -379,56 +374,20 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
     private void deleteInstances(GHPullRequest pullRequest) throws IOException {
         PullRequestManager pullRequestManager = PullRequestManager.getInstance();
-        Collection<PullRequestInstance> prInstances = new ArrayList<PullRequestInstance>();
+        List<PullRequestData> pullRequestDataList = new ArrayList<PullRequestData>();
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
             for (AbstractProject<?,?> aProject : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
                 PullRequestData data = pullRequestManager.removePullRequestData(pullRequest.getUrl().toString(), aProject);
                 if (data != null) {
-                    prInstances.addAll(data.getInstances());
+                    pullRequestDataList.add(data);
                 }
             }
         } finally {
             SecurityContextHolder.getContext().setAuthentication(old);
         }                            
-        
-        List<String> terminatingInstanceURLs = new ArrayList<String>();
-        for (PullRequestInstance instance : prInstances) {
-            Client client = ClientCache.getClient(instance.cloud);
-            if (client != null) {
-                String instanceId = Client.getResourceId(instance.id);
-                IProgressMonitor monitor = null;
-                try {
-                    monitor = client.terminate(instanceId);
-                } catch (ClientException ex) {
-                    if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
-                        try {
-                            monitor = client.forceTerminate(instanceId);
-                        } catch (IOException ex1) {
-                            LOGGER.log(Level.SEVERE, 
-                                    MessageFormat.format("Error force-terminating instance {0}", instance.id), ex1);
-                        }
-                    }
-                } catch (IOException ex) {
-                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error terminating instance {0}", instance.id), ex);
-                }
-                if (monitor != null) {
-                    // add the terminating instance to the DeleteInstancesWorkload so it will be deleted after its termination
-                    Jenkins.getInstance().getExtensionList(ElasticBoxExecutor.Workload.class).get(DeleteInstancesWorkload.class).add(instance);
-                    terminatingInstanceURLs.add(monitor.getResourceUrl());
-                }
-            }
-        }
-        if (!terminatingInstanceURLs.isEmpty()) {
-            try {
-                pullRequest.comment(MessageFormat.format("The following instances are being terminated: {0}",
-                        StringUtils.join(terminatingInstanceURLs, ", ")));
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getUrl(), ex));
-            }
-        }
+        PullRequestCleanup.deleteInstances(pullRequestDataList, pullRequest);
     }
-    
     
 }

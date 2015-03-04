@@ -39,7 +39,7 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
     public static final ExecutorService threadPool = Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(new DaemonThreadFactory()));    
     
     public ElasticBoxExecutor() {
-        super("ElasticBox Executor");
+        super(ElasticBoxExecutor.class.getName());
     }
     
     private void executeAsync(final Workload workload, final TaskListener listener) {
