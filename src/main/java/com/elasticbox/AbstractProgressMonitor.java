@@ -63,7 +63,7 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
             long currentTime = System.currentTimeMillis();
             remainingTime =  remainingTime - (currentTime - startTime);
             startTime = currentTime;                
-        } while (timeout == 0 || remainingTime > 0);
+        } while (timeout <= 0 || remainingTime > 0);
 
         JSONObject resource = getResource();
         if (!isDone(resource)) {

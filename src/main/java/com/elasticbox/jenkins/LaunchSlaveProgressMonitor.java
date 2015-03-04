@@ -64,7 +64,7 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
     private void wait(Callable<Boolean> condition, long timeout) throws Exception {
         long startTime = System.currentTimeMillis();
         long remainingTime = timeout;
-        while (remainingTime > 0 && condition.call()) {
+        while ((timeout <= 0 || remainingTime > 0) && condition.call()) {
             synchronized (waitLock) {
                 try {
                     waitLock.wait(remainingTime);
@@ -98,7 +98,7 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
         }
         remainingTime = remainingTime - stopWatch.getTime();
         if (monitor != null && remainingTime > 0) {
-            monitor.waitForDone(Math.round(remainingTime / 60000));
+            monitor.waitForDone((int) Math.ceil(remainingTime / 60000));
         }
         remainingTime = remainingTime - stopWatch.getTime();
         if (remainingTime > 0) {
