@@ -15,7 +15,6 @@ package com.elasticbox.jenkins;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.model.BuildableItemWithBuildWrappers;
-import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.Cloud;
@@ -121,9 +120,8 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
         }
         
         public FormValidation doCheckBoxVersion(@QueryParameter String value, @QueryParameter String cloud, 
-                @QueryParameter String box) {
-            return DescriptorHelper.checkSlaveBox(ClientCache.getClient(cloud), 
-                    StringUtils.isBlank(value) ? box : value);
+                @QueryParameter String workspace, @QueryParameter String box) {
+            return checkBoxVersion(value, box, workspace, ClientCache.getClient(cloud));
         }
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 

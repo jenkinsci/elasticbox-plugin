@@ -127,7 +127,8 @@ public class InstanceCreator extends BuildWrapper {
             InstanceCreator instanceCreator = (InstanceCreator) super.newInstance(req, formData);
             ProjectSlaveConfiguration.DescriptorImpl descriptor = (ProjectSlaveConfiguration.DescriptorImpl) instanceCreator.getSlaveConfiguration().getDescriptor();
             FormValidation result = descriptor.doCheckBoxVersion(instanceCreator.getSlaveConfiguration().getBoxVersion(), 
-                    instanceCreator.getSlaveConfiguration().getCloud(), 
+                    instanceCreator.getSlaveConfiguration().getCloud(),
+                    instanceCreator.getSlaveConfiguration().getWorkspace(),
                     instanceCreator.getSlaveConfiguration().getBox());
             if (result.kind == FormValidation.Kind.ERROR) {
                 throw new FormException(result.getMessage(), "boxVersion");

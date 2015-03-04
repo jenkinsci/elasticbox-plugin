@@ -851,10 +851,12 @@ public class Client {
     }
     
     public static final String getPageUrl(String endpointUrl, String resourceUrl) {
-        if (resourceUrl.startsWith(MessageFormat.format("{0}/services/instances/", endpointUrl))) {
-            String instanceId = getResourceId(resourceUrl);
-            if (instanceId != null) {
-                return MessageFormat.format("{0}/#/instances/{1}/i", endpointUrl, instanceId);
+        String resourceId = getResourceId(resourceUrl);
+        if (resourceId != null) {
+            if (resourceUrl.startsWith(MessageFormat.format("{0}/services/instances/", endpointUrl))) {
+                return MessageFormat.format("{0}/#/instances/{1}/i", endpointUrl, resourceId);
+            } else if (resourceUrl.startsWith(MessageFormat.format("{0}/services/boxes/", endpointUrl))) {
+                return MessageFormat.format("{0}/#/boxes/{1}/b", endpointUrl, resourceId);
             }
         }
         return null;

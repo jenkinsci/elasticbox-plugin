@@ -1,7 +1,6 @@
 package com.elasticbox.jenkins.builders.github;
 
 import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
-import com.elasticbox.jenkins.triggers.github.PullRequestBuildListener;
 import com.elasticbox.jenkins.triggers.github.TriggerCause;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
@@ -15,7 +14,6 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -24,8 +22,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @author Phong Nguyen Le
  */
 public class PullRequestCommenter extends Builder {
-    private static final Logger LOGGER = Logger.getLogger(PullRequestBuildListener.class.getName());
-    
     private final String comment;
 
     @DataBoundConstructor

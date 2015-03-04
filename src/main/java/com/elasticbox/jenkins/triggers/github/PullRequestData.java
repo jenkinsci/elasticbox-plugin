@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import com.elasticbox.jenkins.util.ProjectData;
+import hudson.model.AbstractProject;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -39,7 +40,11 @@ public class PullRequestData {
         this.lastUpdated = pullRequest.getUpdatedAt();
         this.instances = new ArrayList<PullRequestInstance>();
         this.projectData = projectData;
-    }     
+    }    
+    
+    public AbstractProject getProject() {
+        return projectData.getProject();
+    }
 
     public Date getLastUpdated() {
         return lastUpdated;
