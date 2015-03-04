@@ -25,6 +25,7 @@ import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.StringParameterValue;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -42,7 +43,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.http.HttpEntity;
@@ -336,13 +342,26 @@ public class PullRequestTestBase extends BuildStepTestBase {
     protected void updateWhitelist(String whitelist) throws Exception {
         Document document = getProjectDocument();
         document.getElementsByTagName("whitelist").item(0).setTextContent(whitelist);
-        project.updateByXml(new DOMSource(document));
+        updateProject(document);
     }
     
     protected void updateTriggerPhrase(String triggerPhrase) throws Exception {
         Document document = getProjectDocument();
         document.getElementsByTagName("triggerPhrase").item(0).setTextContent(triggerPhrase);
-        project.updateByXml(new DOMSource(document));
+        updateProject(document);
+    }
+    
+    private void updateProject(Document document) throws Exception {
+        DOMSource src = new DOMSource(document);
+        TransformerFactory factory = TransformerFactory.newInstance();
+        Transformer transformer = factory.newTransformer();
+        StreamResult result = new StreamResult();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        result.setOutputStream(out);
+        transformer.transform(src, result);
+        ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+        Source streamSource = new StreamSource(in);        
+        project.updateByXml(streamSource);
     }
     
 }
