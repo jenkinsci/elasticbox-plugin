@@ -14,8 +14,10 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
+import com.elasticbox.Constants;
 import com.elasticbox.IProgressMonitor;
 import static com.elasticbox.jenkins.ElasticBoxExecutor.threadPool;
+import com.elasticbox.jenkins.util.JsonUtil;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
@@ -42,6 +44,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.jackson.annotate.JsonUnwrapped;
 
 /**
  *
@@ -363,7 +366,8 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
         LOGGER.info(MessageFormat.format("Deploying box {0}", ebClient.getBoxPageUrl(request.slave.getBoxVersion())));
         IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), 
                 profile.getString("owner"), request.slave.getEnvironment(), 
-                Collections.singletonList(request.slave.getNodeName()), 1, variables, null, null);
+                Collections.singletonList(request.slave.getNodeName()), 1, variables, null, null,                 
+                request.slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>", 
                 request.slave.getInstancePageUrl()));

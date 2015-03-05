@@ -20,7 +20,6 @@ import hudson.model.Node;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
@@ -38,11 +37,11 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
 
     @DataBoundConstructor
     public SlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile,
-            String policyTags, int minInstances, int maxInstances, String environment, String variables, String labels,
+            String policyTags, String provider, String location, int minInstances, int maxInstances, String environment, String variables, String labels,
             String description, String remoteFS, Node.Mode mode, int retentionTime, String maxBuildsText, int executors,
             int launchTimeout) {
-        super(id, workspace, box, boxVersion, profile, policyTags, minInstances, maxInstances, environment, variables, labels, 
-                description, remoteFS, mode, retentionTime, 
+        super(id, workspace, box, boxVersion, profile, policyTags, provider, location, minInstances, maxInstances, 
+                environment, variables, labels, description, remoteFS, mode, retentionTime, 
                 StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors, launchTimeout);
     }    
     
@@ -120,6 +119,24 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return DescriptorHelper.getProfiles(createClient(endpointUrl, username, password, token), workspace, box);
         }
 
+        public ListBoxModel doFillProviderItems(
+                @RelativePath("..") @QueryParameter String endpointUrl, 
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password, 
+                @RelativePath("..") @QueryParameter String token,
+                @QueryParameter String workspace) {                
+            return DescriptorHelper.getCloudFormationProviders(createClient(endpointUrl, username, password, token), workspace);
+        }
+
+        public ListBoxModel doFillLocationItems(
+                @RelativePath("..") @QueryParameter String endpointUrl, 
+                @RelativePath("..") @QueryParameter String username, 
+                @RelativePath("..") @QueryParameter String password, 
+                @RelativePath("..") @QueryParameter String token,
+                @QueryParameter String provider) {                
+            return DescriptorHelper.getCloudFormationLocations(createClient(endpointUrl, username, password, token), provider);
+        }
+                
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(
                 @RelativePath("..") @QueryParameter String endpointUrl, 
                 @RelativePath("..") @QueryParameter String username, 

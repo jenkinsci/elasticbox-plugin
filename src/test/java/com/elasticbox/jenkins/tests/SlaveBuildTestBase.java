@@ -171,7 +171,7 @@ public class SlaveBuildTestBase {
         String box = profile.getJSONObject("box").getString("version");
         String label = UUID.randomUUID().toString();
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, box, box, 
-                profile.getString("id"), null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
+                profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
         jenkins.getInstance().clouds.remove(ebCloud);
         jenkins.getInstance().clouds.add(newCloud);
@@ -209,7 +209,7 @@ public class SlaveBuildTestBase {
         
         // Create a slave configuration with 0 retention time. This means, the slave of this configuration will be killed right after use (single-use)
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId, 
-                profile.getString("id"), null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
+                profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
         jenkins.getInstance().clouds.remove(ebCloud);
         jenkins.getInstance().clouds.add(newCloud);

@@ -101,7 +101,7 @@ public class InstanceCreator extends BuildWrapper {
                 }
             }
             slaveConfiguration = new ProjectSlaveConfiguration(UUID.randomUUID().toString(), cloud, workspace, box, 
-                    boxVersion, profile, null, ebCloud != null ? ebCloud.getMaxInstances() : 1, null, variables, 
+                    boxVersion, profile, null, null, null, ebCloud != null ? ebCloud.getMaxInstances() : 1, null, variables, 
                     StringUtils.EMPTY, ebCloud != null ? ebCloud.getRetentionTime() : 30, null, 1, 
                     ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
         }

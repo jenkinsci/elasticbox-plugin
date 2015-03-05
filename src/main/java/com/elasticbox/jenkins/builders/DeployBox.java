@@ -18,6 +18,7 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
@@ -70,11 +71,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String box;
     private String boxVersion;
     private final String profile;
+    private final String provider;
+    private final String location;
     @Deprecated
     private final String environment;
     private final int instances;
     private final String variables;
     private final InstanceExpiration expiration;
+    private final String automaticUpdates;
     private final String instanceEnvVariable;
     private String tags;    
     @Deprecated
@@ -87,8 +91,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
+            String provider, String location,
             int instances, String instanceEnvVariable, String tags, String variables, InstanceExpiration expiration,
-            String alternateAction, boolean waitForCompletion, int waitForCompletionTimeout) {
+            String automaticUpdates, String alternateAction, boolean waitForCompletion, int waitForCompletionTimeout) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -97,10 +102,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.box = box;
         this.boxVersion = boxVersion;
         this.profile = profile;
+        this.provider = provider;
+        this.location = location;
         this.instances = instances;
         this.environment = null;
         this.variables = variables;
         this.expiration = expiration;
+        this.automaticUpdates = automaticUpdates;
         this.alternateAction = alternateAction;
         this.waitForCompletion = waitForCompletion;
         this.waitForCompletionTimeout = waitForCompletionTimeout;
@@ -173,8 +181,21 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
         String boxId = DescriptorHelper.getResolvedBoxVersion(client, workspace, box, boxVersion);
         logger.info("Deploying box {0}", client.getBoxPageUrl(boxId));
+        JSONArray policyVariables = new JSONArray();
+        if (StringUtils.isNotBlank(provider)) {
+            JSONObject providerVariable = new JSONObject();
+            providerVariable.put("type", "Text");
+            providerVariable.put("name", "provider_id");
+            providerVariable.put("value", provider);
+            policyVariables.add(providerVariable);
+            JSONObject locationVariable = new JSONObject();
+            locationVariable.put("type", "Text");
+            locationVariable.put("name", "location");
+            locationVariable.put("value", location);  
+        }
         IProgressMonitor monitor = client.deploy(boxId, profile, workspace, resolvedEnvironment, 
-                new ArrayList(resolvedTags), instances, resolvedVariables, expirationTime, expirationOperation);
+                new ArrayList(resolvedTags), instances, resolvedVariables, expirationTime, expirationOperation,
+                policyVariables, automaticUpdates);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
         logger.info("Instance {0} is being deployed", instancePageUrl);
@@ -396,6 +417,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return profile;
     }  
 
+    public String getProvider() {
+        return provider;
+    }
+
+    public String getLocation() {
+        return location;
+    }        
+
     public int getInstances() {
         return instances;
     }
@@ -554,6 +583,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 
                 @QueryParameter String box) {                
             return DescriptorHelper.getProfiles(cloud, workspace, box);
+        }
+
+        public ListBoxModel doFillProviderItems(@QueryParameter String cloud, @QueryParameter String workspace) {                
+            return DescriptorHelper.getCloudFormationProviders(ClientCache.getClient(cloud), workspace);
+        }
+
+        public ListBoxModel doFillLocationItems(@QueryParameter String cloud, @QueryParameter String provider) {                
+            return DescriptorHelper.getCloudFormationLocations(ClientCache.getClient(cloud), provider);
         }
 
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 

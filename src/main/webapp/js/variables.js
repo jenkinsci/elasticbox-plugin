@@ -54,6 +54,25 @@ var ElasticBoxVariables = (function () {
             return imageFolder;
         },
         
+        toggleDeploymentOptions = function (variableHolder) {
+            var showRows = function (select, show) {
+                    for (var i = 0, tr = Dom.getAncestorByTagName(select, 'tr'); i < 2; i++) {
+                        Dom.setAttribute(tr, 'style', show ? '' : 'display: none');
+                        tr = Dom.getNextSibling(tr);
+                    }                            
+                },
+
+                isCloudFormdation = variableHolder.profileSelect.value === variableHolder.boxSelect.value;
+
+            if (Dom.getStyle(Dom.getAncestorByTagName(variableHolder.boxSelect, 'tr'), 'display') !== 'none') {
+                // toggle deployment options    
+                showRows(variableHolder.profileSelect, !isCloudFormdation);                
+                showRows(variableHolder.providerSelect, isCloudFormdation);
+                showRows(variableHolder.locationSelect, isCloudFormdation);
+                showRows(variableHolder.claimsInput, variableHolder.profileSelect.value === 'tags');
+            }
+        },
+        
         addListeners = function (variableHolder) {
             var removeBuildStepListener = function () {
                     if (variableHolder.info.type === 'buildstep') {  
@@ -97,6 +116,12 @@ var ElasticBoxVariables = (function () {
                 if (variableHolder.info.type === 'boxVersion' && variableHolder.boxSelect) {
                     Event.addListener(variableHolder.boxSelect, 'change', function () {
                         refreshVariables(variableHolder);
+                    });
+                }
+                
+                if (variableHolder.profileSelect) {
+                    Event.addListener(variableHolder.profileSelect, 'change', function () {
+                        toggleDeploymentOptions(variableHolder);
                     });
                 }
 
@@ -533,6 +558,9 @@ var ElasticBoxVariables = (function () {
                 workspaceSelect: _.first(Dom.getElementsByClassName('eb-workspace', 'select', buildStepElement)),
                 boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', descriptorElement)),
                 profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', descriptorElement)),
+                claimsInput: _.first(Dom.getElementsByClassName('eb-policy-tags', 'input', descriptorElement)),
+                providerSelect: _.first(Dom.getElementsByClassName('eb-provider', 'select', descriptorElement)),
+                locationSelect: _.first(Dom.getElementsByClassName('eb-location', 'select', descriptorElement)),
                 getPriorDeployBoxSteps: function () {
                     var cloudName = this.cloudSelect ? this.cloudSelect.value : undefined;
                     return ElasticBoxUtils.getPriorDeployBoxSteps(buildStepElement, cloudName);
@@ -649,6 +677,18 @@ var ElasticBoxVariables = (function () {
                                 return !_.isUndefined(variableHolder.profileSelect);
                             });
                             Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                variableHolder.claimsInput = _.first(Dom.getElementsByClassName('eb-policy-tags', 'input', element));
+                                return !_.isUndefined(variableHolder.claimsInput);
+                            }); 
+                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                variableHolder.providerSelect = _.first(Dom.getElementsByClassName('eb-provider', 'select', element));
+                                return !_.isUndefined(variableHolder.providerSelect);
+                            }); 
+                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                variableHolder.locationSelect = _.first(Dom.getElementsByClassName('eb-location', 'select', element));
+                                return !_.isUndefined(variableHolder.locationSelect);
+                            }); 
+                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
                                 variableHolder.boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', element));
                                 return !_.isUndefined(variableHolder.boxSelect);
                             }); 
@@ -759,6 +799,7 @@ var ElasticBoxVariables = (function () {
             validateSavedOptions();
             variableHolders = getVariableHolders();
             _.each(variableHolders, function (variableHolder) {
+                toggleDeploymentOptions(variableHolder);
                 populateVariables(variableHolder);
                 addListeners(variableHolder);
             });

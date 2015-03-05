@@ -191,7 +191,7 @@ public class Client {
         JSONArray boxes = getAllBoxes(workspaceId);
         // remove the profile boxes
         for (Iterator iter = boxes.iterator(); iter.hasNext();) {
-            if (isProfile((JSONObject) iter.next())) {
+            if (isPolicy((JSONObject) iter.next())) {
                 iter.remove();
             }
         }
@@ -286,22 +286,25 @@ public class Client {
         return new ProviderProgressMonitor(endpointUrl + provider.getString("uri"), provider.getString("updated"));
     }
     
-    private boolean isProfile(JSONObject boxJson) {
-        return boxJson.getString("schema").endsWith("/boxes/profile");
+    private boolean isPolicy(JSONObject boxJson) {
+        return boxJson.getString("schema").endsWith("/boxes/policy");
     }
     
     public JSONArray getProfiles(String workspaceId, String boxId) throws IOException {
         JSONObject box = getBox(boxId);
-        if (isProfile(box)) {
-            throw new IOException("Cannot get profiles for a profile box");
+        return getProfiles(workspaceId, box);
+    }
+     
+    public JSONArray getProfiles(String workspaceId, JSONObject box) throws IOException {
+        if (isPolicy(box)) {
+            throw new IOException("Cannot get deployment policies for a deployment policy box");
         }
-        JSONArray requiredServices = box.getJSONArray("service_tags");
+        JSONArray requiredServices = box.getJSONArray("requirements");
         JSONArray profiles = new JSONArray();
         for (Object b : getAllBoxes(workspaceId)) {
             JSONObject boxJson = (JSONObject) b;
-            if (isProfile(boxJson)) {
-                Set<String> providedServices = new HashSet(boxJson.getJSONArray("service_tags"));
-                providedServices.add(boxJson.getString("service"));
+            if (isPolicy(boxJson)) {
+                Set<String> providedServices = new HashSet(boxJson.getJSONArray("claims"));
                 if (providedServices.containsAll(requiredServices)) {
                     profiles.add(boxJson);
                 }
@@ -315,7 +318,7 @@ public class Client {
         JSONArray profiles = new JSONArray();
         for (Object b : getAllBoxes(workspaceId)) {
             JSONObject boxJson = (JSONObject) b;
-            if (isProfile(boxJson)) {
+            if (isPolicy(boxJson)) {
                 profiles.add(boxJson);
             }
         }
@@ -328,7 +331,7 @@ public class Client {
         if (!tags.isEmpty()) {
             for (Object profile : getProfiles(workspaceId)) {
                 JSONObject profileJson = (JSONObject) profile;
-                if (profileJson.getJSONArray("service_tags").containsAll(tags)) {
+                if (profileJson.getJSONArray("claims").containsAll(tags)) {
                     profiles.add(profileJson);
                 }
             }   
@@ -586,10 +589,6 @@ public class Client {
         return doUpdate(boxUrl, box);
     }
     
-    public String getBoxPageUrl(String boxId) {
-        return getPageUrl(endpointUrl, MessageFormat.format("/services/boxes/{0}", boxId));
-    }    
-    
     protected abstract class ProgressMonitor extends AbstractProgressMonitor {
         protected final String lastModified;
 
@@ -682,12 +681,15 @@ public class Client {
         }                
     }
     
-    public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, JSONArray variables) throws IOException {
-        return deploy(null, profileId, workspaceId, environment, null, instances, variables, null, null);
+    public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, 
+            JSONArray variables) throws IOException {
+        return deploy(null, profileId, workspaceId, environment, null, instances, variables, null, null, null, 
+                Constants.AUTOMATIC_UPDATES_OFF);
     }
     
     public IProgressMonitor deploy(String boxVersion, String profileId, String workspaceId, String environment, 
-            List<String> tags, int instances, JSONArray variables, String expirationTime, String expirationOperation) 
+            List<String> tags, int instances, JSONArray variables, String expirationTime, String expirationOperation,
+            JSONArray policyVariables, String automaticUpdates) 
             throws IOException {        
         JSONObject box = new JSONObject();        
         box.put("id", boxVersion);
@@ -701,26 +703,30 @@ public class Client {
             }
         }
         box.put("variables", variables);
-        JSONObject profile = new JSONObject();
-        profile.put("id", profileId);
-        JSONObject profileBox = getBox(profileId);
-        String profileSchema = profileBox.getString("schema");
-        String schemaVersion = getSchemaVersion(profileSchema);            
+        JSONObject policyBox = new JSONObject();
+        policyBox.put("id", profileId);
+        policyBox.put("variables", policyVariables);
+        JSONObject boxVersionJson = getBox(boxVersion);
+        String schemaVersion = getSchemaVersion(boxVersionJson.getString("schema"));            
         JSONObject deployRequest = new JSONObject();
         deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + '/' + DEPLOYMENT_REQUEST_SCHEMA_NAME);
+        deployRequest.put("name", boxVersionJson.getString("name"));
         deployRequest.put("box", box);
-        deployRequest.put("environment", environment);
-        deployRequest.put("profile", profile);
-        deployRequest.put("owner", workspaceId);        
+        deployRequest.put("owner", workspaceId);  
+        deployRequest.put("policy_box", policyBox);
+        deployRequest.put("automatic_updates", automaticUpdates != null ? automaticUpdates : Constants.AUTOMATIC_UPDATES_OFF);
         if (expirationTime != null && expirationOperation != null) {
             JSONObject lease = new JSONObject();
             lease.put("expire", expirationTime);
             lease.put("operation", expirationOperation);
             deployRequest.put("lease", lease);
         }
+        List<String> instanceTags = new ArrayList<String>();
+        instanceTags.add(environment);
         if (tags != null) {
-            deployRequest.put("instance_tags", tags);
+            instanceTags.addAll(tags);
         }
+        deployRequest.put("instance_tags", instanceTags);
         
         JSONObject instance = doPost("/services/instances", deployRequest);
         return new InstanceProgressMonitor(endpointUrl + instance.getString("uri"), 
@@ -811,12 +817,12 @@ public class Client {
         taskInput.put("schema", BASE_ELASTICBOX_SCHEMA + getSchemaVersion(instance.getString("schema")) + "/vsphere/tasks/create-template");
         taskInput.put("name", name);
         taskInput.put("instance_id", instance.getString("id"));
-        if (datacenter != null) {
+        if (StringUtils.isNotBlank(datacenter)) {
             taskInput.put("datacenter", datacenter);
-            if (folder != null) {
+            if (StringUtils.isNotBlank(folder)) {
                 taskInput.put("folder", folder);
             }
-            if (datastore != null) {
+            if (StringUtils.isNotBlank(datastore)) {
                 taskInput.put("datastore", datastore);
             }
         }        
@@ -921,6 +927,10 @@ public class Client {
         return getPageUrl(endpointUrl, getProviderUrl(providerId));
     }
 
+    public String getBoxPageUrl(String boxId) {
+        return getPageUrl(endpointUrl, MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId));
+    }    
+    
     public static final String getInstanceUrl(String endpointUrl, String instanceId) {
         return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);        
     }

@@ -15,8 +15,10 @@ package com.elasticbox.jenkins;
 import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
+import com.elasticbox.Constants;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
+import com.elasticbox.jenkins.util.JsonUtil;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.elasticbox.jenkins.util.VariableResolver;
@@ -57,6 +59,43 @@ public class DescriptorHelper {
     public static final String ANY_BOX = "AnyBox";
     public static final String LATEST_BOX_VERSION = "LATEST";
     public static final String TAGS = "tags";
+
+    public static ListBoxModel getCloudFormationProviders(Client client, String workspace) {
+        ListBoxModel model = new ListBoxModel();
+        if (client != null && StringUtils.isNotBlank(workspace)) {        
+            try {
+                for (Object providerObject : client.getProviders(workspace)) {
+                    JSONObject providerJson = (JSONObject) providerObject;
+                    if (providerJson.getString("type").equals(Constants.AMAZON_PROVIDER_TYPE) &&
+                            JsonUtil.find(providerJson, "services", "name", Constants.CLOUD_FOUNDATION_SERVICE) != null) {
+                        model.add(providerJson.getString("name"), providerJson.getString("id"));
+                    }
+                }
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
+        }
+        return model;
+    }
+    
+    public static ListBoxModel getCloudFormationLocations(Client client, String provider) {
+        ListBoxModel model = new ListBoxModel();
+        if (client != null && StringUtils.isNotBlank(provider)) {
+            try {
+                JSONObject providerJson = client.getProvider(provider);
+                JSONObject cloudFormationService = JsonUtil.find(providerJson, "services", "name", Constants.CLOUD_FOUNDATION_SERVICE);
+                if (cloudFormationService != null) {
+                    for (Object location : cloudFormationService.getJSONArray("locations")) {
+                        String locationName = ((JSONObject) location).getString("name");
+                        model.add(locationName, locationName);
+                    }                
+                }
+            } catch (IOException ex) {
+                LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+            }
+        }
+        return model;        
+    }
     
     public static class JSONArrayResponse implements HttpResponse {
         private final JSONArray jsonArray;
@@ -185,16 +224,22 @@ public class DescriptorHelper {
         ListBoxModel profiles = new ListBoxModel();
         if (StringUtils.isNotBlank(workspace) && StringUtils.isNotBlank(box) && client != null) {
             try {
-                for (Object profile : client.getProfiles(workspace, box)) {
-                    JSONObject json = (JSONObject) profile;
-                    profiles.add(json.getString("name"), json.getString("id"));
-                }                    
+                JSONObject boxJson = client.getBox(box);
+                if (boxJson.getString("schema").endsWith("/boxes/cloudformation")) {
+                    profiles.add(boxJson.getString("name"), box);
+                } else {
+                    for (Object profile : client.getProfiles(workspace, box)) {
+                        JSONObject json = (JSONObject) profile;
+                        profiles.add(json.getString("name"), json.getString("id"));
+                    }
+                    sort(profiles);
+                    profiles.add(0, new ListBoxModel.Option("matches specific claims", TAGS));
+                }                
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, "Error fetching profiles", ex);
             }
         }
-        profiles.add("matches specific service tags", TAGS);
-        return sort(profiles);        
+        return profiles;
     }
     
     public static ListBoxModel getProfiles(String cloud, String workspace, String box) {

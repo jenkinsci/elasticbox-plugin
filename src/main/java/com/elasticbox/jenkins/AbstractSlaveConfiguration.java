@@ -43,11 +43,14 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final String box;
     private final String profile;
     private final String policyTags;    
+    private final String provider;
+    private final String location;
     private final String variables;
     private String boxVersion;
     private final int minInstances;
     private final int maxInstances;
     private String environment;
+    private String tags;
     private final String labels;
     private final String remoteFS;
     private final String description;
@@ -61,8 +64,9 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private transient String resolvedBoxVersion;
     private transient String resolvedDeploymentPolicy;
 
-    public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, String policyTags, int minInstances,
-            int maxInstances, String environment, String variables, String labels, String description, String remoteFS, 
+    public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, 
+            String policyTags, String provider, String location, int minInstances,
+            int maxInstances, String tags, String variables, String labels, String description, String remoteFS, 
             Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout) {
         super();
         this.id = id;
@@ -71,9 +75,11 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.boxVersion = boxVersion;
         this.profile = profile;
         this.policyTags = policyTags;
+        this.provider = provider;
+        this.location = location;
         this.minInstances = minInstances;
         this.maxInstances = maxInstances;
-        this.environment = environment;
+        this.tags = tags;
         this.variables = variables;    
         this.labels = labels;
         this.description = description;
@@ -124,6 +130,14 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         return policyTags;
     }        
 
+    public String getProvider() {
+        return provider;
+    }
+
+    public String getLocation() {
+        return location;
+    }        
+    
     public String getVariables() {
         return variables;
     }

@@ -14,6 +14,8 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
+import com.elasticbox.Constants;
+import com.elasticbox.jenkins.util.JsonUtil;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -38,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
@@ -204,6 +207,11 @@ public class ElasticBoxSlave extends Slave {
         
         return null;
     }
+    
+    public JSONArray getPolicyVariables() {
+        AbstractSlaveConfiguration slaveConfig = getSlaveConfiguration();
+        return slaveConfig != null ? JsonUtil.createCloudFormationDeployVariables(slaveConfig.getProvider(), slaveConfig.getLocation()) : null;
+    }
 
     public void setInstanceStatusMessage(String message) {
         this.instanceStatusMessage = message;
@@ -359,16 +367,14 @@ public class ElasticBoxSlave extends Slave {
     private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
         Client client = cloud.getClient();
         JSONObject profile = client.getProfile(profileId);
-        String boxId = profile.getJSONObject("box").getString("version");
-        JSONObject box = (JSONObject) client.doGet(MessageFormat.format("/services/boxes/{0}", boxId), false);
-        String service = box.getString("service");
-        if ("Linux Compute".equals(service)) {
+        JSONArray claims = profile.getJSONArray("claims");
+        if (claims.contains(Constants.LINUX_CLAIM)) {
             return "/var/jenkins";
-        } else if ("Windows Compute".equals(service)) {
+        } else if (claims.contains(Constants.WINDOWS_CLAIM)) {
             return "C:\\Jenkins";
         } else {
-            throw new IOException(MessageFormat.format("Cannot create slave for profile '{0}' that belongs to box '{1}' with service '{2}'.",
-                    profile.getString("name"), box.getString("name"), service));
+            throw new IOException(MessageFormat.format("Cannot create slave since the selected deployment policy ''{0}'' supports neither Linux nor Windows.",
+                    profile.getString("name")));
         }
     }
     

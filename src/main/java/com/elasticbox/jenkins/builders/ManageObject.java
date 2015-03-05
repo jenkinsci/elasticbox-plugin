@@ -52,7 +52,7 @@ public abstract class ManageObject extends AbstractBuilder {
             throw new IOException(MessageFormat.format("Invalid cloud name: {0}", getCloud()));
         }
         
-        for (Operation operation : operations) {
+        for (Operation operation : getOperations()) {
             operation.perform((ElasticBoxCloud) ebCloud, getWorkspace(), build, launcher, logger);
         }
         

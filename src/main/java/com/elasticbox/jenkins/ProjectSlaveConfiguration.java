@@ -38,9 +38,10 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
 
     @DataBoundConstructor
     public ProjectSlaveConfiguration(String id, String cloud, String workspace, String box, String boxVersion, 
-            String profile, String policyTags, int maxInstances, String environment, String variables, String remoteFS, int retentionTime, 
+            String profile, String policyTags, String provider, String location, int maxInstances, String environment, String variables, String remoteFS, int retentionTime, 
             String maxBuildsText, int executors, int launchTimeout) {
-        super(StringUtils.isBlank(id) ? UUID.randomUUID().toString() : id, workspace, box, boxVersion, profile, policyTags, 0, 
+        super(StringUtils.isBlank(id) ? UUID.randomUUID().toString() : id, workspace, box, boxVersion, profile, 
+                policyTags, provider, location, 0, 
                 maxInstances, environment, variables, null, StringUtils.EMPTY, remoteFS, Node.Mode.EXCLUSIVE, 
                 retentionTime, StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors, 
                 launchTimeout);
@@ -129,6 +130,14 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
             return DescriptorHelper.getProfiles(ClientCache.getClient(cloud), workspace, box);
         }
 
+        public ListBoxModel doFillProviderItems(@QueryParameter String cloud, @QueryParameter String workspace) {                
+            return DescriptorHelper.getCloudFormationProviders(ClientCache.getClient(cloud), workspace);
+        }
+
+        public ListBoxModel doFillLocationItems(@QueryParameter String cloud, @QueryParameter String provider) {                
+            return DescriptorHelper.getCloudFormationLocations(ClientCache.getClient(cloud), provider);
+        }
+                
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(
                 @QueryParameter String cloud,
                 @QueryParameter String workspace,
@@ -146,7 +155,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
             return DescriptorHelper.getInstancesAsJSONArrayResponse(ClientCache.getClient(cloud),
                     workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
-        
+
     }
     
     

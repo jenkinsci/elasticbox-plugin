@@ -16,6 +16,7 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.util.ClientCache;
+import com.elasticbox.jenkins.util.JsonUtil;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.AbortException;
@@ -140,7 +141,7 @@ public class CreateTemplate extends Builder {
         // remove instances of different providers
         for (Iterator iter = instances.iterator(); iter.hasNext();) {
             JSONObject instance = (JSONObject) iter.next();
-            if (!instance.getJSONObject("profile").getString("provider_id").equals(provider)) {
+            if (!instance.getJSONObject("policy_box").getString("provider_id").equals(provider)) {
                 iter.remove();
             }
         }
@@ -189,7 +190,7 @@ public class CreateTemplate extends Builder {
             }
         } else {
             logger.info("Creating a new deployment policy with vSphere template ''{0}''", resolvedTempateName);
-            JSONObject policy = instance.getJSONObject("profile");
+            JSONObject policy = instance.getJSONObject("policy_box");
             policy.remove("id");
             policy.remove("owner");
             policy.remove("members");
@@ -293,7 +294,7 @@ public class CreateTemplate extends Builder {
                     JSONObject providerJson = client.getProvider(provider);
                     JSONObject datacenterJson = null;
                     for (Object service : providerJson.getJSONArray("services")) {
-                        datacenterJson = find((JSONObject) service, "datacenters", "mor", datacenter);
+                        datacenterJson = JsonUtil.find((JSONObject) service, "datacenters", "mor", datacenter);
                         if (datacenterJson != null) {
                             break;
                         }
@@ -354,7 +355,7 @@ public class CreateTemplate extends Builder {
                     JSONObject providerJson = client.getProvider(provider);
                     JSONObject datacenterJson = null;
                     for (Object service : providerJson.getJSONArray("services")) {
-                        datacenterJson = find((JSONObject) service, "datacenters", "mor", datacenter);
+                        datacenterJson = JsonUtil.find((JSONObject) service, "datacenters", "mor", datacenter);
                         if (datacenterJson != null) {
                             break;
                         }
@@ -373,17 +374,6 @@ public class CreateTemplate extends Builder {
                 }
             }            
             return items;
-        }
-        
-        private static JSONObject find(JSONObject source, String arrayName, String key, Object value) {
-            for (Object object : source.getJSONArray(arrayName)) {
-                JSONObject json = (JSONObject) object;
-                if (json.containsKey(key) && 
-                        ((value == null && json.getString(key) == null) || json.getString(key).equals(value))) {
-                    return json;
-                }
-            }
-            return null;
         }
     }    
 }

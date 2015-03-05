@@ -68,7 +68,7 @@ public class BuildStepTestBase extends TestBase {
         variables.add(variable);
         IProgressMonitor monitor = client.deploy(testBindingBoxData.getJson().getString("id"),
                 testBindingBoxData.getNewProfileId(), testBindingBoxData.getJson().getString("owner"), 
-                "jenkins-plugin-test", null, 1, variables, null, null);
+                "jenkins-plugin-test", null, 1, variables, null, null, new JSONArray(), null);
         monitor.waitForDone(10);
         JSONObject testBindingBoxInstance = client.getInstance(Client.getResourceId(monitor.getResourceUrl()));
         deleteAfter(testBindingBoxInstance);
