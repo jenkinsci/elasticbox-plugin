@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function ebx_token() {
-    curl -ks -H 'Content-Type:application/json' -X POST --data '{"email": "'$1'", "password": "'$2'"}' ${EBX_ADDRESS}/services/security/token
+    curl -ksf -H 'Content-Type:application/json' -X POST --data '{"email": "'$1'", "password": "'$2'"}' ${EBX_ADDRESS}/services/security/token
 }
 
 function upgrade_appliance() {
@@ -22,8 +22,8 @@ function upgrade_appliance() {
     echo Start upgrading the appliance
     curl -ksf -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" ${EBX_ADDRESS}/services/appliance/upgrade || true
 
-    # Wait for the appliance services to restart
-    sleep 30
+    echo Wait for the appliance services to restart
+    sleep 60
 
     # Make sure that the appliance is back up
     if [[ -z ${EBX_TOKEN} ]]
