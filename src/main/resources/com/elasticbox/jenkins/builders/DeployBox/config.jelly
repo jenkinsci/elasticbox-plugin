@@ -50,6 +50,9 @@ written permission is obtained from ElasticBox.
         <f:textbox clazz="eb-variables help" field="variables" default="[]"/>
     </f:invisibleEntry>
     <f:dropdownDescriptorSelector title="Expiration" field="expiration" descriptors="${descriptor.expirationOptions}" />
+    <f:entry title="${%Automatic Updates}" field="autoUpdates">
+        <f:select clazz="required" />
+    </f:entry>
     <f:entry>
         <f:block>
             <table style="width:100%; margin-left: 15px;" class="setting-leftspace">

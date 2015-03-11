@@ -14,6 +14,7 @@ package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
+import com.elasticbox.Constants;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
@@ -78,7 +79,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final int instances;
     private final String variables;
     private final InstanceExpiration expiration;
-    private final String automaticUpdates;
+    private final String autoUpdates;
     private final String instanceEnvVariable;
     private String tags;    
     @Deprecated
@@ -93,7 +94,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
             String provider, String location,
             int instances, String instanceEnvVariable, String tags, String variables, InstanceExpiration expiration,
-            String automaticUpdates, String alternateAction, boolean waitForCompletion, int waitForCompletionTimeout) {
+            String autoUpdates, String alternateAction, boolean waitForCompletion, int waitForCompletionTimeout) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -108,7 +109,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.environment = null;
         this.variables = variables;
         this.expiration = expiration;
-        this.automaticUpdates = automaticUpdates;
+        this.autoUpdates = autoUpdates;
         this.alternateAction = alternateAction;
         this.waitForCompletion = waitForCompletion;
         this.waitForCompletionTimeout = waitForCompletionTimeout;
@@ -193,7 +194,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
         IProgressMonitor monitor = client.deploy(boxId, profile, workspace,
                 new ArrayList(resolvedTags), instances, resolvedVariables, expirationTime, expirationOperation,
-                policyVariables, automaticUpdates);
+                policyVariables, autoUpdates);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
         logger.info("Instance {0} is being deployed", instancePageUrl);
@@ -439,9 +440,12 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return variables;
     }
 
-    
     public String getAlternateAction() {
         return alternateAction;
+    }
+
+    public String getAutoUpdates() {
+        return autoUpdates;
     }
 
     public boolean isWaitForCompletion() {
@@ -470,17 +474,19 @@ public class DeployBox extends Builder implements IInstanceProvider {
         private static final Pattern ENVIRONMENT_PATTERN = Pattern.compile("[a-zA-Z0-9-]+");
         private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
         
-        private static final InstanceExpiration alwaysOn = new InstanceExpiration() {
-            
-        };
-
         private static final ListBoxModel alternateActionItems = new ListBoxModel();
+        private static final ListBoxModel autoUpdatesItems = new ListBoxModel();
         static {
             alternateActionItems.add("still perform deployment", ACTION_NONE);
             alternateActionItems.add("skip deployment", ACTION_SKIP);
             alternateActionItems.add("reconfigure", ACTION_RECONFIGURE);
             alternateActionItems.add("reinstall", ACTION_REINSTALL);
             alternateActionItems.add("delete and deploy again", ACTION_DELETE_AND_DEPLOY);            
+            
+            autoUpdatesItems.add("Off", Constants.AUTOMATIC_UPDATES_OFF);
+            autoUpdatesItems.add("All Updates", Constants.AUTOMATIC_UPDATES_MAJOR);
+            autoUpdatesItems.add("Minor & Patch Updates", Constants.AUTOMATIC_UPDATES_MINOR);
+            autoUpdatesItems.add("Patch Updates", Constants.AUTOMATIC_UPDATES_PATCH);
         }
 
         @Override
@@ -610,5 +616,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
             return alternateActionItems;
         }
         
+        public ListBoxModel doFillAutoUpdatesItems() {
+            return autoUpdatesItems;
+        }
     }
 }

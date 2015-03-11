@@ -62,7 +62,7 @@ var ElasticBoxVariables = (function () {
                     }                            
                 },
 
-                isCloudFormdation = variableHolder.profileSelect.value === variableHolder.boxSelect.value;
+                isCloudFormdation = variableHolder.boxSelect.value && variableHolder.profileSelect.value === variableHolder.boxSelect.value;
 
             if (Dom.getStyle(Dom.getAncestorByTagName(variableHolder.boxSelect, 'tr'), 'display') !== 'none') {
                 // toggle deployment options    
