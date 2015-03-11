@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +63,6 @@ public class BuildStepTest extends BuildStepTestBase {
         // validate the results of executed build steps   
         VariableResolver variableResolver = new VariableResolver(cloud.name, TestUtils.TEST_WORKSPACE, build, TaskListener.NULL);
         String jobNameAndBuildId = MessageFormat.format("{0}-{1}", variableResolver.resolve("${JOB_NAME}"), variableResolver.resolve("${BUILD_ID}"));
-        String buildId = variableResolver.resolve("${BUILD_ID}");
         String buildTag = variableResolver.resolve("${BUILD_TAG}");
         Client client = new Client(cloud.getEndpointUrl(), cloud.getToken());
         JSONObject testLinuxBox = getTestBox(TestUtils.TEST_LINUX_BOX_NAME);
@@ -90,37 +87,32 @@ public class BuildStepTest extends BuildStepTestBase {
         JSONObject testBindingBoxInstance2 = null;
         JSONObject testBindingBoxInstance3 = null;
         JSONObject testNestedBoxInstance = null;   
-        Collection<String> testBindingBoxInstanceEnvironments = Arrays.asList(new String[] {
-            testTag, jobNameAndBuildId, buildTag
-        });
         for (Object instance : instances) {
             JSONObject instanceJson = (JSONObject) instance;
             String mainBoxId = instanceJson.getJSONArray("boxes").getJSONObject(0).getString("id");
-            String environment = instanceJson.getString("environment");
+            JSONArray tags = instanceJson.getJSONArray("tags");
             if (mainBoxId.equals(testLinuxBox.getString("id"))) {
                 assertNull(MessageFormat.format("The build deployed more than one instance of box {0}", TestUtils.TEST_LINUX_BOX_NAME), testLinuxBoxInstance);                    
-                assertEquals(buildId, environment);
+                assertTrue(MessageFormat.format("The instance {0} does not have tag {1}", client.getPageUrl(instanceJson), testTag), tags.contains(testTag));
                 testLinuxBoxInstance = instanceJson;
             } else if (mainBoxId.equals(testNestedBox.getString("id"))) {
                 assertNull(MessageFormat.format("The build deployed more than one instance of box {0}", TestUtils.TEST_NESTED_BOX_NAME), testNestedBoxInstance);
-                assertEquals(testTag, environment);
+                assertTrue(MessageFormat.format("The instance {0} does not have tag {1}", client.getPageUrl(instanceJson), testTag), tags.contains(testTag));
                 testNestedBoxInstance = instanceJson;                    
             } else if (mainBoxId.equals(testBindingBox.getString("id"))) {
-                assertTrue(MessageFormat.format("Unexpected instance with environment ''{0}'' has been deployed", environment),
-                        testBindingBoxInstanceEnvironments.contains(environment));
-                if (environment.equals(testTag)) {
-                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, testTag), testBindingBoxInstance1);
-                    testBindingBoxInstance1 = instanceJson;
-                } else if (environment.equals(jobNameAndBuildId)) {
-                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, jobNameAndBuildId), testBindingBoxInstance2);
+                if (tags.contains(jobNameAndBuildId)) {
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with tag ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, jobNameAndBuildId), testBindingBoxInstance2);
                     testBindingBoxInstance2 = instanceJson;
-                } else if (environment.equals(buildTag)) {                        
-                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, buildTag), testBindingBoxInstance3);
-                    testBindingBoxInstance3 = instanceJson;
+                } else if (tags.contains(buildTag)) {                        
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with tag ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, buildTag), testBindingBoxInstance3);
+                    testBindingBoxInstance3 = instanceJson;                    
+                } else if (tags.contains(testTag)) {
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with tags ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, tags), testBindingBoxInstance1);
+                    testBindingBoxInstance1 = instanceJson;
+                } else {
+                    throw new AssertionError(MessageFormat.format("Unexpected instance of box {0} with tags ''{1}'' has been deployed", TestUtils.TEST_BINDING_BOX_NAME, tags));
                 } 
-            } else {
-                
-            }           
+            }          
         }
         
         assertNotNull(testLinuxBoxInstance);

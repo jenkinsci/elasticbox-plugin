@@ -44,13 +44,13 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>test-manage-instance-2</environment>
+      <environment>test-manage-instance-1</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;INSTALL_EXIT_CODE&quot;,&quot;value&quot;:&quot;1&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Number&quot;}]</variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>reinstall</alternateAction>
       <waitForCompletion>false</waitForCompletion>
-      <tags>test-manage-instance-2, ${TEST_TAG}</tags>
+      <tags>test-manage-instance-1, ${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-88567b85-7287-4ae6-803c-8630a73d382b</id>
@@ -59,13 +59,13 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>test-manage-instance-3</environment>
+      <environment>test-manage-instance-2</environment>
       <instances>1</instances>
       <variables>[]</variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>skip</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags>test-manage-instance-3, ${TEST_TAG}</tags>
+      <tags>test-manage-instance-2, ${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9-SNAPSHOT">
       <cloud>elasticbox</cloud>

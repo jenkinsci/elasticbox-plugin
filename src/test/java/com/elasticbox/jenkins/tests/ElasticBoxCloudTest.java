@@ -18,11 +18,8 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpClient;
@@ -59,7 +56,7 @@ public class ElasticBoxCloudTest extends TestBase {
                client.doDelete(client.getBoxUrl(testJenkinsSlaveBoxData.getNewProfileId()));
             }
         }
-        client.doDelete(provider.getString("uri"));
+        delete(provider, client);
     }
         
     @Test

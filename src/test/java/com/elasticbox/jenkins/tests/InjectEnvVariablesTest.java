@@ -60,6 +60,7 @@ public class InjectEnvVariablesTest extends TestBase {
         deleteAfter(testProvider);
         testProfile = TestUtils.createTestProfile(linuxBoxVersion, testProvider, null, client);
         deleteAfter(testProfile);
+        templateResolver.map("tphongio", TestUtils.TEST_WORKSPACE);
         templateResolver.map("989c760d-4f3e-40bc-8c3b-6d198183b85a", linuxBoxId);
         templateResolver.map("f035c580-70b3-49ce-9209-eb90c968060a", linuxBoxVersion.getString("id"));
         templateResolver.map("ca4cf377-7b5b-4456-9c19-2131eee22747", testProfile.getString("id"));

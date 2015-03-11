@@ -62,8 +62,8 @@ assert_not_empty TEST_LINUX_MACHINE_NAME $TEST_LINUX_MACHINE_NAME
 assert_not_empty TEST_LINUX_PUBLIC_ADDRESS $TEST_LINUX_PUBLIC_ADDRESS
 assert_not_empty TEST_LINUX_PRIVATE_ADDRESS $TEST_LINUX_PRIVATE_ADDRESS
 
-if [ ${TEST_TAG} != $TEST_LINUX_TAGS ]; then
-  echo TEST_LINUX_TAGS is not the same as TEST_TAG
+if [[ -z &quot;$(echo $TEST_LINUX_TAGS | grep ${TEST_TAG})&quot; ]]; then
+  echo TEST_LINUX_TAGS does not contain TEST_TAG
   exit 1
 fi
 

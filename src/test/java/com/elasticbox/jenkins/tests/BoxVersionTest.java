@@ -43,12 +43,12 @@ public class BoxVersionTest extends BuildStepTestBase {
     private final String STAGING = "staging";
     
     
-    private JSONObject createVersion(JSONObject box, String versionDescription) throws IOException {
+    private JSONObject createVersion(JSONObject box, int major, int minor, int patch, String versionDescription) throws IOException {
         JSONObject boxCopy = JSONObject.fromObject(box);
         JSONObject versionNumber = new JSONObject();
-        versionNumber.put("major", 1);
-        versionNumber.put("minor", 0);
-        versionNumber.put("patch", 0);        
+        versionNumber.put("major", major);
+        versionNumber.put("minor", minor);
+        versionNumber.put("patch", patch);        
         JSONObject version = new JSONObject();
         version.put("box", boxCopy.get("id"));
         version.put("description", versionDescription);
@@ -99,7 +99,7 @@ public class BoxVersionTest extends BuildStepTestBase {
         
         // create versions for the box test-linux-box to test
         JSONObject testLinuxBox = testBoxDataLookup.get("test-linux-box").getJson();
-        JSONObject testLinuxBoxVersion = createVersion(testLinuxBox, "1");
+        JSONObject testLinuxBoxVersion = createVersion(testLinuxBox, 1, 0, 0, "v1.0.0");
         testLinuxBoxVersion1 = testLinuxBoxVersion.getString("id");
 
         // add new variable to test-linux-box and share it as read-only with staging workspace        
@@ -110,8 +110,10 @@ public class BoxVersionTest extends BuildStepTestBase {
         testLinuxBox.getJSONArray("variables").add(newVariable);
         client.doUpdate(testLinuxBox.getString("uri"), testLinuxBox);  
         share(testLinuxBox.getString("uri"), STAGING, true);
+        share(client.getBoxUrl(testBoxDataLookup.get("test-linux-box").getNewProfileId()), STAGING, false);
         
         share(testBoxDataLookup.get("test-nested-box").getJson().getString("uri"), STAGING, false);
+        share(client.getBoxUrl(testBoxDataLookup.get("test-nested-box").getNewProfileId()), STAGING, false);
         share(testProvider.getString("uri"), STAGING, true);
     }  
     
@@ -149,7 +151,6 @@ public class BoxVersionTest extends BuildStepTestBase {
         Assert.assertEquals(resolver.resolve("${BUILD_NUMBER}"), updatedVariable.getString("value"));
     }
     
-    @Test
     public void testBoxVersion() throws Exception {
         Map<String, String> parameters = Collections.singletonMap("TEST_TAG", testTag);        
         FreeStyleProject project = TestUtils.createProject("test", createTestDataFromTemplate("jobs/test-box-version.xml"), jenkins.getInstance());
@@ -166,7 +167,7 @@ public class BoxVersionTest extends BuildStepTestBase {
         TestUtils.cleanUp(testTag, STAGING, jenkins.getInstance());
         
         // create version 1 of test-nested-box, share it as read-only with staging workspace and build again
-        String testNestedBoxVersion1 = createVersion(testNestedBox, "1").getString("id");
+        String testNestedBoxVersion1 = createVersion(testNestedBox, 1, 0, 0, "v1.0.0").getString("id");
         share(testNestedBoxUri, STAGING, true);
         build = TestUtils.runJob(project, parameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);        
@@ -175,7 +176,7 @@ public class BoxVersionTest extends BuildStepTestBase {
         TestUtils.cleanUp(testTag, STAGING, jenkins.getInstance());
         
         // create version 2 of test-linux-box and build again
-        testLinuxBoxVersion2 = createVersion(testLinuxBox, "2").getString("id");
+        testLinuxBoxVersion2 = createVersion(testLinuxBox, 2, 0, 0, "v2.0.0").getString("id");
         build = TestUtils.runJob(project, parameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);        
         // check that version 2 is deployed and updated by the build

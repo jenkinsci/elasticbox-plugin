@@ -269,15 +269,15 @@ public class TestUtils {
         JSONObject box = JSONObject.fromObject(loadBox(testBoxData.jsonFileName, new TemplateResolverImpl(client, resolver)));
         box.put("name", box.getString("name") + '-' + UUID.randomUUID().toString());
         box.put("owner", TestUtils.TEST_WORKSPACE);
-        JSONArray tags;
-        if (box.containsKey("tags")) {
-            tags = box.getJSONArray("tags");
+        JSONArray requirements;
+        if (box.containsKey("requirements")) {
+            requirements = box.getJSONArray("requirements");
         } else {
-            tags = new JSONArray();
-            box.put("tags", tags);
+            requirements = new JSONArray();
+            box.put("requirements", requirements);
         }
-        if (!tags.contains(TEST_TAG)) {
-            tags.add(TEST_TAG);
+        if (!requirements.contains(TEST_TAG)) {
+            requirements.add(TEST_TAG);
         }
         box.remove("id");
         box = client.createBox(box);

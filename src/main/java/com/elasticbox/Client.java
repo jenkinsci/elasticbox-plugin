@@ -741,13 +741,13 @@ public class Client {
         String instanceId = instance.getString("id");
         String instanceUrl = getInstanceUrl(instanceId);
         if (variables != null && !variables.isEmpty()) {
-            updateInstance(instance, variables);
+            instance = updateInstance(instance, variables);
         }
         
         HttpPut put = new HttpPut(MessageFormat.format("{0}/{1}", instanceUrl, operation));
         try {
             execute(put);
-            return getInstance(instanceId);
+            return instance;
         } finally {
             put.reset();
         }
