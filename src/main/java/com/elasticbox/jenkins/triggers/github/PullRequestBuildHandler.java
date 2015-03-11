@@ -96,11 +96,14 @@ public class PullRequestBuildHandler implements IBuildHandler {
         if (gitHubRepoName == null) {
             throw new IOException(MessageFormat.format("Invalid GitHub project URL specified: {0}", gitHubProjectUrl));
         }
+        
         GHRepository repo = gitHubRepoName.resolveOne();
         if (repo == null) {
-            throw new IOException(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
+            LOGGER.severe(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
+            gitHubRepositoryUrl = gitHubProjectUrl;
+        } else {
+            gitHubRepositoryUrl = repo.getUrl();
         }
-        gitHubRepositoryUrl = repo.getUrl();
         if (!gitHubRepositoryUrl.endsWith("/")) {
             gitHubRepositoryUrl += '/';
         }

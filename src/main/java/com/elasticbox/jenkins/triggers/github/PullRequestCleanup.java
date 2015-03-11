@@ -15,7 +15,6 @@ package com.elasticbox.jenkins.triggers.github;
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
-import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxExecutor;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
