@@ -22,7 +22,9 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -66,9 +68,14 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
                 iter.remove();
             }
         }
-        logger.info(MessageFormat.format("Updating the instances with variables: {0}", resolvedVariables));                
+        logger.info(MessageFormat.format("Updating the instances with variables: {0}", resolvedVariables));
+        List<String> instanceIDs = new ArrayList<String>();
         for (Object instance : instances) {
-            JSONObject instanceJson = (JSONObject) instance;            
+            instanceIDs.add(((JSONObject) instance).getString("id"));
+        }
+        instances = client.getInstances(instanceIDs);
+        for (Object instance : instances) {
+            JSONObject instanceJson = (JSONObject) instance;      
             client.updateInstance(instanceJson, resolvedVariables, boxVersion);
             String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Updated instance {0}", instancePageUrl));            

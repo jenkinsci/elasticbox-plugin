@@ -68,7 +68,7 @@ public class BuildStepTestBase extends TestBase {
         variables.add(variable);
         IProgressMonitor monitor = client.deploy(testBindingBoxData.getJson().getString("id"),
                 testBindingBoxData.getNewProfileId(), testBindingBoxData.getJson().getString("owner"), 
-                "jenkins-plugin-test", null, 1, variables, null, null, new JSONArray(), null);
+                Arrays.asList("jenkins-plugin-test"), 1, variables, null, null, new JSONArray(), null);
         monitor.waitForDone(10);
         JSONObject testBindingBoxInstance = client.getInstance(Client.getResourceId(monitor.getResourceUrl()));
         deleteAfter(testBindingBoxInstance);
@@ -86,11 +86,14 @@ public class BuildStepTestBase extends TestBase {
             TestBoxData testBoxData = testBoxDataList.get(i);
             if (testBoxData.getJson().containsKey("uri")) {
                 client.doDelete(testBoxData.getJson().getString("uri"));
+                if (testBoxData.getNewProfileId() != null) {
+                    client.doDelete(client.getBoxUrl(testBoxData.getNewProfileId()));
+                }
             }
         }
         
         if (testProvider != null) {
-            client.doDelete(testProvider.getString("uri"));
+            delete(testProvider, client);
         }
     }
     

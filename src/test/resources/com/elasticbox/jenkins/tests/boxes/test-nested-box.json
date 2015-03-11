@@ -1,6 +1,8 @@
 {
     "name": "test-nested-box",
-    "service": "Linux Compute",
+    "requirements": [
+        "linux"
+    ],
     "tags": [],
     "variables": [
         {
@@ -33,5 +35,5 @@
     "events": {},
     "members": [],
     "id": "com.elasticbox.jenkins.tests.boxes.test-nested-box",
-    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+    "schema": "http://elasticbox.net/schemas/{schema_version}/boxes/script"
 }

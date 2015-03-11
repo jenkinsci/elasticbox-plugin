@@ -119,7 +119,7 @@ public class TestBase {
         
         for (int i = objectsToDelete.size() - 1; i > -1; i--) {
             try {
-                client.doDelete(objectsToDelete.get(i).getString("uri"));
+                delete(objectsToDelete.get(i), client);
             } catch (IOException ex) {
                 LOGGER.log(Level.WARNING, ex.getMessage(), ex);
             }
@@ -139,5 +139,19 @@ public class TestBase {
         } else {
             return false;
         }
+    }
+    
+    protected void delete(JSONObject resource, Client client) throws IOException {
+        if (resource.getString("schema").endsWith("/provider")) {
+            // delete all policy boxes of the provider
+            String providerId = resource.getString("id");
+            for (Object policy : client.getProfiles(resource.getString("owner"))) {
+                JSONObject policyJson = (JSONObject) policy;
+                if (policyJson.getString("provider_id").equals(providerId)) {
+                    client.doDelete(policyJson.getString("uri"));
+                }
+            }
+        }
+        client.doDelete(resource.getString("uri"));        
     }
 }

@@ -121,7 +121,7 @@ public class SlaveProvisionTest extends BuildStepTestBase {
         }
         
         for (Map.Entry<AbstractSlaveConfiguration, ElasticBoxSlave> entry : configToSlaveMap.entrySet()) {
-            Assert.assertNotNull(MessageFormat.format("Slave {0} was not launched", entry.getKey().getEnvironment()), entry.getValue());
+            Assert.assertNotNull(MessageFormat.format("Slave was not launched for box {0}", entry.getKey().getBox()), entry.getValue());
         }
     }
     

@@ -1,6 +1,8 @@
 {
     "name": "test-deeply-nested-box",
-    "service": "Linux Compute",
+    "requirements": [
+        "linux"
+    ],
     "tags": [],
     "variables": [
         {
@@ -23,5 +25,5 @@
     "events": {},
     "members": [],
     "id": "531123d9-5a73-42ff-ad70-87a6eb31442e",
-    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+    "schema": "http://elasticbox.net/schemas/{schema_version}/boxes/script"
 }

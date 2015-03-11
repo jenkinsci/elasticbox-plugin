@@ -1,7 +1,9 @@
 {
     "updated": "2014-11-07 20:45:58.066030",
     "name": "Maven Jenkins Slave",
-    "service": "Linux Compute",
+    "requirements": [
+        "linux"
+    ],
     "variables": [
         {
             "required": false,
@@ -20,5 +22,5 @@
     "events": {
         "install": "install.sh"
     },
-    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+    "schema": "http://elasticbox.net/schemas/{schema_version}/boxes/script"
 }

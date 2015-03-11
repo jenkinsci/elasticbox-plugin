@@ -1,6 +1,8 @@
 {
     "name": "Solaris Jenkins Slave",
-    "service": "Linux Compute",
+    "requirements": [
+        "linux"
+    ],
     "tags": [],
     "variables": [
         {

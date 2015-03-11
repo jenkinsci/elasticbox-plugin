@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.jenkins.migration.RetentionTimeConverter;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.Constants;
@@ -103,13 +104,9 @@ public class ElasticBoxSlave extends Slave {
     private boolean deletable;
     
     private final transient int launchTimeout;
-    private transient String environment;
 
     public ElasticBoxSlave(ProjectSlaveConfiguration config, boolean singleUse) throws Descriptor.FormException, IOException {
         this(config, config.getElasticBoxCloud(), new ProjectSlaveConfigurationRetentionStrategy(config), singleUse);
-        if (StringUtils.isBlank(config.getEnvironment())) {
-            environment = getNodeName().substring(0, 30);
-        }
     }
     
     public ElasticBoxSlave(SlaveConfiguration config, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
@@ -128,7 +125,6 @@ public class ElasticBoxSlave extends Slave {
         this.cloudName = cloud.name;
         this.retentionTime = config.getRetentionTime();
         this.launchTimeout = config.getLaunchTimeout();
-        this.environment = config.getEnvironment();
     }
 
     @Override
@@ -243,10 +239,6 @@ public class ElasticBoxSlave extends Slave {
         return launchTimeout;
     }
 
-    public String getEnvironment() {
-        return environment;
-    }
-
     public int getRetentionTime() {
         return ((ElasticBoxRetentionStrategy) getRetentionStrategy()).getRetentionTime();
     }
@@ -287,7 +279,7 @@ public class ElasticBoxSlave extends Slave {
     
     public JSONObject getProfile() throws IOException {
         checkInstanceReachable();
-        return getCloud().getClient().getProfile(getProfileId());
+        return getCloud().getClient().getBox(getProfileId());
     }  
     
     void checkInstanceReachable() throws IOException {
@@ -366,7 +358,7 @@ public class ElasticBoxSlave extends Slave {
     
     private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
         Client client = cloud.getClient();
-        JSONObject profile = client.getProfile(profileId);
+        JSONObject profile = client.getBox(profileId);
         JSONArray claims = profile.getJSONArray("claims");
         if (claims.contains(Constants.LINUX_CLAIM)) {
             return "/var/jenkins";

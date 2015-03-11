@@ -45,9 +45,14 @@ public class BoxVersionTest extends BuildStepTestBase {
     
     private JSONObject createVersion(JSONObject box, String versionDescription) throws IOException {
         JSONObject boxCopy = JSONObject.fromObject(box);
+        JSONObject versionNumber = new JSONObject();
+        versionNumber.put("major", 1);
+        versionNumber.put("minor", 0);
+        versionNumber.put("patch", 0);        
         JSONObject version = new JSONObject();
         version.put("box", boxCopy.get("id"));
         version.put("description", versionDescription);
+        version.put("number", versionNumber);
         boxCopy.put("version", version);        
         return cloud.getClient().doUpdate(boxCopy.getString("uri"), boxCopy);        
     }

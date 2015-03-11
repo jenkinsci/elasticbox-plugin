@@ -162,8 +162,6 @@ public class DeployBox extends Builder implements IInstanceProvider {
             AbstractBuild<?, ?> build) 
             throws IOException, InterruptedException {
         Set<String> resolvedTags = resolver.resolveTags(tags);
-        String resolvedEnvironment = resolver.resolve(tags.split(",")[0].trim());
-        resolvedTags.remove(resolvedEnvironment);
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
         DescriptorHelper.removeInvalidVariables(resolvedVariables, 
                 ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, workspace, box, boxVersion).getJsonArray());
@@ -193,7 +191,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             locationVariable.put("name", "location");
             locationVariable.put("value", location);  
         }
-        IProgressMonitor monitor = client.deploy(boxId, profile, workspace, resolvedEnvironment, 
+        IProgressMonitor monitor = client.deploy(boxId, profile, workspace,
                 new ArrayList(resolvedTags), instances, resolvedVariables, expirationTime, expirationOperation,
                 policyVariables, automaticUpdates);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());

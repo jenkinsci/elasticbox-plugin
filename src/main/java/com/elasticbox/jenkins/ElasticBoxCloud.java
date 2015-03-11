@@ -15,6 +15,8 @@ package com.elasticbox.jenkins;
 import antlr.ANTLRException;
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.migration.AbstractConverter;
+import com.elasticbox.jenkins.migration.Version;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import hudson.Extension;
@@ -28,11 +30,13 @@ import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
 import hudson.util.Scrambler;
+import hudson.util.XStream2;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -457,9 +461,10 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
             List<ElasticBoxCloud> cloudsToRemoveCachedClient = validateClouds(clouds);
 
+            SlaveConfiguration.DescriptorImpl slaveConfigDescriptor = (SlaveConfiguration.DescriptorImpl) Jenkins.getInstance().getDescriptor(SlaveConfiguration.class);
             int slaveMaxInstances = 0;
             for (SlaveConfiguration config : newCloud.getSlaveConfigurations()) {
-                validateSlaveConfiguration(config, newCloud);
+                slaveConfigDescriptor.validateSlaveConfiguration(config, newCloud);
                 slaveMaxInstances += config.getMaxInstances();
             }
             
@@ -563,52 +568,6 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             return cloudsToRemoveCachedClient;
         }
         
-        private void validateSlaveConfiguration(SlaveConfiguration slaveConfig, ElasticBoxCloud newCloud) throws FormException {
-            if (StringUtils.isBlank(slaveConfig.getWorkspace())) {
-                throw new FormException(MessageFormat.format("No workspace is selected for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            }
-
-            if (StringUtils.isBlank(slaveConfig.getBox())) {
-                throw new FormException(MessageFormat.format("No Box is selected for a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            }
-
-            if (StringUtils.isBlank(slaveConfig.getBoxVersion())) {
-                throw new FormException(MessageFormat.format("No Version is selected for the selected box in a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            }
-
-            if (StringUtils.isBlank(slaveConfig.getProfile())) {
-                throw new FormException(MessageFormat.format("No Deployment Policy is selected for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            } else if (DescriptorHelper.TAGS.equals(slaveConfig.getProfile())) {
-                throw new FormException(MessageFormat.format("Tags must be specified to select a Deployment Policy for for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            }
-
-            String environment = slaveConfig.getEnvironment();
-            if (StringUtils.isBlank(environment)) {
-                throw new FormException(MessageFormat.format("No Environment is specified for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            }
-            
-            environment = environment.trim();
-            if (environment.length() > 30) {
-                throw new FormException(MessageFormat.format("Environment of a slave configuration of ElasticBox cloud {0} is longer than 30 characters.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            }            
-            slaveConfig.setEnvironment(environment);
-            
-            if (slaveConfig.getExecutors() < 1) {
-                slaveConfig.setExecutors(1);
-            }  
-            
-            if (StringUtils.isBlank(slaveConfig.getId())) {
-                slaveConfig.setId(UUID.randomUUID().toString());
-            }
-            
-            FormValidation result = ((SlaveConfiguration.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(SlaveConfiguration.class)).doCheckBoxVersion(slaveConfig.getBoxVersion(), 
-                    newCloud.getEndpointUrl(), newCloud.getUsername(), newCloud.getPassword(), newCloud.getToken(), 
-                    slaveConfig.getWorkspace(), slaveConfig.getBox());
-            if (result.kind == FormValidation.Kind.ERROR) {
-                throw new FormException(result.getMessage(), SlaveConfiguration.SLAVE_CONFIGURATIONS);
-            }
-        }
-
         private void checkDeletedSlaveConfiguration(ElasticBoxCloud newCloud) throws FormException {
             Cloud cloud = Jenkins.getInstance().getCloud(newCloud.name);
             if (!(cloud instanceof ElasticBoxCloud)) {
@@ -661,10 +620,24 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return null;
     }
  
-    public static class ConverterImpl extends RetentionTimeConverter<ElasticBoxCloud> {
+    public static class ConverterImpl extends AbstractConverter<ElasticBoxCloud> {
+
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream, Arrays.asList(
+                    new RetentionTimeMigrator()
+            ));
+        }
+
+    }
+    
+    private static class RetentionTimeMigrator extends AbstractConverter.Migrator<ElasticBoxCloud> {
+
+        public RetentionTimeMigrator() {
+            super(Version._0_9_3);
+        }
 
         @Override
-        protected void fixZeroRetentionTime(ElasticBoxCloud cloud) {
+        protected void migrate(ElasticBoxCloud cloud, Version olderVersion) {
             if (cloud.getRetentionTime() == 0) {
                 cloud.retentionTime = Integer.MAX_VALUE;
             }
@@ -676,4 +649,5 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         }
         
     }
+    
 }

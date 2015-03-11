@@ -13,15 +13,24 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.migration.AbstractConverter;
+import com.elasticbox.jenkins.migration.Version;
 import com.elasticbox.jenkins.util.ClientCache;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Node;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -52,6 +61,42 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
         public String getDisplayName() {
             return "Slave Configuration";
         }
+        
+        public void validateSlaveConfiguration(SlaveConfiguration slaveConfig, ElasticBoxCloud newCloud) throws FormException {
+            if (StringUtils.isBlank(slaveConfig.getWorkspace())) {
+                throw new FormException(MessageFormat.format("No workspace is selected for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+            }
+
+            if (StringUtils.isBlank(slaveConfig.getBox())) {
+                throw new FormException(MessageFormat.format("No Box is selected for a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+            }
+
+            if (StringUtils.isBlank(slaveConfig.getBoxVersion())) {
+                throw new FormException(MessageFormat.format("No Version is selected for the selected box in a slave configurationof ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+            }
+
+            if (StringUtils.isBlank(slaveConfig.getProfile())) {
+                throw new FormException(MessageFormat.format("No Deployment Policy is selected for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+            } else if (DescriptorHelper.TAGS.equals(slaveConfig.getProfile())) {
+                throw new FormException(MessageFormat.format("Tags must be specified to select a Deployment Policy for for a slave configuration of ElasticBox cloud {0}.", newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+            }
+
+            if (slaveConfig.getExecutors() < 1) {
+                slaveConfig.setExecutors(1);
+            }  
+            
+            if (StringUtils.isBlank(slaveConfig.getId())) {
+                slaveConfig.setId(UUID.randomUUID().toString());
+            }
+            
+            FormValidation result = ((SlaveConfiguration.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(SlaveConfiguration.class)).doCheckBoxVersion(slaveConfig.getBoxVersion(), 
+                    newCloud.getEndpointUrl(), newCloud.getUsername(), newCloud.getPassword(), newCloud.getToken(), 
+                    slaveConfig.getWorkspace(), slaveConfig.getBox());
+            if (result.kind == FormValidation.Kind.ERROR) {
+                throw new FormException(result.getMessage(), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+            }
+        }
+        
 
         private Client createClient(String endpointUrl, String username, String password, String token) {
             if (StringUtils.isBlank(endpointUrl) || 

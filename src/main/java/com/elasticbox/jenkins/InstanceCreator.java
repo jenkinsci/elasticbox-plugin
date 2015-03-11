@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.jenkins.migration.RetentionTimeConverter;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;

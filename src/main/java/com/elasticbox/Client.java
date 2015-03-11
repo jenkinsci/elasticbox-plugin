@@ -30,6 +30,7 @@ import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
@@ -38,6 +39,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.utils.HttpClientUtils;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
@@ -351,13 +353,6 @@ public class Client {
         return (JSONObject) doGet(MessageFormat.format("/services/instances/{0}/service", instanceId), false);
     }
 
-    public JSONObject getProfile(String profileId) throws IOException {
-        if (StringUtils.isBlank(profileId)) {
-            throw new IOException("profileId cannot be blank");
-        }
-        return (JSONObject) doGet(MessageFormat.format("{0}/services/profiles/{1}", endpointUrl, profileId), false);  
-    }
-    
     public JSONArray getInstances(String workspaceId) throws IOException, IOException, IOException, IOException, IOException {
         if (StringUtils.isBlank(workspaceId)) {
             throw new IOException("workspaceId cannot be blank");
@@ -681,13 +676,13 @@ public class Client {
         }                
     }
     
-    public IProgressMonitor deploy(String profileId, String workspaceId, String environment, int instances, 
+    public IProgressMonitor deploy(String profileId, String workspaceId, List<String> tags, int instances, 
             JSONArray variables) throws IOException {
-        return deploy(null, profileId, workspaceId, environment, null, instances, variables, null, null, null, 
+        return deploy(profileId, profileId, workspaceId, tags, instances, variables, null, null, null, 
                 Constants.AUTOMATIC_UPDATES_OFF);
     }
     
-    public IProgressMonitor deploy(String boxVersion, String profileId, String workspaceId, String environment, 
+    public IProgressMonitor deploy(String boxVersion, String profileId, String workspaceId,
             List<String> tags, int instances, JSONArray variables, String expirationTime, String expirationOperation,
             JSONArray policyVariables, String automaticUpdates) 
             throws IOException {        
@@ -722,7 +717,6 @@ public class Client {
             deployRequest.put("lease", lease);
         }
         List<String> instanceTags = new ArrayList<String>();
-        instanceTags.add(environment);
         if (tags != null) {
             instanceTags.addAll(tags);
         }
@@ -842,6 +836,7 @@ public class Client {
         
     public JSON doGet(String url, boolean isArray) throws IOException {
         HttpGet get = new HttpGet(prepareUrl(url));
+        get.setHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType());
         try {
             HttpResponse response = execute(get);
             return isArray ? JSONArray.fromObject(getResponseBodyAsString(response)) : JSONObject.fromObject(getResponseBodyAsString(response));                    
@@ -926,9 +921,13 @@ public class Client {
     public String getProviderPageUrl(String providerId) {
         return getPageUrl(endpointUrl, getProviderUrl(providerId));
     }
+    
+    public String getBoxUrl(String boxId) {
+        return MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId);
+    }
 
     public String getBoxPageUrl(String boxId) {
-        return getPageUrl(endpointUrl, MessageFormat.format("{0}/services/boxes/{1}", endpointUrl, boxId));
+        return getPageUrl(endpointUrl, getBoxUrl(boxId));
     }    
     
     public static final String getInstanceUrl(String endpointUrl, String instanceId) {

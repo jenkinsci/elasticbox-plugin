@@ -13,12 +13,15 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
+import hudson.util.XStream2;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.HashSet;
@@ -41,7 +44,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private String id;
     private final String workspace;
     private final String box;
-    private final String profile;
+    private String profile;
     private final String policyTags;    
     private final String provider;
     private final String location;
@@ -98,6 +101,10 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
             boxVersion = DescriptorHelper.LATEST_BOX_VERSION;
         }
         
+        if (environment != null) {
+            tags = environment;
+        }
+        
         return this;
     }
     
@@ -125,7 +132,11 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     public String getProfile() {
         return profile;
     }
-
+    
+    void setProfile(String profile) {
+        this.profile = profile;
+    }
+    
     public String getPolicyTags() {
         return policyTags;
     }        
@@ -146,14 +157,6 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         return boxVersion;
     }
 
-    public String getEnvironment() {
-        return environment;
-    }
-
-    protected void setEnvironment(String environment) {
-        this.environment = environment;
-    }
-    
     public String getLabels() {
         return labels;
     }
@@ -165,6 +168,10 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     public int getMaxInstances() {
         return maxInstances;
     }
+
+    public String getTags() {
+        return tags;
+    }        
 
     public String getDescription() {
         return description;
@@ -274,4 +281,32 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
             return DescriptorHelper.checkSlaveBox(client, boxVersion);            
         }
     }
+    
+    public static class EnvironmentConverter extends XStream2.PassthruConverter<AbstractSlaveConfiguration> {
+        private static final String ENVIRONMENT_PROPERTY = AbstractSlaveConfiguration.class.getName() + ".environment";
+
+        public EnvironmentConverter(XStream2 xStream) {
+            super(xStream);
+        }
+
+        @Override
+        public boolean canConvert(Class type) {
+            return AbstractSlaveConfiguration.class.isAssignableFrom(type);
+        }    
+
+        @Override
+        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+            return super.unmarshal(reader, context);
+        }        
+
+        @Override
+        protected void callback(AbstractSlaveConfiguration slaveConfig, UnmarshallingContext context) {
+            String environment = (String) context.get(ENVIRONMENT_PROPERTY);
+            if (environment != null) {
+                slaveConfig.tags = environment;
+            }
+        }
+
+    }
+    
 }

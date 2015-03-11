@@ -10,8 +10,10 @@
  * written permission is obtained from ElasticBox.
  */
 
-package com.elasticbox.jenkins;
+package com.elasticbox.jenkins.migration;
 
+import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import hudson.util.XStream2;

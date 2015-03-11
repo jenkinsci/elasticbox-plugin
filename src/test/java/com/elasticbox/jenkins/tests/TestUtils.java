@@ -284,23 +284,19 @@ public class TestUtils {
         testBoxData.setJson(box);
     }
     
-    static JSONObject createTestProfile(TestBoxData testBoxData, JSONObject testProvider, TemplateResolver resolver, Client client) throws IOException {
+    static JSONObject createTestProfile(TestBoxData testBoxData, JSONObject testProvider, TemplateResolver resolver, Client client) throws Exception {
         JSONObject testProfile = createTestProfile(testBoxData.getJson(), testProvider, resolver, client);
         testBoxData.setNewProfileId(testProfile.getString("id"));
         return testProfile;
     }
     
-    static JSONObject createTestProfile(JSONObject box, JSONObject testProvider, TemplateResolver resolver, Client client) throws IOException {        
-        JSONObject testProfile = JSONObject.fromObject(createTestDataFromTemplate("test-profile.json", new TemplateResolverImpl(client, resolver)));
-        testProfile.remove("id");
-        testProfile.put("name", NAME_PREFIX + UUID.randomUUID().toString());
-        testProfile.put("owner", TestUtils.TEST_WORKSPACE);
-        testProfile.put("provider", testProvider.getString("name"));
-        JSONObject profileBox = testProfile.getJSONObject("box");
-        profileBox.put("version", box.getString("id"));
-        profileBox.put("name", box.getString("name"));
-        testProfile = client.doPost("/services/profiles", testProfile);
-        return testProfile;
+    static JSONObject createTestProfile(JSONObject box, JSONObject testProvider, TemplateResolver resolver, Client client) throws Exception {        
+        JSONObject policyBox = JSONObject.fromObject(createTestDataFromTemplate("test-policy.json", new TemplateResolverImpl(client, resolver)));
+        policyBox.put("name", NAME_PREFIX + UUID.randomUUID().toString());
+        policyBox.put("owner", TestUtils.TEST_WORKSPACE);
+        policyBox.put("provider_id", testProvider.getString("id"));
+        policyBox.put("claims", box.getJSONArray("requirements"));
+        return client.createBox(policyBox);
     }        
     
     private static JSONObject loadBox(String templatePath, TemplateResolver resolver) throws Exception {

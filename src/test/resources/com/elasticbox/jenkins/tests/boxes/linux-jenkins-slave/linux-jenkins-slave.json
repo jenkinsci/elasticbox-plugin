@@ -1,6 +1,8 @@
 {
     "name": "Linux Jenkins Slave",
-    "service": "Linux Compute",
+    "requirements": [
+        "linux"
+    ],
     "tags": [],
     "variables": [
         {
@@ -24,5 +26,5 @@
         "install": "install.sh"
     },
     "id": "2fb2d436-6dca-4226-a95e-4ac58fc601f3",
-    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+    "schema": "http://elasticbox.net/schemas/{schema_version}/boxes/script"
 }

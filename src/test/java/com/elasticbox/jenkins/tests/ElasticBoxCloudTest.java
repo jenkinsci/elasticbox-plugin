@@ -18,8 +18,11 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpClient;
@@ -50,7 +53,12 @@ public class ElasticBoxCloudTest extends TestBase {
     @After
     public void cleanUp() throws Exception {
         Client client = cloud.getClient();
-        client.doDelete(testJenkinsSlaveBoxData.getJson().getString("uri"));
+        if (testJenkinsSlaveBoxData.getJson().containsKey("uri")) {
+            client.doDelete(testJenkinsSlaveBoxData.getJson().getString("uri"));
+            if (testJenkinsSlaveBoxData.getNewProfileId() != null) {
+               client.doDelete(client.getBoxUrl(testJenkinsSlaveBoxData.getNewProfileId()));
+            }
+        }
         client.doDelete(provider.getString("uri"));
     }
         
@@ -59,12 +67,12 @@ public class ElasticBoxCloudTest extends TestBase {
         Client client = cloud.getClient();
         TestUtils.createTestProfile(testJenkinsSlaveBoxData, provider, null, client);
         JSONObject testJenkinsSlaveBox = testJenkinsSlaveBoxData.getJson();
-        JSONArray profiles = client.getProfiles(TestUtils.TEST_WORKSPACE, testJenkinsSlaveBox.getString("id"));
+        JSONArray policies = client.getProfiles(TestUtils.TEST_WORKSPACE, testJenkinsSlaveBox.getString("id"));
         Assert.assertTrue(MessageFormat.format("Box {0} does not have any profile in workspace {1}",
-                testJenkinsSlaveBox.getString("uri"), TestUtils.TEST_WORKSPACE), profiles.size() > 0);
-        for (Object profile : profiles) {
-            JSONObject profileJson = client.getProfile(((JSONObject) profile).getString("id"));
-            Assert.assertEquals(profile.toString(), profileJson.toString());
+                testJenkinsSlaveBox.getString("uri"), TestUtils.TEST_WORKSPACE), policies.size() > 0);
+        for (Object policy : policies) {
+            JSONObject profileJson = client.getBox(((JSONObject) policy).getString("id"));
+            Assert.assertEquals(policy.toString(), profileJson.toString());
         }        
         
         // make sure that a deployment request can be successfully submitted
@@ -77,7 +85,7 @@ public class ElasticBoxCloudTest extends TestBase {
         variable.put("value", MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp", slaveName));
         variables.add(variable);                        
         IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), 
-                "jenkins-plugin-unit-test", 1, variables);
+                Arrays.asList("jenkins-plugin-unit-test"), 1, variables);
         try {
             monitor.waitForDone(60);
         } catch (IProgressMonitor.IncompleteException ex) {
