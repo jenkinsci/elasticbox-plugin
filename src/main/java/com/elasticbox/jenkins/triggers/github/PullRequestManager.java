@@ -36,8 +36,6 @@ import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -269,10 +267,11 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             ConcurrentHashMap<String, PullRequestData> prDataLookup = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject());
             if (prDataLookup != null) {
                 PullRequestData data = prDataLookup.get(cause.getPullRequest().getUrl().toString());
-                if (data != null) {
-                    data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
-                    data.save();
+                if (data == null) {
+                    data = getInstance().addPullRequestData(cause.getPullRequest(), rootBuild.getProject());
                 }
+                data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
+                data.save();
             }
         }
 

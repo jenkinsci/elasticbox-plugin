@@ -96,11 +96,14 @@ public class PullRequestBuildHandler implements IBuildHandler {
         if (gitHubRepoName == null) {
             throw new IOException(MessageFormat.format("Invalid GitHub project URL specified: {0}", gitHubProjectUrl));
         }
+        
         GHRepository repo = gitHubRepoName.resolveOne();
         if (repo == null) {
-            throw new IOException(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
+            LOGGER.severe(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
+            gitHubRepositoryUrl = gitHubProjectUrl;
+        } else {
+            gitHubRepositoryUrl = repo.getUrl();
         }
-        gitHubRepositoryUrl = repo.getUrl();
         if (!gitHubRepositoryUrl.endsWith("/")) {
             gitHubRepositoryUrl += '/';
         }
@@ -206,9 +209,11 @@ public class PullRequestBuildHandler implements IBuildHandler {
         LOGGER.info(MessageFormat.format("Handling event ''{0}'' of pull request {1} for project {2}", prEventPayload.getAction(), pullRequestUrl, project.getFullName()));
         PullRequestManager pullRequestManager = PullRequestManager.getInstance();
         PullRequestData pullRequestData = pullRequestManager.getPullRequestData(pullRequestUrl, project);
-        if (pullRequestData != null && PullRequestManager.PullRequestAction.CLOSED.equals(prEventPayload.getAction())) {
-            cancelBuilds(pullRequestData);
-            deleteInstances(pullRequest);
+        if (PullRequestManager.PullRequestAction.CLOSED.equals(prEventPayload.getAction())) {
+            if (pullRequestData != null) {
+                cancelBuilds(pullRequestData);
+                deleteInstances(pullRequest);
+            }
             return;
         }
 
