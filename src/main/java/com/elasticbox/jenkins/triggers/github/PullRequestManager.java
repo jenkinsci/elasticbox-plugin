@@ -269,10 +269,11 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             ConcurrentHashMap<String, PullRequestData> prDataLookup = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject());
             if (prDataLookup != null) {
                 PullRequestData data = prDataLookup.get(cause.getPullRequest().getUrl().toString());
-                if (data != null) {
-                    data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
-                    data.save();
+                if (data == null) {
+                    data = getInstance().addPullRequestData(cause.getPullRequest(), rootBuild.getProject());
                 }
+                data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
+                data.save();
             }
         }
 

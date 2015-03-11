@@ -125,30 +125,31 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
         for (PullRequestInstance instance : prInstances) {
             Client client = ClientCache.getClient(instance.cloud);
             if (client != null) {
-                IProgressMonitor monitor = null;
+                boolean instanceExists = true;
                 try {
                     LOGGER.info(MessageFormat.format("Terminating instance {0} of pull request {1}", client.getInstanceUrl(instance.id), pullRequest.getUrl()));
-                    monitor = client.terminate(instance.id);
+                    client.terminate(instance.id);
                 } catch (ClientException ex) {
                     if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
                         try {
-                            monitor = client.forceTerminate(instance.id);
+                            client.forceTerminate(instance.id);
                         } catch (IOException ex1) {
                             LOGGER.log(Level.SEVERE, 
                                     MessageFormat.format("Error force-terminating instance {0}", instance.id), ex1);
                         }
                     } else if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                         LOGGER.info(MessageFormat.format("Instance {0} is not found", client.getInstanceUrl(instance.id)));
+                        instanceExists = false;
                     } else {
                         LOGGER.log(Level.SEVERE, MessageFormat.format("Error terminating instance {0}", instance.id), ex);
                     }
                 } catch (IOException ex) {
                     LOGGER.log(Level.SEVERE, MessageFormat.format("Error terminating instance {0}", instance.id), ex);
                 }
-                if (monitor != null) {
+                if (instanceExists) {
                     // add the terminating instance to the DeleteInstancesWorkload so it will be deleted after its termination
                     Jenkins.getInstance().getExtensionList(ElasticBoxExecutor.Workload.class).get(DeleteInstancesWorkload.class).add(instance);
-                    terminatingInstanceURLs.add(monitor.getResourceUrl());
+                    terminatingInstanceURLs.add(client.getInstanceUrl(instance.id));
                 }
             }
         }
