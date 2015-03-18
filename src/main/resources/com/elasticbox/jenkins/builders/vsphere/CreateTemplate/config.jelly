@@ -38,8 +38,8 @@ written permission is obtained from ElasticBox.
         <f:select clazz="required" />
     </f:entry>
     <f:radioBlock name="policyAction" inline="true" title="Update Existing Deployment Policies" value="update"
-                  checked="${instance.policyTags != null || instance.policyName == null}">
-        <f:entry title="${%Policy Tags}" field="policyTags">
+                  checked="${instance.claimFilter != null || instance.policyName == null}">
+        <f:entry title="${%Claims}" field="claimFilter">
             <f:textbox clazz="required" />
         </f:entry>
     </f:radioBlock>
@@ -47,6 +47,9 @@ written permission is obtained from ElasticBox.
                   checked="${instance.policyName != null}">
         <f:entry title="${%Name}" field="policyName">
             <f:textbox clazz="required" />
+        </f:entry>
+        <f:entry title="${%Claims}" field="claims">
+            <f:textbox />
         </f:entry>
     </f:radioBlock>
 </j:jelly>

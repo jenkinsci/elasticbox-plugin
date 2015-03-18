@@ -61,15 +61,40 @@ var ElasticBoxVariables = (function () {
                         tr = Dom.getNextSibling(tr);
                     }                            
                 },
+                        
+                isCloudFormdation;
 
-                isCloudFormdation = variableHolder.boxSelect.value && variableHolder.profileSelect.value === variableHolder.boxSelect.value;
 
-            if (Dom.getStyle(Dom.getAncestorByTagName(variableHolder.boxSelect, 'tr'), 'display') !== 'none') {
-                // toggle deployment options    
-                showRows(variableHolder.profileSelect, !isCloudFormdation);                
-                showRows(variableHolder.providerSelect, isCloudFormdation);
-                showRows(variableHolder.locationSelect, isCloudFormdation);
-                showRows(variableHolder.claimsInput, variableHolder.profileSelect.value === 'tags');
+            if (variableHolder.profileSelect) {
+                if (Dom.getStyle(Dom.getAncestorByTagName(variableHolder.boxSelect, 'tr'), 'display') !== 'none') {
+                    isCloudFormdation = variableHolder.boxSelect.value && variableHolder.profileSelect.value === variableHolder.boxSelect.value;
+                    variableHolder.cloudFormationSelected.value = isCloudFormdation ? 'true' : 'false';
+                    showRows(variableHolder.profileSelect, !isCloudFormdation);                    
+                    showRows(variableHolder.providerSelect, isCloudFormdation);
+                    showRows(variableHolder.locationSelect, isCloudFormdation);
+                    // show/hide radio options for deployment policy
+                    Dom.getPreviousSiblingBy(Dom.getAncestorByTagName(variableHolder.profileSelect, 'tr'), function (sibling) {
+                        var display = Dom.getStyle(sibling, 'display');
+
+                        if (_.isUndefined(_.first(Dom.getElementsByClassName('section-header', 'div', sibling)))) {
+                            // the sibling is not the section header yet, show/hide it depending on whether the selected box is a Cloud Formation box
+                            if (isCloudFormdation) {
+                                display = Dom.getStyle(sibling, 'display');
+                                if (display !== 'none') {
+                                    Dom.setStyle(sibling, 'display', 'none');
+                                    Dom.addClass(sibling, 'ebx-hide');
+                                }
+                            } else if (Dom.hasClass(sibling, 'ebx-hide') && Dom.getStyle(sibling, 'display') === 'none') {
+                                Dom.setAttribute(sibling, 'style', '');
+                            }
+                            return false;
+                        }
+                        return true;
+                    });
+                } else  {
+                    showRows(variableHolder.providerSelect, false);
+                    showRows(variableHolder.locationSelect, false);                    
+                }
             }
         },
         
@@ -100,7 +125,9 @@ var ElasticBoxVariables = (function () {
                             }, variableHolder.buildStepId);
                         }
                     }                                                                
-                };
+                },
+                        
+                descriptorElement;
 
             if (!_.some(Event.getListeners(variableHolder.select, 'change'), function (listener) {
                 return listener.obj === variableHolder.info.changeListenerType;
@@ -123,6 +150,15 @@ var ElasticBoxVariables = (function () {
                     Event.addListener(variableHolder.profileSelect, 'change', function () {
                         toggleDeploymentOptions(variableHolder);
                     });
+                }
+                
+                if (variableHolder.boxSelect) {
+                    descriptorElement = ElasticBoxUtils.getDescriptorElement(variableHolder.boxSelect);
+                    if (descriptorElement && Dom.getAttribute(descriptorElement, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId) {
+                        Event.addListener(variableHolder.boxSelect, 'change', function () {
+                            ElasticBoxUtils.updateDeployBoxLabel(descriptorElement);
+                        });
+                    }
                 }
 
                 addBuildStepListener();                   
@@ -558,7 +594,7 @@ var ElasticBoxVariables = (function () {
                 workspaceSelect: _.first(Dom.getElementsByClassName('eb-workspace', 'select', buildStepElement)),
                 boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', descriptorElement)),
                 profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', descriptorElement)),
-                claimsInput: _.first(Dom.getElementsByClassName('eb-policy-tags', 'input', descriptorElement)),
+                cloudFormationSelected: _.first(Dom.getElementsByClassName('eb-cloud-formation-selected', 'input', descriptorElement)),                
                 providerSelect: _.first(Dom.getElementsByClassName('eb-provider', 'select', descriptorElement)),
                 locationSelect: _.first(Dom.getElementsByClassName('eb-location', 'select', descriptorElement)),
                 getPriorDeployBoxSteps: function () {
@@ -673,25 +709,26 @@ var ElasticBoxVariables = (function () {
                                 return !_.isUndefined(variableHolder.workspaceSelect);
                             });
                             Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                variableHolder.boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', element));
+                                return !_.isUndefined(variableHolder.boxSelect);
+                            });                             
+                            Dom.getNextSiblingBy(variableHolderElement, function (element) {
                                 variableHolder.profileSelect = _.first(Dom.getElementsByClassName('eb-profile', 'select', element));
                                 return !_.isUndefined(variableHolder.profileSelect);
                             });
-                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
-                                variableHolder.claimsInput = _.first(Dom.getElementsByClassName('eb-policy-tags', 'input', element));
-                                return !_.isUndefined(variableHolder.claimsInput);
-                            }); 
-                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                            Dom.getNextSiblingBy(variableHolderElement, function (element) {
+                                variableHolder.cloudFormationSelected = _.first(Dom.getElementsByClassName('eb-cloud-formation-selected', 'input', element));
+                                return !_.isUndefined(variableHolder.cloudFormationSelected);
+                            });
+                            Dom.getNextSiblingBy(variableHolderElement, function (element) {
                                 variableHolder.providerSelect = _.first(Dom.getElementsByClassName('eb-provider', 'select', element));
                                 return !_.isUndefined(variableHolder.providerSelect);
                             }); 
-                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                            Dom.getNextSiblingBy(variableHolderElement, function (element) {
                                 variableHolder.locationSelect = _.first(Dom.getElementsByClassName('eb-location', 'select', element));
                                 return !_.isUndefined(variableHolder.locationSelect);
                             }); 
-                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
-                                variableHolder.boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', element));
-                                return !_.isUndefined(variableHolder.boxSelect);
-                            }); 
+                            
                            
                             _variableHolders.push(variableHolder);
                         }

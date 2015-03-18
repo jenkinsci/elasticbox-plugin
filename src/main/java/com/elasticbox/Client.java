@@ -328,12 +328,12 @@ public class Client {
         return profiles;
     }
     
-    public List<JSONObject> getPolicies(String workspaceId, Collection<String> tags) throws IOException {
+    public List<JSONObject> getPolicies(String workspaceId, Collection<String> claims) throws IOException {
         List<JSONObject> profiles = new ArrayList<JSONObject>();
-        if (!tags.isEmpty()) {
+        if (!claims.isEmpty()) {
             for (Object profile : getProfiles(workspaceId)) {
                 JSONObject profileJson = (JSONObject) profile;
-                if (profileJson.getJSONArray("claims").containsAll(tags)) {
+                if (profileJson.getJSONArray("claims").containsAll(claims)) {
                     profiles.add(profileJson);
                 }
             }   
@@ -682,7 +682,7 @@ public class Client {
                 Constants.AUTOMATIC_UPDATES_OFF);
     }
     
-    public IProgressMonitor deploy(String boxVersion, String profileId, String workspaceId,
+    public IProgressMonitor deploy(String boxVersion, String policyId, String workspaceId,
             List<String> tags, int instances, JSONArray variables, String expirationTime, String expirationOperation,
             JSONArray policyVariables, String automaticUpdates) 
             throws IOException {        
@@ -699,7 +699,7 @@ public class Client {
         }
         box.put("variables", variables);
         JSONObject policyBox = new JSONObject();
-        policyBox.put("id", profileId);
+        policyBox.put("id", policyId);
         policyBox.put("variables", policyVariables);
         JSONObject boxVersionJson = getBox(boxVersion);
         String schemaVersion = getSchemaVersion(boxVersionJson.getString("schema"));            

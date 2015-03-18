@@ -20,6 +20,7 @@ import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -33,16 +34,17 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Phong Nguyen Le
  */
 public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
+    static final String SLAVE_CONFIGURATION = "slaveConfiguration";
 
     private final String cloud;
 
     @DataBoundConstructor
     public ProjectSlaveConfiguration(String id, String cloud, String workspace, String box, String boxVersion, 
-            String profile, String policyTags, String provider, String location, int maxInstances, String environment, String variables, String remoteFS, int retentionTime, 
-            String maxBuildsText, int executors, int launchTimeout) {
+            String profile, String claims, String provider, String location, int maxInstances, String tags, 
+            String variables, String remoteFS, int retentionTime, String maxBuildsText, int executors, int launchTimeout) {
         super(StringUtils.isBlank(id) ? UUID.randomUUID().toString() : id, workspace, box, boxVersion, profile, 
-                policyTags, provider, location, 0, 
-                maxInstances, environment, variables, null, StringUtils.EMPTY, remoteFS, Node.Mode.EXCLUSIVE, 
+                claims, provider, location, 0, 
+                maxInstances, tags, variables, null, StringUtils.EMPTY, remoteFS, Node.Mode.EXCLUSIVE, 
                 retentionTime, StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors, 
                 launchTimeout);
         this.cloud = cloud;
@@ -156,6 +158,38 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
                     workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
+        public void validateSlaveConfiguration(ProjectSlaveConfiguration slaveConfig) throws FormException {
+            ElasticBoxCloud cloud = slaveConfig.getElasticBoxCloud();
+            if (cloud == null) {
+                throw new FormException("Invalid ElasticBox cloud is selected for launching dedicated slave", SLAVE_CONFIGURATION);
+            }
+            if (slaveConfig.getProfile() != null) {
+                if (StringUtils.isBlank(slaveConfig.getProfile())) {
+                    throw new FormException(MessageFormat.format("No Deployment Policy is selected to launch dedicated slave in ElasticBox cloud ''{0}''.", cloud.getDisplayName()), SLAVE_CONFIGURATION);
+                }
+            } else if (slaveConfig.getClaims() != null) {
+                if (StringUtils.isBlank(slaveConfig.getClaims())) {
+                    throw new FormException(MessageFormat.format("Claims must be specified to select a Deployment Policy to launch dedicated slave in ElasticBox cloud ''{0}''.", cloud.getDisplayName()), SLAVE_CONFIGURATION);
+                }
+            } else if (slaveConfig.getProvider() != null) {
+                if (StringUtils.isBlank(slaveConfig.getProvider())) {
+                    throw new FormException(MessageFormat.format("No Provider is selected to launch dedicated slave in ElasticBox cloud ''{0}''.", cloud.getDisplayName()), SLAVE_CONFIGURATION);
+                }
+                if (StringUtils.isBlank(slaveConfig.getLocation())) {
+                    throw new FormException(MessageFormat.format("No Region is selected to launch dedicated slave in ElasticBox cloud ''{0}''.", cloud.getDisplayName()), SLAVE_CONFIGURATION);
+                }
+            } else {
+                throw new FormException(MessageFormat.format("No deployment option is selected to launch dedicated slave in ElasticBox cloud ''{0}''.", cloud.getDisplayName()), SLAVE_CONFIGURATION);
+            }
+            
+            
+            FormValidation result = doCheckBoxVersion(slaveConfig.getBoxVersion(), slaveConfig.getCloud(),
+                    slaveConfig.getWorkspace(), slaveConfig.getBox());
+            if (result.kind == FormValidation.Kind.ERROR) {
+                throw new FormException(result.getMessage(), "boxVersion");
+            }            
+        }
+        
     }
     
     

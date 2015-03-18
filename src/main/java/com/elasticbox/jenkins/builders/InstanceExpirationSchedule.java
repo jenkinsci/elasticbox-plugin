@@ -25,6 +25,7 @@ import hudson.util.ListBoxModel;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -135,6 +136,10 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
                 calendar.add(Calendar.DATE, 1);
             }
             return dates;
+        }
+        
+        public String uniqueId() {
+            return UUID.randomUUID().toString();
         }
     }
 

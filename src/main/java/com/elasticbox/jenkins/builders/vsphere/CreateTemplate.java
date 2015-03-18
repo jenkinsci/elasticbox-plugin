@@ -63,12 +63,13 @@ public class CreateTemplate extends Builder {
     private final String datacenter;
     private final String datastore;
     private final String folder;
+    private final String claimFilter;
     private final String policyName;
-    private final String policyTags;
+    private final String claims;
     
     @DataBoundConstructor
     public CreateTemplate(String cloud, String workspace, String instanceTags, String templateName, String provider,
-            String datacenter, String folder, String datastore, String policyTags, String policyName) {
+            String datacenter, String folder, String datastore, String claimFilter, String policyName, String claims) {
         super();
         this.cloud = cloud;
         this.workspace = workspace;
@@ -78,8 +79,9 @@ public class CreateTemplate extends Builder {
         this.datacenter = datacenter;
         this.folder = folder;
         this.datastore = datastore;
-        this.policyTags = policyTags;
+        this.claimFilter = claimFilter;
         this.policyName = policyName;
+        this.claims = claims;
     }
 
     public String getCloud() {
@@ -109,13 +111,17 @@ public class CreateTemplate extends Builder {
     public String getFolder() {
         return folder;
     }
+
+    public String getClaimFilter() {
+        return claimFilter;
+    }        
     
     public String getPolicyName() {
         return policyName;
     }
 
-    public String getPolicyTags() {
-        return policyTags;
+    public String getClaims() {
+        return claims;
     }
 
     public String getTemplateName() {
@@ -166,11 +172,11 @@ public class CreateTemplate extends Builder {
         logger.info("Syncing provider {0}", client.getProviderPageUrl(provider));
         IProgressMonitor monitor = client.syncProvider(provider);
         monitor.waitForDone(15);
-        
-        if (policyTags != null) {
-            tags = resolver.resolveTags(policyTags);
-            logger.info("Looking for the deployment policies with tags: {0}", StringUtils.join(tags, ", "));            
-            List<JSONObject> policies = client.getPolicies(workspace, tags);
+
+        if (StringUtils.isBlank(policyName)) {
+            Set<String> claimSet = resolver.resolveTags(claimFilter);            
+            logger.info("Looking for the deployment policies with claims: {0}", StringUtils.join(claimSet, ", "));            
+            List<JSONObject> policies = client.getPolicies(workspace, claimSet);
             for (Iterator<JSONObject> policyIterator = policies.iterator(); policyIterator.hasNext();) {
                 JSONObject policy = policyIterator.next();
                 if (!provider.equals(policy.getString("provider_id"))) {
@@ -178,8 +184,8 @@ public class CreateTemplate extends Builder {
                 }
             }
             if (policies.isEmpty()) {
-                throw new AbortException(MessageFormat.format("No deployment policy for provider {0} is found with the following tags: {1}", 
-                        client.getProviderPageUrl(provider), StringUtils.join(tags, ", ")));
+                throw new AbortException(MessageFormat.format("No deployment policy for provider {0} is found with the following claims: {1}", 
+                        client.getProviderPageUrl(provider), StringUtils.join(claimSet, ", ")));
             }
             for (JSONObject policy : policies) {
                 String policyPageUrl = client.getPageUrl(policy);
@@ -192,10 +198,19 @@ public class CreateTemplate extends Builder {
             logger.info("Creating a new deployment policy with vSphere template ''{0}''", resolvedTempateName);
             JSONObject policy = instance.getJSONObject("policy_box");
             policy.remove("id");
-            policy.remove("owner");
             policy.remove("members");
+            policy.put("owner", workspace);
+            JSONArray variables = policy.getJSONArray("variables");
+            for (Iterator iter = variables.iterator(); iter.hasNext();) {
+                JSONObject variable = (JSONObject) iter.next();
+                if ("MainBox".equals(variable.getString("name"))) {
+                    iter.remove();
+                }                
+            }
+            policy.put("variables", variables);
             policy.getJSONObject("profile").put("template", resolvedTempateName);
             policy.put("name", resolver.resolve(policyName));
+            policy.put("claims", JSONArray.fromObject(resolver.resolveTags(claims)));
             try {
                 policy = client.createBox(policy);
             } catch (URISyntaxException ex) {
@@ -223,10 +238,17 @@ public class CreateTemplate extends Builder {
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             if (formData.containsKey("policyAction")) {
-                if ("create".equals(formData.getString("policyAction"))) {
-                    formData.remove("policyTags");
-                } else {
+                if ("update".equals(formData.getString("policyAction"))) {
+                    if (StringUtils.isBlank(formData.getString("claimFilter"))) {
+                        throw new FormException("Claims are required to find deployment policies to update", "claimFilter");
+                    }
                     formData.remove("policyName");
+                    formData.remove("claims");
+                } else {
+                    if (StringUtils.isBlank(formData.getString("policyName"))) {
+                        throw new FormException("Name is required to create new deployment policy", "policyName");
+                    }                        
+                    formData.remove("claimFilter");
                 }
             }
             return super.newInstance(req, formData);

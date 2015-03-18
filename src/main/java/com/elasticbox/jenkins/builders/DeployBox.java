@@ -41,7 +41,9 @@ import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -72,6 +74,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String box;
     private String boxVersion;
     private final String profile;
+    private final String claims;
     private final String provider;
     private final String location;
     @Deprecated
@@ -92,9 +95,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String profile, 
-            String provider, String location,
-            int instances, String instanceEnvVariable, String tags, String variables, InstanceExpiration expiration,
-            String autoUpdates, String alternateAction, boolean waitForCompletion, int waitForCompletionTimeout) {
+            String claims, String provider, String location, int instances, String instanceEnvVariable, String tags, 
+            String variables, InstanceExpiration expiration, String autoUpdates, String alternateAction, 
+            boolean waitForCompletion, int waitForCompletionTimeout) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -103,6 +106,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.box = box;
         this.boxVersion = boxVersion;
         this.profile = profile;
+        this.claims = claims;
         this.provider = provider;
         this.location = location;
         this.instances = instances;
@@ -179,7 +183,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
             expirationOperation = expirationSchedule.getOperation();
         }
         String boxId = DescriptorHelper.getResolvedBoxVersion(client, workspace, box, boxVersion);
-        logger.info("Deploying box {0}", client.getBoxPageUrl(boxId));
+        String policyId = DescriptorHelper.resolveDeploymentPolicy(client, workspace, profile, claims);
+        logger.info("Deploying box {0} with policy {1}", client.getBoxPageUrl(boxId), client.getBoxPageUrl(policyId));
         JSONArray policyVariables = new JSONArray();
         if (StringUtils.isNotBlank(provider)) {
             JSONObject providerVariable = new JSONObject();
@@ -192,7 +197,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             locationVariable.put("name", "location");
             locationVariable.put("value", location);  
         }
-        IProgressMonitor monitor = client.deploy(boxId, profile, workspace,
+        IProgressMonitor monitor = client.deploy(boxId, policyId, workspace,
                 new ArrayList(resolvedTags), instances, resolvedVariables, expirationTime, expirationOperation,
                 policyVariables, autoUpdates);
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
@@ -416,6 +421,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return profile;
     }  
 
+    public String getClaims() {
+        return claims;
+    }
+    
     public String getProvider() {
         return provider;
     }
@@ -471,7 +480,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        private static final Pattern ENVIRONMENT_PATTERN = Pattern.compile("[a-zA-Z0-9-]+");
+        private static final Pattern ENVIRONMENT_PATTERN = Pattern.compile("^[a-zA-Z0-9-]+$");
         private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
         
         private static final ListBoxModel alternateActionItems = new ListBoxModel();
@@ -505,9 +514,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
-            if (formData.getString("profile").trim().length() == 0) {
-                throw new FormException("Profile is required to launch a box in ElasticBox", "profile");
-            }
+            DescriptorHelper.fixDeploymentPolicyFormData(formData);
             
             try {
                 int instances = formData.getInt("instances");
@@ -518,14 +525,16 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 throw new FormException(ex.getMessage(), "instances");
             }
             
-            String tags = formData.getString("tags").trim();
-            if (tags.length() == 0) {                
-                throw new FormException("Tags are required to launch a box in ElasticBox", "tags");
-            }     
-            String environment = tags.split(",")[0].trim();
-            if (!ENVIRONMENT_PATTERN.matcher(environment).find()) {
-                throw new FormException("The first tag can contains only alpha-numerical character or dash (-)", "tags");
-            }            
+            String tagsText = formData.getString("tags");
+            if (StringUtils.isNotBlank(tagsText)) {
+                String[] tags = tagsText.split(",");
+                if (tags.length > 0) {
+                    String environment = tags[0].trim();
+                    if (!ENVIRONMENT_PATTERN.matcher(environment).find()) {
+                        throw new FormException("The first tag can contains only alpha-numerical character or dash (-)", "tags");
+                    }            
+                }
+            }
             
             String instanceEnvVariable = formData.getString("instanceEnvVariable").trim();
             if (!instanceEnvVariable.isEmpty() && !ENV_VARIABLE_PATTERN.matcher(instanceEnvVariable).find()) {
@@ -538,28 +547,39 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 formData.put("variables", DescriptorHelper.fixVariables(formData.getString("variables"), boxStack));
             }
 
-            JSONObject expiration = formData.getJSONObject("expiration");
-            if (expiration.containsKey("scheduleType")) {
-                if ("date-time".equals(expiration.getString("scheduleType"))) {
-                    expiration.remove("hours");
-                } else {
-                    expiration.remove("date");
-                    expiration.remove("time");
-                }        
+            fixExpirationFormData(formData);
+            DeployBox deployBox = (DeployBox) super.newInstance(req, formData);
+            
+            if (deployBox.claims != null) {
+                if (StringUtils.isBlank(deployBox.claims)) {
+                    throw new FormException("Claims are required to look for a policy to deploy a box in ElasticBox", "claims");
+                }
+            } else if (deployBox.profile != null) {
+                if (StringUtils.isBlank(deployBox.profile)) {
+                    throw new FormException("No policy is selected to deploy box in ElasticBox", "profile");
+                }
+            } else if (deployBox.provider != null) {
+                if (StringUtils.isBlank(deployBox.provider)) {
+                    throw new FormException("Provider is required to deploy a CloudFormation box in ElasticBox", "provider");
+                }
+                if (StringUtils.isBlank(deployBox.location)) {
+                    throw new FormException("Region is required to deploy a CloudFormation box in ElasticBox", "location");
+                }
+            } else {
+                throw new FormException(MessageFormat.format("No deployment option is selected for ''{0}'' build step", getDisplayName()), null);
             }
             
-            DeployBox deployBox = (DeployBox) super.newInstance(req, formData);
             
             if (deployBox.getExpiration() instanceof InstanceExpirationSchedule) {
                 InstanceExpirationSchedule expirationSchedule = (InstanceExpirationSchedule) deployBox.getExpiration();
                 if (expirationSchedule.getHours() == null) {
                     FormValidation validation = InstanceExpirationSchedule.checkDate(expirationSchedule.getDate());
                     if (validation.kind == FormValidation.Kind.ERROR) {
-                        throw new FormException(MessageFormat.format("Invalid date specified for Expiration of DeployBox build step: {0}", validation.getMessage()), "expiration");
+                        throw new FormException(MessageFormat.format("Invalid date specified for Expiration of ''{0}'' build step: {1}", getDisplayName(), validation.getMessage()), "expiration");
                     }
                     validation = InstanceExpirationSchedule.checkTime(expirationSchedule.getTime());
                     if (validation.kind == FormValidation.Kind.ERROR) {
-                        throw new FormException(MessageFormat.format("Invalid time specified for Expiration of DeployBox build step: {0}", validation.getMessage()), "expiration");
+                        throw new FormException(MessageFormat.format("Invalid time specified for Expiration of ''{0}'' build step: {0}", getDisplayName(), validation.getMessage()), "expiration");
                     }                    
                 }
             }
@@ -618,6 +638,30 @@ public class DeployBox extends Builder implements IInstanceProvider {
         
         public ListBoxModel doFillAutoUpdatesItems() {
             return autoUpdatesItems;
+        }
+        
+        public String uniqueId() {
+            return UUID.randomUUID().toString();
+        }
+        
+        private void fixExpirationFormData(JSONObject formData) {
+            JSONObject expiration = formData.getJSONObject("expiration");
+            String scheduleType = null;
+            for (Object entry : expiration.entrySet()) {
+                Map.Entry mapEntry = (Map.Entry) entry;
+                if (mapEntry.getKey().toString().startsWith("scheduleType-")) {
+                    scheduleType = mapEntry.getValue().toString();
+                    break;
+                }
+            }            
+            if (scheduleType != null) {
+                if ("date-time".equals(scheduleType)) {
+                    expiration.remove("hours");
+                } else {
+                    expiration.remove("date");
+                    expiration.remove("time");
+                }        
+            }            
         }
     }
 }

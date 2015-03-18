@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,7 +59,6 @@ public class DescriptorHelper {
     
     public static final String ANY_BOX = "AnyBox";
     public static final String LATEST_BOX_VERSION = "LATEST";
-    public static final String TAGS = "tags";
 
     public static ListBoxModel getCloudFormationProviders(Client client, String workspace) {
         ListBoxModel model = new ListBoxModel();
@@ -233,7 +233,6 @@ public class DescriptorHelper {
                         profiles.add(json.getString("name"), json.getString("id"));
                     }
                     sort(profiles);
-                    profiles.add(0, new ListBoxModel.Option("matches specific claims", TAGS));
                 }                
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, "Error fetching profiles", ex);
@@ -533,6 +532,29 @@ public class DescriptorHelper {
         return variableArray.toString();
     }
     
+    public static final String resolveDeploymentPolicy(Client client, String workspaceId, String policy, String commaSeparateClaims) throws IOException {
+        String resolvedDeploymentPolicy;
+        if (commaSeparateClaims != null) {
+            if (StringUtils.isNotBlank(commaSeparateClaims)) {
+                Set<String> tags = new HashSet<String>();
+                for (String tag : commaSeparateClaims.split(",")) {
+                    tags.add(tag.trim());
+                }
+                List<JSONObject> policies = client.getPolicies(workspaceId, tags);
+                if (policies.isEmpty()) {
+                    throw new IOException(MessageFormat.format("Cannot find any deployment policy with claims: {0}", commaSeparateClaims));
+                } else {
+                    resolvedDeploymentPolicy = policies.get(0).getString("id");                
+                }
+            } else {
+                throw new IOException(MessageFormat.format("Claims are requited to select a deployment policy", commaSeparateClaims));
+            }
+        } else {
+            resolvedDeploymentPolicy = policy;
+        }
+        return resolvedDeploymentPolicy;
+    }
+    
     public static JSONArray getInstances(Set<String> tags, String cloud, String workspace, boolean excludeInaccessible) {
         return getInstances(ClientCache.getClient(cloud), workspace, new InstanceFilterByTags(tags, excludeInaccessible));
     }
@@ -541,6 +563,29 @@ public class DescriptorHelper {
         return getInstances(ClientCache.getClient(cloud), workspace, 
                 new CompositeObjectFilter(new InstanceFilterByTags(tags, false), new InstanceFilterByBox((boxVersion))));
     }    
+    
+    public static void fixDeploymentPolicyFormData(JSONObject formData) {
+        if (formData.getString("cloudFormationSelected").equals("true")) {
+            formData.remove("profile");
+            formData.remove("claims");            
+        } else {
+            String policySelection = null;
+            for (Object entry : formData.entrySet()) {
+                Map.Entry mapEntry = (Map.Entry) entry;
+                if (mapEntry.getKey().toString().startsWith("policySelection-")) {
+                    policySelection = mapEntry.getValue().toString();
+                    break;
+                }
+            }
+            if ("claims".equals(policySelection)) {
+                formData.remove("profile");
+            } else {
+                formData.remove("claims");
+            }                            
+            formData.remove("provider");
+            formData.remove("location");
+        }
+    }
     
     private static ListBoxModel sort(ListBoxModel model) {
         Collections.sort(model, new Comparator<ListBoxModel.Option> () {

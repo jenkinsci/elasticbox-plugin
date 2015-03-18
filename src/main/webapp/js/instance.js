@@ -28,36 +28,7 @@
                 },
                 
                 updateDeployBoxLabel = function (builder) {
-                    var buildStepLabel = Dom.getElementBy(function (element) {
-                            return ElasticBoxUtils.startsWith(element.innerHTML, ElasticBoxUtils.DeployBoxBuildStepName);
-                        }, null, builder),
-
-                        getSelectionName = function (clazz) {
-                            var select = _.first(Dom.getElementsByClassName(clazz, 'select', builder)),
-                                selectedOption = Dom.getElementBy(function (element) {
-                                    return Dom.getAttribute(element, 'value') === select.value;
-                                }, 'option', select);
-
-                            return selectedOption ? selectedOption.innerText : '';
-                        },
-                        
-                        boxName = getSelectionName('eb-box'),
-                        boxVersionName =  getSelectionName('eb-boxVersion'),
-                        duplicateIndex = 2,
-                        
-                        label;
-                    
-                    if (boxName) {
-                        label = ElasticBoxUtils.format('{0} ({1} - {2})', ElasticBoxUtils.DeployBoxBuildStepName, boxName, boxVersionName);
-                        if (_.contains(takenLabels, label)) {   
-                            for (;_.contains(takenLabels, label + ' (' + duplicateIndex + ')'); duplicateIndex++);
-                            label = label + ' (' + duplicateIndex + ')';
-                        }
-                        takenLabels.push(label);                             
-                    } else {
-                        label = ElasticBoxUtils.DeployBoxBuildStepName;
-                    }
-                    buildStepLabel.innerHTML = label;
+                    ElasticBoxUtils.updateDeployBoxLabel(builder, takenLabels);
                 },
                                     
                 initializeDeployBoxBuildStepLabels = function (buildSteps) {

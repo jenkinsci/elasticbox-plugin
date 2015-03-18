@@ -100,7 +100,48 @@ var ElasticBoxUtils = (function() {
                 };
             });
         },
-        
+
+        updateDeployBoxLabel: function (descriptorElement, takenLabels) {
+            var buildStepLabel = Dom.getElementBy(function (element) {
+                    return ElasticBoxUtils.startsWith(element.innerHTML, ElasticBoxUtils.DeployBoxBuildStepName);
+                }, null, descriptorElement),
+
+                getSelectionName = function (clazz) {
+                    var select = _.first(Dom.getElementsByClassName(clazz, 'select', descriptorElement)),
+                        selectedOption = Dom.getElementBy(function (element) {
+                            return Dom.getAttribute(element, 'value') === select.value;
+                        }, 'option', select);
+
+                    return selectedOption ? selectedOption.innerText : '';
+                },
+
+                boxName = getSelectionName('eb-box'),
+                boxVersionName =  getSelectionName('eb-boxVersion'),
+                duplicateIndex = 2,
+
+                label;
+
+            if (boxName) {
+                label = ElasticBoxUtils.format('{0} ({1} - {2})', ElasticBoxUtils.DeployBoxBuildStepName, boxName, boxVersionName);
+                if (_.isUndefined(takenLabels)) {
+                    takenLabels = [];
+                    _.each(this.getDeployBoxSteps(), function (step) {
+                        if (step.element !== descriptorElement) {
+                            takenLabels.push(step.name);
+                        }
+                    });                    
+                }
+                if (_.contains(takenLabels, label)) {   
+                    for (;_.contains(takenLabels, label + ' (' + duplicateIndex + ')'); duplicateIndex++);
+                    label = label + ' (' + duplicateIndex + ')';
+                }
+                takenLabels.push(label);                             
+            } else {
+                label = ElasticBoxUtils.DeployBoxBuildStepName;
+            }
+            buildStepLabel.innerHTML = label;
+        },
+            
         getBuildStepId: function (buildStepElement) {
             var idInput = _.first(Dom.getElementsByClassName('eb-id', 'input', buildStepElement));
             return idInput ? idInput.value : null;

@@ -24,9 +24,8 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
@@ -45,7 +44,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final String workspace;
     private final String box;
     private String profile;
-    private final String policyTags;    
+    private final String claims;    
     private final String provider;
     private final String location;
     private final String variables;
@@ -68,7 +67,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private transient String resolvedDeploymentPolicy;
 
     public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, 
-            String policyTags, String provider, String location, int minInstances,
+            String claims, String provider, String location, int minInstances,
             int maxInstances, String tags, String variables, String labels, String description, String remoteFS, 
             Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout) {
         super();
@@ -77,7 +76,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.box = box;
         this.boxVersion = boxVersion;
         this.profile = profile;
-        this.policyTags = policyTags;
+        this.claims = claims;
         this.provider = provider;
         this.location = location;
         this.minInstances = minInstances;
@@ -137,9 +136,9 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.profile = profile;
     }
     
-    public String getPolicyTags() {
-        return policyTags;
-    }        
+    public String getClaims() {
+        return claims;
+    }
 
     public String getProvider() {
         return provider;
@@ -232,21 +231,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     }
     
     String resolveDeploymentPolicy(Client client) throws IOException {
-        if (DescriptorHelper.TAGS.equals(profile)) {
-            if (StringUtils.isNotBlank(policyTags)) {
-                Set<String> tags = new HashSet<String>();
-                for (String tag : policyTags.split(",")) {
-                    tags.add(tag.trim());
-                }
-                List<JSONObject> policies = client.getPolicies(workspace, tags);
-                resolvedDeploymentPolicy = policies.isEmpty() ? null : policies.get(0).getString("id");                
-            } else {
-                resolvedDeploymentPolicy = null;
-            }
-        } else {
-            resolvedDeploymentPolicy = profile;
-        }
-        return resolvedDeploymentPolicy;
+        return resolvedDeploymentPolicy = DescriptorHelper.resolveDeploymentPolicy(client, workspace, profile, claims);
     }
 
     public static abstract class AbstractSlaveConfigurationDescriptor extends Descriptor<AbstractSlaveConfiguration> {
@@ -280,6 +265,11 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
             }
             return DescriptorHelper.checkSlaveBox(client, boxVersion);            
         }
+        
+        public String uniqueId() {
+            return UUID.randomUUID().toString();
+        }
+        
     }
     
     public static class EnvironmentConverter extends XStream2.PassthruConverter<AbstractSlaveConfiguration> {

@@ -17,7 +17,6 @@ import com.elasticbox.ClientException;
 import com.elasticbox.Constants;
 import com.elasticbox.IProgressMonitor;
 import static com.elasticbox.jenkins.ElasticBoxExecutor.threadPool;
-import com.elasticbox.jenkins.util.JsonUtil;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
@@ -44,7 +43,6 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.annotate.JsonUnwrapped;
 
 /**
  *

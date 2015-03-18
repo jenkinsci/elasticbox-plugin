@@ -22,7 +22,6 @@ import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import hudson.util.FormValidation;
 import java.io.IOException;
 import java.util.UUID;
 import jenkins.model.Jenkins;
@@ -125,15 +124,12 @@ public class InstanceCreator extends BuildWrapper {
 
         @Override
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+            JSONObject slaveConfigJson = formData.getJSONObject(ProjectSlaveConfiguration.SLAVE_CONFIGURATION);
+            DescriptorHelper.fixDeploymentPolicyFormData(slaveConfigJson);
+            
             InstanceCreator instanceCreator = (InstanceCreator) super.newInstance(req, formData);
             ProjectSlaveConfiguration.DescriptorImpl descriptor = (ProjectSlaveConfiguration.DescriptorImpl) instanceCreator.getSlaveConfiguration().getDescriptor();
-            FormValidation result = descriptor.doCheckBoxVersion(instanceCreator.getSlaveConfiguration().getBoxVersion(), 
-                    instanceCreator.getSlaveConfiguration().getCloud(),
-                    instanceCreator.getSlaveConfiguration().getWorkspace(),
-                    instanceCreator.getSlaveConfiguration().getBox());
-            if (result.kind == FormValidation.Kind.ERROR) {
-                throw new FormException(result.getMessage(), "boxVersion");
-            }
+            descriptor.validateSlaveConfiguration(instanceCreator.getSlaveConfiguration());
             
             return instanceCreator;
         }        
