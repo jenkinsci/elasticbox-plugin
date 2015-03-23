@@ -17,13 +17,13 @@ written permission is obtained from ElasticBox.
     <j:set var="policySelectionId" value="${descriptor.uniqueId()}"/>
     <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Use policy with the following claims" value="claims"
                   checked="${instance.claims != null || instance.profile == null}">
-        <f:entry field="claims">
+        <f:entry field="claims" help="/plugin/elasticbox/help/claims.html">
             <f:textbox clazz="required eb-claims" />
         </f:entry>
     </f:radioBlock>
     <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Select a specific policy" value="specific"
                   checked="${instance.profile != null}">
-        <f:entry field="profile">
+        <f:entry field="profile" help="/plugin/elasticbox/help/policy.html">
             <f:select clazz="required eb-profile" />
         </f:entry>
     </f:radioBlock>
@@ -33,7 +33,7 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Provider}" field="provider">
         <f:select clazz="required eb-provider" />
     </f:entry>
-    <f:entry title="${%Location}" field="location">
+    <f:entry title="${%Region}" field="location">
         <f:select clazz="required eb-location" />
     </f:entry>
 </j:jelly>

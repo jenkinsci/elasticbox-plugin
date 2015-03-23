@@ -13,7 +13,7 @@ written permission is obtained from ElasticBox.
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <j:set var="scheduleTypeId" value="${descriptor.uniqueId()}"/>
+    <j:set var="scheduleTypeId" value="${deployBoxDescriptor.uniqueId()}"/>
     <f:radioBlock name="scheduleType-${scheduleTypeId}" checked="${instance.hours != null || instance.date == null}" inline="true" title="in a number of hours from now" value="hours-from-now">
         <f:entry field="hours">
             <f:select clazz="number required" />
