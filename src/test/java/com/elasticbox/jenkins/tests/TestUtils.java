@@ -295,7 +295,9 @@ public class TestUtils {
         policyBox.put("name", NAME_PREFIX + UUID.randomUUID().toString());
         policyBox.put("owner", TestUtils.TEST_WORKSPACE);
         policyBox.put("provider_id", testProvider.getString("id"));
-        policyBox.put("claims", box.getJSONArray("requirements"));
+        JSONArray claims = JSONArray.fromObject(box.getJSONArray("requirements"));
+        claims.add("test");
+        policyBox.put("claims", claims);
         return client.createBox(policyBox);
     }        
     

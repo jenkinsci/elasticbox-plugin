@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>TEST_TAG</name>
+          <description></description>
+          <defaultValue>${TEST_TAG}</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>      
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.11-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-2796eb59-f723-4578-b800-7f022d932835</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
+      <boxVersion>LATEST</boxVersion>
+      <claims>linux, test</claims>
+      <instances>1</instances>
+      <variables>[]</variables>
+      <expiration class="com.elasticbox.jenkins.builders.InstanceExpiration$AlwaysOn"/>
+      <autoUpdates>off</autoUpdates>
+      <instanceEnvVariable></instanceEnvVariable>
+      <tags>${TEST_TAG}</tags>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <waitForCompletionTimeout>60</waitForCompletionTimeout>
+    </com.elasticbox.jenkins.builders.DeployBox>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
