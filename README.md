@@ -1,6 +1,6 @@
 [![Build Status](https://jenkins.ci.cloudbees.com/job/plugins/job/elasticbox-plugin/badge/icon)](https://jenkins.ci.cloudbees.com/job/plugins/job/elasticbox-plugin/)
 
-ElasticBox CI Plug-in
+ElasticBox CI Plug-in 
 =====================
 
 The ElasticBox CI Jenkins plug-in provides full integration between Jenkins and ElasticBox (http://elasticbox.com).
