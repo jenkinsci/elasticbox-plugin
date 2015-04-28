@@ -413,8 +413,8 @@ public class DescriptorHelper {
         JSONArray instances = getInstances(client, workspace, new InstanceFilterByBox(box));
         for (Object instance : instances) {
             JSONObject json = (JSONObject) instance;
-            json.put("name", MessageFormat.format("{0} - {1} - {2}", json.getString("name"), 
-                    json.getString("environment"), json.getJSONObject("service").getString("id")));
+
+            json.put("name", MessageFormat.format("{0} - {1}", json.getString("name"), json.getJSONObject("service").getString("id")));
         }
         
         return new JSONArrayResponse(instances);
