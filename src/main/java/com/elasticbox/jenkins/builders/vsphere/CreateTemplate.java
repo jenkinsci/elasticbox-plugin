@@ -227,7 +227,7 @@ public class CreateTemplate extends Builder {
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-            return true;
+            return false;
         }
 
         @Override
