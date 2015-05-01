@@ -82,7 +82,7 @@ public class ElasticBoxCloudTest extends TestBase {
         variable.put("value", MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp", slaveName));
         variables.add(variable);                        
         IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"), 
-                Arrays.asList("jenkins-plugin-unit-test"), 1, variables);
+                Arrays.asList("jenkins-plugin-unit-test"), variables);
         try {
             monitor.waitForDone(60);
         } catch (IProgressMonitor.IncompleteException ex) {

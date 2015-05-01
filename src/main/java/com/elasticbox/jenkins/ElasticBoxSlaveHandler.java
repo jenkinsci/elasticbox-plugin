@@ -362,8 +362,8 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             }
         }
         LOGGER.info(MessageFormat.format("Deploying box {0}", ebClient.getBoxPageUrl(request.slave.getBoxVersion())));
-        IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), 
-                policy.getString("owner"), Collections.singletonList(request.slave.getNodeName()), 1, variables, null, 
+        IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), null,
+                policy.getString("owner"), Collections.singletonList(request.slave.getNodeName()), variables, null,
                 null, request.slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>", 

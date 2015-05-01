@@ -28,8 +28,8 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Version}" field="boxVersion">
         <f:select clazz="required eb-boxVersion" />
     </f:entry>
-    <f:entry title="${%Number of Instances}" field="instances">
-        <f:textbox clazz="required number" default="1"/>
+    <f:entry title="${%Instance Name}" field="instanceName">
+        <f:textbox clazz="eb-instanceName"/>
     </f:entry>
     <f:entry title="${%Tags}" field="tags">
         <f:textbox/>

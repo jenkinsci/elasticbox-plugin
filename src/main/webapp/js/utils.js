@@ -115,6 +115,7 @@ var ElasticBoxUtils = (function() {
                     return selectedOption ? selectedOption.innerText : '';
                 },
 
+                instanceName = _.first(Dom.getElementsByClassName('eb-instanceName', 'input')),
                 boxName = getSelectionName('eb-box'),
                 boxVersionName =  getSelectionName('eb-boxVersion'),
                 duplicateIndex = 2,
@@ -140,6 +141,9 @@ var ElasticBoxUtils = (function() {
                 label = ElasticBoxUtils.DeployBoxBuildStepName;
             }
             buildStepLabel.innerHTML = label;
+            if (instanceName) {
+                instanceName.value = boxName;
+            }
         },
             
         getBuildStepId: function (buildStepElement) {
