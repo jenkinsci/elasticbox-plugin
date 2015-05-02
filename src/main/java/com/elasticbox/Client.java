@@ -676,18 +676,18 @@ public class Client {
         }                
     }
     
-    public IProgressMonitor deploy(String profileId, String workspaceId, List<String> tags, int instances, 
-            JSONArray variables) throws IOException {
-        return deploy(profileId, profileId, workspaceId, tags, instances, variables, null, null, null, 
+    public IProgressMonitor deploy(String profileId, String workspaceId, List<String> tags, JSONArray variables) throws IOException {
+        return deploy(profileId, profileId, workspaceId, null, tags, variables, null, null, null,
                 Constants.AUTOMATIC_UPDATES_OFF);
     }
     
-    public IProgressMonitor deploy(String boxVersion, String policyId, String workspaceId,
-            List<String> tags, int instances, JSONArray variables, String expirationTime, String expirationOperation,
+    public IProgressMonitor deploy(String boxVersion, String policyId, String instanceName, String workspaceId,
+            List<String> tags, JSONArray variables, String expirationTime, String expirationOperation,
             JSONArray policyVariables, String automaticUpdates) 
             throws IOException {        
         JSONObject box = new JSONObject();        
         box.put("id", boxVersion);
+
         for (Object json : variables) {
             JSONObject variable = (JSONObject) json;
             if (variable.containsKey("scope") && variable.getString("scope").isEmpty()) {
@@ -697,15 +697,24 @@ public class Client {
                 uploadFileVariable(variable);
             }
         }
+
         box.put("variables", variables);
         JSONObject policyBox = new JSONObject();
         policyBox.put("id", policyId);
         policyBox.put("variables", policyVariables);
         JSONObject boxVersionJson = getBox(boxVersion);
         String schemaVersion = getSchemaVersion(boxVersionJson.getString("schema"));            
+
+        String name;
+        if (instanceName == null || StringUtils.isBlank(instanceName)) {
+            name = boxVersionJson.getString("name");
+        } else {
+            name = instanceName;
+        }
+
         JSONObject deployRequest = new JSONObject();
         deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + '/' + DEPLOYMENT_REQUEST_SCHEMA_NAME);
-        deployRequest.put("name", boxVersionJson.getString("name"));
+        deployRequest.put("name", name);
         deployRequest.put("box", box);
         deployRequest.put("owner", workspaceId);  
         deployRequest.put("policy_box", policyBox);

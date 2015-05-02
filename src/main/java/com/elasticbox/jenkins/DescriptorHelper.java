@@ -108,7 +108,6 @@ public class DescriptorHelper {
             return jsonArray;
         }                
 
-        @Override
         public void generateResponse(StaplerRequest request, StaplerResponse response, Object node) throws IOException, ServletException {
             response.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
             response.getWriter().write(jsonArray.toString());
