@@ -34,5 +34,5 @@
     "events": {},
     "members": [],
     "id": "com.elasticbox.jenkins.tests.boxes.test-nested-box",
-    "schema": "http://elasticbox.net/schemas/{schema_version}/boxes/script"
+    "schema": "http://elasticbox.net/schemas/boxes/script"
 }

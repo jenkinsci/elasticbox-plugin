@@ -11,8 +11,8 @@
         "template": "{template}",
         "flavor": "Tiny",
         "datastore": "{datastore}",
-        "schema": "http://elasticbox.net/schemas/{schema_version}/vsphere/compute/profile"
+        "schema": "http://elasticbox.net/schemas/vsphere/compute/profile"
     },
-    "schema": "http://elasticbox.net/schemas/{schema_version}/boxes/policy",
+    "schema": "http://elasticbox.net/schemas/boxes/policy",
     "name": "{name}"
 }
