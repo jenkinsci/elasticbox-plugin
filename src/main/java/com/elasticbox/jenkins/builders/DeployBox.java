@@ -478,6 +478,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         return waitForCompletionTimeout;
     }
 
+    public String getInstanceName() {
+        return instanceName;
+    }
+
     public String getInstanceId(AbstractBuild build) {
         JSONObject instance = instanceManager.getInstance(build);
         return instance != null ? instance.getString("id") : null;

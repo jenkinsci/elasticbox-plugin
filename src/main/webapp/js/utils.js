@@ -114,6 +114,13 @@ var ElasticBoxUtils = (function() {
 
                     return selectedOption ? selectedOption.innerText : '';
                 },
+                isInBoxNameList = function(instanceName) {
+                    var select = _.first(Dom.getElementsByClassName('eb-box', 'select', descriptorElement));
+
+                    return Dom.getElementBy(function (element) {
+                        return element.innerText === instanceName;
+                    }, 'option', select);
+                },
 
                 instanceName = _.first(Dom.getElementsByClassName('eb-instanceName', 'input')),
                 boxName = getSelectionName('eb-box'),
@@ -141,8 +148,10 @@ var ElasticBoxUtils = (function() {
                 label = ElasticBoxUtils.DeployBoxBuildStepName;
             }
             buildStepLabel.innerHTML = label;
-            if (instanceName) {
+            if (instanceName != null && (isInBoxNameList(instanceName.value) || instanceName.value == "")) {
                 instanceName.value = boxName;
+            } else if (instanceName != null && !isInBoxNameList(instanceName.value)) {
+                instanceName.value = instanceName.value;
             }
         },
             
