@@ -68,6 +68,7 @@ public class Client {
 
     public static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
     private static final String DEPLOYMENT_REQUEST_SCHEMA_NAME = "deploy-instance-request";
+    private static final String ELASTICBOX_RELEASE = "4";
 
     public static interface InstanceState {
         String PROCESSING = "processing";
@@ -1001,6 +1002,7 @@ public class Client {
 
     private void setRequiredHeaders(HttpRequestBase request) {
         request.setHeader("ElasticBox-Token", token);
+        request.setHeader("ElasticBox-Release", ELASTICBOX_RELEASE);
     }
 
     public static String getResponseBodyAsString(HttpResponse response) throws IOException {
