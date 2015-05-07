@@ -545,8 +545,10 @@ public class DescriptorHelper {
                 } else {
                     resolvedDeploymentPolicy = policies.get(0).getString("id");                
                 }
+            } else if(policy != null && StringUtils.isNotBlank(policy)) {
+                resolvedDeploymentPolicy = policy;
             } else {
-                throw new IOException(MessageFormat.format("Claims are requited to select a deployment policy", commaSeparateClaims));
+                throw new IOException(MessageFormat.format("Claims are required to select a deployment policy", commaSeparateClaims));
             }
         } else {
             resolvedDeploymentPolicy = policy;
