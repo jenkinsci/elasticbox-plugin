@@ -6,7 +6,7 @@
         "keypair": "test_keypair",
         "location": "Simulated Location",
         "flavor": "test.micro",
-        "schema": "http://elasticbox.net/schemas/{schema_version}/test/compute/profile"
+        "schema": "http://elasticbox.net/schemas/test/compute/profile"
     },
-    "schema": "http://elasticbox.net/schemas/{schema_version}/boxes/policy"
+    "schema": "http://elasticbox.net/schemas/boxes/policy"
 }
