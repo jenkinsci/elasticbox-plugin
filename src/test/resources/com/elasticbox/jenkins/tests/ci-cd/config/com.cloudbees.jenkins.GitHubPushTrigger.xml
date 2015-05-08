@@ -4,7 +4,7 @@
     <credentials>
         <com.cloudbees.jenkins.Credential>
             <username>{{ GITHUB_USER }}</username>
-            <apiUrl>https://api.github.com</apiUrl>
+            <apiUrl>{{ API_GITHUB_ADDRESS }}</apiUrl>
             <oauthAccessToken>{{ GITHUB_ACCESS_TOKEN }}</oauthAccessToken>
         </com.cloudbees.jenkins.Credential>
     </credentials>

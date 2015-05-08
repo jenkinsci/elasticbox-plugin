@@ -48,7 +48,7 @@ public class PullRequestCommenter extends Builder {
         
         TaskLogger logger = new TaskLogger(listener);
         String resolvedComment = new VariableResolver(build, listener).resolve(comment);
-        logger.info("Posting the following comment to {0}: {1}", cause.getPullRequest().getUrl(), resolvedComment);
+        logger.info("Posting the following comment to {0}: {1}", cause.getPullRequest().getHtmlUrl(), resolvedComment);
         cause.getPullRequest().comment(resolvedComment);
         
         return true;

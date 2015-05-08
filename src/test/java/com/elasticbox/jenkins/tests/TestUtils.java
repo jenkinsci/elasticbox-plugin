@@ -16,6 +16,7 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.Condition;
+import com.hubspot.jinjava.Jinjava;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
@@ -25,25 +26,18 @@ import hudson.model.ParametersAction;
 import hudson.model.Result;
 import hudson.model.TextParameterValue;
 import hudson.model.queue.QueueTaskFuture;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+
+import java.io.*;
 import java.net.URI;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -57,6 +51,10 @@ import org.junit.Assert;
  * @author Phong Nguyen Le
  */
 public class TestUtils {
+    private static final Logger LOGGER = Logger.getLogger(TestUtils.class.getName());
+
+    static final Jinjava JINJA_REDER = new Jinjava();
+    static final String GITHUB_PUBLIC_ADDRESS = "github.com";
     static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
     static final String OPS_ACCESS_TOKEN = "elasticbox.jenkins.test.opsAccessToken";
     static final String DEFAULT_TEST_WORKSPACE = "tphongio";
@@ -74,9 +72,13 @@ public class TestUtils {
     static final String TEST_TAG = System.getProperty("elasticbox.jenkins.test.tag", "jenkins-plugin-test");
     static final String NAME_PREFIX = TEST_TAG + '-';
     static final String LINUX_COMPUTE = "Linux Compute";
-    static final String GITHUB_USER = System.getProperty("com.elasticbox.jenkins.test.GitHubUser", "tphongio");
-    static final String GITHUB_ACCESS_TOKEN = System.getProperty("com.elasticbox.jenkins.test.GitHubAccessToken");
 
+    static final Properties GITHUB_PROPERTIES = loadGitHubProperties(System.getProperty("elasticbox.jenkins.test.GitHubProperties"));
+    static final String GITHUB_USER = GITHUB_PROPERTIES.getProperty("GITHUB_USER");
+    static final String GITHUB_REPO_NAME = GITHUB_PROPERTIES.getProperty("GITHUB_REPO");
+    static final String GITHUB_ACCESS_TOKEN = GITHUB_PROPERTIES.getProperty("GITHUB_TOKEN");
+    static final String GITHUB_ADDRESS =GITHUB_PROPERTIES.getProperty("GITHUB_ADDRESS");
+    static final String GITHUB_TEST_BRANCH = GITHUB_PROPERTIES.getProperty("GITHUB_BRANCH");
 
     static JSONObject findVariable(JSONArray variables, String name, String scope) {
         for (Object variable : variables) {
@@ -93,6 +95,28 @@ public class TestUtils {
         }
         return null;
     }
+
+    private static Properties loadGitHubProperties(String propertiesFilePath) {
+        Properties properties = new Properties();
+
+        if (propertiesFilePath == null) {
+            LOGGER.log(Level.INFO, "GitHub properties for tests are not specified");
+            return properties;
+        }
+
+        try {
+            FileInputStream input = new FileInputStream(propertiesFilePath);
+            properties.load(input);
+            input.close();
+        } catch (FileNotFoundException e) {
+            LOGGER.log(Level.SEVERE, MessageFormat.format("{0} specified file not found. GitHub properties for tests are not loaded", propertiesFilePath));
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, MessageFormat.format("Error loading GitHub properties file {0} due to: {1}", propertiesFilePath, e.getMessage()));
+        }
+
+        return properties;
+    }
+
 
     static JSONObject findVariable(JSONArray variables, String name) {
         return findVariable(variables, name, null);

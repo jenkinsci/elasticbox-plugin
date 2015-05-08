@@ -39,12 +39,12 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
     
     public boolean postStatus(AbstractBuild<?, ?> build, GHPullRequest pullRequest, GHCommitState status, String message) {
         String detailsUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();        
-        LOGGER.finest(MessageFormat.format("Posting status {0} to {1} with details URL {2} and message: {3}", status, pullRequest.getUrl(), detailsUrl, message));
+        LOGGER.finest(MessageFormat.format("Posting status {0} to {1} with details URL {2} and message: {3}", status, pullRequest.getHtmlUrl(), detailsUrl, message));
         try {
             pullRequest.getRepository().createCommitStatus(pullRequest.getHead().getSha(), status, detailsUrl, message);
             return true;
         } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting status to {0}", pullRequest.getUrl()), ex);
+            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting status to {0}", pullRequest.getHtmlUrl()), ex);
         }
         return false;
     }
@@ -54,7 +54,7 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
         try {
             pullRequest.comment(MessageFormat.format("{0}. See {1} for more details.", comment, detailsUrl));
         } catch (IOException ex1) {
-            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getUrl()), ex1);
+            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getHtmlUrl()), ex1);
         }        
     }
 
@@ -72,7 +72,7 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
         try {
             String prLinkText = MessageFormat.format("PR #{0}", pullRequest.getNumber());
             build.setDescription(MessageFormat.format("<a title=''{0}'' href=''{1}''>{2}</a>: {3}", 
-                    pullRequest.getTitle(), pullRequest.getUrl(), prLinkText, 
+                    pullRequest.getTitle(), pullRequest.getHtmlUrl(), prLinkText,
                     StringUtils.abbreviate(pullRequest.getTitle(), 58 - prLinkText.length())));
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, MessageFormat.format("Error updating description of build {0}", build.getUrl()), ex);
