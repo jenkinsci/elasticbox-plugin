@@ -29,7 +29,6 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
-      <environment>jenkins-plugin-test-binding</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connection&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
       <skipIfExisting>false</skipIfExisting>
@@ -44,7 +43,6 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>jenkins-plugin-test-binding</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;ANY_BINDING&quot;,&quot;value&quot;:&quot;(${TEST_TAG})&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Binding&quot;}]</variables>
       <skipIfExisting>false</skipIfExisting>
@@ -59,7 +57,6 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
-      <environment>jenkins-plugin-test-binding</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;REQUIRED_BINDING&quot;,&quot;value&quot;:&quot;(test-linux-box, ${TEST_TAG})&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Binding&quot;},{&quot;name&quot;:&quot;ANY_BINDING&quot;,&quot;value&quot;:&quot;(test-binding-box, ${TEST_TAG})&quot;,&quot;scope&quot;:&quot;nested&quot;,&quot;type&quot;:&quot;Binding&quot;}]</variables>
       <skipIfExisting>false</skipIfExisting>

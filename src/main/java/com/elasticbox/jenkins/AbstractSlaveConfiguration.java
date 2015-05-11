@@ -50,7 +50,6 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private String boxVersion;
     private final int minInstances;
     private final int maxInstances;
-    private String environment;
     private String tags;
     private final String labels;
     private final String remoteFS;
@@ -98,11 +97,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         if (boxVersion != null && boxVersion.equals(box)) {
             boxVersion = DescriptorHelper.LATEST_BOX_VERSION;
         }
-
-        if (environment != null) {
-            tags = environment;
-        }
-
+        
         return this;
     }
 
@@ -270,32 +265,4 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         }
 
     }
-
-    public static class EnvironmentConverter extends XStream2.PassthruConverter<AbstractSlaveConfiguration> {
-        private static final String ENVIRONMENT_PROPERTY = AbstractSlaveConfiguration.class.getName() + ".environment";
-
-        public EnvironmentConverter(XStream2 xStream) {
-            super(xStream);
-        }
-
-        @Override
-        public boolean canConvert(Class type) {
-            return AbstractSlaveConfiguration.class.isAssignableFrom(type);
-        }
-
-        @Override
-        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
-            return super.unmarshal(reader, context);
-        }
-
-        @Override
-        protected void callback(AbstractSlaveConfiguration slaveConfig, UnmarshallingContext context) {
-            String environment = (String) context.get(ENVIRONMENT_PROPERTY);
-            if (environment != null) {
-                slaveConfig.tags = environment;
-            }
-        }
-
-    }
-
 }

@@ -12,7 +12,6 @@
 
 package com.elasticbox.jenkins;
 
-import com.elasticbox.jenkins.AbstractSlaveConfiguration.EnvironmentConverter;
 import com.elasticbox.jenkins.util.Condition;
 import com.thoughtworks.xstream.XStream;
 import hudson.init.InitMilestone;
@@ -84,10 +83,5 @@ public class Initializers {
         if (saveNeeded) {
             Jenkins.getInstance().save();
         }
-    }
-
-    @Initializer(after = InitMilestone.PLUGINS_STARTED)
-    public static void registerConverters() {
-//        Jenkins.XSTREAM.registerConverter(new EnvironmentConverter(Jenkins.XSTREAM2));
     }
 }

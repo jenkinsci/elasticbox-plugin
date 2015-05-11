@@ -77,7 +77,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final String claims;
     private final String provider;
     private final String location;
-    private final String instanceName;
+    private String instanceName;
     @Deprecated
     private final String environment;
     @Deprecated
@@ -396,7 +396,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
 
         if (StringUtils.isNotBlank(environment)) {
-            tags = StringUtils.isBlank(tags) ? environment : (environment + ',' + tags);
+            instanceName = environment;
         }
 
         if (waitForCompletion && waitForCompletionTimeout == 0) {

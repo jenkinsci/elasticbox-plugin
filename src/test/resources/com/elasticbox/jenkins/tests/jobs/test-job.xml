@@ -41,13 +41,12 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>${BUILD_ID}</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;HTTP&quot;,&quot;value&quot;:&quot;80&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Port&quot;}]</variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags>${BUILD_ID}, ${TEST_TAG}</tags>
+      <tags>${BUILD_ID},${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075</id>
@@ -56,22 +55,6 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
-      <environment>${TEST_TAG}</environment>
-      <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
-      <skipIfExisting>false</skipIfExisting>
-      <alternateAction>none</alternateAction>
-      <waitForCompletion>true</waitForCompletion>
-      <tags></tags>
-    </com.elasticbox.jenkins.builders.DeployBox>
-    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
-      <id>com.elasticbox.jenkins.builders.DeployBox-ba74ebf0-240c-441b-bcfa-bb76d9c3689f</id>
-      <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
-      <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
-      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
-      <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
-      <environment>${JOB_NAME}-${BUILD_ID}</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
       <skipIfExisting>false</skipIfExisting>
@@ -80,13 +63,26 @@
       <tags>${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
+      <id>com.elasticbox.jenkins.builders.DeployBox-ba74ebf0-240c-441b-bcfa-bb76d9c3689f</id>
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
+      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
+      <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
+      <instances>1</instances>
+      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
+      <skipIfExisting>false</skipIfExisting>
+      <alternateAction>none</alternateAction>
+      <waitForCompletion>true</waitForCompletion>
+      <tags>${JOB_NAME}-${BUILD_ID},${TEST_TAG}</tags>
+    </com.elasticbox.jenkins.builders.DeployBox>
+    <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-a924d736-3021-474c-af50-ea1885c3a9cd</id>
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
-      <environment>${TEST_TAG}</environment>
       <instances>1</instances>
       <variables>
         [
@@ -97,7 +93,7 @@
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags></tags>
+      <tags>${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
@@ -148,13 +144,12 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
-      <environment>${BUILD_TAG}</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags>${TEST_TAG}</tags>
+      <tags>${BUILD_TAG},${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
       <cloud>elasticbox</cloud>
