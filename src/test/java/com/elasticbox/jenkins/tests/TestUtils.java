@@ -53,7 +53,7 @@ import org.junit.Assert;
 public class TestUtils {
     private static final Logger LOGGER = Logger.getLogger(TestUtils.class.getName());
 
-    static final Jinjava JINJA_REDER = new Jinjava();
+    static final Jinjava JINJA_RENDER = new Jinjava();
     static final String GITHUB_PUBLIC_ADDRESS = "github.com";
     static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
     static final String OPS_ACCESS_TOKEN = "elasticbox.jenkins.test.opsAccessToken";

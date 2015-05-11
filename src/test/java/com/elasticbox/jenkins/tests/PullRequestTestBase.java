@@ -72,7 +72,8 @@ import org.w3c.dom.Document;
 public class PullRequestTestBase extends BuildStepTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestTestBase.class.getName());
     private static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
-    private static final String PR_TITLE = "ElasticBox Jenkins plugin test PR";
+    private static final String PR_TITLE = MessageFormat.format("ElasticBox Jenkins plugin test PR {0}",
+            UUID.randomUUID().toString());
     private static final String PR_DESCRIPTION = "Automatic test PR from ElasticBox Jenkins plugin";
 
     protected String testTag;
@@ -148,12 +149,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
         for (GHPullRequest pullRequest : openedPullRequests) {
             if (pullRequest.getTitle().equals(PR_TITLE)) {
                 ghPullRequest = pullRequest;
+                break;
             }
         }
 
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DAY_OF_YEAR, -7);
         if (ghPullRequest != null && ghPullRequest.getCreatedAt().before(calendar.getTime())) {
+            // We close the PR to avoid to reach the max limit of PR actions
             ghPullRequest.close();
             ghPullRequest = null;
         }
@@ -178,7 +181,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     private Map<String, String> getStringParameters(AbstractBuild build) {
-        Map<String, String> parameters = new HashMap<String, String>();ParametersAction paramsAction = build.getAction(ParametersAction.class);
+        Map<String, String> parameters = new HashMap<String, String>();
+        ParametersAction paramsAction = build.getAction(ParametersAction.class);
         if (paramsAction != null) {
             for (ParameterValue param : paramsAction.getParameters()) {
                 if (param instanceof StringParameterValue) {
@@ -307,10 +311,10 @@ public class PullRequestTestBase extends BuildStepTestBase {
         public MockPullRequest(GHPullRequest ghPullRequest) throws Exception {
             this.ghPullRequest = ghPullRequest;
             HashMap<String, Object> jinjaContext = createJinjaContext();
-            openPullRequestPayload = createPayload(TestUtils.JINJA_REDER.render(TestUtils.getResourceAsString("test-pull-request-opened.json"), jinjaContext));
-            closePullRequestPayload = createPayload(TestUtils.JINJA_REDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext));
-            reopenPullRequestPayload = createPayload(TestUtils.JINJA_REDER.render(TestUtils.getResourceAsString("test-pull-request-reopened.json"), jinjaContext));
-            commentPullRequestPayloadTemplate = TestUtils.JINJA_REDER.render(TestUtils.getResourceAsString("test-github-issue-comment-created.json"), jinjaContext);
+            openPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-opened.json"), jinjaContext));
+            closePullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext));
+            reopenPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-reopened.json"), jinjaContext));
+            commentPullRequestPayloadTemplate = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-github-issue-comment-created.json"), jinjaContext);
         }
 
         private HashMap<String, Object> createJinjaContext() {

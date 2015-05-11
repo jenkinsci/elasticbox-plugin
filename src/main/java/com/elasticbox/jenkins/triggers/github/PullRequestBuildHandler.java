@@ -268,7 +268,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
             cancelBuilds(pullRequestData);
             build(pullRequest, buildRequester, new TriggerCause(pullRequest, buildRequester));
         } else {
-            LOGGER.finest(MessageFormat.format("Pull request {0} is not opene, no build is triggered", pullRequest.getHtmlUrl()));
+            LOGGER.finest(MessageFormat.format("Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString()));
         }
     }    
     
