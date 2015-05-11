@@ -90,9 +90,9 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                     new ConcurrentHashMap<String, PullRequestData>());
             pullRequestDataMap = projectPullRequestDataLookup.get(project);
         }
-        PullRequestData data = pullRequestDataMap.get(pullRequest.getUrl().toString());
+        PullRequestData data = pullRequestDataMap.get(pullRequest.getHtmlUrl().toString());
         if (data == null) {
-            String pullRequestUrl = pullRequest.getUrl().toString();
+            String pullRequestUrl = pullRequest.getHtmlUrl().toString();
             PullRequestData newPullRequestData = new PullRequestData(pullRequest, ProjectData.getInstance(project, true));
             pullRequestDataMap.putIfAbsent(pullRequestUrl, newPullRequestData);
             data = pullRequestDataMap.get(pullRequestUrl);
@@ -266,7 +266,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             }
             ConcurrentHashMap<String, PullRequestData> prDataLookup = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject());
             if (prDataLookup != null) {
-                PullRequestData data = prDataLookup.get(cause.getPullRequest().getUrl().toString());
+                PullRequestData data = prDataLookup.get(cause.getPullRequest().getHtmlUrl().toString());
                 if (data == null) {
                     data = getInstance().addPullRequestData(cause.getPullRequest(), rootBuild.getProject());
                 }

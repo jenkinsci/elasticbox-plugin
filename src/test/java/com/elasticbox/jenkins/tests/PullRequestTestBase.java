@@ -62,11 +62,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.kohsuke.github.GHHook;
-import org.kohsuke.github.GHIssueComment;
-import org.kohsuke.github.GHPullRequest;
-import org.kohsuke.github.GHRepository;
-import org.kohsuke.github.GitHub;
+import org.kohsuke.github.*;
 import org.w3c.dom.Document;
 
 /**
@@ -75,20 +71,29 @@ import org.w3c.dom.Document;
  */
 public class PullRequestTestBase extends BuildStepTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestTestBase.class.getName());
-    private static final String GIT_REPO = TestUtils.GITHUB_USER + "/elasticbox-plugin";
-    
+    private static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
+    private static final String PR_TITLE = MessageFormat.format("ElasticBox Jenkins plugin test PR {0}",
+            UUID.randomUUID().toString());
+    private static final String PR_DESCRIPTION = "Automatic test PR from ElasticBox Jenkins plugin";
+
     protected String testTag;
     protected MockPullRequest pullRequest;
     protected FreeStyleProject project, downstreamProject;
     protected String webhookUrl;
     protected GHRepository gitHubRepo;
+    protected String apiGithubAddress;
     
     @Before
     @Override
     public void setup() throws Exception {
-        super.setup();  
+        super.setup();
+        if (TestUtils.GITHUB_ADDRESS.equals(MessageFormat.format("https://{0}", TestUtils.GITHUB_PUBLIC_ADDRESS))) {
+            apiGithubAddress = MessageFormat.format("https://api.{0}", TestUtils.GITHUB_PUBLIC_ADDRESS);
+        } else {
+            apiGithubAddress = MessageFormat.format("{0}/api/v3", TestUtils.GITHUB_ADDRESS);
+        }
         webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();        
-        GitHub gitHub = GitHub.connect(TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
+        GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks
         for (GHHook hook : gitHubRepo.getHooks()) {
@@ -97,7 +102,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
             } catch (Exception ex) {                
             }
         }
-        GHPullRequest ghPullRequest = gitHubRepo.getPullRequest(1);
+        GHPullRequest ghPullRequest = getTestPullRequest(gitHubRepo);
         // try to delete all comments that are older than 1 hour
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR_OF_DAY, -1);        
@@ -121,13 +126,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
         pullRequest = new MockPullRequest(ghPullRequest);
         testTag = UUID.randomUUID().toString().substring(0, 30);
         GitHubPushTrigger.DescriptorImpl descriptor = (GitHubPushTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(GitHubPushTrigger.class);
-        descriptor.getCredentials().add(new Credential(TestUtils.GITHUB_USER, null, TestUtils.GITHUB_ACCESS_TOKEN));
+        descriptor.getCredentials().add(new Credential(TestUtils.GITHUB_USER, apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN));
         TestUtils.TemplateResolver templateResolver = new TemplateResolveImpl() {
 
             @Override
             public String resolve(String template) {
+                String repoAddress = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_ADDRESS, GIT_REPO);
                  return getTemplateResolver().resolve(template).replace("${TEST_TAG}", testTag)
-                         .replace("${GITHUB_PROJECT_URL}", "https://github.com/" + GIT_REPO);
+                         .replace("${GITHUB_PROJECT_URL}", repoAddress);
             }
             
         };
@@ -137,9 +143,46 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
     }
 
+    private GHPullRequest getTestPullRequest(GHRepository githubRepo) throws IOException {
+        GHPullRequest ghPullRequest = null;
+        List<GHPullRequest> openedPullRequests = githubRepo.getPullRequests(GHIssueState.OPEN);
+        for (GHPullRequest pullRequest : openedPullRequests) {
+            if (pullRequest.getTitle().equals(PR_TITLE)) {
+                ghPullRequest = pullRequest;
+                break;
+            }
+        }
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, -7);
+        if (ghPullRequest != null && ghPullRequest.getCreatedAt().before(calendar.getTime())) {
+            // We close the PR to avoid to reach the max limit of PR actions
+            ghPullRequest.close();
+            ghPullRequest = null;
+        }
+
+        if (ghPullRequest == null) {
+            ghPullRequest = githubRepo.createPullRequest(PR_TITLE, TestUtils.GITHUB_TEST_BRANCH, githubRepo.getMasterBranch(), PR_DESCRIPTION);
+        }
+
+        return ghPullRequest;
+    }
+
+    private GitHub createGitHubConnection(String githubEndpoint, String githubUser, String githubToken) throws IOException {
+        GitHub github;
+        String publicGithubAddress = MessageFormat.format("https://{0}", TestUtils.GITHUB_PUBLIC_ADDRESS);
+        if (githubEndpoint.equals(publicGithubAddress)) {
+            github = GitHub.connect(githubUser, githubToken);
+        } else {
+            github = GitHub.connectToEnterprise(apiGithubAddress, githubUser, githubToken);
+        }
+
+        return github;
+    }
+
     private Map<String, String> getStringParameters(AbstractBuild build) {
         Map<String, String> parameters = new HashMap<String, String>();
-        ParametersAction paramsAction = build.getAction(ParametersAction.class);     
+        ParametersAction paramsAction = build.getAction(ParametersAction.class);
         if (paramsAction != null) {
             for (ParameterValue param : paramsAction.getParameters()) {
                 if (param instanceof StringParameterValue) {
@@ -148,29 +191,6 @@ public class PullRequestTestBase extends BuildStepTestBase {
             }
         }
         return parameters;
-    }
-    
-    protected List<JSONObject> getDeployedInstances() throws IOException {
-        Client client = cloud.getClient();
-        Collection<String> mainProjectInstanceTags = Arrays.asList(testTag, MessageFormat.format("{0}_{1}", 
-                project.getName(), pullRequest.getGHPullRequest().getNumber()));        
-        Collection<String> downstreamProjectInstanceTags = Arrays.asList(testTag, MessageFormat.format("{0}_{1}", 
-                downstreamProject.getName(), pullRequest.getGHPullRequest().getNumber()));
-        JSONObject mainProjectInstance = null, downstreamProjectInstance = null;
-        for (Object instance : client.getInstances(TestUtils.TEST_WORKSPACE)) {
-            JSONObject instanceJson = (JSONObject) instance;
-            JSONArray instanceTags = instanceJson.getJSONArray("tags");
-            if (instanceTags.containsAll(mainProjectInstanceTags)) {
-                mainProjectInstance = instanceJson;
-            } else if (instanceTags.containsAll(downstreamProjectInstanceTags)) {
-                downstreamProjectInstance = instanceJson;
-            }
-            if (mainProjectInstance != null && downstreamProjectInstance != null) {
-                break;
-            }
-        }
-        
-        return Arrays.asList(mainProjectInstance, downstreamProjectInstance);
     }
     
     protected List<JSONObject> checkBuild(String buildRequester) throws Exception {
@@ -195,7 +215,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         Assert.assertEquals(parameters.get(PullRequestBuildHandler.PR_NUMBER), String.valueOf(pullRequest.getGHPullRequest().getNumber()));
         Assert.assertEquals(parameters.get(PullRequestBuildHandler.PR_MERGE_BRANCH), pullRequest.getGHPullRequest().getBase().getRef());
         Assert.assertEquals(parameters.get(PullRequestBuildHandler.PR_OWNER), pullRequest.getGHPullRequest().getUser().getLogin());
-        Assert.assertEquals(parameters.get(PullRequestBuildHandler.PR_URL), pullRequest.getGHPullRequest().getUrl().toString());
+        Assert.assertEquals(parameters.get(PullRequestBuildHandler.PR_URL), pullRequest.getGHPullRequest().getHtmlUrl().toString());
 
         // check that instances are deployed
         Client client = cloud.getClient();
@@ -290,10 +310,29 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
         public MockPullRequest(GHPullRequest ghPullRequest) throws Exception {
             this.ghPullRequest = ghPullRequest;
-            openPullRequestPayload = createPayload(TestUtils.getResourceAsString("test-pull-request-opened.json"));
-            closePullRequestPayload = createPayload(TestUtils.getResourceAsString("test-pull-request-closed.json"));
-            reopenPullRequestPayload = createPayload(TestUtils.getResourceAsString("test-pull-request-reopened.json"));
-            commentPullRequestPayloadTemplate = TestUtils.getResourceAsString("test-github-issue-comment-created.json");            
+            HashMap<String, Object> jinjaContext = createJinjaContext();
+            openPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-opened.json"), jinjaContext));
+            closePullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext));
+            reopenPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-reopened.json"), jinjaContext));
+            commentPullRequestPayloadTemplate = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-github-issue-comment-created.json"), jinjaContext);
+        }
+
+        private HashMap<String, Object> createJinjaContext() {
+            HashMap<String, Object> jinjaContext = new HashMap<String, Object>();
+
+            String prUrl = ghPullRequest.getHtmlUrl().toString();
+            List<GHPullRequestCommitDetail> commits = ghPullRequest.listCommits().asList();
+            jinjaContext.put("GITHUB_ADDRESS", TestUtils.GITHUB_ADDRESS.replace("https://", ""));
+            jinjaContext.put("API_GITHUB_ADDRESS", apiGithubAddress.replace("https://", ""));
+            jinjaContext.put("GITHUB_USER", TestUtils.GITHUB_USER);
+            jinjaContext.put("GITHUB_REPO", TestUtils.GITHUB_REPO_NAME);
+            jinjaContext.put("BRANCH", TestUtils.GITHUB_TEST_BRANCH);
+            jinjaContext.put("PR_NUMBER", Integer.parseInt(prUrl.substring(prUrl.lastIndexOf('/') + 1)));
+            if (commits.size() > 0) {
+                jinjaContext.put("COMMIT_SHA", commits.get(commits.size() - 1).getSha());
+            }
+
+            return jinjaContext;
         }
 
         public GHPullRequest getGHPullRequest() {

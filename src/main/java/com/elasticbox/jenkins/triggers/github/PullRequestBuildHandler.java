@@ -102,7 +102,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
             LOGGER.severe(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
             gitHubRepositoryUrl = gitHubProjectUrl;
         } else {
-            gitHubRepositoryUrl = repo.getUrl();
+            gitHubRepositoryUrl = repo.getHtmlUrl().toString();
         }
         if (!gitHubRepositoryUrl.endsWith("/")) {
             gitHubRepositoryUrl += '/';
@@ -200,7 +200,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
     void handle(GHEventPayload.PullRequest prEventPayload, GitHub gitHub) throws IOException {
         GHPullRequest pullRequest = prEventPayload.getPullRequest();
-        String pullRequestUrl = pullRequest.getUrl().toString();
+        String pullRequestUrl = pullRequest.getHtmlUrl().toString();
         if (!pullRequestUrl.startsWith(gitHubRepositoryUrl)) {
             LOGGER.finest(MessageFormat.format("Pull request {0} is not related to project {1}. GitHub project URL configured for project {1}: {2}", 
                     pullRequestUrl, project.getFullName(), gitHubRepositoryUrl));
@@ -250,7 +250,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
             return;
         }
 
-        String issueUrl = issueComment.getIssue().getUrl().toString();
+        String issueUrl = issueComment.getIssue().getHtmlUrl().toString();
         if (!issueUrl.startsWith(gitHubRepositoryUrl)) {
             LOGGER.finest(MessageFormat.format("GitHub issue {0} is not related to project {1}. GitHub project URL configured for project {1}: {2}", 
                     issueUrl, project.getFullName(), gitHubRepositoryUrl));
@@ -268,7 +268,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
             cancelBuilds(pullRequestData);
             build(pullRequest, buildRequester, new TriggerCause(pullRequest, buildRequester));
         } else {
-            LOGGER.finest(MessageFormat.format("Pull request {0} is not opene, no build is triggered", pullRequest.getUrl()));
+            LOGGER.finest(MessageFormat.format("Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString()));
         }
     }    
     
@@ -353,7 +353,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         if (pr.getUser().getEmail() != null) {
             parameters.add(new StringParameterValue(PR_OWNER_EMAIL, pr.getUser().getEmail()));
         }
-        final StringParameterValue prUrlParam = new StringParameterValue(PR_URL, pr.getUrl().toString());
+        final StringParameterValue prUrlParam = new StringParameterValue(PR_URL, pr.getHtmlUrl().toString());
         parameters.add(prUrlParam);
 
         project.scheduleBuild2(project.getQuietPeriod(), cause, new ParametersAction(parameters), 
@@ -384,7 +384,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
             for (AbstractProject<?,?> aProject : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
-                PullRequestData data = pullRequestManager.removePullRequestData(pullRequest.getUrl().toString(), aProject);
+                PullRequestData data = pullRequestManager.removePullRequestData(pullRequest.getHtmlUrl().toString(), aProject);
                 if (data != null) {
                     pullRequestDataList.add(data);
                 }

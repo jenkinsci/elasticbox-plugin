@@ -31,13 +31,13 @@ public class TriggerCause extends Cause {
 
     public TriggerCause(GHEventPayload.PullRequest prEventPayload) throws IOException {
         this(prEventPayload.getPullRequest(), MessageFormat.format("GitHub pull request {0} is {1} by {2}", 
-                prEventPayload.getPullRequest().getUrl(), 
+                prEventPayload.getPullRequest().getHtmlUrl(),
                 PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction()) ? "updated" : prEventPayload.getAction(), 
                 getUserInfo(prEventPayload.getPullRequest().getUser())));
     }
 
     public TriggerCause(GHPullRequest pullRequest, GHUser buildRequester) throws IOException {
-        this(pullRequest, MessageFormat.format("Build for pull request {0} is started by {1}", pullRequest.getUrl(), 
+        this(pullRequest, MessageFormat.format("Build for pull request {0} is started by {1}", pullRequest.getHtmlUrl(),
                 getUserInfo(buildRequester)));
     }
     

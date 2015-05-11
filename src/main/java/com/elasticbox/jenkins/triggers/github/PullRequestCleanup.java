@@ -82,7 +82,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                     GHRepository repo = gitHub.getRepository(MessageFormat.format("{0}/{1}", repoName.userName, repoName.repositoryName));
                     Set<String> openPullRequestURLs = new HashSet<String>();
                     for (GHPullRequest ghPullRequest : repo.getPullRequests(GHIssueState.OPEN)) {
-                        openPullRequestURLs.add(ghPullRequest.getUrl().toString());
+                        openPullRequestURLs.add(ghPullRequest.getHtmlUrl().toString());
                     }
                     for (String pullRequestUrl : entry.getValue()) {
                         if (!openPullRequestURLs.contains(pullRequestUrl)) {
@@ -126,7 +126,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
             if (client != null) {
                 boolean instanceExists = true;
                 try {
-                    LOGGER.info(MessageFormat.format("Terminating instance {0} of pull request {1}", client.getInstanceUrl(instance.id), pullRequest.getUrl()));
+                    LOGGER.info(MessageFormat.format("Terminating instance {0} of pull request {1}", client.getInstanceUrl(instance.id), pullRequest.getHtmlUrl()));
                     client.terminate(instance.id);
                 } catch (ClientException ex) {
                     if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
@@ -157,7 +157,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                 pullRequest.comment(MessageFormat.format("The following instances are being terminated: {0}",
                         StringUtils.join(terminatingInstanceURLs, ", ")));
             } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getUrl(), ex));
+                LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getHtmlUrl(), ex));
             }
         }
         
