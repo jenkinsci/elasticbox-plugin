@@ -346,11 +346,11 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
     private void deployInstance(InstanceCreationRequest request) throws IOException {
         ElasticBoxCloud cloud = request.slave.getCloud();        
         Client ebClient = cloud.getClient();
-        JSONObject policy = ebClient.getBox(request.slave.getProfileId());     
         JSONArray variables = SlaveInstance.createJenkinsVariables(ebClient, request.slave);
         JSONObject jenkinsVariable = variables.getJSONObject(0);
         String scope = jenkinsVariable.containsKey("scope") ? jenkinsVariable.getString("scope") : StringUtils.EMPTY;
         AbstractSlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
+        String workspace = slaveConfig.getWorkspace();
         if (slaveConfig != null && slaveConfig.getVariables() != null) {
             JSONArray configuredVariables = VariableResolver.parseVariables(slaveConfig.getVariables());
             for (int i = 0; i < configuredVariables.size(); i++) {
@@ -363,7 +363,7 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
         }
         LOGGER.info(MessageFormat.format("Deploying box {0}", ebClient.getBoxPageUrl(request.slave.getBoxVersion())));
         IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), null,
-                policy.getString("owner"), Collections.singletonList(request.slave.getNodeName()), variables, null,
+                workspace, Collections.singletonList(request.slave.getNodeName()), variables, null,
                 null, request.slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
         request.slave.setInstanceUrl(monitor.getResourceUrl());
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>", 
