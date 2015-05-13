@@ -135,15 +135,18 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                         } catch (IOException ex1) {
                             LOGGER.log(Level.SEVERE, 
                                     MessageFormat.format("Error force-terminating instance {0}", instance.id), ex1);
+                            commentPullRequest(pullRequest, MessageFormat.format("Instance {0} couldn't be deleted. It requires manual deletion", instance.id));
                         }
                     } else if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                         LOGGER.info(MessageFormat.format("Instance {0} is not found", client.getInstanceUrl(instance.id)));
                         instanceExists = false;
                     } else {
                         LOGGER.log(Level.SEVERE, MessageFormat.format("Error terminating instance {0}", instance.id), ex);
+                        commentPullRequest(pullRequest, MessageFormat.format("Instance {0} couldn't be deleted. It requires manual deletion", instance.id));
                     }
                 } catch (IOException ex) {
                     LOGGER.log(Level.SEVERE, MessageFormat.format("Error terminating instance {0}", instance.id), ex);
+                    commentPullRequest(pullRequest, MessageFormat.format("Instance {0} couldn't be deleted. It requires manual deletion", instance.id));
                 }
                 if (instanceExists) {
                     // add the terminating instance to the DeleteInstancesWorkload so it will be deleted after its termination
@@ -153,14 +156,18 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
             }
         }
         if (!terminatingInstanceURLs.isEmpty()) {
-            try {
-                pullRequest.comment(MessageFormat.format("The following instances are being terminated: {0}",
-                        StringUtils.join(terminatingInstanceURLs, ", ")));
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getHtmlUrl(), ex));
-            }
+            commentPullRequest(pullRequest, MessageFormat.format("The following instances are being terminated: {0}",
+                    StringUtils.join(terminatingInstanceURLs, ", ")));
         }
         
+    }
+
+    private static void commentPullRequest(GHPullRequest pullRequest, String message) {
+        try {
+            pullRequest.comment(message);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getUrl(), ex));
+        }
     }
 
     @Override
