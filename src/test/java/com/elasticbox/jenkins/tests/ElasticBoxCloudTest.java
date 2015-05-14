@@ -68,8 +68,14 @@ public class ElasticBoxCloudTest extends TestBase {
         Assert.assertTrue(MessageFormat.format("Box {0} does not have any profile in workspace {1}",
                 testJenkinsSlaveBox.getString("uri"), TestUtils.TEST_WORKSPACE), policies.size() > 0);
         for (Object policy : policies) {
-            JSONObject profileJson = client.getBox(((JSONObject) policy).getString("id"));
-            Assert.assertEquals(policy.toString(), profileJson.toString());
+            JSONObject policyJson = (JSONObject) policy;
+            JSONObject auxPolicyJson = client.getBox((policyJson).getString("id"));
+
+            if(policyJson.containsKey("_version")) {
+                policyJson.remove("_version");
+            }
+
+            Assert.assertEquals(policyJson.toString(), auxPolicyJson.toString());
         }        
         
         // make sure that a deployment request can be successfully submitted
