@@ -20,5 +20,5 @@
     "events": {
         "install": "install.sh"
     },
-    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+    "schema": "http://elasticbox.net/schemas/{schema_version}box"
 }

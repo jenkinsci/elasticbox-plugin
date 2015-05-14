@@ -8,12 +8,12 @@
         "template": "{template}",
         "flavor": "Tiny",
         "datastore": "{datastore}",
-        "schema": "http://elasticbox.net/schemas/{schema_version}/vsphere/compute/profile"
+        "schema": "http://elasticbox.net/schemas/{schema_version}vsphere/compute/profile"
     },
     "box": {
         "name": "{box_name}"
     },
     "name": "{name}",
     "provider": "vsphere",
-    "schema": "http://elasticbox.net/schemas/{schema_version}/deployment-profile"
+    "schema": "http://elasticbox.net/schemas/{schema_version}deployment-profile"
 }

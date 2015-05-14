@@ -200,8 +200,17 @@ public class TestUtils {
 
     static JSONObject createTestProvider(Client client) throws IOException, InterruptedException {
         JSONObject testProvider = new JSONObject();
+        String schemaVersion = getSchemaVersion(client);
+        String messageFormat;
+
+        if (StringUtils.isBlank(schemaVersion)) {
+            messageFormat = "{0}{1}{2}";
+        } else {
+            messageFormat = "{0}{1}/{2}";
+        }
+
         testProvider.put("name", NAME_PREFIX + UUID.randomUUID().toString());
-        testProvider.put("schema", MessageFormat.format("{0}{1}/test/provider", Client.BASE_ELASTICBOX_SCHEMA, getSchemaVersion(client)));
+        testProvider.put("schema", MessageFormat.format(messageFormat, Client.BASE_ELASTICBOX_SCHEMA, getSchemaVersion(client), "test/provider"));
         testProvider.put("type", TEST_PROVIDER_TYPE);
         testProvider.put("icon", "images/platform/provider.png");
         testProvider.put("secret", "secret");
@@ -250,7 +259,8 @@ public class TestUtils {
         }
         
         public String resolve(String template) {
-            template = template.replace("{schema_version}", schemaVersion);
+            String finalSchemaVersion = StringUtils.isBlank(schemaVersion) ? schemaVersion : (schemaVersion + "/");
+            template = template.replace("{schema_version}", finalSchemaVersion);
             if (resolver != null) {
                 template = resolver.resolve(template);
             }

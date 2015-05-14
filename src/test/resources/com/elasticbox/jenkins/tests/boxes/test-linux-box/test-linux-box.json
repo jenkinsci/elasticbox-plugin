@@ -58,5 +58,5 @@
     },
     "members": [],
     "id": "com.elasticbox.jenkins.tests.boxes.test-linux-box",
-    "schema": "http://elasticbox.net/schemas/{schema_version}/box"
+    "schema": "http://elasticbox.net/schemas/{schema_version}box"
 }

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 
@@ -106,7 +107,8 @@ public class BuildStepTestBase extends TestBase {
     
     protected class TemplateResolveImpl implements TestUtils.TemplateResolver {
         public String resolve(String template) {
-            template = template.replace("{schema_version}", schemaVersion).replace(TestUtils.DEFAULT_TEST_WORKSPACE,
+            String finalSchemaVersion = StringUtils.isBlank(schemaVersion) ? schemaVersion : (schemaVersion + "/");
+            template = template.replace("{schema_version}", finalSchemaVersion).replace(TestUtils.DEFAULT_TEST_WORKSPACE,
                     TestUtils.TEST_WORKSPACE);
             for (TestBoxData testBoxData : testBoxDataList) {
                 try {

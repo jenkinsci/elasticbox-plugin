@@ -5,7 +5,7 @@
         "keypair": "test_keypair",
         "location": "Simulated Location",
         "flavor": "test.micro",
-        "schema": "http://elasticbox.net/schemas/{schema_version}/test/compute/profile"
+        "schema": "http://elasticbox.net/schemas/{schema_version}test/compute/profile"
     },
     "box": {
         "version": "com.elasticbox.jenkins.tests.boxes.test-linux-box",
@@ -15,5 +15,5 @@
     "members": [],
     "provider": "test",
     "id": "com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile",
-    "schema": "http://elasticbox.net/schemas/{schema_version}/deployment-profile"
+    "schema": "http://elasticbox.net/schemas/{schema_version}deployment-profile"
 }

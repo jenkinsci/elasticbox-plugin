@@ -66,6 +66,7 @@ public class Client {
 
     public static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
     private static final String DEPLOYMENT_REQUEST_SCHEMA_NAME = "deploy-instance-request";
+    private static final String ELASTICBOX_RELEASE = "3";
 
     public static interface InstanceState {
         String PROCESSING = "processing";
@@ -104,7 +105,17 @@ public class Client {
     private static HttpClient httpClient = null;
 
     public static String getSchemaVersion(String url) {
-        return url.substring(BASE_ELASTICBOX_SCHEMA.length(), url.indexOf('/', BASE_ELASTICBOX_SCHEMA.length()));
+        int index = url.indexOf('/', BASE_ELASTICBOX_SCHEMA.length());
+        String schemaVersion = "";
+        if (index != -1) {
+            schemaVersion = url.substring(BASE_ELASTICBOX_SCHEMA.length(), index);
+
+            if (!schemaVersion.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                schemaVersion = "";
+            }
+        }
+
+        return schemaVersion;
     }
 
     private final String endpointUrl;
@@ -224,7 +235,11 @@ public class Client {
     public JSONObject createWorkspace(String name) throws IOException {
         JSONObject workspace = new JSONObject();
         workspace.put("name", name);
-        workspace.put("schema", BASE_ELASTICBOX_SCHEMA + getSchemaVersion() + "/workspaces/team");
+        String schemaVersion = getSchemaVersion();
+        String messageFormat = StringUtils.isBlank(schemaVersion) ? "{0}{1}{2}" : "{0}{1}/{2}";
+
+        String schema = MessageFormat.format(messageFormat, BASE_ELASTICBOX_SCHEMA, schemaVersion, "workspaces/team");
+        workspace.put("schema", schema);
         return doPost("/services/workspaces", workspace);
     }
 
@@ -638,7 +653,8 @@ public class Client {
         
         String profileSchema = profile.getString("schema");
         String schemaVersion = getSchemaVersion(profileSchema);
-        if (schemaVersion.compareTo("2014-05-23") > 0) {
+        String messageFormat = StringUtils.isBlank(schemaVersion) ? "{0}{1}{2}" : "{0}{1}/{2}";
+        if (StringUtils.isBlank(schemaVersion) || schemaVersion.compareTo("2014-05-23") > 0) {
             if (boxVersion != null) {
                 profile.getJSONObject("box").put("version", boxVersion);
             }
@@ -646,8 +662,8 @@ public class Client {
             JSONObject serviceProfile = profile.getJSONObject("profile");
             if (serviceProfile.containsKey("instances")) {
                 serviceProfile.put("instances", instances);
-            }            
-            deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + '/' + DEPLOYMENT_REQUEST_SCHEMA_NAME);
+            }
+            deployRequest.put("schema", MessageFormat.format(messageFormat, BASE_ELASTICBOX_SCHEMA, schemaVersion, DEPLOYMENT_REQUEST_SCHEMA_NAME));
             for (Object json : variables) {
                 JSONObject variable = (JSONObject) json;
                 if (variable.containsKey("scope") && variable.getString("scope").isEmpty()) {
@@ -659,7 +675,7 @@ public class Client {
             }
             deployRequest.put("variables", variables);
             
-            if (expirationTime != null && expirationOperation != null && schemaVersion.compareTo("2014-10-09") >= 0) {
+            if (expirationTime != null && expirationOperation != null && (StringUtils.isBlank(schemaVersion) || schemaVersion.compareTo("2014-10-09") >= 0)) {
                 JSONObject lease = new JSONObject();
                 lease.put("expire", expirationTime);
                 lease.put("operation", expirationOperation);
@@ -680,8 +696,8 @@ public class Client {
             JSONObject serviceProfile = mainInstance.getJSONObject("profile");
             if (serviceProfile.containsKey("instances")) {
                 serviceProfile.put("instances", instances);
-            }                        
-            deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + schemaVersion + "/deploy-service-request");
+            }
+            deployRequest.put("schema", MessageFormat.format(messageFormat, BASE_ELASTICBOX_SCHEMA, schemaVersion, "deploy-service-request"));
         }
         deployRequest.put("environment", environment);
         deployRequest.put("profile", profile);
@@ -905,6 +921,7 @@ public class Client {
     
     private void setRequiredHeaders(HttpRequestBase request) {
         request.setHeader("ElasticBox-Token", token);
+        request.setHeader("ElasticBox-Release", ELASTICBOX_RELEASE);
     }
     
     public static String getResponseBodyAsString(HttpResponse response) throws IOException {
