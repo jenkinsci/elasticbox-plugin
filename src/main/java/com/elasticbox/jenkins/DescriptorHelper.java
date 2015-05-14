@@ -202,7 +202,12 @@ public class DescriptorHelper {
             boxVersions.add("Latest", LATEST_BOX_VERSION);
             for (Object json : client.getBoxVersions(box)) {
                 JSONObject boxVersion = (JSONObject) json;
-                boxVersions.add(boxVersion.getJSONObject("version").getString("description"), boxVersion.getString("id"));
+                JSONObject versionObject = boxVersion.getJSONObject("version").getJSONObject("number");
+                String displayMessage = MessageFormat.format("Version {0}.{1}.{2} - {3}", versionObject.getInt("major"),
+                        versionObject.getInt("minor"), versionObject.getInt("patch"),
+                        boxVersion.getJSONObject("version").getString("description"));
+
+                boxVersions.add(displayMessage, boxVersion.getString("id"));
             }
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "Error fetching box versions", ex);
