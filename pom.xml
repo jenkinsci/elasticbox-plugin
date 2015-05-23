@@ -37,10 +37,10 @@
             <name>Phong Nguyen Le</name>
             <email>ple@elasticbox.com</email>
         </developer>
-    </developers>  
+    </developers>
     <scm>
-        <connection>scm:git:ssh://github.com/jenkinsci/elasticbox-plugin.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/jenkinsci/elasticbox-plugin.git</developerConnection>
+        <connection>scm:git:https://github.com/jenkinsci/elasticbox-plugin.git</connection>
+        <developerConnection>scm:git:https://github.com/jenkinsci/elasticbox-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/elasticbox-plugin</url>
         <tag>HEAD</tag>
     </scm>
@@ -60,7 +60,7 @@
             <artifactId>github</artifactId>
             <version>1.10</version>
             <optional>true</optional>
-        </dependency>        
+        </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
@@ -84,7 +84,7 @@
     <properties>
         <skipTests>true</skipTests>
     </properties>
-        
+
     <build>
         <plugins>
             <plugin>
@@ -93,16 +93,16 @@
                 <version>2.17</version>
                 <configuration>
                     <forkCount>1C</forkCount>
-                    <excludes>              
+                    <excludes>
                         <exclude>**/*SlaveTest.java</exclude>
                     </excludes>
-                    <skipTests>${skipTests}</skipTests>          
+                    <skipTests>${skipTests}</skipTests>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.5</version>
-            </plugin>            
+            </plugin>
         </plugins>
-    </build>    
+    </build>
 </project>
