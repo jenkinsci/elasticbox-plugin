@@ -33,9 +33,14 @@
     <url>https://wiki.jenkins-ci.org/display/JENKINS/ElasticBox+CI</url>
     <developers>
         <developer>
-            <id>tphongio</id>
-            <name>Phong Nguyen Le</name>
-            <email>ple@elasticbox.com</email>
+            <id>ignaciofuertes</id>
+            <name>Ignacio Fuertes</name>
+            <email>ignacio@elasticbox.com</email>
+        </developer>
+        <developer>
+            <id>riccardoelasticbox</id>
+            <name>Riccardo Coccioli</name>
+            <email>riccardo@elasticbox.com</email>
         </developer>
     </developers>
     <scm>
