@@ -68,7 +68,7 @@ public class Client {
 
     public static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
     private static final String DEPLOYMENT_REQUEST_SCHEMA_NAME = "deploy-instance-request";
-    private static final String ELASTICBOX_RELEASE = "4";
+    private static final String ELASTICBOX_RELEASE = "4.0";
 
     public static interface InstanceState {
         String PROCESSING = "processing";

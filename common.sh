@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ELASTICBOX_RELEASE=4
+ELASTICBOX_RELEASE="4.0"
 
 function ebx_token() {
     curl -ksf -H 'Content-Type:application/json' -X POST --data '{"email": "'$1'", "password": "'$2'"}' ${EBX_ADDRESS}/services/security/token
