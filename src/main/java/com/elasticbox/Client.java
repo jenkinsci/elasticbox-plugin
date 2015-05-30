@@ -610,7 +610,7 @@ public class Client {
         public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
             String updated = instance.getString("updated");
             String state = instance.getString("state");
-            String operation = instance.getString("operation");
+            String operation = instance.getJSONObject("operation").getString("event");
             if (lastModified.equals(updated) || !FINISH_STATES.contains(state)) {
                 return false;
             }
@@ -768,7 +768,7 @@ public class Client {
         String instanceUrl = getInstanceUrl(instanceId);
         JSONObject instance = (JSONObject) doGet(instanceUrl, false);
         String state = instance.getString("state");
-        String operation = instance.getString("operation");
+        String operation = instance.getJSONObject("operation").getString("event");
         String terminateOperation = (state.equals(InstanceState.DONE) && ON_OPERATIONS.contains(operation)) ||
                 (state.equals(InstanceState.UNAVAILABLE) && operation.equals(InstanceOperation.TERMINATE))?
                 "terminate" : "force_terminate";
@@ -782,7 +782,7 @@ public class Client {
     public IProgressMonitor poweron(String instanceId) throws IOException {
         JSONObject instance = getInstance(instanceId);
         String state = instance.getString("state");
-        if (ON_OPERATIONS.contains(instance.getString("operation")) && (InstanceState.DONE.equals(state) || InstanceState.PROCESSING.equals(state))) {
+        if (ON_OPERATIONS.contains(instance.getJSONObject("operation").getString("event")) && (InstanceState.DONE.equals(state) || InstanceState.PROCESSING.equals(state))) {
             return new IProgressMonitor.DoneMonitor(getInstanceUrl(instanceId));
         }
 

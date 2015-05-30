@@ -42,7 +42,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class TerminateOperation extends LongOperation implements IOperation.InstanceOperation {
 
-    private static void notifyTerminating(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud) 
+    private static void notifyTerminating(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud)
             throws InterruptedException {
         for (BuilderListener listener: Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
             try {
@@ -52,7 +52,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             }
         }
     }
-    
+
     private final boolean delete;
     private final boolean force;
 
@@ -78,25 +78,25 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         Client client = cloud.getClient();
         Set<String> resolvedTags = resolver.resolveTags(getTags());
-        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", 
+        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}",
                 StringUtils.join(resolvedTags, ", ")));
-        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, false);        
+        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, false);
         if (!canPerform(instances, logger)) {
             return;
         }
 
         List<String> instanceIDs = terminate(instances, getWaitForCompletionTimeout(), isForce(), cloud, logger, build);
-        
+
         if (isDelete()) {
-            logger.info(MessageFormat.format("Deleting terminated {0}", 
+            logger.info(MessageFormat.format("Deleting terminated {0}",
                     instances.size() > 1 ? "instances" : "instance"));
             for (String instanceId : instanceIDs) {
                 client.delete(instanceId);
             }
         }
     }
-    
-    static List<String> terminate(JSONArray instances, int waitForCompletionTimeout, boolean force, 
+
+    static List<String> terminate(JSONArray instances, int waitForCompletionTimeout, boolean force,
             ElasticBoxCloud cloud, TaskLogger logger, AbstractBuild<?, ?> build)
             throws InterruptedException, IOException {
         Client client = cloud.getClient();
@@ -110,7 +110,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             String instanceId = instanceJson.getString("id");
             instanceIDs.add(instanceId);
             String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instanceJson);
-            if (Client.TERMINATE_OPERATIONS.contains(instanceJson.getString("operation")) && 
+            if (Client.TERMINATE_OPERATIONS.contains(instanceJson.getJSONObject("operation").getString("event")) &&
                 Client.InstanceState.DONE.equals(instanceJson.getString("state"))) {
                 logger.info(MessageFormat.format("Instance {0} is already terminated", instancePageUrl));
                 continue;
@@ -120,17 +120,17 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             logger.info(MessageFormat.format(force ? "Force-terminating instance {0}" : "Terminating instance {0}", instancePageUrl));
             notifyTerminating(build, instanceId, cloud);
         }
-        
+
         if (!monitors.isEmpty() && waitForCompletionTimeout > 0) {
-            logger.info(MessageFormat.format("Waiting for {0} to complete terminating", 
+            logger.info(MessageFormat.format("Waiting for {0} to complete terminating",
                     instances.size() > 1 ? "the instances" : "the instance"));
             LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
-        }    
-        
+        }
+
         return instanceIDs;
     }
-    
-    public static void terminate(JSONObject instance, Client client, TaskLogger logger) 
+
+    public static void terminate(JSONObject instance, Client client, TaskLogger logger)
             throws IOException, InterruptedException {
         String instanceId = instance.getString("id");
         IProgressMonitor monitor = client.terminate(instanceId);
@@ -139,7 +139,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         try {
             logger.info(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            logger.info(MessageFormat.format("The box instance {0} has been terminated successfully ", 
+            logger.info(MessageFormat.format("The box instance {0} has been terminated successfully ",
                     instancePageUrl));
         } catch (IProgressMonitor.IncompleteException ex) {
             logger.info(ex.getMessage());
@@ -162,8 +162,8 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
     protected boolean failIfNoInstanceFound() {
         return false;
     }
-    
-    
+
+
     @Extension
     public static final class DescriptorImpl extends OperationDescriptor {
         private static final String DISPLAY_NAME = "Terminate";
@@ -172,7 +172,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
         public String getDisplayName() {
             return "Terminate";
         }
-        
+
     }
-    
+
 }

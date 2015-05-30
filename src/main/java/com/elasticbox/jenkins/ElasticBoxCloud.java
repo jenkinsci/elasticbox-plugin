@@ -73,10 +73,10 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     public static final String ENDPOINT_URL = "endpointUrl";
     public static final String USER_NAME = "username";
     public static final String PASSWORD = "password";
-    
+
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxCloud.class.getName());
     private static final String NAME_PREFIX = "elasticbox-";
-    
+
     private final String endpointUrl;
     private int maxInstances;
     @Deprecated
@@ -88,7 +88,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     private final String token;
     private final List<? extends SlaveConfiguration> slaveConfigurations;
     private String description;
-    
+
     @DataBoundConstructor
     public ElasticBoxCloud(String name, String description, String endpointUrl, int maxInstances, String token,
             List<? extends SlaveConfiguration> slaveConfigurations) {
@@ -101,7 +101,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         username = password = null;
         retentionTime = 0;
     }
-    
+
     protected Object readResolve() {
         if (StringUtils.isBlank(description) && StringUtils.isNotBlank(username)) {
             description = getDisplayName();
@@ -125,7 +125,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     public String getToken() {
         return token;
     }
-    
+
     private List<ElasticBoxSlave> getPendingSlaves(Label label, List<JSONObject> activeInstances) {
         List<ElasticBoxSlave> pendingSlaves = new ArrayList<ElasticBoxSlave>();
         List<ElasticBoxSlave> offlineSlaves = new ArrayList<ElasticBoxSlave>();
@@ -148,30 +148,30 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     }
                 }
             }
-        }        
-        
-        if (!offlineSlaves.isEmpty() && !activeInstances.isEmpty()) {            
+        }
+
+        if (!offlineSlaves.isEmpty() && !activeInstances.isEmpty()) {
             Map<String, JSONObject> idToInstanceMap = new HashMap<String, JSONObject>(activeInstances.size());
             for (JSONObject instance : activeInstances) {
                 idToInstanceMap.put(instance.getString("id"), instance);
             }
-            
+
             for (ElasticBoxSlave slave : offlineSlaves) {
                 JSONObject instance = idToInstanceMap.get(slave.getInstanceId());
                 if (instance != null) {
                     String state = instance.getString("state");
-                    String operation = instance.getString("operation");
-                    if (Client.ON_OPERATIONS.contains(operation) && (Client.InstanceState.PROCESSING.equals(state) || 
+                    String operation = instance.getJSONObject("operation").getString("event");
+                    if (Client.ON_OPERATIONS.contains(operation) && (Client.InstanceState.PROCESSING.equals(state) ||
                             Client.InstanceState.DONE.equals(state))) {
                         pendingSlaves.add(slave);
                     }
                 }
             }
         }
-        
+
         return pendingSlaves;
     }
-            
+
     @Override
     public synchronized Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
         try {
@@ -181,8 +181,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             return Collections.EMPTY_LIST;
         }
     }
-    
-    private Collection<NodeProvisioner.PlannedNode> doProvision(Label label, int excessWorkload) {    
+
+    private Collection<NodeProvisioner.PlannedNode> doProvision(Label label, int excessWorkload) {
         List<JSONObject> activeInstances;
         try {
             activeInstances = ElasticBoxSlaveHandler.getActiveInstances(this);
@@ -190,10 +190,10 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             LOGGER.log(Level.SEVERE, "Error fetching active instances", ex);
             return Collections.EMPTY_LIST;
         }
-        
+
         if (activeInstances.size() >= maxInstances) {
-            LOGGER.log(Level.WARNING, 
-                    MessageFormat.format("Cannot provision slave for label ''{0}'' because the maxinum number of instances has been reached for ElasticBox cloud {1}.", 
+            LOGGER.log(Level.WARNING,
+                    MessageFormat.format("Cannot provision slave for label ''{0}'' because the maxinum number of instances has been reached for ElasticBox cloud {1}.",
                             label.getName(), getDisplayName()));
             return Collections.EMPTY_LIST;
         }
@@ -205,9 +205,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             for (ElasticBoxSlave slave : pendingSlaves) {
                 slaveToNumOfAvailableExecutorsMap.put(slave, slave.getNumExecutors());
             }
-            
+
             for (Queue.BuildableItem buildableItem : Queue.getInstance().getBuildableItems()) {
-                for (Iterator<ElasticBoxSlave> iter = slaveToNumOfAvailableExecutorsMap.keySet().iterator(); 
+                for (Iterator<ElasticBoxSlave> iter = slaveToNumOfAvailableExecutorsMap.keySet().iterator();
                         iter.hasNext() && !slaveToNumOfAvailableExecutorsMap.isEmpty();) {
                     ElasticBoxSlave slave = iter.next();
                     if (slave.canTake(buildableItem) == null) {
@@ -220,19 +220,19 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     }
                 }
             };
-            
+
             for (int numOfAvailableExecutors : slaveToNumOfAvailableExecutorsMap.values()) {
-                excessWorkload -= numOfAvailableExecutors;                
+                excessWorkload -= numOfAvailableExecutors;
             }
         }
-        
+
         if (excessWorkload <= 0) {
             LOGGER.log(Level.INFO, MessageFormat.format("Skipped provisioning slave for label ''{0}'' because there are enough slaves are being launched in ElasticBox cloud {1}.", label.getName(), getDisplayName()));
         }
-         
-        List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<NodeProvisioner.PlannedNode>();        
+
+        List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<NodeProvisioner.PlannedNode>();
         while (excessWorkload > 0) {
-            try {                
+            try {
                 ElasticBoxSlave newSlave;
                 if (isLabelForReusableSlave(label)) {
                     ProjectSlaveConfiguration slaveConfig = ProjectSlaveConfiguration.find(label);
@@ -240,7 +240,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         SlaveInstance.InstanceCounter instanceCounter = new SlaveInstance.InstanceCounter(activeInstances);
                         if (instanceCounter.count(slaveConfig) >= slaveConfig.getMaxInstances()) {
                             LOGGER.log(Level.WARNING, MessageFormat.format("Cannot provision slave for label \"{0}\" because the maxinum number of ElasticBox instances of the slave configuration has been reached.", label.getName()));
-                            break;                        
+                            break;
                         }
                         newSlave = new ElasticBoxSlave(slaveConfig, false);
                     } else {
@@ -251,16 +251,16 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     SlaveConfiguration slaveConfig = findSlaveConfiguration(label, activeInstances);
                     if (slaveConfig == null) {
                         LOGGER.log(Level.WARNING, MessageFormat.format("Cannot provision slave for label \"{0}\" because the maxinum number of ElasticBox instances of all matching slave configurations has been reached.", label.getName()));
-                        break;                        
+                        break;
                     }
-                    
+
                     newSlave = new ElasticBoxSlave(slaveConfig, this);
                 }
                 final ElasticBoxSlave slave = newSlave;
                 plannedNodes.add(new NodeProvisioner.PlannedNode(slave.getDisplayName(),
                         new FutureWrapper<Node>(Computer.threadPoolForRemoting.submit(new Callable<Node>() {
                             public Node call() throws Exception {
-                                Jenkins.getInstance().addNode(slave);                                
+                                Jenkins.getInstance().addNode(slave);
                                 IProgressMonitor monitor = ElasticBoxSlaveHandler.submit(slave);
                                 monitor.waitForDone(slave.getLaunchTimeout());
                                 if (slave.getComputer() != null && slave.getComputer().isOnline()) {
@@ -269,7 +269,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                                     LOGGER.log(Level.WARNING, MessageFormat.format("The slave {0} did not come online after {1} minutes. It will be terminated and removed.", slave.getDisplayName(), slave.getLaunchTimeout()));
                                     slave.markForTermination();
                                     throw new Exception(MessageFormat.format("Cannot deploy slave {0}. See the system log for more details.", slave.getDisplayName()));
-                                }                                
+                                }
                             }
                         })), 1));
 
@@ -326,55 +326,55 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     public List<? extends SlaveConfiguration> getSlaveConfigurations() {
         return slaveConfigurations != null ? Collections.unmodifiableList(slaveConfigurations) : Collections.EMPTY_LIST;
     }
-    
+
     public Client getClient() throws IOException {
         return ClientCache.findOrCreateClient(name);
     }
-    
+
     SlaveConfiguration getSlaveConfiguration(String configId) {
         for (SlaveConfiguration config : getSlaveConfigurations()) {
             if (configId.equals(config.getId())) {
                 return config;
             }
         }
-        
+
         return null;
     }
-    
+
     private boolean isLabelForReusableSlave(Label label) {
         return label != null && label.getName() != null && label.getName().startsWith(ElasticBoxLabelFinder.REUSE_PREFIX);
     }
-    
+
     private SlaveConfiguration getSlaveConfiguration(Label label) {
         if (label == null) {
             return null;
         }
-        
+
         for (SlaveConfiguration slaveConfig : getSlaveConfigurations()) {
             if (label.matches(slaveConfig.getLabelSet())) {
                 return slaveConfig;
             }
         }
-        
+
         return null;
     }
-    
+
     private SlaveConfiguration findSlaveConfiguration(Label label, List<JSONObject> activeInstances) {
         SlaveInstance.InstanceCounter instanceCounter = new SlaveInstance.InstanceCounter(activeInstances);
-        
+
         for (SlaveConfiguration slaveConfig : getSlaveConfigurations()) {
-            if (label.matches(slaveConfig.getLabelSet()) && 
+            if (label.matches(slaveConfig.getLabelSet()) &&
                     instanceCounter.count(slaveConfig) < slaveConfig.getMaxInstances()) {
                 return slaveConfig;
             }
         }
-        
+
         return null;
     }
-    
+
     private static class FutureWrapper<V> implements Future<V> {
         private final Future<V> future;
-        
+
         FutureWrapper(Future<V> future) {
             this.future = future;
         }
@@ -405,9 +405,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             } catch (CancellationException ex) {
                 throw new ExecutionException(ex);
             }
-        }        
+        }
     }
-    
+
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
 
@@ -428,9 +428,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     DescriptorHelper.fixDeploymentPolicyFormData((JSONObject) slaveConfigs);
                 }
             }
-            
+
             ElasticBoxCloud newCloud = (ElasticBoxCloud) super.newInstance(req, formData);
-            
+
             try {
                 new URL(newCloud.endpointUrl);
             } catch (MalformedURLException ex) {
@@ -439,24 +439,24 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
             if (StringUtils.isBlank(newCloud.description)) {
                 throw new FormException(MessageFormat.format("Description is required for ElasticBox cloud at {0}", newCloud.getEndpointUrl()), "description");
-            }       
-            
+            }
+
             boolean invalidNumber;
             try {
                 invalidNumber = newCloud.maxInstances <= 0;
             } catch (JSONException ex) {
                 invalidNumber = true;
-            } 
+            }
             if (invalidNumber) {
                 throw new FormException(MessageFormat.format("Invalid Max. No. of Instances for ElasticBox cloud {0}, it must be a positive whole number.", newCloud.getDisplayName()), "maxInstances");
             }
-            
+
             if (StringUtils.isBlank(newCloud.token)) {
                 throw new FormException(MessageFormat.format("Authentication token is required for ElasticBox cloud {0}", newCloud.getDisplayName()), "token");
-            }       
-            
+            }
+
             checkDeletedSlaveConfiguration(newCloud);
-            
+
             JSONArray clouds;
             try {
                 Object json = req.getSubmittedForm().get("cloud");
@@ -478,20 +478,20 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 slaveConfigDescriptor.validateSlaveConfiguration(config, newCloud);
                 slaveMaxInstances += config.getMaxInstances();
             }
-            
+
             if (slaveMaxInstances > newCloud.maxInstances) {
                 newCloud.maxInstances = slaveMaxInstances;
-            }          
-            
+            }
+
             if (StringUtils.isBlank(newCloud.name)) {
-                newCloud = new ElasticBoxCloud(NAME_PREFIX + UUID.randomUUID().toString(), newCloud.getDescription(), newCloud.getEndpointUrl(), 
+                newCloud = new ElasticBoxCloud(NAME_PREFIX + UUID.randomUUID().toString(), newCloud.getDescription(), newCloud.getEndpointUrl(),
                         newCloud.getMaxInstances(), newCloud.getToken(), newCloud.getSlaveConfigurations());
             }
-            
+
             for (ElasticBoxCloud cloud : cloudsToRemoveCachedClient) {
                 ClientCache.removeClient(cloud);
             }
-            
+
             return newCloud;
         }
 
@@ -507,7 +507,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
             return FormValidation.ok(token);
         }
-        
+
         public FormValidation doVerifyToken(@QueryParameter String endpointUrl, @QueryParameter String token) {
             Client client = new Client(endpointUrl, token);
             try {
@@ -517,7 +517,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             }
             return FormValidation.ok(MessageFormat.format("The authentication token is valid for {0}.", endpointUrl));
         }
-        
+
         private List<ElasticBoxCloud> validateClouds(JSONArray clouds) throws FormException {
             // check for unique description
             Set<String> takenDescriptions = new HashSet<String>();
@@ -531,11 +531,11 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     } else {
                         takenDescriptions.add(description);
                     }
-                    
+
                     String name = json.getString("name");
                     if (!StringUtils.isBlank(name)) {
                         nameToExistingCloudMap.put(name, json);
-                    }                                        
+                    }
                 }
             }
             Set<ElasticBoxCloud> cloudsWithSlaves = new HashSet<ElasticBoxCloud>();
@@ -548,22 +548,22 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     }
                 }
             }
-            
+
             Set<ElasticBoxCloud> deletedClouds = new HashSet<ElasticBoxCloud>();
             List<ElasticBoxCloud> cloudsToRemoveCachedClient = new ArrayList<ElasticBoxCloud>();
             for (Cloud cloud : Jenkins.getInstance().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
-                    JSONObject json = nameToExistingCloudMap.get(ebCloud.name);                    
+                    JSONObject json = nameToExistingCloudMap.get(ebCloud.name);
                     if (json == null) {
                         deletedClouds.add(ebCloud);
                         cloudsToRemoveCachedClient.add(ebCloud);
                     } else {
-                        if (!ebCloud.getEndpointUrl().equalsIgnoreCase(json.getString(ENDPOINT_URL)) || 
+                        if (!ebCloud.getEndpointUrl().equalsIgnoreCase(json.getString(ENDPOINT_URL)) ||
                                 !json.getString("token").equals(ebCloud.getToken())) {
                             cloudsToRemoveCachedClient.add(ebCloud);
                         }
-                    }                    
+                    }
                 }
             }
             cloudsWithSlaves.retainAll(deletedClouds);
@@ -572,19 +572,19 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 for (ElasticBoxCloud cloud : cloudsWithSlaves) {
                     names.add(cloud.getDisplayName());
                 }
-                throw new FormException(MessageFormat.format("The following ElasticBox clouds cannot be deleted because they still have one or many slaves: {0}. Please delete the slaves and try again.", 
+                throw new FormException(MessageFormat.format("The following ElasticBox clouds cannot be deleted because they still have one or many slaves: {0}. Please delete the slaves and try again.",
                         StringUtils.join(names, ", ")), null);
             }
-            
+
             return cloudsToRemoveCachedClient;
         }
-        
+
         private void checkDeletedSlaveConfiguration(ElasticBoxCloud newCloud) throws FormException {
             Cloud cloud = Jenkins.getInstance().getCloud(newCloud.name);
             if (!(cloud instanceof ElasticBoxCloud)) {
                 return;
             }
-            
+
             ElasticBoxCloud existingCloud = (ElasticBoxCloud) cloud;
             for (Node node : Jenkins.getInstance().getNodes()) {
                 if (node instanceof ElasticBoxSlave) {
@@ -598,7 +598,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
                         if (slaveConfig != null) {
                             if (newCloud.getSlaveConfiguration(slaveConfig.getId()) == null) {
-                                throw new FormException(MessageFormat.format("Cannot remove slave configuration ''{0}'' from ElasticBox cloud {1} because it is used by slave {2}.", 
+                                throw new FormException(MessageFormat.format("Cannot remove slave configuration ''{0}'' from ElasticBox cloud {1} because it is used by slave {2}.",
                                         slaveConfig.getDescription(), existingCloud.getDisplayName(), slave.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
                             }
                         } else {
@@ -609,7 +609,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                             } catch (ANTLRException ex) {
                                 Logger.getLogger(ElasticBoxCloud.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
                             }
-                            if (label != null && existingCloud.getSlaveConfiguration(label) != null && 
+                            if (label != null && existingCloud.getSlaveConfiguration(label) != null &&
                                     newCloud.getSlaveConfiguration(label) == null) {
                                 throw new FormException(MessageFormat.format("Cannot remove slave configuration with labels ''{0}'' from ElasticBox cloud {1} because it is used by slave {2}.",
                                         slave.getLabelString(), existingCloud.getDisplayName(), slave.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
@@ -621,17 +621,17 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         }
 
     }
-    
+
     public static final ElasticBoxCloud getInstance() {
         for (Cloud cloud : Jenkins.getInstance().clouds) {
             if (cloud instanceof ElasticBoxCloud && cloud.name.indexOf('@') != -1) {
                 return (ElasticBoxCloud) cloud;
             }
-        }   
-        
+        }
+
         return null;
     }
- 
+
     public static class ConverterImpl extends AbstractConverter<ElasticBoxCloud> {
 
         public ConverterImpl(XStream2 xstream) {
@@ -641,7 +641,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         }
 
     }
-    
+
     private static class RetentionTimeMigrator extends AbstractConverter.Migrator<ElasticBoxCloud> {
 
         public RetentionTimeMigrator() {
@@ -659,7 +659,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 }
             }
         }
-        
+
     }
-    
+
 }
