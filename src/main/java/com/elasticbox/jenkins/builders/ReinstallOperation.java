@@ -46,7 +46,7 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
         logger.info("Executing Reinstall");
-        
+
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         Client client = cloud.getClient();
         Set<String> resolvedTags = resolver.resolveTags(getTags());
@@ -55,38 +55,38 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
         if (!canPerform(instances, logger)) {
             return;
         }
-        
+
         reinstall(instances, null, getWaitForCompletionTimeout(), client, logger);
     }
-    
+
     static void reinstall(JSONArray instances, JSONArray variables, int waitForCompletionTimeout, Client client,
             TaskLogger logger) throws InterruptedException, IOException {
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         for (Object instance : instances) {
             if (Thread.interrupted()) {
                 throw new InterruptedException();
-            }            
+            }
             JSONObject instanceJson = (JSONObject) instance;
             IProgressMonitor monitor = client.reinstall(instanceJson.getString("id"), variables);
             monitors.add(monitor);
             String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instanceJson);
-            logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));            
+            logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));
         }
         if (waitForCompletionTimeout > 0) {
             logger.info(MessageFormat.format("Waiting for {0} to finish reinstall", instances.size() > 1 ? "the instances" : "the instance"));
             LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
-        }        
-    }    
-    
+        }
+    }
+
     public static final ObjectFilter instanceFilter(Set<String> tags) {
         return new CompositeObjectFilter(new DescriptorHelper.InstanceFilterByTags(tags, false),
             new ObjectFilter() {
 
             public boolean accept(JSONObject instance) {
-                // reject inaccessible instances that cannot be reinstalled                
-                String operation = instance.getString("operation");
-                
-                if (Client.InstanceState.UNAVAILABLE.equals(instance.getString("state")) && 
+                // reject inaccessible instances that cannot be reinstalled
+                String operation = instance.getJSONObject("operation").getString("event");
+
+                if (Client.InstanceState.UNAVAILABLE.equals(instance.getString("state")) &&
                         (Client.InstanceOperation.REINSTALL.equals(operation) || Client.InstanceOperation.RECONFIGURE.equals(operation))) {
                     return true;
                 }
@@ -99,7 +99,7 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
     protected boolean failIfNoInstanceFound() {
         return true;
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends OperationDescriptor {
         private static String DISPLAY_NAME = "Reinstall";
@@ -108,7 +108,7 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
         public String getDisplayName() {
             return DISPLAY_NAME;
         }
-        
+
     }
-    
+
 }
