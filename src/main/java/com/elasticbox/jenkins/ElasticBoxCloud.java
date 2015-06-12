@@ -524,7 +524,17 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             Map<String, JSONObject> nameToExistingCloudMap = new HashMap<String, JSONObject>();
             for (Object cloud : clouds) {
                 JSONObject json = (JSONObject) cloud;
-                if (ElasticBoxCloud.class.getName().equals(json.getString("kind"))) {
+                String jsonClass = "";
+
+                if (json.has("$class")) {
+                    jsonClass = json.getString("$class");
+                } else if (json.has("kind")) {
+                    jsonClass = json.getString("kind");
+                } else if (json.has("stapler-class")) {
+                    jsonClass = json.getString("stapler-class");
+                }
+
+                if (ElasticBoxCloud.class.getName().equals(jsonClass)) {
                     String description = json.getString("description");
                     if (takenDescriptions.contains(description)) {
                         throw new FormException(MessageFormat.format("There are more than one ElasticBox clouds with description ''{0}''. Please specify unique description.", description), null);
