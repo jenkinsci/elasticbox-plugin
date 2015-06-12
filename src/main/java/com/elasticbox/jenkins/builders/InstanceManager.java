@@ -28,14 +28,14 @@ class InstanceManager {
     public InstanceManager() {
         buildIdToInstanceMap = new ConcurrentHashMap<String, JSONObject>();
     }
-    
+
     public JSONObject getInstance(AbstractBuild build) {
         return buildIdToInstanceMap.get(build.getId());
     }
-    
+
     public void setInstance(AbstractBuild build, JSONObject instance) {
         buildIdToInstanceMap.put(build.getId(), instance);
-        
+
         for (Iterator<String> iter = buildIdToInstanceMap.keySet().iterator(); iter.hasNext();) {
             Object _build = build.getProject().getBuild(iter.next());
             if (!(_build instanceof AbstractBuild) || !((AbstractBuild) _build).isBuilding()) {
@@ -43,5 +43,5 @@ class InstanceManager {
             }
         }
     }
-    
+
 }

@@ -32,7 +32,7 @@ import jenkins.model.Jenkins;
  */
 public abstract class ManageObject extends AbstractBuilder {
     private final List<? extends Operation> operations;
-    
+
     public ManageObject(String cloud, String workspace, List<? extends Operation> operations) {
         super(cloud, workspace);
         this.operations = operations;
@@ -41,7 +41,7 @@ public abstract class ManageObject extends AbstractBuilder {
     public List<? extends Operation> getOperations() {
         return operations != null ? Collections.unmodifiableList(operations) : Collections.EMPTY_LIST;
     }
-    
+
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
@@ -51,17 +51,17 @@ public abstract class ManageObject extends AbstractBuilder {
         if (!(ebCloud instanceof ElasticBoxCloud)) {
             throw new IOException(MessageFormat.format("Invalid cloud name: {0}", getCloud()));
         }
-        
+
         for (Operation operation : getOperations()) {
             operation.perform((ElasticBoxCloud) ebCloud, getWorkspace(), build, launcher, logger);
         }
-        
+
         return true;
     }
-    
+
     public static abstract class ManageObjectDescriptor extends AbstractBuilderDescriptor {
         public abstract List<? extends Descriptor<Operation>> getOperations();
-        
+
         protected List<? extends Descriptor<Operation>> getOperationDescriptors(Class type) {
             List<Descriptor<Operation>> operationDescriptors = new ArrayList<Descriptor<Operation>>();
             for (Descriptor<Operation> descriptor : Jenkins.getInstance().getDescriptorList(Operation.class)) {
@@ -69,7 +69,7 @@ public abstract class ManageObject extends AbstractBuilder {
                     operationDescriptors.add(descriptor);
                 }
             }
-            return operationDescriptors;            
+            return operationDescriptors;
         }
 
     }

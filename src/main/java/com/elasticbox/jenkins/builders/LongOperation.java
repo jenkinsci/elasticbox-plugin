@@ -86,13 +86,13 @@ public abstract class LongOperation extends Operation {
                     throw new AbortException(ex.getMessage());
                 }
                 if (done) {
-                    logger.info(MessageFormat.format("Operation {0} is successful for instance {1}", 
+                    logger.info(MessageFormat.format("Operation {0} is successful for instance {1}",
                             operationDisplayName, instancePageUrl));
                     instanceIdToMonitorMap.remove(instanceId);
                 }
             }
             if (!instanceIDs.isEmpty()) {
-                throw new AbortException(MessageFormat.format("Cannot find the instances with the following IDs: {0}", 
+                throw new AbortException(MessageFormat.format("Cannot find the instances with the following IDs: {0}",
                         StringUtils.join(instanceIDs, ", ")));
             }
         }
@@ -101,11 +101,11 @@ public abstract class LongOperation extends Operation {
             for (IProgressMonitor monitor : instanceIdToMonitorMap.values()) {
                 instancePageURLs.add(Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl()));
             }
-            String message = MessageFormat.format("The following instances still are not ready after waiting for {0} minutes: {1}", 
+            String message = MessageFormat.format("The following instances still are not ready after waiting for {0} minutes: {1}",
                     TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime), StringUtils.join(instancePageURLs, ','));
             logger.error(message);
             throw new AbortException(message);
         }
     }
-    
+
 }

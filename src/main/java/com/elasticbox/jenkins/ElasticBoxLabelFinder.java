@@ -44,15 +44,15 @@ public class ElasticBoxLabelFinder extends LabelFinder {
             if (slaveConfig != null) {
                 if (slave.isSingleUse()) {
                     if (slave.getComputer() != null && slave.getComputer().getBuilds().isEmpty()) {
-                        return Collections.singleton(getLabel(slaveConfig, true));                    
+                        return Collections.singleton(getLabel(slaveConfig, true));
                     }
                 } else if (StringUtils.isBlank(slave.getLabelString())) {
                     return Collections.singleton(getLabel(slaveConfig, false));
                 }
             }
         }
-        
+
         return Collections.emptyList();
     }
-    
+
 }

@@ -21,10 +21,10 @@ public interface Constants {
     public static final String AUTOMATIC_UPDATES_MAJOR = "major";
     public static final String AUTOMATIC_UPDATES_MINOR = "minor";
     public static final String AUTOMATIC_UPDATES_PATCH = "patch";
-    
+
     public static final String AMAZON_PROVIDER_TYPE = "Amazon Web Services";
     public static final String WINDOWS_CLAIM = "windows";
     public static final String LINUX_CLAIM = "linux";
     public static final String CLOUD_FOUNDATION_SERVICE = "CloudFormation Service";
-    
+
 }

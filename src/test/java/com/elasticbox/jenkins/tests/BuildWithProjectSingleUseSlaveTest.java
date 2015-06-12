@@ -38,7 +38,7 @@ import org.junit.Test;
  * @author Phong Nguyen Le
  */
 public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
-    
+
     @Test
     public void testBuildWithProjectWithSingleUseSlaveOption() throws Exception {
         final String slaveBoxName = TestUtils.JENKINS_SLAVE_BOX_NAME;
@@ -56,24 +56,24 @@ public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
         }
         Assert.assertNotNull(MessageFormat.format("Cannot find slave box {0} in workspace {1}", slaveBoxName, workspace), slaveBox);
         String boxId = slaveBox.getString("id");
-        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/workspaces/{0}/profiles?box_version={1}", 
+        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/workspaces/{0}/profiles?box_version={1}",
                 workspace, boxId), true);
         TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, ebCloud.getDisplayName()), profiles.size() > 0);
         JSONObject profile = profiles.getJSONObject(0);
         String label = UUID.randomUUID().toString();
-        
+
         // Create a slave configuration with retention time of 2 minutes.
-        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId, 
+        SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 2, null, 1, 60);
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
         jenkins.getInstance().clouds.remove(ebCloud);
         jenkins.getInstance().clouds.add(newCloud);
-        
+
         // create a project with single-use slave option and tie it to the slave config created above
         FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
         project.getBuildWrappersList().add(new SingleUseSlaveBuildOption());
-        project.setAssignedLabel(jenkins.getInstance().getLabel(label));                        
-        
+        project.setAssignedLabel(jenkins.getInstance().getLabel(label));
+
         // schedule a build
         QueueTaskFuture future = project.scheduleBuild2(0);
         Object scheduleResult = TestUtils.getResult(future.getStartCondition(), 30);
@@ -82,13 +82,13 @@ public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
         FreeStyleBuild result = (FreeStyleBuild) TestUtils.getResult(future, 10);
         TestCase.assertNotNull("10 minutes after job start but no result returned", result);
         TestCase.assertEquals(Result.SUCCESS, result.getResult());
-        
+
         // check that slave can no longer accept task
         Assert.assertFalse("Single-use slave still can accept task even after the build is canceled", slave.getComputer().isAcceptingTasks());
-        
-        // check that slave is removed      
+
+        // check that slave is removed
         Thread.sleep(TimeUnit.MINUTES.toMillis(5));
         Assert.assertNull("Single-use slave is not removed after build", findSlave(label));
     }
-    
+
 }

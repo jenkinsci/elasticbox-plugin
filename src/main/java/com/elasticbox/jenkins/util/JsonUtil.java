@@ -30,7 +30,7 @@ public class JsonUtil {
         }
         return null;
     }
-    
+
     public static JSONArray createCloudFormationDeployVariables(String providerId, String location) {
         JSONArray policyVariables = new JSONArray();
         JSONObject providerVariable = new JSONObject();
@@ -41,8 +41,8 @@ public class JsonUtil {
         JSONObject locationVariable = new JSONObject();
         locationVariable.put("type", "Text");
         locationVariable.put("name", "location");
-        locationVariable.put("value", location);  
+        locationVariable.put("value", location);
         return policyVariables;
     }
-    
+
 }

@@ -27,10 +27,10 @@
             <workspace>tphongio</workspace>
             <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
             <variables>
-                [{"name": "VAR_FILE", "value": "${WORKSPACE}/test-nested-box.json", "scope": "", "type": "File"}, 
+                [{"name": "VAR_FILE", "value": "${WORKSPACE}/test-nested-box.json", "scope": "", "type": "File"},
                 {"name": "VAR_FILE", "value": "${WORKSPACE}/jenkins.png", "scope": "nested", "type": "File"}]
             </variables>
-        </com.elasticbox.jenkins.builders.UpdateBox>      
+        </com.elasticbox.jenkins.builders.UpdateBox>
     </builders>
     <publishers/>
     <buildWrappers/>

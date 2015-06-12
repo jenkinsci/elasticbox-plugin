@@ -66,27 +66,27 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         public static final String SYNCHRONIZE = "synchronize";
         public static final String CLOSED = "closed";
     }
-    
+
     private static final Set<String> SUPPORTED_EVENTS = new HashSet<String>(
             Arrays.asList(PullRequestAction.OPENED, PullRequestAction.REOPENED, PullRequestAction.SYNCHRONIZE, PullRequestAction.CLOSED));
-    
+
     public static final PullRequestManager getInstance() {
         return (PullRequestManager) ((PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(
-                PullRequestBuildTrigger.class)).getBuildManager();        
+                PullRequestBuildTrigger.class)).getBuildManager();
     }
-    
-    final ConcurrentHashMap<AbstractProject, ConcurrentHashMap<String, PullRequestData>> projectPullRequestDataLookup = 
+
+    final ConcurrentHashMap<AbstractProject, ConcurrentHashMap<String, PullRequestData>> projectPullRequestDataLookup =
             new ConcurrentHashMap<AbstractProject, ConcurrentHashMap<String, PullRequestData>>();
-    
+
     @Override
     public PullRequestBuildHandler createBuildHandler(AbstractProject<?, ?> project, boolean newTrigger) throws IOException {
         return new PullRequestBuildHandler(project, newTrigger);
     }
-    
+
     public PullRequestData addPullRequestData(GHPullRequest pullRequest, AbstractProject project) throws IOException {
         ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project);
         if (pullRequestDataMap == null) {
-            projectPullRequestDataLookup.putIfAbsent(project, 
+            projectPullRequestDataLookup.putIfAbsent(project,
                     new ConcurrentHashMap<String, PullRequestData>());
             pullRequestDataMap = projectPullRequestDataLookup.get(project);
         }
@@ -99,32 +99,32 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             if (data == newPullRequestData) {
                 data.save();
             }
-        } 
+        }
         return data;
     }
-    
+
     public PullRequestData getPullRequestData(String url, AbstractProject project) {
         ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project);
         return pullRequestDataMap != null ? pullRequestDataMap.get(url) : null;
     }
-    
+
     public PullRequestData removePullRequestData(String pullRequestUrl, AbstractProject project) throws IOException {
-        ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project);    
+        ConcurrentHashMap<String, PullRequestData> pullRequestDataMap = projectPullRequestDataLookup.get(project);
         PullRequestData pullRequestData = pullRequestDataMap != null ? pullRequestDataMap.remove(pullRequestUrl) : null;
         if (pullRequestData != null) {
             pullRequestData.remove();
         }
         return pullRequestData;
     }
-    
+
     public GitHub createGitHub(GitHubRepositoryName gitHubRepoName) {
         GitHub gitHub = connect(gitHubRepoName);
         if (gitHub == null) {
             LOGGER.warning(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
         }
-        return gitHub;        
+        return gitHub;
     }
-        
+
     private String getHost(Credential credential) {
         if (StringUtils.isNotBlank(credential.apiUrl)) {
             try {
@@ -133,20 +133,20 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             } catch (MalformedURLException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Invalid GitHub API URL: {0}", credential.apiUrl), ex);
             }
-        } 
-        
+        }
+
         return "github.com";
     }
-    
+
     private GitHub connect(Credential credential) {
         try {
             return credential.login();
         } catch (IOException ex) {
             LOGGER.log(Level.WARNING, MessageFormat.format("Error logging in GitHub at ''{0}'' with credential of user ''{1}''", getHost(credential), credential.username), ex);
             return null;
-        }        
+        }
     }
-    
+
     private GitHub connect(GitHubRepositoryName gitHubRepoName) {
         List<Credential> credentials = ((GitHubPushTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(GitHubPushTrigger.class)).getCredentials();
         List<Credential> hostMatchedCredentials = new ArrayList<Credential>();
@@ -163,10 +163,10 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 }
             }
         }
-        
+
         if (hostMatchedCredentials.isEmpty()) {
             LOGGER.warning(MessageFormat.format("Cannot find any credential for GitHub at {0}", gitHubRepoName.host));
-        } else {        
+        } else {
             // try other credentials for the same host
             for (Credential credential : hostMatchedCredentials) {
                 GitHub gitHub = connect(credential);
@@ -175,20 +175,20 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 }
             }
         }
-        
+
         return null;
     }
-    
+
     private GitHub createGitHub(JSONObject payload) {
-        String repoUrl = payload.getJSONObject("repository").getString("html_url");        
+        String repoUrl = payload.getJSONObject("repository").getString("html_url");
         return createGitHub(GitHubRepositoryName.create(repoUrl));
     }
-    
+
     void handleEvent(String event, String payload) throws IOException {
         if ("pull_request".equals(event)) {
             handlePullRequestEvent(payload);
         } else if ("issue_comment".equals(event)) {
-            handleIssueCommentEvent(payload);            
+            handleIssueCommentEvent(payload);
         } else {
             LOGGER.warning(MessageFormat.format("Unsupported GitHub event: ''{0}''", event));
         }
@@ -212,7 +212,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 }
             } finally {
                 SecurityContextHolder.getContext().setAuthentication(old);
-            }   
+            }
         } else {
             LOGGER.warning(MessageFormat.format("Unsupported pull request action: ''{0}''", pullRequest.getAction()));
         }
@@ -224,13 +224,13 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             return;
         }
         GHEventPayload.IssueComment issueComment = gitHub.parseEventPayload(new StringReader(payload), GHEventPayload.IssueComment.class);
-        LOGGER.finest(MessageFormat.format("Comment on {0} from {1}: {2}", 
+        LOGGER.finest(MessageFormat.format("Comment on {0} from {1}: {2}",
                 issueComment.getIssue().getUrl(), issueComment.getComment().getUser(), issueComment.getComment().getBody()));
         if (!"created".equals(issueComment.getAction())) {
             LOGGER.finest(MessageFormat.format("Unsupported issue_comment action: ''{0}''", issueComment.getAction()));
             return;
         }
-        
+
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
@@ -242,7 +242,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             }
         } finally {
             SecurityContextHolder.getContext().setAuthentication(old);
-        }                            
+        }
 
     }
 
@@ -284,20 +284,20 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                             it.remove();
                             data.save();
                             return;
-                        }                        
+                        }
                     }
                 }
             }
         }
-        
-    }      
-    
+
+    }
+
     @Extension
     public static class ProjectDataListenerImpl extends ProjectDataListener {
 
         @Override
         protected void onLoad(ProjectData projectData) {
-            LOGGER.finest(MessageFormat.format("Loaded ElasticBox specific data of project ''{0}''", 
+            LOGGER.finest(MessageFormat.format("Loaded ElasticBox specific data of project ''{0}''",
                     projectData.getProject().getName()));
             PullRequestManager manager = PullRequestManager.getInstance();
             PullRequests pullRequests = projectData.get(PullRequests.class);
@@ -307,11 +307,11 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                     pullRequestDataLookup.put(pullRequestData.pullRequestUrl.toString(), pullRequestData);
                 }
                 manager.projectPullRequestDataLookup.put(projectData.getProject(), pullRequestDataLookup);
-            }                    
+            }
         }
 
     }
-    
+
     @Extension
     public static class ProjectListener extends ItemListener {
 
@@ -321,7 +321,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 ProjectData.removeInstance((AbstractProject) item);
             }
         }
-               
+
     }
-    
+
 }

@@ -25,7 +25,7 @@ import net.sf.json.JSONArray;
  */
 public abstract class Operation implements IOperation, Describable<Operation> {
     private final String tags;
-    
+
     protected Operation(String tags) {
         this.tags = tags;
     }
@@ -35,17 +35,17 @@ public abstract class Operation implements IOperation, Describable<Operation> {
     }
 
     protected abstract boolean failIfNoInstanceFound();
-    
+
     protected boolean canPerform(JSONArray instances, TaskLogger logger) throws AbortException {
         if (!instances.isEmpty()) {
             return true;
         }
-        
+
         final String message = "No instance found with the specified tags";
         if (failIfNoInstanceFound()) {
             throw new AbortException(message);
-        } 
-        
+        }
+
         logger.info(message);
         return false;
     }
@@ -54,7 +54,7 @@ public abstract class Operation implements IOperation, Describable<Operation> {
     public Descriptor<Operation> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
     }
-    
+
     public static abstract class OperationDescriptor extends Descriptor<Operation> {
     }
 }

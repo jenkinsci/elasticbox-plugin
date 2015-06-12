@@ -41,7 +41,7 @@ public class SingleUseSlaveBuildOption extends BuildWrapper {
             public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
                 return true;
             }
-            
+
         };
     }
 

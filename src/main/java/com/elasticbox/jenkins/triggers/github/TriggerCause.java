@@ -30,9 +30,9 @@ public class TriggerCause extends Cause {
     private final transient GHPullRequest pullRequest;
 
     public TriggerCause(GHEventPayload.PullRequest prEventPayload) throws IOException {
-        this(prEventPayload.getPullRequest(), MessageFormat.format("GitHub pull request {0} is {1} by {2}", 
+        this(prEventPayload.getPullRequest(), MessageFormat.format("GitHub pull request {0} is {1} by {2}",
                 prEventPayload.getPullRequest().getHtmlUrl(),
-                PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction()) ? "updated" : prEventPayload.getAction(), 
+                PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction()) ? "updated" : prEventPayload.getAction(),
                 getUserInfo(prEventPayload.getPullRequest().getUser())));
     }
 
@@ -40,7 +40,7 @@ public class TriggerCause extends Cause {
         this(pullRequest, MessageFormat.format("Build for pull request {0} is started by {1}", pullRequest.getHtmlUrl(),
                 getUserInfo(buildRequester)));
     }
-    
+
     public TriggerCause(GHPullRequest pullRequest, String shortDescription) {
         this.pullRequest = pullRequest;
         this.shortDescription = shortDescription;
@@ -48,16 +48,16 @@ public class TriggerCause extends Cause {
 
     public GHPullRequest getPullRequest() {
         return pullRequest;
-    }    
-    
+    }
+
     @Override
     public String getShortDescription() {
         return shortDescription;
     }
-    
+
     private static String getUserInfo(GHUser user) throws IOException {
-        return StringUtils.isBlank(user.getName()) || user.getLogin().equals(user.getName()) ? user.getLogin() : 
+        return StringUtils.isBlank(user.getName()) || user.getLogin().equals(user.getName()) ? user.getLogin() :
                 MessageFormat.format("{0} ({1})", user.getName(), user.getLogin());
     }
-    
+
 }

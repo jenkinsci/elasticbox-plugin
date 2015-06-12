@@ -39,27 +39,27 @@ public class BoxVersionTest extends BuildStepTestBase {
     private String testTag;
     private String testLinuxBoxVersion1;
     private String testLinuxBoxVersion2;
-    
+
     private final String STAGING = "staging";
-    
-    
+
+
     private JSONObject createVersion(JSONObject box, int major, int minor, int patch, String versionDescription) throws IOException {
         JSONObject boxCopy = JSONObject.fromObject(box);
         JSONObject versionNumber = new JSONObject();
         versionNumber.put("major", major);
         versionNumber.put("minor", minor);
-        versionNumber.put("patch", patch);        
+        versionNumber.put("patch", patch);
         JSONObject version = new JSONObject();
         version.put("box", boxCopy.get("id"));
         version.put("description", versionDescription);
         version.put("number", versionNumber);
-        boxCopy.put("version", version);        
-        return cloud.getClient().doUpdate(boxCopy.getString("uri"), boxCopy);        
+        boxCopy.put("version", version);
+        return cloud.getClient().doUpdate(boxCopy.getString("uri"), boxCopy);
     }
-    
+
     private void share(String resourceUri, String workspace, boolean readOnly) throws IOException {
         Client client = cloud.getClient();
-        JSONObject resource = (JSONObject) client.doGet(resourceUri, false);        
+        JSONObject resource = (JSONObject) client.doGet(resourceUri, false);
         JSONArray members = resource.getJSONArray("members");
         for (Iterator iter = members.iterator(); iter.hasNext();) {
             JSONObject memberJson = (JSONObject) iter.next();
@@ -71,7 +71,7 @@ public class BoxVersionTest extends BuildStepTestBase {
         JSONObject member = new JSONObject();
         member.put("workspace", workspace);
         member.put("role", readOnly ? "read" : "collaborator");
-        members.add(member);                    
+        members.add(member);
         resource.put("members", members);
         client.doUpdate(resourceUri, resource);
     }
@@ -80,9 +80,9 @@ public class BoxVersionTest extends BuildStepTestBase {
     @Override
     public void setup() throws Exception {
         super.setup();
-        
+
         testTag = UUID.randomUUID().toString().substring(0, 30);
-        
+
         // create staging workspace if it is not there
         Client client = cloud.getClient();
         boolean stagingWorkspaceFound = false;
@@ -96,35 +96,35 @@ public class BoxVersionTest extends BuildStepTestBase {
         if (!stagingWorkspaceFound) {
             client.createWorkspace(STAGING);
         }
-        
+
         // create versions for the box test-linux-box to test
         JSONObject testLinuxBox = testBoxDataLookup.get("test-linux-box").getJson();
         JSONObject testLinuxBoxVersion = createVersion(testLinuxBox, 1, 0, 0, "v1.0.0");
         testLinuxBoxVersion1 = testLinuxBoxVersion.getString("id");
 
-        // add new variable to test-linux-box and share it as read-only with staging workspace        
+        // add new variable to test-linux-box and share it as read-only with staging workspace
         JSONObject newVariable = new JSONObject();
         newVariable.put("name", "NEW_VAR");
         newVariable.put("type", "Text");
         newVariable.put("value", "NEW_VAR");
         testLinuxBox.getJSONArray("variables").add(newVariable);
-        client.doUpdate(testLinuxBox.getString("uri"), testLinuxBox);  
+        client.doUpdate(testLinuxBox.getString("uri"), testLinuxBox);
         share(testLinuxBox.getString("uri"), STAGING, true);
         share(client.getBoxUrl(testBoxDataLookup.get("test-linux-box").getNewProfileId()), STAGING, false);
-        
+
         share(testBoxDataLookup.get("test-nested-box").getJson().getString("uri"), STAGING, false);
         share(client.getBoxUrl(testBoxDataLookup.get("test-nested-box").getNewProfileId()), STAGING, false);
         share(testProvider.getString("uri"), STAGING, true);
-    }  
-    
+    }
+
     @After
     @Override
     public void tearDown() throws Exception {
         TestUtils.cleanUp(testTag, STAGING, jenkins.getInstance());
         super.tearDown();
     }
-        
-    
+
+
     private void checkBuildOutcome(AbstractBuild build, String expectedBoxVersion, String expectedChildBoxVersion) throws Exception {
         // check that the latest of test-linux-box is deployed and updated by the build
         Client client = cloud.getClient();
@@ -136,12 +136,12 @@ public class BoxVersionTest extends BuildStepTestBase {
         JSONObject mainBox = instanceBoxes.getJSONObject(0);
         JSONObject nestedBox = instanceBoxes.getJSONObject(1);
         Assert.assertEquals(expectedBoxVersion, mainBox.getString("id"));
-        Assert.assertEquals(expectedChildBoxVersion, nestedBox.getString("id"));        
+        Assert.assertEquals(expectedChildBoxVersion, nestedBox.getString("id"));
         JSONArray variables = testInstance.getJSONArray("variables");
-        JSONObject newVariable = TestUtils.findVariable(variables, "NEW_VAR", "nested");        
+        JSONObject newVariable = TestUtils.findVariable(variables, "NEW_VAR", "nested");
         if (expectedChildBoxVersion.equals(testBoxDataLookup.get("test-linux-box").getJson().getString("id")) ||
                 expectedChildBoxVersion.equals(testLinuxBoxVersion2)) {
-            Assert.assertNotNull(MessageFormat.format("Variable nested.NEW_VAR was not found", newVariable));            
+            Assert.assertNotNull(MessageFormat.format("Variable nested.NEW_VAR was not found", newVariable));
         } else if (expectedChildBoxVersion.equals(testLinuxBoxVersion1)) {
             Assert.assertNull(MessageFormat.format("Unexpected variable: {0}", newVariable), newVariable);
         }
@@ -150,9 +150,9 @@ public class BoxVersionTest extends BuildStepTestBase {
         VariableResolver resolver = new VariableResolver(build, TaskListener.NULL);
         Assert.assertEquals(resolver.resolve("${BUILD_NUMBER}"), updatedVariable.getString("value"));
     }
-    
+
     public void testBoxVersion() throws Exception {
-        Map<String, String> parameters = Collections.singletonMap("TEST_TAG", testTag);        
+        Map<String, String> parameters = Collections.singletonMap("TEST_TAG", testTag);
         FreeStyleProject project = TestUtils.createProject("test", createTestDataFromTemplate("jobs/test-box-version.xml"), jenkins.getInstance());
         FreeStyleBuild build = TestUtils.runJob(project, parameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
@@ -161,25 +161,25 @@ public class BoxVersionTest extends BuildStepTestBase {
         JSONObject testNestedBox = testBoxDataLookup.get("test-nested-box").getJson();
         String testNestedBoxUri = testNestedBox.getString("uri");
         String testNestedBoxId = testNestedBox.getString("id");
-        
+
         // check that the latest of test-nested-box is deployed and updated by the build
         checkBuildOutcome(build, testNestedBoxId, testLinuxBoxVersion1);
         TestUtils.cleanUp(testTag, STAGING, jenkins.getInstance());
-        
+
         // create version 1 of test-nested-box, share it as read-only with staging workspace and build again
         String testNestedBoxVersion1 = createVersion(testNestedBox, 1, 0, 0, "v1.0.0").getString("id");
         share(testNestedBoxUri, STAGING, true);
         build = TestUtils.runJob(project, parameters, jenkins.getInstance());
-        TestUtils.assertBuildSuccess(build);        
+        TestUtils.assertBuildSuccess(build);
         // check that version 1 is deployed and child box test-linux-box is updated by the build
-        checkBuildOutcome(build, testNestedBoxVersion1, testLinuxBoxVersion1);     
+        checkBuildOutcome(build, testNestedBoxVersion1, testLinuxBoxVersion1);
         TestUtils.cleanUp(testTag, STAGING, jenkins.getInstance());
-        
+
         // create version 2 of test-linux-box and build again
         testLinuxBoxVersion2 = createVersion(testLinuxBox, 2, 0, 0, "v2.0.0").getString("id");
         build = TestUtils.runJob(project, parameters, jenkins.getInstance());
-        TestUtils.assertBuildSuccess(build);        
+        TestUtils.assertBuildSuccess(build);
         // check that version 2 is deployed and updated by the build
-        checkBuildOutcome(build, testNestedBoxVersion1, testLinuxBoxVersion2); 
+        checkBuildOutcome(build, testNestedBoxVersion1, testLinuxBoxVersion2);
     }
 }

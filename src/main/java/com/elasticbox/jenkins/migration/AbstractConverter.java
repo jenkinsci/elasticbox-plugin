@@ -22,17 +22,17 @@ import java.util.List;
  * @author Phong Nguyen Le
  * @param <T>
  */
-public abstract class AbstractConverter<T> extends XStream2.PassthruConverter<T> {    
+public abstract class AbstractConverter<T> extends XStream2.PassthruConverter<T> {
     public static abstract class Migrator<T> {
         private final Version version;
-        
+
         public Migrator(Version version) {
             this.version = version;
         }
-        
+
         protected abstract void migrate(T object, Version olderVersion);
     }
-    
+
     private final List<? extends Migrator> migrators;
 
     public AbstractConverter(XStream2 xstream, List<? extends Migrator<T>> migrators) {
@@ -60,7 +60,7 @@ public abstract class AbstractConverter<T> extends XStream2.PassthruConverter<T>
             }
         }
     }
-    
+
     static Version getVersion(HierarchicalStreamReader reader) {
         String plugin = reader.getAttribute("plugin");
         int end = plugin.endsWith("-SNAPSHOT") ? plugin.length() - "-SNAPSHOT".length() : plugin.length();
@@ -78,5 +78,5 @@ public abstract class AbstractConverter<T> extends XStream2.PassthruConverter<T>
         }
         return new Version(major, minor, micro);
     }
-    
+
 }

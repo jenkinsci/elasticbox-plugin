@@ -32,19 +32,19 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  *
  * @author Phong Nguyen Le
- * @deprecated 
+ * @deprecated
  */
 public class TerminateBox extends InstanceBuildStep {
     private final boolean delete;
-    
+
     @DataBoundConstructor
     public TerminateBox(String cloud, String workspace, String box, String instance, String buildStep, boolean delete) {
         super(cloud, workspace, box, instance, buildStep);
         this.delete = delete;
-    }        
+    }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) 
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Terminate Box build step");
@@ -53,23 +53,23 @@ public class TerminateBox extends InstanceBuildStep {
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
-        
-        ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();        
+
+        ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
         Client client = ebCloud.getClient();
         String instanceId = instanceProvider.getInstanceId(build);
         terminate(instanceId, client, logger);
         if (delete) {
             client.delete(instanceId);
         }
-            
+
         return true;
-    }          
+    }
 
     public boolean isDelete() {
         return delete;
     }
-    
-    static void terminate(String instanceId, Client client, TaskLogger logger) 
+
+    static void terminate(String instanceId, Client client, TaskLogger logger)
             throws IOException, InterruptedException {
         IProgressMonitor monitor = client.terminate(instanceId);
         String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl());
@@ -77,7 +77,7 @@ public class TerminateBox extends InstanceBuildStep {
         try {
             logger.info(MessageFormat.format("Waiting for the box instance {0} to be terminated", instancePageUrl));
             monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-            logger.info(MessageFormat.format("The box instance {0} has been terminated successfully ", 
+            logger.info(MessageFormat.format("The box instance {0} has been terminated successfully ",
                     instancePageUrl));
         } catch (IProgressMonitor.IncompleteException ex) {
             Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, ex);
@@ -85,7 +85,7 @@ public class TerminateBox extends InstanceBuildStep {
             throw new AbortException(ex.getMessage());
         }
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends Descriptor {
 
@@ -93,7 +93,7 @@ public class TerminateBox extends InstanceBuildStep {
         public String getDisplayName() {
             return "ElasticBox - Terminate Box";
         }
-        
+
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return false;

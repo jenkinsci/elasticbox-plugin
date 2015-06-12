@@ -31,34 +31,34 @@ public class PullRequestCommenter extends Builder {
 
     public String getComment() {
         return comment;
-    }        
+    }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) 
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
         if (StringUtils.isBlank(comment)) {
             return true;
         }
-        
+
         TriggerCause cause = build.getCause(TriggerCause.class);
         if (cause == null) {
             throw new AbortException(MessageFormat.format("{0} is not configured for this project",
                     Jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class).getDisplayName()));
         }
-        
+
         TaskLogger logger = new TaskLogger(listener);
         String resolvedComment = new VariableResolver(build, listener).resolve(comment);
         logger.info("Posting the following comment to {0}: {1}", cause.getPullRequest().getHtmlUrl(), resolvedComment);
         cause.getPullRequest().comment(resolvedComment);
-        
+
         return true;
-    }  
-    
+    }
+
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         @Override
-        public boolean isApplicable(Class<? extends AbstractProject> jobType) {            
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
         }
 
@@ -66,6 +66,6 @@ public class PullRequestCommenter extends Builder {
         public String getDisplayName() {
             return "Comment on GitHub pull request";
         }
-    
+
     }
 }

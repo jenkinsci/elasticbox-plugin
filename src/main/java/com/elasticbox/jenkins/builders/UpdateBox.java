@@ -52,25 +52,25 @@ public class UpdateBox extends AbstractBuilder {
 
     public String getVariables() {
         return variables;
-    }        
+    }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) 
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Update Box");
-        
+
         VariableResolver resolver = new VariableResolver(getCloud(), getWorkspace(), build, logger.getTaskListener());
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
         Client client = ClientCache.getClient(getCloud());
         DescriptorHelper.removeInvalidVariables(resolvedVariables, DescriptorHelper.getBoxStack(client, getWorkspace(), box, box).getJsonArray());
         JSONObject boxJson = client.updateBox(box, resolvedVariables);
         String boxPageUrl = Client.getPageUrl(client.getEndpointUrl(), boxJson);
-        logger.info(MessageFormat.format("Updated box {0}", boxPageUrl));    
-        
+        logger.info(MessageFormat.format("Updated box {0}", boxPageUrl));
+
         return true;
     }
-        
+
     @Extension
     public static class DescriptorImpl extends AbstractBuilderDescriptor {
 
@@ -86,14 +86,14 @@ public class UpdateBox extends AbstractBuilder {
                 throw new FormException("Update Box build step must update at least one variable", "variables");
             }
             return updateBox;
-        }                
+        }
 
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
             return DescriptorHelper.getBoxes(cloud, workspace);
         }
-        
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
-                @QueryParameter String workspace, @QueryParameter String box) {            
+
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud,
+                @QueryParameter String workspace, @QueryParameter String box) {
             DescriptorHelper.JSONArrayResponse response = DescriptorHelper.getBoxStack(cloud, workspace, box, box);
             // reset the variable of all variable to empty string so the UI will save only variables with non-empty value
             for (Object boxObject : response.getJsonArray()) {
@@ -109,6 +109,6 @@ public class UpdateBox extends AbstractBuilder {
             }
             return response;
         }
-        
+
     }
 }

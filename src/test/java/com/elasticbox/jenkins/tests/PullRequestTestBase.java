@@ -82,7 +82,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
     protected String webhookUrl;
     protected GHRepository gitHubRepo;
     protected String apiGithubAddress;
-    
+
     @Before
     @Override
     public void setup() throws Exception {
@@ -92,21 +92,21 @@ public class PullRequestTestBase extends BuildStepTestBase {
         } else {
             apiGithubAddress = MessageFormat.format("{0}/api/v3", TestUtils.GITHUB_ADDRESS);
         }
-        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();        
+        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks
         for (GHHook hook : gitHubRepo.getHooks()) {
             try {
                 hook.delete();
-            } catch (Exception ex) {                
+            } catch (Exception ex) {
             }
         }
         GHPullRequest ghPullRequest = getTestPullRequest(gitHubRepo);
         // try to delete all comments that are older than 1 hour
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.HOUR_OF_DAY, -1);        
-        HttpClient httpClient = Client.getHttpClient();        
+        calendar.add(Calendar.HOUR_OF_DAY, -1);
+        HttpClient httpClient = Client.getHttpClient();
         for (GHIssueComment comment : ghPullRequest.getComments()) {
             if (comment.getCreatedAt().before(calendar.getTime())) {
                 HttpDelete delete = new HttpDelete(comment.getUrl().toString());
@@ -114,7 +114,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 HttpResponse response = null;
                 try {
                     response = httpClient.execute(delete);
-                } catch (Exception ex) {                    
+                } catch (Exception ex) {
                 } finally {
                     if (response != null && response.getEntity() != null) {
                         EntityUtils.consumeQuietly(response.getEntity());
@@ -135,11 +135,11 @@ public class PullRequestTestBase extends BuildStepTestBase {
                  return getTemplateResolver().resolve(template).replace("${TEST_TAG}", testTag)
                          .replace("${GITHUB_PROJECT_URL}", repoAddress);
             }
-            
+
         };
         downstreamProject = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request-downstream",
-                new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request-downstream.xml")).getBytes()));        
-        project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request", 
+                new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request-downstream.xml")).getBytes()));
+        project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
     }
 
@@ -192,7 +192,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
         return parameters;
     }
-    
+
     protected List<JSONObject> checkBuild(String buildRequester) throws Exception {
         AbstractBuild<?, ?> build = project.getLastBuild();
         try {
@@ -203,7 +203,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
             }
             throw error;
         }
-        
+
         Map<String, String> parameters = getStringParameters(build);
         if (buildRequester == null) {
             Assert.assertNull(parameters.get(PullRequestBuildHandler.BUILD_REQUESTER));
@@ -219,9 +219,9 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
         // check that instances are deployed
         Client client = cloud.getClient();
-        Collection<String> mainProjectInstanceTags = Arrays.asList(testTag, MessageFormat.format("{0}_{1}", 
-                project.getName(), pullRequest.getGHPullRequest().getNumber()));        
-        Collection<String> downstreamProjectInstanceTags = Arrays.asList(testTag, MessageFormat.format("{0}_{1}", 
+        Collection<String> mainProjectInstanceTags = Arrays.asList(testTag, MessageFormat.format("{0}_{1}",
+                project.getName(), pullRequest.getGHPullRequest().getNumber()));
+        Collection<String> downstreamProjectInstanceTags = Arrays.asList(testTag, MessageFormat.format("{0}_{1}",
                 downstreamProject.getName(), pullRequest.getGHPullRequest().getNumber()));
         JSONObject mainProjectInstance = null, downstreamProjectInstance = null;
         for (Object instance : client.getInstances(TestUtils.TEST_WORKSPACE)) {
@@ -236,15 +236,15 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 break;
             }
         }
-        
+
         Assert.assertNotNull(MessageFormat.format("Job {0} did not deploy any instance", project.getName()), mainProjectInstance);
         deleteAfter(mainProjectInstance);
         Assert.assertNotNull(MessageFormat.format("Job {0} did not deploy any instance", downstreamProject.getName()), downstreamProjectInstance);
         deleteAfter(downstreamProjectInstance);
-        
+
         return Arrays.asList(mainProjectInstance, downstreamProjectInstance);
     }
-    
+
     protected AbstractBuild waitForNextBuild(long timeoutSeconds) {
         final AbstractBuild build = project.getLastBuild();
         new Condition() {
@@ -252,11 +252,11 @@ public class PullRequestTestBase extends BuildStepTestBase {
             public boolean satisfied() {
                 return build.getNextBuild() != null;
             }
-            
+
         }.waitUntilSatisfied(timeoutSeconds);
         return build.getNextBuild();
     }
-    
+
     protected void waitForCompletion(long timeoutSeconds) {
         final AbstractBuild build = project.getLastBuild();
         new Condition() {
@@ -264,10 +264,10 @@ public class PullRequestTestBase extends BuildStepTestBase {
             public boolean satisfied() {
                 return !build.isBuilding();
             }
-            
+
         }.waitUntilSatisfied(timeoutSeconds);
     }
-    
+
     protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds) {
         new Condition() {
 
@@ -293,17 +293,17 @@ public class PullRequestTestBase extends BuildStepTestBase {
                     return false;
                 }
             }
-            
-        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(timeoutSeconds));        
+
+        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(timeoutSeconds));
     }
-    
+
     protected class MockPullRequest {
         private final StringEntity openPullRequestPayload;
         private final StringEntity closePullRequestPayload;
         private final StringEntity reopenPullRequestPayload;
         private final String commentPullRequestPayloadTemplate;
         private final GHPullRequest ghPullRequest;
-        
+
         private StringEntity createPayload(String content) throws UnsupportedEncodingException {
             return new StringEntity("payload=" + URLEncoder.encode(content, "UTF-8"), ContentType.APPLICATION_FORM_URLENCODED);
         }
@@ -338,7 +338,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         public GHPullRequest getGHPullRequest() {
             return ghPullRequest;
         }
-        
+
         private void postPayload(HttpEntity entity, String event) throws IOException {
             HttpPost post = new HttpPost(webhookUrl + "?.crumb=test");
             post.addHeader("X-GitHub-Event", event);
@@ -351,12 +351,12 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 EntityUtils.consumeQuietly(response.getEntity());
             }
         }
-        
+
         public void open() throws IOException {
             ghPullRequest.reopen();
             postPayload(openPullRequestPayload, "pull_request");
         }
-        
+
         public void reopen() throws IOException {
             ghPullRequest.reopen();
             postPayload(reopenPullRequestPayload, "pull_request");
@@ -371,25 +371,25 @@ public class PullRequestTestBase extends BuildStepTestBase {
             postPayload(createPayload(commentPullRequestPayloadTemplate.replace("${COMMENT}", comment)), "issue_comment");
         }
     }
-    
+
     private Document getProjectDocument() throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
-        return builder.parse(project.getConfigFile().getFile());        
+        return builder.parse(project.getConfigFile().getFile());
     }
-    
+
     protected void updateWhitelist(String whitelist) throws Exception {
         Document document = getProjectDocument();
         document.getElementsByTagName("whitelist").item(0).setTextContent(whitelist);
         updateProject(document);
     }
-    
+
     protected void updateTriggerPhrase(String triggerPhrase) throws Exception {
         Document document = getProjectDocument();
         document.getElementsByTagName("triggerPhrase").item(0).setTextContent(triggerPhrase);
         updateProject(document);
     }
-    
+
     private void updateProject(Document document) throws Exception {
         DOMSource src = new DOMSource(document);
         TransformerFactory factory = TransformerFactory.newInstance();
@@ -399,8 +399,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
         result.setOutputStream(out);
         transformer.transform(src, result);
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
-        Source streamSource = new StreamSource(in);        
+        Source streamSource = new StreamSource(in);
         project.updateByXml(streamSource);
     }
-    
+
 }

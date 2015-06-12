@@ -29,16 +29,16 @@ public class SlaveProvisionWithPolicyByClaimsTest extends SlaveProvisionTestBase
     @Override
     protected SlaveConfiguration createSlaveConfiguration(String slaveBoxName, JSONArray variables) throws IOException {
         TestBoxData testBoxData = testBoxDataLookup.get(slaveBoxName);
-        return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE, 
-                testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION, 
-                null, "linux, test", null, null, 1, 2, slaveBoxName, variables.toString(), 
-                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60);        
+        return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE,
+                testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION,
+                null, "linux, test", null, null, 1, 2, slaveBoxName, variables.toString(),
+                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60);
     }
 
-    
+
     @Test
     public void testSlaveProvision() throws Exception {
         provisionSlaves();
     }
-    
+
 }

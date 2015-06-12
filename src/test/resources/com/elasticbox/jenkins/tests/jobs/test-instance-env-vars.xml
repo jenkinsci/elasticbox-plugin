@@ -52,7 +52,7 @@ function assert_not_empty() {
   if [ -z &quot;$2&quot; ]; then
     echo &quot;$1 is not available&quot;
     exit 1
-  fi 
+  fi
 }
 
 assert_not_empty TEST_LINUX $TEST_LINUX
@@ -87,7 +87,7 @@ fi
       <tags>${TEST_TAG}</tags>
       <alternateAction>skip</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-    </com.elasticbox.jenkins.builders.DeployBox>    
+    </com.elasticbox.jenkins.builders.DeployBox>
     <hudson.tasks.Shell>
       <command>#!/bin/bash
 
@@ -110,7 +110,7 @@ fi</command>
       <tags>${TEST_TAG}</tags>
       <alternateAction>reconfigure</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-    </com.elasticbox.jenkins.builders.DeployBox>    
+    </com.elasticbox.jenkins.builders.DeployBox>
     <hudson.tasks.Shell>
       <command>#!/bin/bash
 
@@ -133,7 +133,7 @@ fi</command>
       <tags>${TEST_TAG}</tags>
       <alternateAction>reinstall</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-    </com.elasticbox.jenkins.builders.DeployBox>    
+    </com.elasticbox.jenkins.builders.DeployBox>
     <hudson.tasks.Shell>
       <command>#!/bin/bash
 
@@ -156,7 +156,7 @@ fi</command>
       <tags>${TEST_TAG}</tags>
       <alternateAction>deleteAndDeploy</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-    </com.elasticbox.jenkins.builders.DeployBox>    
+    </com.elasticbox.jenkins.builders.DeployBox>
     <hudson.tasks.Shell>
       <command>#!/bin/bash
 
@@ -165,7 +165,7 @@ then
   echo TEST_LINUX_IS_EXISTING is &quot;&apos;${TEST_LINUX_IS_EXISTING}&apos;&quot;, expected &apos;false&apos;
   exit 1
 fi</command>
-    </hudson.tasks.Shell>        
+    </hudson.tasks.Shell>
   </builders>
   <publishers/>
   <buildWrappers/>

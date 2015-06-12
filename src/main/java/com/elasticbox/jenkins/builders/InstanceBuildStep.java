@@ -38,7 +38,7 @@ public abstract class InstanceBuildStep extends Builder {
     private final String box;
     private final String instance;
     private final String buildStep;
-    
+
     public InstanceBuildStep(String cloud, String workspace, String box, String instance, String buildStep) {
         this.cloud = cloud;
         this.workspace = workspace;
@@ -54,7 +54,7 @@ public abstract class InstanceBuildStep extends Builder {
                 cloud = ebCloud.name;
             }
         }
-        
+
         return this;
     }
 
@@ -68,16 +68,16 @@ public abstract class InstanceBuildStep extends Builder {
 
     public String getBox() {
         return box;
-    }        
+    }
 
     public String getInstance() {
         return instance;
-    }    
+    }
 
     public String getBuildStep() {
         return buildStep;
     }
-    
+
     protected IInstanceProvider getInstanceProvider(AbstractBuild build) {
         if (cloud != null) {
             return new IInstanceProvider() {
@@ -93,10 +93,10 @@ public abstract class InstanceBuildStep extends Builder {
                 public ElasticBoxCloud getElasticBoxCloud() {
                     return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloud);
                 }
-                
+
             };
         }
-        
+
         for (Object builder : ((Project) build.getProject()).getBuilders()) {
             if (builder instanceof IInstanceProvider) {
                 IInstanceProvider instanceProvider = (IInstanceProvider) builder;
@@ -105,16 +105,16 @@ public abstract class InstanceBuildStep extends Builder {
                 }
             }
         }
-        
-        return null;        
+
+        return null;
     }
-    
+
     public static abstract class Descriptor extends BuildStepDescriptor<Builder> {
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
         }
-        
+
         protected boolean isPreviousBuildStepSelected(JSONObject formData) {
             return formData.containsKey("instanceType") && "eb-instance-from-prior-buildstep".equals(formData.getString("instanceType"));
         }
@@ -129,9 +129,9 @@ public abstract class InstanceBuildStep extends Builder {
             } else {
                 formData.remove("buildStep");
             }
-            
+
             return super.newInstance(req, formData);
-        }               
+        }
 
         public ListBoxModel doFillCloudItems() {
             return DescriptorHelper.getClouds();
@@ -140,18 +140,18 @@ public abstract class InstanceBuildStep extends Builder {
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
             return DescriptorHelper.getWorkspaces(cloud);
         }
-        
+
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
             ListBoxModel boxes = DescriptorHelper.getBoxes(cloud, workspace);
             boxes.add(0, new ListBoxModel.Option("Any Box", DescriptorHelper.ANY_BOX));
             return boxes;
         }
-        
-        public ListBoxModel doFillInstanceItems(@QueryParameter String cloud, @QueryParameter String workspace, 
-                @QueryParameter String box) {                
+
+        public ListBoxModel doFillInstanceItems(@QueryParameter String cloud, @QueryParameter String workspace,
+                @QueryParameter String box) {
             return DescriptorHelper.getInstances(cloud, workspace, box);
         }
-        
+
         public ListBoxModel doFillBuildStepItems() {
             ListBoxModel buildSteps = new ListBoxModel();
             buildSteps.add("Loading...", "loading");
@@ -161,7 +161,7 @@ public abstract class InstanceBuildStep extends Builder {
         public FormValidation doCheckCloud(@QueryParameter String value) {
             return DescriptorHelper.checkCloud(value);
         }
-        
+
     }
-    
+
 }

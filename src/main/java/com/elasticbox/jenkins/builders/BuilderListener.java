@@ -19,15 +19,15 @@ import java.io.IOException;
 
 /**
  * Receives notification about ElasticBox instances/boxes that were deployed/managed by the ElasticBox build steps
- * 
+ *
  * @author Phong Nguyen Le
  */
 public abstract class BuilderListener implements ExtensionPoint {
-    
-    public abstract void onDeploying(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud) 
+
+    public abstract void onDeploying(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud)
             throws IOException, InterruptedException;
-    
-    public abstract void onTerminating(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud) 
+
+    public abstract void onTerminating(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud)
             throws IOException, InterruptedException;
-    
+
 }

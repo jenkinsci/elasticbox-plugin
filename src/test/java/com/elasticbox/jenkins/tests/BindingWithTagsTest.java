@@ -31,7 +31,7 @@ import org.junit.Test;
  * @author Phong Nguyen Le
  */
 public class BindingWithTagsTest extends BuildStepTestBase {
-    
+
     @Test
     public void testBindingWithTags() throws Exception {
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
@@ -44,7 +44,7 @@ public class BindingWithTagsTest extends BuildStepTestBase {
         JSONArray instances = DescriptorHelper.getInstances(Collections.singleton(testTag), cloud.name, TestUtils.TEST_WORKSPACE, true);
         Assertions.assertThat(logText).contains(
                 MessageFormat.format("Binding ambiguity for binding variable ANY_BINDING with the following tags: {0}, {1} instances are found with those tags", testTag, instances.size()));
-        
+
         // verify the bindings
         JSONObject testBindingBoxInstance = TestUtils.findInstance(instances, TestUtils.TEST_BINDING_BOX_NAME);
         Assert.assertNotNull(testBindingBoxInstance);
@@ -64,5 +64,5 @@ public class BindingWithTagsTest extends BuildStepTestBase {
 
         TestUtils.cleanUp(testTag, jenkins.getInstance());
     }
-        
+
 }

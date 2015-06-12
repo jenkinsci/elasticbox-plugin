@@ -3,7 +3,7 @@ apt-get -y update
 
 # Install Git
 if [ -x /usr/bin/yum ]; then
-    yum install git -y 
+    yum install git -y
 else
     apt-get install git -y
 fi

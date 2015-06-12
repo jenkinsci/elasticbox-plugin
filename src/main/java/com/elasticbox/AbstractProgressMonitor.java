@@ -26,7 +26,7 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
 
     protected AbstractProgressMonitor(String resourceUrl) {
         this.resourceUrl = resourceUrl;
-        creationTime = System.currentTimeMillis();        
+        creationTime = System.currentTimeMillis();
     }
 
     public String getResourceUrl() {
@@ -37,7 +37,7 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
         return this.creationTime;
     }
 
-    
+
     protected abstract JSONObject getResource() throws IOException;
 
     protected String getState(JSONObject resource) {
@@ -55,14 +55,14 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
             if (isDone()) {
                 return;
             }
-            
+
             synchronized(this) {
                 wait(1000);
             }
 
             long currentTime = System.currentTimeMillis();
             remainingTime =  remainingTime - (currentTime - startTime);
-            startTime = currentTime;                
+            startTime = currentTime;
         } while (timeout <= 0 || remainingTime > 0);
 
         JSONObject resource = getResource();
@@ -73,5 +73,5 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
 
         }
     }
-        
+
 }

@@ -32,7 +32,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  *
  * @author Phong Nguyen Le
- * @deprecated 
+ * @deprecated
  */
 public class StartBox extends InstanceBuildStep {
 
@@ -40,7 +40,7 @@ public class StartBox extends InstanceBuildStep {
     public StartBox(String cloud, String workspace, String box, String instance, String buildStep) {
         super(cloud, workspace, box, instance, buildStep);
     }
-    
+
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
@@ -50,7 +50,7 @@ public class StartBox extends InstanceBuildStep {
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
-        
+
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
         IProgressMonitor monitor = ebCloud.getClient().poweron(instanceProvider.getInstanceId(build));
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
@@ -65,7 +65,7 @@ public class StartBox extends InstanceBuildStep {
             logger.error(MessageFormat.format("Failed to start box instance {0}: {1}", instancePageUrl, ex.getMessage()));
             throw new AbortException(ex.getMessage());
         }
-    }    
+    }
 
     @Extension
     public static final class DescriptorImpl extends Descriptor {

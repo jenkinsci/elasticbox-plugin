@@ -26,19 +26,19 @@ import org.kohsuke.stapler.QueryParameter;
 public abstract class BoxRequiredOperation extends Operation {
     private final String box;
     private final String boxVersion;
-    private final String variables;    
-    
+    private final String variables;
+
     public BoxRequiredOperation(String box, String boxVersion, String tags, String variables) {
         super(tags);
         this.box = box;
-        this.boxVersion = boxVersion;    
+        this.boxVersion = boxVersion;
         this.variables = variables;
     }
 
     @Override
     protected boolean failIfNoInstanceFound() {
         return true;
-    }        
+    }
 
     public String getBox() {
         return box;
@@ -51,15 +51,15 @@ public abstract class BoxRequiredOperation extends Operation {
     public String getVariables() {
         return variables;
     }
-    
+
     public static abstract class Descriptor extends OperationDescriptor {
 
-        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud, 
+        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud,
                 @RelativePath("..") @QueryParameter String workspace) {
             return DescriptorHelper.getBoxes(cloud, workspace);
         }
 
-        public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String cloud, 
+        public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String cloud,
                 @QueryParameter String workspace, @QueryParameter String box) {
             return DescriptorHelper.getBoxVersions(cloud, workspace, box);
         }
@@ -81,12 +81,12 @@ public abstract class BoxRequiredOperation extends Operation {
             return response;
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetInstances(@RelativePath("..") @QueryParameter String cloud, 
-                @RelativePath("..") @QueryParameter String workspace, @QueryParameter String box, 
+        public DescriptorHelper.JSONArrayResponse doGetInstances(@RelativePath("..") @QueryParameter String cloud,
+                @RelativePath("..") @QueryParameter String workspace, @QueryParameter String box,
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, 
+            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace,
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
-                        
+
     }
 }

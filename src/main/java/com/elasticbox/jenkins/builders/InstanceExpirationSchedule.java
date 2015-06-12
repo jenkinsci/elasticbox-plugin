@@ -38,7 +38,7 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
     public static final DateFormat DATE_FORMAT = createStrictDateFormat("MM/dd/yyyy");
     public static final DateFormat TIME_FORMAT = createStrictDateFormat("HH:mm");
     private static final DateFormat DATE_TIME_FORMAT = createStrictDateFormat("MM/dd/yyyy HH:mm");
-    
+
     private static DateFormat createStrictDateFormat(String pattern) {
         DateFormat dateFormat = new SimpleDateFormat(pattern);
         dateFormat.setLenient(false);
@@ -62,7 +62,7 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
             return FormValidation.error("Date must be specified in format MM/dd/yyyy");
         }
     }
-    
+
     private final String operation;
     private final String hours;
     private final String date;
@@ -90,14 +90,14 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
     public String getTime() {
         return time;
     }
-    
+
     public String getUTCDateTime() throws ParseException {
         long currentTime = System.currentTimeMillis();
         Date dateTime = hours != null ? new Date(currentTime + TimeUnit.HOURS.toMillis(Integer.parseInt(hours))) :
                 DATE_TIME_FORMAT.parse(MessageFormat.format("{0} {1}", date, time));
         return EBX_DATE_FORMAT.format(new Date(dateTime.getTime() - TimeZone.getDefault().getOffset(currentTime)));
     }
-    
+
     public static abstract class InstanceExpirationScheduleDescriptor extends InstanceExpirationDescriptor {
 
         private ListBoxModel hoursItems;
@@ -137,7 +137,7 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
             }
             return dates;
         }
-        
+
         public String uniqueId() {
             return UUID.randomUUID().toString();
         }
@@ -149,7 +149,7 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
         public ShutDown(String hours, String date, String time) {
             super(Client.InstanceOperation.SHUTDOWN, hours, date, time);
         }
-        
+
         @Extension
         public static final class DescriptorImpl extends InstanceExpirationScheduleDescriptor {
 
@@ -157,17 +157,17 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
             public String getDisplayName() {
                 return "Shutdown";
             }
-            
+
         }
     }
-    
+
     public static final class Terminate extends InstanceExpirationSchedule {
 
         @DataBoundConstructor
         public Terminate(String hours, String date, String time) {
             super(Client.InstanceOperation.TERMINATE, hours, date, time);
         }
-        
+
         @Extension
         public static final class DescriptorImpl extends InstanceExpirationScheduleDescriptor {
 
@@ -175,8 +175,8 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
             public String getDisplayName() {
                 return "Terminate";
             }
-            
+
         }
     }
-        
+
 }

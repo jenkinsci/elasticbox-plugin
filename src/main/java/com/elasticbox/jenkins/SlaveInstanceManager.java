@@ -36,7 +36,7 @@ public class SlaveInstanceManager {
     private final Map<ElasticBoxCloud, List<JSONObject>> cloudToInstancesMap;
     private Collection<ElasticBoxSlave> slavesWithoutInstance;
     private final Map<ElasticBoxCloud, Set<String>> cloudToWorkspaceIDsMap;
-    
+
     public SlaveInstanceManager() throws IOException {
         instanceIdToSlaveMap = new HashMap<String, ElasticBoxSlave>();
         cloudToInstancesMap = new HashMap<ElasticBoxCloud, List<JSONObject>>();
@@ -58,17 +58,17 @@ public class SlaveInstanceManager {
                     }
                 }
             }
-        }    
-        
+        }
+
         if (instanceIdToSlaveMap.isEmpty()) {
             slavesWithoutInstance = Collections.emptyList();
         }
     }
-    
+
     public ElasticBoxSlave getSlave(String instanceId) {
         return instanceIdToSlaveMap.get(instanceId);
     }
-    
+
     public Collection<ElasticBoxSlave> getSlaves() {
         return instanceIdToSlaveMap.values();
     }
@@ -84,11 +84,11 @@ public class SlaveInstanceManager {
             }
             Map<String, ElasticBoxSlave> invalidInstanceIdToSlaveMap = new HashMap<String, ElasticBoxSlave>(instanceIdToSlaveMap);
             invalidInstanceIdToSlaveMap.keySet().removeAll(validInstanceIDs);
-            slavesWithoutInstance = new ArrayList<ElasticBoxSlave>(invalidInstanceIdToSlaveMap.values());            
+            slavesWithoutInstance = new ArrayList<ElasticBoxSlave>(invalidInstanceIdToSlaveMap.values());
         }
         return slavesWithoutInstance;
     }
-    
+
     public List<JSONObject> getInstances(ElasticBoxCloud cloud) throws IOException {
         if (cloudToWorkspaceIDsMap.containsKey(cloud)) {
             List<JSONObject> instances = cloudToInstancesMap.get(cloud);
@@ -107,38 +107,38 @@ public class SlaveInstanceManager {
                 }
                 cloudToInstancesMap.put(cloud, instances);
             }
-            return instances;            
+            return instances;
         } else {
             return Collections.emptyList();
         }
     }
-    
+
     public Collection<JSONObject> getInstances() throws IOException {
         return getSlaveToInstanceMap().values();
     }
-    
+
     public JSONObject getInstance(ElasticBoxSlave slave) throws IOException {
         return getSlaveToInstanceMap().get(slave);
     }
-    
+
     private Map<ElasticBoxSlave, JSONObject> getSlaveToInstanceMap() throws IOException {
         if (slaveToInstanceMap == null) {
-            ensureAllFetched();        
+            ensureAllFetched();
             slaveToInstanceMap = new HashMap<ElasticBoxSlave, JSONObject>();
             for (List<JSONObject> cloudInstances : cloudToInstancesMap.values()) {
                 for (JSONObject instance : cloudInstances) {
                     slaveToInstanceMap.put(getSlave(instance.getString("id")), instance);
                 }
-            }        
+            }
         }
-        return slaveToInstanceMap;        
+        return slaveToInstanceMap;
     }
-    
+
     private void ensureAllFetched() throws IOException {
         Set<ElasticBoxCloud> unfetchedClouds = new HashSet(cloudToWorkspaceIDsMap.keySet());
         unfetchedClouds.removeAll(cloudToInstancesMap.keySet());
         for (ElasticBoxCloud cloud : unfetchedClouds) {
             getInstances(cloud);
-        }        
+        }
     }
 }

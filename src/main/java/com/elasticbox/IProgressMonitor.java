@@ -21,32 +21,32 @@ import net.sf.json.JSONObject;
  */
 public interface IProgressMonitor {
     String getResourceUrl();
-    
+
     boolean isDone() throws IncompleteException, IOException;
-    
+
     boolean isDone(JSONObject resource) throws IncompleteException, IOException;
-    
+
     long getCreationTime();
-    
+
     /**
      * Waits for the task to finish successfully.
-     * 
+     *
      * @param timeout in minutes
      * @throws com.elasticbox.IProgressMonitor.IncompleteException if the task finished but is not complete
      * @throws IOException if unexpected error occurred
      * @throws InterruptedException if the waiting is canceled
      */
     void waitForDone(int timeout) throws IncompleteException, IOException, InterruptedException;
-    
+
     public static final IProgressMonitor DONE_MONITOR = new DoneMonitor(null);
-            
+
     public static class DoneMonitor implements IProgressMonitor {
         private final String resourceUrl;
-        
+
         public DoneMonitor(String resourceUrl) {
             this.resourceUrl = resourceUrl;
         }
-        
+
         public String getResourceUrl() {
             return resourceUrl;
         }
@@ -64,18 +64,18 @@ public interface IProgressMonitor {
 
         public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
             return true;
-        }        
+        }
     }
-    
+
     public static class IncompleteException extends IOException {
         public IncompleteException(String message) {
             super(message);
         }
     }
-    
+
     public static class TimeoutException extends IncompleteException {
         public TimeoutException(String message) {
             super(message);
         }
-    }        
+    }
 }

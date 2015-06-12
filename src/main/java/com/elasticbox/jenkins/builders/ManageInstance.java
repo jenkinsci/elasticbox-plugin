@@ -31,7 +31,7 @@ public class ManageInstance extends ManageObject {
     public ManageInstance(String cloud, String workspace, List<? extends Operation> operations) {
         super(cloud, workspace, operations);
     }
-    
+
     @Extension
     public static class DescriptorImpl extends ManageObjectDescriptor {
 
@@ -49,13 +49,13 @@ public class ManageInstance extends ManageObject {
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             ManageInstance manageInstance = (ManageInstance) super.newInstance(req, formData);
             for (Operation operation : manageInstance.getOperations()) {
-                if (operation instanceof UpdateOperation && 
-                        VariableResolver.parseVariables(((UpdateOperation) operation).getVariables()).isEmpty()) {                    
+                if (operation instanceof UpdateOperation &&
+                        VariableResolver.parseVariables(((UpdateOperation) operation).getVariables()).isEmpty()) {
                     throw new FormException("Update operation must update at least one variable.", "operations");
                 }
             }
             return manageInstance;
         }
-        
+
     }
 }

@@ -61,13 +61,13 @@ import org.kohsuke.stapler.StaplerRequest;
  *
  * @author Phong Nguyen Le
  */
-public class DeployBox extends Builder implements IInstanceProvider {    
+public class DeployBox extends Builder implements IInstanceProvider {
     private static final String ACTION_NONE = "none";
     private static final String ACTION_SKIP = "skip";
     private static final String ACTION_RECONFIGURE = Client.InstanceOperation.RECONFIGURE;
     private static final String ACTION_REINSTALL = Client.InstanceOperation.REINSTALL;
     private static final String ACTION_DELETE_AND_DEPLOY = "deleteAndDeploy";
-    
+
     private final String id;
     private String cloud;
     private final String workspace;
@@ -86,7 +86,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     private final InstanceExpiration expiration;
     private final String autoUpdates;
     private final String instanceEnvVariable;
-    private String tags;    
+    private String tags;
     @Deprecated
     private boolean skipIfExisting;
     private String alternateAction;
@@ -98,7 +98,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String instanceName, String profile,
             String claims, String provider, String location, String instanceEnvVariable, String tags,
-            String variables, InstanceExpiration expiration, String autoUpdates, String alternateAction, 
+            String variables, InstanceExpiration expiration, String autoUpdates, String alternateAction,
             boolean waitForCompletion, int waitForCompletionTimeout) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
@@ -122,29 +122,29 @@ public class DeployBox extends Builder implements IInstanceProvider {
         this.tags = tags;
         this.instanceEnvVariable = instanceEnvVariable;
         this.instanceName = instanceName;
-        
+
         readResolve();
     }
-    
-    private Result performAlternateAction(JSONArray existingInstances, ElasticBoxCloud ebCloud, Client client, 
+
+    private Result performAlternateAction(JSONArray existingInstances, ElasticBoxCloud ebCloud, Client client,
             VariableResolver resolver, TaskLogger logger, AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         JSONObject instance = existingInstances.getJSONObject(0);
         boolean existing = true;
         if (alternateAction.equals(ACTION_SKIP)) {
             String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), instance);
             logger.info("Existing instance found: {0}. Deployment skipped.", instancePageUrl);
-        } else if (alternateAction.equals(ACTION_RECONFIGURE)) {            
+        } else if (alternateAction.equals(ACTION_RECONFIGURE)) {
             ReconfigureOperation.reconfigure(existingInstances, resolver.resolveVariables(variables),
                     waitForCompletionTimeout, client, logger);
         } else if (alternateAction.equals(ACTION_REINSTALL)) {
             ReinstallOperation.reinstall(existingInstances, resolver.resolveVariables(variables),
                     waitForCompletionTimeout, client, logger);
-            
+
         } else if (alternateAction.equals(ACTION_DELETE_AND_DEPLOY)) {
             for (Object existingInstance : existingInstances) {
                 if (Thread.interrupted()) {
                     throw new InterruptedException();
-                }            
+                }
                 JSONObject instanceJson = (JSONObject) existingInstance;
                 // Don't fail if the instance is not found
                 try {
@@ -162,16 +162,16 @@ public class DeployBox extends Builder implements IInstanceProvider {
         } else {
             throw new IOException(MessageFormat.format("Invalid alternate action: ''{0}''", alternateAction));
         }
-        
+
         return new Result(instance, existing);
     }
-    
-    private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger, 
-            AbstractBuild<?, ?> build) 
+
+    private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger,
+            AbstractBuild<?, ?> build)
             throws IOException, InterruptedException {
         Set<String> resolvedTags = resolver.resolveTags(tags);
         JSONArray resolvedVariables = resolver.resolveVariables(variables);
-        DescriptorHelper.removeInvalidVariables(resolvedVariables, 
+        DescriptorHelper.removeInvalidVariables(resolvedVariables,
                 ((DescriptorImpl) getDescriptor()).doGetBoxStack(cloud, workspace, box, boxVersion).getJsonArray());
         String expirationTime = null, expirationOperation = null;
         if (getExpiration() instanceof InstanceExpirationSchedule) {
@@ -198,7 +198,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             JSONObject locationVariable = new JSONObject();
             locationVariable.put("type", "Text");
             locationVariable.put("name", "location");
-            locationVariable.put("value", location);  
+            locationVariable.put("value", location);
         }
         IProgressMonitor monitor = client.deploy(boxId, policyId, resolver.resolve(instanceName), workspace,
                 new ArrayList(resolvedTags), resolvedVariables, expirationTime, expirationOperation,
@@ -216,23 +216,23 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
                 logger.error("Failed to deploy instance {0}: {1}", instancePageUrl, ex.getMessage());
                 throw new AbortException(ex.getMessage());
-            }      
+            }
         }
-        
+
         return Client.getResourceId(monitor.getResourceUrl());
     }
-    
+
     private void injectEnvVariables(AbstractBuild build, final Result result, final Client client) throws IOException {
         final String instanceId = result.instance.getString("id");
         final JSONObject service = client.getService(instanceId);
         build.addAction(new EnvironmentContributingAction() {
 
             public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
-                final String instanceUrl = client.getInstanceUrl(instanceId);            
+                final String instanceUrl = client.getInstanceUrl(instanceId);
                 env.put(instanceEnvVariable, instanceId);
                 env.put(instanceEnvVariable + "_URL", instanceUrl);
                 env.put(instanceEnvVariable + "_SERVICE_ID", service.getString("id"));
-                env.put(instanceEnvVariable + "_TAGS", StringUtils.join(result.instance.getJSONArray("tags"), ",")); 
+                env.put(instanceEnvVariable + "_TAGS", StringUtils.join(result.instance.getJSONArray("tags"), ","));
                 env.put(instanceEnvVariable + "_IS_EXISTING", String.valueOf(result.existing));
 
                 int instances = 1;
@@ -256,14 +256,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
                     }
                     if (address != null) {
                         env.put(instanceEnvVariable + "_PUBLIC_ADDRESS", address.getString("public"));
-                        env.put(instanceEnvVariable + "_PRIVATE_ADDRESS", address.getString("private"));                   
+                        env.put(instanceEnvVariable + "_PRIVATE_ADDRESS", address.getString("private"));
                     }
                 } else if (instances > 1 && service.containsKey("machines")) {
                     List<String> machineNames = new ArrayList<String>();
                     List<String> publicAddresses = new ArrayList<String>();
                     List<String> privateAddresses = new ArrayList<String>();
                     for (Object machine : service.getJSONArray("machines")) {
-                        JSONObject machineJson = (JSONObject) machine;     
+                        JSONObject machineJson = (JSONObject) machine;
                         machineNames.add(machineJson.getString("name"));
                         if (machineJson.containsKey("address")) {
                             JSONObject address = machineJson.getJSONObject("address");
@@ -273,7 +273,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
                     }
                     env.put(instanceEnvVariable + "_MACHINE_NAMES", StringUtils.join(machineNames, " "));
                     env.put(instanceEnvVariable + "_PUBLIC_ADDRESSES", StringUtils.join(publicAddresses, " "));
-                    env.put(instanceEnvVariable + "_PRIVATE_ADDRESSES", StringUtils.join(privateAddresses, " "));                   
+                    env.put(instanceEnvVariable + "_PRIVATE_ADDRESSES", StringUtils.join(privateAddresses, " "));
                 }
             }
 
@@ -289,9 +289,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 return null;
             }
 
-        });        
+        });
     }
-    
+
     private static class Result {
         JSONObject instance;
         boolean existing;
@@ -301,7 +301,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             this.existing = existing;
         }
     }
-    
+
     private Result doPerform(AbstractBuild<?, ?> build, ElasticBoxCloud ebCloud, TaskLogger logger) throws InterruptedException, IOException {
         VariableResolver resolver = new VariableResolver(cloud, workspace, build, logger.getTaskListener());
         Client client = ebCloud.getClient();
@@ -316,13 +316,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 instanceFilter.add(new DescriptorHelper.InstanceFilterByTags(tagSet, false));
             } else {
                 instanceFilter.add(new DescriptorHelper.InstanceFilterByTags(tagSet, true));
-            }        
+            }
             JSONArray existingInstances = DescriptorHelper.getInstances(client, workspace, instanceFilter);
             if (!existingInstances.isEmpty()) {
                 return performAlternateAction(existingInstances, ebCloud, client, resolver, logger, build);
             }
         }
-        
+
         final String instanceId = deploy(ebCloud, client, resolver, logger, build);
         JSONObject instance = client.getInstance(instanceId);
         Set<String> resolvedTags = resolver.resolveTags(tags);
@@ -341,7 +341,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
         return new Result(instance, false);
     }
-    
+
     private void notifyDeploying(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud ebxCloud) throws InterruptedException {
         for (BuilderListener listener: Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
             try {
@@ -351,9 +351,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
         }
     }
-    
+
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {       
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Deploy Box build step");
 
@@ -361,18 +361,18 @@ public class DeployBox extends Builder implements IInstanceProvider {
         if (ebCloud == null) {
             throw new IOException(MessageFormat.format("Cannod find ElasticBox cloud ''{0}''.", getCloud()));
         }
-        
-        
+
+
         Result result = doPerform(build, ebCloud, logger);
         instanceManager.setInstance(build, result.instance);
-        
+
         if (StringUtils.isNotBlank(instanceEnvVariable)) {
             injectEnvVariables(build, result, ebCloud.getClient());
         }
-        
+
         return true;
-        
-    }        
+
+    }
 
     public String getId() {
         return id;
@@ -383,18 +383,18 @@ public class DeployBox extends Builder implements IInstanceProvider {
             alternateAction = skipIfExisting ? ACTION_SKIP : ACTION_NONE;
             waitForCompletion = true;
         }
-            
+
         if (cloud == null) {
             ElasticBoxCloud ebCloud = ElasticBoxCloud.getInstance();
             if (ebCloud != null) {
                 cloud = ebCloud.name;
             }
         }
-        
+
         if (instanceManager == null) {
             instanceManager = new InstanceManager();
         }
-        
+
         if (StringUtils.isNotBlank(environment)) {
             tags = StringUtils.isBlank(tags) ? environment : (environment + ',' + tags);
         }
@@ -402,11 +402,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
         if (waitForCompletion && waitForCompletionTimeout == 0) {
             waitForCompletionTimeout = ElasticBoxSlaveHandler.TIMEOUT_MINUTES;
         }
-        
+
         if (boxVersion != null && boxVersion.equals(box)) {
             boxVersion = DescriptorHelper.LATEST_BOX_VERSION;
         }
-        
+
         return this;
     }
 
@@ -428,32 +428,32 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     public String getProfile() {
         return profile;
-    }  
+    }
 
     public String getClaims() {
         return claims;
     }
-    
+
     public String getProvider() {
         return provider;
     }
 
     public String getLocation() {
         return location;
-    }        
+    }
 
     public int getInstances() {
         return instances;
     }
-    
+
     public String getInstanceEnvVariable() {
         return instanceEnvVariable;
-    }        
+    }
 
     public String getTags() {
         return tags;
     }
-    
+
     public String getVariables() {
         return variables;
     }
@@ -490,12 +490,12 @@ public class DeployBox extends Builder implements IInstanceProvider {
     public ElasticBoxCloud getElasticBoxCloud() {
         return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloud);
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
         private static String boxName;
-        
+
         private static final ListBoxModel alternateActionItems = new ListBoxModel();
         private static final ListBoxModel autoUpdatesItems = new ListBoxModel();
         static {
@@ -503,8 +503,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
             alternateActionItems.add("skip deployment", ACTION_SKIP);
             alternateActionItems.add("reconfigure", ACTION_RECONFIGURE);
             alternateActionItems.add("reinstall", ACTION_REINSTALL);
-            alternateActionItems.add("delete and deploy again", ACTION_DELETE_AND_DEPLOY);            
-            
+            alternateActionItems.add("delete and deploy again", ACTION_DELETE_AND_DEPLOY);
+
             autoUpdatesItems.add("Off", Constants.AUTOMATIC_UPDATES_OFF);
             autoUpdatesItems.add("All Updates", Constants.AUTOMATIC_UPDATES_MAJOR);
             autoUpdatesItems.add("Minor & Patch Updates", Constants.AUTOMATIC_UPDATES_MINOR);
@@ -524,25 +524,25 @@ public class DeployBox extends Builder implements IInstanceProvider {
         public List<? extends Descriptor<InstanceExpiration>> getExpirationOptions() {
             return Jenkins.getInstance().getDescriptorList(InstanceExpiration.class);
         }
-        
+
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             DescriptorHelper.fixDeploymentPolicyFormData(formData);
-            
+
             String instanceEnvVariable = formData.getString("instanceEnvVariable").trim();
             if (!instanceEnvVariable.isEmpty() && !ENV_VARIABLE_PATTERN.matcher(instanceEnvVariable).find()) {
                 throw new FormException("Environment variable for the instance can have only alphanumeric characters and begins with a letter or underscore", "instanceEnvVariable");
             }
-            
+
             if (formData.containsKey("variables")) {
-                JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("workspace"), 
+                JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), formData.getString("workspace"),
                         formData.getString("box"), formData.getString("boxVersion")).getJsonArray();
                 formData.put("variables", DescriptorHelper.fixVariables(formData.getString("variables"), boxStack));
             }
 
             fixExpirationFormData(formData);
             DeployBox deployBox = (DeployBox) super.newInstance(req, formData);
-            
+
             if (deployBox.claims != null) {
                 if (StringUtils.isBlank(deployBox.claims)) {
                     throw new FormException("Claims are required to look for a policy to deploy a box in ElasticBox", "claims");
@@ -561,8 +561,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
             } else {
                 throw new FormException(MessageFormat.format("No deployment option is selected for ''{0}'' build step", getDisplayName()), null);
             }
-            
-            
+
+
             if (deployBox.getExpiration() instanceof InstanceExpirationSchedule) {
                 InstanceExpirationSchedule expirationSchedule = (InstanceExpirationSchedule) deployBox.getExpiration();
                 if (expirationSchedule.getHours() == null) {
@@ -573,12 +573,12 @@ public class DeployBox extends Builder implements IInstanceProvider {
                     validation = InstanceExpirationSchedule.checkTime(expirationSchedule.getTime());
                     if (validation.kind == FormValidation.Kind.ERROR) {
                         throw new FormException(MessageFormat.format("Invalid time specified for Expiration of ''{0}'' build step: {0}", getDisplayName(), validation.getMessage()), "expiration");
-                    }                    
+                    }
                 }
             }
-            
+
             return deployBox;
-        }                
+        }
 
         public ListBoxModel doFillCloudItems() {
             return DescriptorHelper.getClouds();
@@ -587,48 +587,48 @@ public class DeployBox extends Builder implements IInstanceProvider {
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
             return DescriptorHelper.getWorkspaces(cloud);
         }
-        
+
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
             return DescriptorHelper.getBoxes(cloud, workspace);
         }
 
-        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace, 
+        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace,
                 @QueryParameter String box) {
             return DescriptorHelper.getBoxVersions(cloud, workspace, box);
         }
 
-        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, 
-                @QueryParameter String box) {                
+        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace,
+                @QueryParameter String box) {
             return DescriptorHelper.getProfiles(cloud, workspace, box);
         }
 
-        public ListBoxModel doFillProviderItems(@QueryParameter String cloud, @QueryParameter String workspace) {                
+        public ListBoxModel doFillProviderItems(@QueryParameter String cloud, @QueryParameter String workspace) {
             return DescriptorHelper.getCloudFormationProviders(ClientCache.getClient(cloud), workspace);
         }
 
-        public ListBoxModel doFillLocationItems(@QueryParameter String cloud, @QueryParameter String provider) {                
+        public ListBoxModel doFillLocationItems(@QueryParameter String cloud, @QueryParameter String provider) {
             return DescriptorHelper.getCloudFormationLocations(ClientCache.getClient(cloud), provider);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud,
                 @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
             return DescriptorHelper.getBoxStack(cloud, workspace, box, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud,
                 @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
             return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace,
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
-        
+
         public FormValidation doCheckCloud(@QueryParameter String value) {
             return DescriptorHelper.checkCloud(value);
         }
-        
+
         public ListBoxModel doFillAlternateActionItems() {
             return alternateActionItems;
         }
-        
+
         public ListBoxModel doFillAutoUpdatesItems() {
             return autoUpdatesItems;
         }
@@ -656,11 +656,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
             return boxName;
         }
-        
+
         public String uniqueId() {
             return UUID.randomUUID().toString();
         }
-        
+
         private void fixExpirationFormData(JSONObject formData) {
             JSONObject expiration = formData.getJSONObject("expiration");
             String scheduleType = null;
@@ -670,15 +670,15 @@ public class DeployBox extends Builder implements IInstanceProvider {
                     scheduleType = mapEntry.getValue().toString();
                     break;
                 }
-            }            
+            }
             if (scheduleType != null) {
                 if ("date-time".equals(scheduleType)) {
                     expiration.remove("hours");
                 } else {
                     expiration.remove("date");
                     expiration.remove("time");
-                }        
-            }            
+                }
+            }
         }
     }
 }

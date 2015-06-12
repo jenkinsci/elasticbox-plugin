@@ -33,7 +33,7 @@
       <variables>
         [
           {"name": "REQUIRED_BINDING", "value": "com.elasticbox.jenkins.tests.instances.test-binding-box", "scope": "", "type": "Binding"}
-        ]          
+        ]
       </variables>
       <expiration class="com.elasticbox.jenkins.builders.InstanceExpiration$AlwaysOn"/>
       <instanceEnvVariable></instanceEnvVariable>
@@ -42,7 +42,7 @@
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
       <waitForCompletionTimeout>60</waitForCompletionTimeout>
-    </com.elasticbox.jenkins.builders.DeployBox>      
+    </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.8-SNAPSHOT">
       <cloud>elasticbox</cloud>
       <workspace>staging</workspace>
@@ -53,7 +53,7 @@
           <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
           <boxVersion>LATEST</boxVersion>
           <variables>
-            [{"name": "VAR_WHOLE", "value": "${BUILD_NUMBER}", "scope": "", "type": "Text"}]              
+            [{"name": "VAR_WHOLE", "value": "${BUILD_NUMBER}", "scope": "", "type": "Text"}]
           </variables>
         </com.elasticbox.jenkins.builders.UpdateOperation>
         <com.elasticbox.jenkins.builders.ReinstallOperation>

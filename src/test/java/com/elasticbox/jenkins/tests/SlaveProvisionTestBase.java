@@ -47,23 +47,23 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         String jenkinsUrl = jenkins.getInstance().getRootUrl();
         if (StringUtils.isBlank(jenkinsUrl)) {
             jenkinsUrl = jenkins.createWebClient().getContextPath();
-        }        
+        }
         if (StringUtils.isNotBlank(TestUtils.JENKINS_PUBLIC_HOST)) {
-            jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);            
-        }        
+            jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
+        }
         JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
-        
+
         super.setup();
     }
-    
+
     protected SlaveConfiguration createSlaveConfiguration(String slaveBoxName, JSONArray variables) throws IOException {
         TestBoxData testBoxData = testBoxDataLookup.get(slaveBoxName);
-        return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE, 
-                testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION, 
-                testBoxData.getNewProfileId(), null, null, null, 1, 2, slaveBoxName, variables.toString(), 
-                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60);        
+        return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE,
+                testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION,
+                testBoxData.getNewProfileId(), null, null, null, 1, 2, slaveBoxName, variables.toString(),
+                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60);
     }
-    
+
     protected void provisionSlaves() throws Exception {
         JSONArray variables = new JSONArray();
         SlaveConfiguration testLinuxBoxSlaveConfig = createSlaveConfiguration("test-linux-box", variables);
@@ -78,11 +78,11 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         variable.put("scope", "nested");
         variables.add(variable);
         SlaveConfiguration testDeeplyNestedBoxSlaveConfig = createSlaveConfiguration("test-deeply-nested-box", variables);
-        ElasticBoxCloud testCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", 
-                TestUtils.ELASTICBOX_URL, 6, TestUtils.ACCESS_TOKEN, 
+        ElasticBoxCloud testCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
+                TestUtils.ELASTICBOX_URL, 6, TestUtils.ACCESS_TOKEN,
                 Arrays.asList(testLinuxBoxSlaveConfig, testNestedBoxSlaveConfig, testDeeplyNestedBoxSlaveConfig));
-        jenkins.getInstance().clouds.add(testCloud);   
-        
+        jenkins.getInstance().clouds.add(testCloud);
+
         // wait for new slave to be launched
         new Condition() {
 
@@ -91,19 +91,19 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
                 return jenkins.getInstance().getNodes().size() > 3;
             }
         }.waitUntilSatisfied(60);
-        
+
         // wait some more to check that number of launched slaves should not exceed the minimum number configured
         Thread.sleep(10000);
-        
+
         List<ElasticBoxSlave> slaves = new ArrayList<ElasticBoxSlave>();
         for (Node node : jenkins.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 slaves.add((ElasticBoxSlave) node);
             }
         }
-        
+
         Assert.assertEquals(3, slaves.size());
-        
+
         Map<AbstractSlaveConfiguration, String> configToSlaveScopeMap = new HashMap<AbstractSlaveConfiguration, String>();
         configToSlaveScopeMap.put(testNestedBoxSlaveConfig, "nested");
         configToSlaveScopeMap.put(testDeeplyNestedBoxSlaveConfig, "nested.nested");
@@ -117,12 +117,12 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
             configToSlaveMap.put(slaveConfig, slave);
             validateSlave(slave, configToSlaveScopeMap.get(slaveConfig));
         }
-        
+
         for (Map.Entry<AbstractSlaveConfiguration, ElasticBoxSlave> entry : configToSlaveMap.entrySet()) {
             Assert.assertNotNull(MessageFormat.format("Slave was not launched for box {0}", entry.getKey().getBox()), entry.getValue());
         }
     }
-    
+
     private void validateSlave(final ElasticBoxSlave slave, String slaveScope) throws Exception {
         new Condition() {
 
@@ -131,8 +131,8 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
                 return slave.getInstanceUrl() != null;
             }
         }.waitUntilSatisfied(30);
-        
-        JSONObject instance = slave.getCloud().getClient().getInstance(slave.getInstanceId());       
+
+        JSONObject instance = slave.getCloud().getClient().getInstance(slave.getInstanceId());
         JSONArray variables = instance.getJSONArray("variables");
         deleteAfter(instance);
         JSONObject jenkinsUrlVariable = null;
@@ -151,13 +151,13 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         Assert.assertNotNull(jenkinsUrlVariable);
         Assert.assertEquals(jenkins.getInstance().getRootUrl(), jenkinsUrlVariable.getString("value"));
         Assert.assertNotNull(jnlpSlaveOptionsVariable);
-        Assert.assertEquals(SlaveInstance.createJnlpSlaveOptions(slave), jnlpSlaveOptionsVariable.getString("value")); 
+        Assert.assertEquals(SlaveInstance.createJnlpSlaveOptions(slave), jnlpSlaveOptionsVariable.getString("value"));
         if (StringUtils.isBlank(slaveScope)) {
             Assert.assertFalse(jenkinsUrlVariable.has("scope"));
             Assert.assertFalse(jnlpSlaveOptionsVariable.has("scope"));
         } else {
             Assert.assertEquals(slaveScope, jenkinsUrlVariable.getString("scope"));
             Assert.assertEquals(slaveScope, jnlpSlaveOptionsVariable.getString("scope"));
-        }        
+        }
     }
 }
