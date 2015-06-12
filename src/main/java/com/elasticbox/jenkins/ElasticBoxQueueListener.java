@@ -39,9 +39,9 @@ public class ElasticBoxQueueListener extends QueueListener {
                             break;
                         }
                     }
-                }     
+                }
             }
         }
     }
-    
+
 }

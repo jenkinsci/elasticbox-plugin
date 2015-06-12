@@ -40,23 +40,23 @@ import org.jvnet.hudson.test.JenkinsRule;
  */
 public class TestBase {
     private static final Logger LOGGER = Logger.getLogger(TestBase.class.getName());
-    
+
     protected final List<JSONObject> objectsToDelete = new ArrayList<JSONObject>();
     protected ElasticBoxCloud cloud;
 
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();
-        
-    @Before    
+
+    @Before
     public void setup() throws Exception {
         cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
-        jenkins.getInstance().clouds.add(cloud);        
+        jenkins.getInstance().clouds.add(cloud);
     }
-    
+
     @After
     public void tearDown() throws Exception {
         final Client client = cloud.getClient();
-        
+
         // terminate and delete instances
         final Map<String, IProgressMonitor> terminatingInstancIdToMonitorMap = new HashMap<String, IProgressMonitor>();
         for (Iterator<JSONObject> iter = objectsToDelete.iterator(); iter.hasNext();) {
@@ -107,7 +107,7 @@ public class TestBase {
                 terminatingInstancIdToMonitorMap.keySet().removeAll(notFoundInstanceIDs);
                 return terminatingInstancIdToMonitorMap.isEmpty();
             }
-            
+
         }.waitUntilSatisfied(180);
         for (String instanceId : instanceIDs) {
             try {
@@ -115,8 +115,8 @@ public class TestBase {
             } catch (IOException ex) {
                 LOGGER.log(Level.WARNING, ex.getMessage(), ex);
             }
-        }        
-        
+        }
+
         for (int i = objectsToDelete.size() - 1; i > -1; i--) {
             try {
                 delete(objectsToDelete.get(i), client);
@@ -125,7 +125,7 @@ public class TestBase {
             }
         }
     }
-    
+
     protected boolean deleteAfter(JSONObject object) {
         if (object.containsKey("uri")) {
             String uri = object.getString("uri");
@@ -140,7 +140,7 @@ public class TestBase {
             return false;
         }
     }
-    
+
     protected void delete(JSONObject resource, Client client) throws IOException {
         if (resource.getString("schema").endsWith("/provider")) {
             // delete all policy boxes of the provider
@@ -152,6 +152,6 @@ public class TestBase {
                 }
             }
         }
-        client.doDelete(resource.getString("uri"));        
+        client.doDelete(resource.getString("uri"));
     }
 }

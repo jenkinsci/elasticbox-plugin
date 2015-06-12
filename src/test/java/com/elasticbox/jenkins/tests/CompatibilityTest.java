@@ -26,15 +26,15 @@ import org.junit.Test;
  * @author Phong Nguyen Le
  */
 public class CompatibilityTest extends BuildStepTestBase {
-    
+
     @Test
-    public void testBuildWithOldSteps() throws Exception {    
+    public void testBuildWithOldSteps() throws Exception {
         String testParameter = UUID.randomUUID().toString();
         String projectXml = createTestDataFromTemplate("jobs/test-old-job.xml");
-        FreeStyleBuild build = TestUtils.runJob("test-old-job", projectXml, 
+        FreeStyleBuild build = TestUtils.runJob("test-old-job", projectXml,
                 Collections.singletonMap("eb_test_build_parameter", testParameter), jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
-        
+
         Client client = cloud.getClient();
         JSONObject instance = client.getInstance(newTestBindingBoxInstanceId);
         JSONObject connectionVar = null;
@@ -43,14 +43,14 @@ public class CompatibilityTest extends BuildStepTestBase {
             JSONObject variable = (JSONObject) json;
             String name = variable.getString("name");
             if (name.equals("CONNECTION")) {
-                connectionVar = variable;                
+                connectionVar = variable;
             } else if (name.equals("HTTPS")) {
                 httpsVar = variable;
             }
         }
-        
+
         assertEquals(connectionVar.toString(), testParameter, connectionVar.getString("value"));
         assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
     }
-    
+
 }

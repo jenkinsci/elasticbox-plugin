@@ -55,14 +55,14 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class ElasticBoxSlave extends Slave {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlave.class.getName());
-    
+
     private static final String SINGLE_USE_TYPE = "Single-use";
     private static final String PER_PROJECT_TYPE = "Per project configured";
     private static final String GLOBAL_TYPE = "Glocally configured";
-    
+
     private static final int ID_PREFIX_LENGTH = 21;
     private static final String ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
-    
+
     private static String randomId(Random random) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 8; i++) {
@@ -70,7 +70,7 @@ public class ElasticBoxSlave extends Slave {
         }
         return sb.toString();
     }
-    
+
     private static synchronized String generateName(ElasticBoxCloud cloud, String boxVersion) throws IOException {
         JSONObject boxJson = cloud.getClient().getBox(boxVersion);
         String prefix = boxJson.getString("name").replaceAll("[^a-zA-Z0-9-]", "-").toLowerCase();
@@ -83,16 +83,16 @@ public class ElasticBoxSlave extends Slave {
             }
             prefix += padding.toString();
         }
-                
+
         Random random = new Random();
         String name;
         do {
             name = prefix + '-' + randomId(random);
         } while (Jenkins.getInstance().getNode(name) != null);
-        
+
         return name;
     }
-    
+
     private final String boxVersion;
     private String profileId;
     private final boolean singleUse;
@@ -102,22 +102,22 @@ public class ElasticBoxSlave extends Slave {
     private int builds;
     private final String cloudName;
     private boolean deletable;
-    
+
     private final transient int launchTimeout;
 
     public ElasticBoxSlave(ProjectSlaveConfiguration config, boolean singleUse) throws Descriptor.FormException, IOException {
         this(config, config.getElasticBoxCloud(), new ProjectSlaveConfigurationRetentionStrategy(config), singleUse);
     }
-    
+
     public ElasticBoxSlave(SlaveConfiguration config, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
         this(config, cloud, new SlaveConfigurationRetentionStrategy(config, cloud), false);
     }
-    
-    public ElasticBoxSlave(AbstractSlaveConfiguration config, ElasticBoxCloud cloud, 
+
+    public ElasticBoxSlave(AbstractSlaveConfiguration config, ElasticBoxCloud cloud,
             RetentionStrategy retentionStrategy, boolean singleUse) throws Descriptor.FormException, IOException {
-        super(generateName(cloud, config.resolveBoxVersion(cloud.getClient())), config.getDescription(), 
-            StringUtils.isBlank(config.getRemoteFS()) ? getRemoteFS(config.resolveDeploymentPolicy(cloud.getClient()), cloud) : config.getRemoteFS(), 
-            config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), retentionStrategy, 
+        super(generateName(cloud, config.resolveBoxVersion(cloud.getClient())), config.getDescription(),
+            StringUtils.isBlank(config.getRemoteFS()) ? getRemoteFS(config.resolveDeploymentPolicy(cloud.getClient()), cloud) : config.getRemoteFS(),
+            config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), retentionStrategy,
             Collections.EMPTY_LIST);
         this.boxVersion = config.getResolvedBoxVersion();
         this.profileId = config.getResolvedDeploymentPolicy();
@@ -143,11 +143,11 @@ public class ElasticBoxSlave extends Slave {
         } else if (!(retentionStrategy instanceof ElasticBoxRetentionStrategy)) {
             setRetentionStrategy(new IdleTimeoutRetentionStrategy(retentionTime));
         }
-        
+
         return super.readResolve();
     }
-    
-    
+
+
     @Override
     public Computer createComputer() {
         return new ElasticBoxComputer(this);
@@ -159,20 +159,20 @@ public class ElasticBoxSlave extends Slave {
 
     public String getInstanceUrl() {
         return instanceUrl;
-    }    
+    }
 
     public String getInstancePageUrl() throws IOException {
         checkInstanceReachable();
         return Client.getPageUrl(getCloud().getEndpointUrl(), instanceUrl);
-    }        
-        
+    }
+
     public String getInstanceId() {
         return Client.getResourceId(instanceUrl);
     }
 
     public boolean isSingleUse() {
         return singleUse;
-    }   
+    }
 
     public void setDeletable(boolean deletable) {
         this.deletable = deletable;
@@ -192,18 +192,18 @@ public class ElasticBoxSlave extends Slave {
                 throw new IOException(MessageFormat.format("Cannot find any ElasticBox cloud with name ''{0}''", cloudName));
             }
         }
-        
+
         return ebCloud != null ? ebCloud : ElasticBoxCloud.getInstance();
-    }       
-    
+    }
+
     public AbstractSlaveConfiguration getSlaveConfiguration() {
         if (getRetentionStrategy() instanceof AbstractSlaveConfigurationRetentionStrategy) {
             return ((AbstractSlaveConfigurationRetentionStrategy) getRetentionStrategy()).getSlaveConfiguration();
         }
-        
+
         return null;
     }
-    
+
     public JSONArray getPolicyVariables() {
         AbstractSlaveConfiguration slaveConfig = getSlaveConfiguration();
         return slaveConfig != null ? JsonUtil.createCloudFormationDeployVariables(slaveConfig.getProvider(), slaveConfig.getLocation()) : null;
@@ -216,7 +216,7 @@ public class ElasticBoxSlave extends Slave {
     public String getInstanceStatusMessage() {
         return instanceStatusMessage;
     }
-    
+
     public String getType() {
         if (isSingleUse()) {
             return SINGLE_USE_TYPE;
@@ -260,28 +260,28 @@ public class ElasticBoxSlave extends Slave {
         }
         ElasticBoxSlaveHandler.addToTerminatedQueue(this);
     }
-    
+
     public void delete() throws IOException {
         checkInstanceReachable();
         getCloud().getClient().delete(getInstanceId());
     }
-    
+
     public boolean isTerminated() throws IOException {
         checkInstanceReachable();
         JSONObject instance = getCloud().getClient().getInstance(getInstanceId());
         return Client.InstanceState.DONE.equals(instance.get("state")) && Client.TERMINATE_OPERATIONS.contains(instance.get("operation"));
     }
-    
+
     public JSONObject getInstance() throws IOException {
         checkInstanceReachable();
         return getCloud().getClient().getInstance(getInstanceId());
     }
-    
+
     public JSONObject getProfile() throws IOException {
         checkInstanceReachable();
         return getCloud().getClient().getBox(getProfileId());
-    }  
-    
+    }
+
     void checkInstanceReachable() throws IOException {
         ElasticBoxCloud ebCloud = getCloud();
         if (ebCloud == null) {
@@ -292,18 +292,18 @@ public class ElasticBoxSlave extends Slave {
         }
         if (!instanceUrl.startsWith(ebCloud.getEndpointUrl())) {
             throw new IOException(MessageFormat.format("The instance {0} has been created at a different ElasticBox endpoint than the currently configured one. Open {0} in a browser to terminate it.", instanceUrl));
-        }        
+        }
     }
-    
-    
+
+
 
     void markForTermination() {
         setDeletable(true);
-        SlaveComputer computer = getComputer();        
+        SlaveComputer computer = getComputer();
         if (computer != null) {
             computer.setAcceptingTasks(false);
             computer.setTemporarilyOffline(true, new OfflineCause() {
-                
+
                 @Override
                 public String toString() {
                     String message;
@@ -318,44 +318,44 @@ public class ElasticBoxSlave extends Slave {
                     } else {
                         String url = Client.getPageUrl(((ElasticBoxCloud) cloud).getEndpointUrl(), instanceUrl);
                         if (url != null) {
-                            message = MessageFormat.format("Instance at {0} of ElasticBox cloud ''{1}'' will be terminated and deleted", 
+                            message = MessageFormat.format("Instance at {0} of ElasticBox cloud ''{1}'' will be terminated and deleted",
                                     url, cloud.getDisplayName());
                         } else {
                             message = MessageFormat.format("Instance {0} must be terminated but that's not possible because the endpoint URL of ElasticBox cloud ''{1}'' has been changed", instanceUrl, cloud.getDisplayName());
-                        }              
+                        }
                     }
                     return message;
                 }
-                
+
             });
         } else {
             save();
-        }    
+        }
     }
-    
+
     void incrementBuilds() {
         builds++;
         save();
     }
-    
+
     boolean hasExpired() {
         if (isSingleUse() && builds > 0) {
             return true;
         }
-        
+
         AbstractSlaveConfiguration slaveConfig = getSlaveConfiguration();
-        return slaveConfig != null && (slaveConfig.getRetentionTime() == 0 || 
+        return slaveConfig != null && (slaveConfig.getRetentionTime() == 0 ||
                 (slaveConfig.getMaxBuilds() > 0 && builds >= slaveConfig.getMaxBuilds()));
     }
-    
+
     private void save() {
         try {
             Jenkins.getInstance().save();
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-        }        
+        }
     }
-    
+
     private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
         Client client = cloud.getClient();
         JSONObject profile = client.getBox(profileId);
@@ -369,30 +369,30 @@ public class ElasticBoxSlave extends Slave {
                     profile.getString("name")));
         }
     }
-    
+
     private static abstract class ElasticBoxRetentionStrategy extends RetentionStrategy<ElasticBoxComputer> {
         public abstract boolean shouldTerminate(ElasticBoxComputer computer);
-        
+
         protected abstract int getRetentionTime();
 
         @Override
         public boolean isManualLaunchAllowed(ElasticBoxComputer c) {
             return false;
         }
-        
+
         @Override
         public synchronized long check(ElasticBoxComputer computer) {
             if (shouldTerminate(computer)) {
-                LOGGER.info(MessageFormat.format("Retention time of {0} minutes is elapsed for slave {1}. The computer is terminating", 
+                LOGGER.info(MessageFormat.format("Retention time of {0} minutes is elapsed for slave {1}. The computer is terminating",
                         getRetentionTime(), computer.getSlave().getDisplayName()));
                 computer.terminate();
             }
-            
+
             return 1;
         }
-                
+
     }
-        
+
     private static class IdleTimeoutRetentionStrategy extends ElasticBoxRetentionStrategy {
         private int retentionTime;
 
@@ -403,14 +403,14 @@ public class ElasticBoxSlave extends Slave {
 
         @Override
         public boolean shouldTerminate(ElasticBoxComputer computer) {
-            return computer.getIdleTime() > TimeUnit.MINUTES.toMillis(getRetentionTime());            
+            return computer.getIdleTime() > TimeUnit.MINUTES.toMillis(getRetentionTime());
         }
 
         @Override
         protected int getRetentionTime() {
             return retentionTime;
         }
-        
+
         public static class ConverterImpl extends RetentionTimeConverter<IdleTimeoutRetentionStrategy> {
 
             @Override
@@ -419,11 +419,11 @@ public class ElasticBoxSlave extends Slave {
                     obj.retentionTime = Integer.MAX_VALUE;
                 }
             }
-            
+
         }
-        
+
     }
-    
+
     private static final class SlaveConfigurationRetentionStrategy extends AbstractSlaveConfigurationRetentionStrategy {
         private transient String cloudName;
 
@@ -431,18 +431,18 @@ public class ElasticBoxSlave extends Slave {
             super(slaveConfig);
             this.cloudName = cloud.name;
         }
-        
+
         @Override
         protected SlaveConfiguration getSlaveConfiguration() {
-            Cloud cloud = Jenkins.getInstance().getCloud(cloudName);            
+            Cloud cloud = Jenkins.getInstance().getCloud(cloudName);
             if (cloud instanceof ElasticBoxCloud) {
                 return ((ElasticBoxCloud) cloud).getSlaveConfiguration(slaveConfigId);
             }
-                
+
             return null;
-        }        
+        }
     }
-    
+
     private static final class ProjectSlaveConfigurationRetentionStrategy extends AbstractSlaveConfigurationRetentionStrategy {
 
         public ProjectSlaveConfigurationRetentionStrategy(ProjectSlaveConfiguration slaveConfig) {
@@ -453,11 +453,11 @@ public class ElasticBoxSlave extends Slave {
         protected ProjectSlaveConfiguration getSlaveConfiguration() {
             return ProjectSlaveConfiguration.find(slaveConfigId);
         }
-        
+
     }
-    
+
     private static abstract class AbstractSlaveConfigurationRetentionStrategy extends IdleTimeoutRetentionStrategy {
-        
+
         protected final String slaveConfigId;
         protected final int minInstances;
 
@@ -474,7 +474,7 @@ public class ElasticBoxSlave extends Slave {
             if (getSlaveConfiguration() != null) {
                 return getSlaveConfiguration().getRetentionTime();
             }
-            
+
             return super.getRetentionTime();
         }
 
@@ -482,7 +482,7 @@ public class ElasticBoxSlave extends Slave {
             if (getSlaveConfiguration() != null) {
                 return getSlaveConfiguration().getMinInstances();
             }
-            
+
             return minInstances;
         }
 
@@ -493,12 +493,12 @@ public class ElasticBoxSlave extends Slave {
                 try {
                     activeInstances = ElasticBoxSlaveHandler.getActiveInstances(computer.getSlave().getCloud());
                 } catch (IOException ex) {
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);    
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                     // cannot decide whether the slave should be terminated because the active instances could not be fetched
                     // leave it alone for now
                     return false;
                 }
-                    
+
                 if (activeInstances.size() <= getMinInstances()) {
                     return false;
                 }
@@ -524,17 +524,17 @@ public class ElasticBoxSlave extends Slave {
                     }
                 }
 
-                if (configActiveInstanceIDs.contains(computer.getSlave().getInstanceId()) && 
+                if (configActiveInstanceIDs.contains(computer.getSlave().getInstanceId()) &&
                         instanceCount <= getMinInstances()) {
                     return false;
                 }
             }
-            
+
             return super.shouldTerminate(computer);
         }
-        
+
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends SlaveDescriptor {
 
@@ -552,14 +552,14 @@ public class ElasticBoxSlave extends Slave {
         public Node newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             throw new FormException("This slave cannot be updated.", "");
         }
-                
+
         @Initializer(before=InitMilestone.PLUGINS_STARTED)
         public static void addAliases() {
-            Items.XSTREAM2.addCompatibilityAlias("com.elasticbox.jenkins.ElasticBoxSlave.RetentionStrategyImpl", 
+            Items.XSTREAM2.addCompatibilityAlias("com.elasticbox.jenkins.ElasticBoxSlave.RetentionStrategyImpl",
                     IdleTimeoutRetentionStrategy.class);
-        }        
+        }
     }
-    
+
     public static class ConverterImpl extends RetentionTimeConverter<ElasticBoxSlave> {
 
         @Override
@@ -574,6 +574,6 @@ public class ElasticBoxSlave extends Slave {
                 }
             }
         }
-        
+
     }
 }

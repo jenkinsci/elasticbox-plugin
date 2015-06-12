@@ -25,7 +25,7 @@ public class PullRequests extends ProjectData.Datum {
 
     public PullRequests() {
         this.data = new ArrayList<PullRequestData>();
-    }            
+    }
 
     @Override
     protected void setProjectData(ProjectData projectData) {
@@ -34,10 +34,10 @@ public class PullRequests extends ProjectData.Datum {
                 pullRequestData.setProjectData(projectData);
             }
         }
-    }    
+    }
 
     public List<PullRequestData> getData() {
         return data;
     }
-       
+
 }

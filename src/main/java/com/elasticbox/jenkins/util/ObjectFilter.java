@@ -21,5 +21,5 @@ import net.sf.json.JSONObject;
 public interface ObjectFilter {
 
     public boolean accept(JSONObject instance);
-    
+
 }

@@ -38,12 +38,12 @@ import org.kohsuke.stapler.QueryParameter;
  */
 public abstract class AbstractSlaveConfiguration implements Describable<AbstractSlaveConfiguration> {
     private static final Logger LOGGER = Logger.getLogger(AbstractSlaveConfiguration.class.getName());
-    
+
     private String id;
     private final String workspace;
     private final String box;
     private String profile;
-    private final String claims;    
+    private final String claims;
     private final String provider;
     private final String location;
     private final String variables;
@@ -60,14 +60,14 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final int maxBuilds;
     private int executors;
     private final int launchTimeout;
-    
+
     private transient Set<LabelAtom> labelSet;
     private transient String resolvedBoxVersion;
     private transient String resolvedDeploymentPolicy;
 
-    public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile, 
+    public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile,
             String claims, String provider, String location, int minInstances,
-            int maxInstances, String tags, String variables, String labels, String description, String remoteFS, 
+            int maxInstances, String tags, String variables, String labels, String description, String remoteFS,
             Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout) {
         super();
         this.id = id;
@@ -81,7 +81,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.minInstances = minInstances;
         this.maxInstances = maxInstances;
         this.tags = tags;
-        this.variables = variables;    
+        this.variables = variables;
         this.labels = labels;
         this.description = description;
         this.remoteFS = remoteFS;
@@ -90,22 +90,22 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.maxBuilds = maxBuilds;
         this.executors = executors;
         this.launchTimeout = launchTimeout;
-        
+
         this.labelSet = getLabelSet();
-    }  
-    
+    }
+
     protected Object readResolve() {
         if (boxVersion != null && boxVersion.equals(box)) {
             boxVersion = DescriptorHelper.LATEST_BOX_VERSION;
         }
-        
+
         if (environment != null) {
             tags = environment;
         }
-        
+
         return this;
     }
-    
+
     @Override
     public Descriptor<AbstractSlaveConfiguration> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
@@ -130,11 +130,11 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     public String getProfile() {
         return profile;
     }
-    
+
     void setProfile(String profile) {
         this.profile = profile;
     }
-    
+
     public String getClaims() {
         return claims;
     }
@@ -145,8 +145,8 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
 
     public String getLocation() {
         return location;
-    }        
-    
+    }
+
     public String getVariables() {
         return variables;
     }
@@ -169,7 +169,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
 
     public String getTags() {
         return tags;
-    }        
+    }
 
     public String getDescription() {
         return description;
@@ -182,7 +182,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     protected void setExecutors(int executors) {
         this.executors = executors;
     }
-        
+
     public int getRetentionTime() {
         return retentionTime;
     }
@@ -190,7 +190,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     public int getMaxBuilds() {
         return maxBuilds;
     }
-    
+
     public String getMaxBuildsText() {
         return maxBuilds == 0 ? StringUtils.EMPTY : String.valueOf(maxBuilds);
     }
@@ -211,24 +211,24 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         if (labelSet == null) {
             labelSet = Label.parse(labels);
         }
-        
+
         return labelSet;
     }
-    
+
     public String getResolvedBoxVersion() {
         return resolvedBoxVersion;
-    }        
+    }
 
     public String getResolvedDeploymentPolicy() {
         return resolvedDeploymentPolicy;
     }
-    
+
     String resolveBoxVersion(Client client) throws IOException {
-        resolvedBoxVersion = DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion) ? 
+        resolvedBoxVersion = DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion) ?
                 client.getLatestBoxVersion(workspace, box) : boxVersion;
         return resolvedBoxVersion;
     }
-    
+
     String resolveDeploymentPolicy(Client client) throws IOException {
         return resolvedDeploymentPolicy = DescriptorHelper.resolveDeploymentPolicy(client, workspace, profile, claims);
     }
@@ -245,11 +245,11 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
                 } catch (NumberFormatException ex) {
                     return FormValidation.error("Invalid number, the number must be a positive whole number.");
                 }
-            } 
-            
+            }
+
             return FormValidation.ok();
         }
-        
+
         protected FormValidation checkBoxVersion(String boxVersion, String box, String workspace, Client client) {
             if (StringUtils.isBlank(boxVersion)) {
                 boxVersion = box;
@@ -262,15 +262,15 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
                     return FormValidation.error(MessageFormat.format("Error retrieving latest version of box {0}", box));
                 }
             }
-            return DescriptorHelper.checkSlaveBox(client, boxVersion);            
+            return DescriptorHelper.checkSlaveBox(client, boxVersion);
         }
-        
+
         public String uniqueId() {
             return UUID.randomUUID().toString();
         }
-        
+
     }
-    
+
     public static class EnvironmentConverter extends XStream2.PassthruConverter<AbstractSlaveConfiguration> {
         private static final String ENVIRONMENT_PROPERTY = AbstractSlaveConfiguration.class.getName() + ".environment";
 
@@ -281,12 +281,12 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         @Override
         public boolean canConvert(Class type) {
             return AbstractSlaveConfiguration.class.isAssignableFrom(type);
-        }    
+        }
 
         @Override
         public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
             return super.unmarshal(reader, context);
-        }        
+        }
 
         @Override
         protected void callback(AbstractSlaveConfiguration slaveConfig, UnmarshallingContext context) {
@@ -297,5 +297,5 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         }
 
     }
-    
+
 }

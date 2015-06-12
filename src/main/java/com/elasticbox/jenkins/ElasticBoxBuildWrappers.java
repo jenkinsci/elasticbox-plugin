@@ -26,8 +26,8 @@ public class ElasticBoxBuildWrappers {
     private ElasticBoxBuildWrappers(InstanceCreator instanceCreator, SingleUseSlaveBuildOption singleUseSlaveOption) {
         this.instanceCreator = instanceCreator;
         this.singleUseSlaveOption = singleUseSlaveOption;
-    }  
-    
+    }
+
     public static final ElasticBoxBuildWrappers getElasticBoxBuildWrappers(AbstractProject project) {
         SingleUseSlaveBuildOption singleUseOption = null;
         InstanceCreator instanceCreator = null;

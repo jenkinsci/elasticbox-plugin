@@ -12,7 +12,7 @@
           <defaultValue>${TEST_TAG}</defaultValue>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
-    </hudson.model.ParametersDefinitionProperty>      
+    </hudson.model.ParametersDefinitionProperty>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
   <canRoam>true</canRoam>

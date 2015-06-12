@@ -24,5 +24,5 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
     public void testSlaveProvision() throws Exception {
         provisionSlaves();
     }
-    
+
 }

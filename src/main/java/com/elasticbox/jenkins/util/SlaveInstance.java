@@ -55,9 +55,9 @@ public class SlaveInstance {
         variables.add(variable);
         return variables;
     }
-    
+
     public static String createJnlpSlaveOptions(ElasticBoxSlave slave) {
-        return MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp -secret {2}", 
+        return MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp -secret {2}",
                 Jenkins.getInstance().getRootUrl(), slave.getNodeName(), slave.getComputer().getJnlpMac());
     }
 
@@ -70,12 +70,12 @@ public class SlaveInstance {
                 break;
             }
         }
-        
+
         if (requiredVariables.size() < REQUIRED_VARIABLES.size()) {
-            throw new IOException(MessageFormat.format("No box in the runtime stack of the box version {0} has the required variables {1}.", 
+            throw new IOException(MessageFormat.format("No box in the runtime stack of the box version {0} has the required variables {1}.",
                     slave.getBoxVersion(), StringUtils.join(REQUIRED_VARIABLES, ", ")));
         }
-        
+
         JSONObject jenkinsUrlVariable = requiredVariables.get(JENKINS_URL_VARIABLE);
         String scope = jenkinsUrlVariable.containsKey("scope") ? jenkinsUrlVariable.getString("scope") : null;
         String jenkinsUrl = Jenkins.getInstance().getRootUrl();
@@ -95,11 +95,11 @@ public class SlaveInstance {
         variable.put("value", createJnlpSlaveOptions(slave));
         if (scope != null) {
             variable.put("scope", scope);
-        }        
+        }
         variables.add(variable);
         return variables;
     }
-    
+
     private static Map<String, JSONObject> getRequiredVariables(JSONObject boxJson) {
         Map<String, JSONObject> requiredVariables = new HashMap<String, JSONObject>();
         JSONArray variables = boxJson.getJSONArray("variables");
@@ -109,15 +109,15 @@ public class SlaveInstance {
             if (variable.getString("type").equals("Text") && REQUIRED_VARIABLES.contains(name)) {
                 requiredVariables.put(name, variable);
             }
-        }                    
-        
+        }
+
         return requiredVariables;
     }
-    
+
     public static boolean isSlaveBox(JSONObject boxJson) {
         return getRequiredVariables(boxJson).size() == REQUIRED_VARIABLES.size();
     }
-    
+
     public static Map<String, Integer> getSlaveConfigIdToInstanceCountMap(List<JSONObject> activeInstances) {
         Map<String, String> slaveNameToConfigIdMap = new HashMap<String, String>();
         for (Node node : Jenkins.getInstance().getNodes()) {
@@ -140,13 +140,13 @@ public class SlaveInstance {
                 slaveConfigIdToInstanceCountMap.put(slaveConfigId, instanceCount == null ? 1 : ++instanceCount);
             }
         }
-        
+
         return slaveConfigIdToInstanceCountMap;
     }
-    
+
     public static class InstanceCounter {
         private final Map<String, Integer> slaveConfigIdToInstanceCountMap;
-        
+
         public InstanceCounter(List<JSONObject> activeInstances) {
             Map<String, AbstractSlaveConfiguration> instanceIdToSlaveConfigMap = new HashMap<String, AbstractSlaveConfiguration>();
             for (Node node : Jenkins.getInstance().getNodes()) {
@@ -167,10 +167,10 @@ public class SlaveInstance {
                 }
             }
         }
-        
+
         /**
          * Counts the active instances created with the specified slave configurations.
-         * 
+         *
          * @param slaveConfig the slave configuration
          * @return the number of instances created with the specified slave configuration
          */
@@ -178,7 +178,7 @@ public class SlaveInstance {
             Integer instanceCount = slaveConfigIdToInstanceCountMap.get(slaveConfig.getId());
             return instanceCount == null ? 0 : instanceCount;
         }
-    
+
     }
-    
+
 }

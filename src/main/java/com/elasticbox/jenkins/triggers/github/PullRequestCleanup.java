@@ -47,7 +47,7 @@ import org.kohsuke.github.GitHub;
 public class PullRequestCleanup extends AsyncPeriodicWork {
     private static final long RECURRENT_PERIOD = Long.getLong(PullRequestCleanup.class.getName() + ".recurrentPeriod", TimeUnit.MINUTES.toMillis(15));
     private static final Logger LOGGER = Logger.getLogger(PullRequestCleanup.class.getName());
-    
+
     public PullRequestCleanup() {
         super(PullRequestCleanup.class.getName());
     }
@@ -65,13 +65,13 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                     pullRequestURLs = new HashSet<String>();
                     pullRequestURLsLookup.put(repoUrl, pullRequestURLs);
                 }
-                pullRequestURLs.add(pullRequestUrl);                
+                pullRequestURLs.add(pullRequestUrl);
                 List<PullRequestData> pullRequestDataList = pullRequestDataLookup.get(pullRequestUrl);
                 if (pullRequestDataList == null) {
                     pullRequestDataList = new ArrayList<PullRequestData>();
                     pullRequestDataLookup.put(pullRequestUrl, pullRequestDataList);
                 }
-                pullRequestDataList.add(pullRequestData);                
+                pullRequestDataList.add(pullRequestData);
             }
         }
         for (Map.Entry<String, Set<String>> entry : pullRequestURLsLookup.entrySet()) {
@@ -107,14 +107,14 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                     LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 }
             }
-                
+
         }
     }
-    
+
     static int getPullRequestNumber(String url) {
         return Integer.parseInt(url.substring(url.lastIndexOf('/') + 1));
     }
-    
+
     static void deleteInstances(List<PullRequestData> pullRequestDataList, GHPullRequest pullRequest) {
         Set<PullRequestInstance> prInstances = new HashSet<PullRequestInstance>();
         for (PullRequestData prData : pullRequestDataList) {
@@ -133,7 +133,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                         try {
                             client.forceTerminate(instance.id);
                         } catch (IOException ex1) {
-                            LOGGER.log(Level.SEVERE, 
+                            LOGGER.log(Level.SEVERE,
                                     MessageFormat.format("Error force-terminating instance {0}", instance.id), ex1);
                             commentPullRequest(pullRequest, MessageFormat.format("Instance {0} couldn't be deleted. It requires manual deletion", instance.id));
                         }
@@ -159,7 +159,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
             commentPullRequest(pullRequest, MessageFormat.format("The following instances are being terminated: {0}",
                     StringUtils.join(terminatingInstanceURLs, ", ")));
         }
-        
+
     }
 
     private static void commentPullRequest(GHPullRequest pullRequest, String message) {

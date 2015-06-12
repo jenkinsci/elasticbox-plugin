@@ -6,7 +6,7 @@
     <f:radioBlock name="instanceType" checked="true" inline="true" title="Existing instance" value="eb-existing-instance">
         <f:entry title="${%Cloud}" field="cloud">
             <f:select clazz="required eb-cloud" />
-        </f:entry>    
+        </f:entry>
         <f:entry title="${%Workspace}" field="workspace">
             <f:select clazz="required eb-workspace" />
         </f:entry>

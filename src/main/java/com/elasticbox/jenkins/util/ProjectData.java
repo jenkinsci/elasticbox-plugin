@@ -32,13 +32,13 @@ import jenkins.model.Jenkins;
  */
 public class ProjectData implements Saveable {
     private static final Logger LOGGER = Logger.getLogger(ProjectData.class.getName());
-    
+
     private static final ConcurrentHashMap<AbstractProject, ProjectData> projectDataLookup = new ConcurrentHashMap<AbstractProject, ProjectData>();
-    
+
     public static abstract class Datum {
         protected abstract void setProjectData(ProjectData projectData);
     }
-    
+
     private final List<Datum> data;
 
     private transient AbstractProject<?, ?> project;
@@ -46,16 +46,16 @@ public class ProjectData implements Saveable {
     private ProjectData(AbstractProject<?, ?>  project) {
         this.project = project;
         this.data = new ArrayList<Datum>();
-    }   
+    }
 
     public AbstractProject<?, ?> getProject() {
         return project;
     }
-    
+
     public synchronized void save() throws IOException {
-        getXmlFile(project).write(this);        
+        getXmlFile(project).write(this);
     }
-    
+
     public <T extends Datum> T get(Class<T> type) {
         for (Datum datum : data) {
             if (type.isInstance(datum)) {
@@ -64,10 +64,10 @@ public class ProjectData implements Saveable {
         }
         return null;
     }
-    
+
     /**
      * Adds a new Datum to this ProjectData
-     * 
+     *
      * @param datum the new datum to add
      * @return false if the datum is not added because a datum with the same class name already exists, true otherwise
      */
@@ -82,9 +82,9 @@ public class ProjectData implements Saveable {
     }
 
     private static XmlFile getXmlFile(AbstractProject<?, ?> project) throws IOException {
-        return new XmlFile(Jenkins.XSTREAM, new File(project.getRootDir(), "elasticbox.xml"));        
-    }        
-    
+        return new XmlFile(Jenkins.XSTREAM, new File(project.getRootDir(), "elasticbox.xml"));
+    }
+
     private static ProjectData load(AbstractProject<?, ?> project) throws IOException {
         XmlFile xmlFile = getXmlFile(project);
         if (xmlFile.exists()) {
@@ -99,7 +99,7 @@ public class ProjectData implements Saveable {
         }
         return null;
     }
-    
+
     public static ProjectData getInstance(AbstractProject project, boolean create) throws IOException {
         ProjectData projectData = projectDataLookup.get(project);
         if (projectData == null && create) {
@@ -118,11 +118,11 @@ public class ProjectData implements Saveable {
         }
         return projectData;
     }
-    
+
     public static ProjectData removeInstance(AbstractProject project) {
         return projectDataLookup.remove(project);
     }
-    
+
     @Initializer(after = InitMilestone.JOB_LOADED)
     public static void loadAll() {
         LOGGER.info("Loading ElasticBox specific project data");
@@ -143,8 +143,8 @@ public class ProjectData implements Saveable {
                         LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                     }
                 }
-            }            
-        }        
-    }     
-    
+            }
+        }
+    }
+
 }

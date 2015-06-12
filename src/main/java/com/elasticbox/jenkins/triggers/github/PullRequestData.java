@@ -26,38 +26,38 @@ import org.kohsuke.github.GHPullRequest;
  * @author Phong Nguyen Le
  */
 public class PullRequestData {
-    
-    public final URL pullRequestUrl;   
+
+    public final URL pullRequestUrl;
     private Date lastUpdated;
     private String headSha;
     private final List<PullRequestInstance> instances;
-    
+
     private transient ProjectData projectData;
-    
+
     public PullRequestData(GHPullRequest pullRequest, ProjectData projectData) throws IOException {
         this.pullRequestUrl = pullRequest.getHtmlUrl();
         this.headSha = pullRequest.getHead().getSha();
         this.lastUpdated = pullRequest.getUpdatedAt();
         this.instances = new ArrayList<PullRequestInstance>();
         this.projectData = projectData;
-    }    
-    
+    }
+
     public AbstractProject getProject() {
         return projectData.getProject();
     }
 
     public Date getLastUpdated() {
         return lastUpdated;
-    }        
+    }
 
     public String getHeadSha() {
         return headSha;
-    }        
+    }
 
     public List<PullRequestInstance> getInstances() {
         return instances;
     }
-        
+
     public boolean update(GHPullRequest pullRequest) throws IOException {
         if (!pullRequest.getHtmlUrl().equals(pullRequestUrl)) {
             return false;
@@ -70,11 +70,11 @@ public class PullRequestData {
         headSha = pullRequest.getHead().getSha();
         return updated;
     }
-    
+
     protected void setProjectData(ProjectData projectData) {
         this.projectData = projectData;
     }
-    
+
     public synchronized void save() throws IOException {
         PullRequests pullRequests = projectData.get(PullRequests.class);
         if (pullRequests == null) {
@@ -83,17 +83,17 @@ public class PullRequestData {
         }
         List<PullRequestData> dataList = pullRequests.getData();
         if (dataList == null) {
-            projectData.add(new PullRequests());            
+            projectData.add(new PullRequests());
         }
         if (!dataList.contains(this)) {
             dataList.add(this);
         }
-        projectData.save();        
+        projectData.save();
     }
-    
+
     public void remove() throws IOException {
         projectData.get(PullRequests.class).getData().remove(this);
         projectData.save();
     }
-    
+
 }

@@ -174,9 +174,9 @@
           <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
           <variables>
               [
-                {"name": "REQUIRED_BINDING", "value": "com.elasticbox.jenkins.builders.DeployBox-ad677e58-fb68-4c51-97a1-f2e62e913771", "scope": "", "type": "Binding"}, 
+                {"name": "REQUIRED_BINDING", "value": "com.elasticbox.jenkins.builders.DeployBox-ad677e58-fb68-4c51-97a1-f2e62e913771", "scope": "", "type": "Binding"},
                 {"name": "ANY_BINDING", "value": "", "scope": "nested", "type": "Binding"},
-                {"name": "VAR_FILE", "value": "${WORKSPACE}/jenkins.png", "scope": "nested", "type": "File"}                       
+                {"name": "VAR_FILE", "value": "${WORKSPACE}/jenkins.png", "scope": "nested", "type": "File"}
               ]
           </variables>
         </com.elasticbox.jenkins.builders.UpdateOperation>

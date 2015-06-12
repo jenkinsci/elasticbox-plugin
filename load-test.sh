@@ -16,7 +16,7 @@ function help() {
     if [[ ${1} ]]
     then
         echo ${1}
-    fi 
+    fi
 }
 
 # Handle options
@@ -29,7 +29,7 @@ do
         h )  help; exit 0;;
         : )  help "Missing option argument for -$OPTARG"; exit 1;;
         ? )  help "Option does not exist: $OPTARG"; exit 1;;
-                 
+
     esac
 done
 

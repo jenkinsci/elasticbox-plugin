@@ -27,10 +27,10 @@ public interface IOperation {
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException;
 
     public interface InstanceOperation extends IOperation {
-        
+
     }
-    
+
     public interface BoxOperation extends IOperation {
-        
+
     }
 }

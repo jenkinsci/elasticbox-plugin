@@ -44,7 +44,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
             }
         }
         Assert.assertNotNull(MessageFormat.format("Webhook {0} is not created for repository {1}", webhookUrl, gitHubRepo.getHtmlUrl()), webhook);
-        
+
         pullRequest.open();
 
         // check that the job is triggered
@@ -112,10 +112,10 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         pullRequest.close();
         waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10));
         Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());
-        
+
         abortBuildOfClosePullRequest();
     }
-    
+
     public void abortBuildOfClosePullRequest() throws Exception {
         pullRequest.open();
         // check that the job is triggered
@@ -130,7 +130,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 return !build.isBuilding();
             }
         }.waitUntilSatisfied(60);
-        
+
         for (Object instance : cloud.getClient().getInstances(TestUtils.TEST_WORKSPACE)) {
             JSONObject instanceJson = (JSONObject) instance;
             JSONArray instanceTags = instanceJson.getJSONArray("tags");
@@ -141,5 +141,5 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
 
         Assert.assertEquals("Build is not aborted after the pull request is closed", Result.ABORTED, build.getResult());
     }
-    
+
 }

@@ -24,7 +24,7 @@ function help() {
     if [[ ${1} ]]
     then
         echo ${1}
-    fi 
+    fi
 }
 
 # Handle options
@@ -42,7 +42,7 @@ do
         h )  help; exit 0;;
         : )  help "Missing option argument for -$OPTARG"; exit 1;;
         ? )  help "Option does not exist: $OPTARG"; exit 1;;
-                 
+
     esac
 done
 
@@ -123,7 +123,7 @@ fi
 
 for VERSION in ${JENKINS_VERSIONS}
 do
-    build_with_jenkins_version ${VERSION}	
+    build_with_jenkins_version ${VERSION}
 done
 
 if [[ -z $(echo ${JENKINS_VERSIONS} | grep "${SAVED_JENKINS_VERSION}") ]]

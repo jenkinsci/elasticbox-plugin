@@ -34,14 +34,14 @@ import jenkins.model.Jenkins;
 @Extension
 public class ElasticBoxExecutor extends AsyncPeriodicWork {
     private static final long RECURRENT_PERIOD = Long.getLong("elasticbox.jenkins.ElasticBoxExecutor.recurrentPeriod", 10000);
-    private static final Logger LOGGER = Logger.getLogger(ElasticBoxExecutor.class.getName());        
-    
-    public static final ExecutorService threadPool = Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(new DaemonThreadFactory()));    
-    
+    private static final Logger LOGGER = Logger.getLogger(ElasticBoxExecutor.class.getName());
+
+    public static final ExecutorService threadPool = Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(new DaemonThreadFactory()));
+
     public ElasticBoxExecutor() {
         super(ElasticBoxExecutor.class.getName());
     }
-    
+
     private void executeAsync(final Workload workload, final TaskListener listener) {
         threadPool.submit(new Runnable() {
             public void run() {
@@ -51,7 +51,7 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
                     LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 }
             }
-        });        
+        });
     }
 
     @Override
@@ -64,13 +64,13 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
                 syncWorkloads.add(workload);
             }
         }
-        
+
         for (Workload workload : syncWorkloads) {
             try {
                 workload.execute(listener);
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-            }            
+            }
         }
     }
 
@@ -78,37 +78,37 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
     public long getRecurrencePeriod() {
         return RECURRENT_PERIOD;
     }
-    
+
     public enum ExecutionType {
-        SYNC, 
+        SYNC,
         SYNC_WORKLOAD,
         ASYNC
     }
-    
+
     public static abstract class Workload implements ExtensionPoint {
-        private Logger logger = Logger.getLogger(getClass().getName());        
+        private Logger logger = Logger.getLogger(getClass().getName());
 
         protected abstract ExecutionType getExecutionType();
-        
+
         protected abstract void execute(TaskListener listener) throws IOException;
 
-        
+
         protected void log(Level level, String message) {
             logger.log(level, message);
         }
-        
+
         protected void log(Level level, String message, Throwable exception) {
             logger.log(level, message, exception);
         }
-        
+
         protected void log(String message, TaskListener listener) {
             this.log(Level.INFO, message, null, listener);
         }
 
         protected void log(Level level, String message, Throwable exception, TaskListener listener) {
             listener.getLogger().println(message);
-            logger.log(level, message, exception);       
+            logger.log(level, message, exception);
         }
-        
+
     }
 }

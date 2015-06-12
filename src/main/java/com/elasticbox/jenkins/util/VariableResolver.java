@@ -49,7 +49,7 @@ public final class VariableResolver {
     private final List<IInstanceProvider> instanceProviders;
     private final AbstractBuild build;
     private final Map<String, String> variableValueLookup;
-    
+
     public VariableResolver(AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {
         this(null, null, build, listener);
     }
@@ -63,21 +63,21 @@ public final class VariableResolver {
                 instanceProviders.add((IInstanceProvider) builder);
             }
         }
-        this.build = build;    
-        variableValueLookup = new HashMap<String, String>();  
+        this.build = build;
+        variableValueLookup = new HashMap<String, String>();
         variableValueLookup.putAll(build.getBuildVariables());
         variableValueLookup.putAll(build.getEnvironment(listener));
         Computer computer = build.getBuiltOn().toComputer();
         variableValueLookup.put("SLAVE_HOST_NAME", computer.getHostName());
         if (computer instanceof ElasticBoxComputer) {
-            variableValueLookup.put("SLAVE_HOST_ADDRESS", ((ElasticBoxComputer) computer).getHostAddress());        
+            variableValueLookup.put("SLAVE_HOST_ADDRESS", ((ElasticBoxComputer) computer).getHostAddress());
         }
     }
-    
+
     public String resolve(String value) {
         return Util.replaceMacro(value, variableValueLookup);
     }
-    
+
     public JSONObject resolve(JSONObject variable) throws IOException {
         String value = resolve(variable.getString("value"));
         variable.put("value", value);
@@ -89,9 +89,9 @@ public final class VariableResolver {
                         variable.put("value", instanceProvider.getInstanceId(build));
                         break;
                     }
-                }                
+                }
             }
-            
+
             if (value.startsWith("(") && value.endsWith(")")) {
                 Set<String> bindingTags = resolveTags(value.substring(1, value.length() - 1));
                 JSONArray bindingInstances = DescriptorHelper.getInstances(bindingTags, cloudName, workspace, false);
@@ -105,24 +105,24 @@ public final class VariableResolver {
                 } else {
                     variable.put("value", bindingInstances.getJSONObject(0).getString("id"));
                 }
-                
+
                 if (errorMessage != null) {
                     throw new IOException(errorMessage);
                 }
-            }            
+            }
         } else if ("File".equals(type)) {
             if (StringUtils.isNotBlank(value)) {
-                variable.put("value", new File(value).toURI().toString());            
+                variable.put("value", new File(value).toURI().toString());
             }
         }
 
         if (variable.getString("scope").isEmpty()) {
             variable.remove("scope");
         }
-            
+
         return variable;
     }
-    
+
     public Set<String> resolveTags(String tags) {
         Set<String> tagSet = new HashSet<String>();
         if (StringUtils.isNotBlank(tags)) {
@@ -132,17 +132,17 @@ public final class VariableResolver {
                 }
             }
         }
-        return tagSet;        
+        return tagSet;
     }
-    
+
     public JSONArray resolveVariables(String jsonVariables) throws IOException {
         JSONArray resolvedVariables = parseVariables(jsonVariables);
         for (Iterator iter = resolvedVariables.iterator(); iter.hasNext();) {
             resolve((JSONObject) iter.next());
         }
-        
+
         return resolvedVariables;
-        
+
     }
-    
+
 }

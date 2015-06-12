@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  */
 @Extension
 public class BuildListener extends RunListener<AbstractBuild> {
-    private static final Logger LOGGER = Logger.getLogger(BuildListener.class.getName());    
+    private static final Logger LOGGER = Logger.getLogger(BuildListener.class.getName());
 
     @Override
     public void onCompleted(AbstractBuild build, TaskListener listener) {
@@ -39,12 +39,12 @@ public class BuildListener extends RunListener<AbstractBuild> {
                 if (slave.hasExpired() || requiresGlobalSingleUseSlave(build.getProject())) {
                     slave.markForTermination();
                 }
-            }    
+            }
         } catch (RuntimeException ex) {
             LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         }
     }
-    
+
     private static boolean requiresGlobalSingleUseSlave(AbstractProject project) {
         ElasticBoxBuildWrappers ebxBuildWrappers = ElasticBoxBuildWrappers.getElasticBoxBuildWrappers(project);
         return ebxBuildWrappers.singleUseSlaveOption != null && ebxBuildWrappers.instanceCreator == null;

@@ -51,7 +51,7 @@ public class InstanceCreator extends BuildWrapper {
     private ProjectSlaveConfiguration slaveConfiguration;
 
     private transient ElasticBoxSlave ebSlave;
-    
+
     @DataBoundConstructor
     public InstanceCreator(ProjectSlaveConfiguration slaveConfiguration) {
         super();
@@ -61,9 +61,9 @@ public class InstanceCreator extends BuildWrapper {
     public ProjectSlaveConfiguration getSlaveConfiguration() {
         return slaveConfiguration;
     }
-    
+
     @Override
-    public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {        
+    public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
         for (Node node : build.getProject().getAssignedLabel().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
@@ -79,13 +79,13 @@ public class InstanceCreator extends BuildWrapper {
             public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
                 if (ebSlave.isSingleUse()) {
                     ebSlave.getComputer().setAcceptingTasks(false);
-                }                        
+                }
                 build.getProject().setAssignedLabel(null);
                 return true;
             }
         };
     }
-    
+
     protected Object readResolve() {
         if (slaveConfiguration == null) {
             ElasticBoxCloud ebCloud = null;
@@ -100,18 +100,18 @@ public class InstanceCreator extends BuildWrapper {
                     ebCloud = (ElasticBoxCloud) c;
                 }
             }
-            slaveConfiguration = new ProjectSlaveConfiguration(UUID.randomUUID().toString(), cloud, workspace, box, 
-                    boxVersion, profile, null, null, null, ebCloud != null ? ebCloud.getMaxInstances() : 1, null, variables, 
-                    StringUtils.EMPTY, ebCloud != null ? ebCloud.getRetentionTime() : 30, null, 1, 
+            slaveConfiguration = new ProjectSlaveConfiguration(UUID.randomUUID().toString(), cloud, workspace, box,
+                    boxVersion, profile, null, null, null, ebCloud != null ? ebCloud.getMaxInstances() : 1, null, variables,
+                    StringUtils.EMPTY, ebCloud != null ? ebCloud.getRetentionTime() : 30, null, 1,
                     ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
         }
-        
+
         return this;
     }
 
     @Extension
     public static class DescriptorImpl extends BuildWrapperDescriptor {
-        
+
         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return true;
@@ -126,16 +126,16 @@ public class InstanceCreator extends BuildWrapper {
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             JSONObject slaveConfigJson = formData.getJSONObject(ProjectSlaveConfiguration.SLAVE_CONFIGURATION);
             DescriptorHelper.fixDeploymentPolicyFormData(slaveConfigJson);
-            
+
             InstanceCreator instanceCreator = (InstanceCreator) super.newInstance(req, formData);
             ProjectSlaveConfiguration.DescriptorImpl descriptor = (ProjectSlaveConfiguration.DescriptorImpl) instanceCreator.getSlaveConfiguration().getDescriptor();
             descriptor.validateSlaveConfiguration(instanceCreator.getSlaveConfiguration());
-            
+
             return instanceCreator;
-        }        
-        
+        }
+
     }
-    
+
     public static class ConverterImpl extends RetentionTimeConverter<InstanceCreator> {
 
         @Override
@@ -145,6 +145,6 @@ public class InstanceCreator extends BuildWrapper {
                 slaveConfig.retentionTime = Integer.MAX_VALUE;
             }
         }
-        
+
     }
 }

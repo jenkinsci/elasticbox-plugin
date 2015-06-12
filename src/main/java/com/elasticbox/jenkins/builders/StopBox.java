@@ -32,7 +32,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  *
  * @author Phong Nguyen Le
- * @deprecated 
+ * @deprecated
  */
 public class StopBox extends InstanceBuildStep {
 
@@ -50,7 +50,7 @@ public class StopBox extends InstanceBuildStep {
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
-        
+
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
         IProgressMonitor monitor = ebCloud.getClient().shutdown(instanceProvider.getInstanceId(build));
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), monitor.getResourceUrl());
@@ -65,7 +65,7 @@ public class StopBox extends InstanceBuildStep {
             logger.error("Failed to stop box instance %s: %s", instancePageUrl, ex.getMessage());
             throw new AbortException(ex.getMessage());
         }
-    }    
+    }
 
     @Extension
     public static final class DescriptorImpl extends Descriptor {
