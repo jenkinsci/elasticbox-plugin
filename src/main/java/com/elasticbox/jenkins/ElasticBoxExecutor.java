@@ -75,6 +75,11 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
     }
 
     @Override
+    public Level getNormalLoggingLevel() {
+        return Level.FINEST;
+    }
+
+    @Override
     public long getRecurrencePeriod() {
         return RECURRENT_PERIOD;
     }
