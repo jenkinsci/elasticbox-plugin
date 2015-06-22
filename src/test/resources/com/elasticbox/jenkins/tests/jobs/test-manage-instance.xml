@@ -29,7 +29,6 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>test-manage-instance-1</environment>
       <instances>1</instances>
       <variables>[]</variables>
       <skipIfExisting>false</skipIfExisting>
@@ -44,7 +43,6 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>test-manage-instance-1</environment>
       <instances>1</instances>
       <variables>[{&quot;name&quot;:&quot;INSTALL_EXIT_CODE&quot;,&quot;value&quot;:&quot;1&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Number&quot;}]</variables>
       <skipIfExisting>false</skipIfExisting>
@@ -59,7 +57,6 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>test-manage-instance-2</environment>
       <instances>1</instances>
       <variables>[]</variables>
       <skipIfExisting>false</skipIfExisting>
@@ -100,7 +97,6 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>test-manage-instance-4</environment>
       <instances>1</instances>
       <variables>[]</variables>
       <skipIfExisting>false</skipIfExisting>
