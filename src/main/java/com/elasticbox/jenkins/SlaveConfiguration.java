@@ -98,25 +98,24 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             }
 
             FormValidation result = ((SlaveConfiguration.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(SlaveConfiguration.class)).doCheckBoxVersion(slaveConfig.getBoxVersion(),
-                    newCloud.getEndpointUrl(), newCloud.getUsername(), newCloud.getPassword(), newCloud.getToken(),
+                    newCloud.getEndpointUrl(), newCloud.getToken(),
                     slaveConfig.getWorkspace(), slaveConfig.getBox());
             if (result.kind == FormValidation.Kind.ERROR) {
                 throw new FormException(result.getMessage(), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
         }
 
-        private Client createClient(String endpointUrl, String username, String password, String token) {
-            if (StringUtils.isBlank(endpointUrl) ||
-                    (StringUtils.isBlank(token) && (StringUtils.isBlank(username) || StringUtils.isBlank(password)))) {
+        private Client createClient(String endpointUrl, String token) {
+            if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(token)) {
                 return null;
             }
 
-            Client client = ClientCache.getClient(endpointUrl, username, password, token);
+            Client client = ClientCache.getClient(endpointUrl, token);
             if (client == null) {
                 if (StringUtils.isNotBlank(token)) {
                     client = new Client(endpointUrl, token);
                 } else {
-                    client = new Client(endpointUrl, username, password);
+                    LOGGER.log(Level.SEVERE, "You need an ElasticBox token to be able to connect");
                 }
                 try {
                     client.connect();
@@ -130,86 +129,68 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
         public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token) {
-            return DescriptorHelper.getWorkspaces(createClient(endpointUrl, username, password, token));
+            return DescriptorHelper.getWorkspaces(createClient(endpointUrl, token));
         }
 
         public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace) {
-            return DescriptorHelper.getBoxes(createClient(endpointUrl, username, password, token), workspace);
+            return DescriptorHelper.getBoxes(createClient(endpointUrl, token), workspace);
         }
 
         public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace, @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(createClient(endpointUrl, username, password, token), workspace, box);
+            return DescriptorHelper.getBoxVersions(createClient(endpointUrl, token), workspace, box);
         }
 
         public FormValidation doCheckBoxVersion(@QueryParameter String value,
                 @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace,
                 @QueryParameter String box) {
-            Client client = createClient(endpointUrl, username, password, token);
+            Client client = createClient(endpointUrl, token);
             return checkBoxVersion(value, box, workspace, client);
         }
 
         public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace, @QueryParameter String box) {
-            return DescriptorHelper.getProfiles(createClient(endpointUrl, username, password, token), workspace, box);
+            return DescriptorHelper.getProfiles(createClient(endpointUrl, token), workspace, box);
         }
 
         public ListBoxModel doFillProviderItems(
                 @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace) {
-            return DescriptorHelper.getCloudFormationProviders(createClient(endpointUrl, username, password, token), workspace);
+            return DescriptorHelper.getCloudFormationProviders(createClient(endpointUrl, token), workspace);
         }
 
         public ListBoxModel doFillLocationItems(
                 @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String provider) {
-            return DescriptorHelper.getCloudFormationLocations(createClient(endpointUrl, username, password, token), provider);
+            return DescriptorHelper.getCloudFormationLocations(createClient(endpointUrl, token), provider);
         }
 
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(
                 @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace,
                 @QueryParameter String box,
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getBoxStack(createClient(endpointUrl, username, password, token), workspace, box,
+            return DescriptorHelper.getBoxStack(createClient(endpointUrl, token), workspace, box,
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
         public DescriptorHelper.JSONArrayResponse doGetInstances(
                 @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String username,
-                @RelativePath("..") @QueryParameter String password,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace,
                 @QueryParameter String box,
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getInstancesAsJSONArrayResponse(createClient(endpointUrl, username, password, token),
+            return DescriptorHelper.getInstancesAsJSONArrayResponse(createClient(endpointUrl, token),
                     workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 

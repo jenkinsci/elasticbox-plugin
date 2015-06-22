@@ -660,9 +660,6 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
         @Override
         protected void migrate(ElasticBoxCloud cloud, Version olderVersion) {
-            if (cloud.getRetentionTime() == 0) {
-                cloud.retentionTime = Integer.MAX_VALUE;
-            }
             for (SlaveConfiguration slaveConfig : cloud.getSlaveConfigurations()) {
                 if (slaveConfig.getRetentionTime() == 0) {
                     slaveConfig.retentionTime = Integer.MAX_VALUE;

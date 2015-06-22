@@ -37,7 +37,7 @@ public class ClientCache {
     private static final Logger LOGGER = Logger.getLogger(ClientCache.class.getName());
     private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<String, Client>();
 
-    public static final Client findOrCreateClient(String cloudName) throws ClientException, IOException {
+    public static final Client findOrCreateClient(String cloudName) throws IOException {
         Client client = clientCache.get(cloudName);
         if (client != null) {
             return client;
@@ -76,17 +76,13 @@ public class ClientCache {
         return null;
     }
 
-    public static Client getClient(String endpointUrl, String username, String password, String token) {
+    public static Client getClient(String endpointUrl, String token) {
         for (Cloud cloud : Jenkins.getInstance().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
                 if (ebCloud.getEndpointUrl().equals(endpointUrl)) {
                     if (StringUtils.isNotBlank(token)) {
                         if (token.equals(ebCloud.getToken())) {
-                            return getClient(ebCloud.name);
-                        }
-                    } else {
-                        if (ebCloud.getUsername().equals(username) && ebCloud.getPassword().equals(password)) {
                             return getClient(ebCloud.name);
                         }
                     }
@@ -105,22 +101,12 @@ public class ClientCache {
         private final String cloudName;
 
         public CachedClient(ElasticBoxCloud cloud) throws IOException {
-            super(cloud.getEndpointUrl(), cloud.getUsername(), cloud.getPassword(), cloud.getToken());
+            super(cloud.getEndpointUrl(), cloud.getToken());
             cloudName = cloud.name;
         }
 
         private ElasticBoxCloud getElasticBoxCloud() {
             return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloudName);
-        }
-
-        @Override
-        protected String getUsername() {
-            return getElasticBoxCloud().getUsername();
-        }
-
-        @Override
-        protected String getPassword() {
-            return getElasticBoxCloud().getPassword();
         }
 
         private void handleException(ClientException ex) {
