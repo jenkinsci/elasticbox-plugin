@@ -111,6 +111,11 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
         }
     }
 
+    @Override
+    public Level getNormalLoggingLevel() {
+        return Level.FINEST;
+    }
+
     static int getPullRequestNumber(String url) {
         return Integer.parseInt(url.substring(url.lastIndexOf('/') + 1));
     }
