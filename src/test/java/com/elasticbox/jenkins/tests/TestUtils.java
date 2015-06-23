@@ -151,7 +151,7 @@ public class TestUtils {
         for (Map.Entry<String, String> entry : textParameters.entrySet()) {
             parameters.add(new TextParameterValue(entry.getKey(), entry.getValue()));
         }
-        final QueueTaskFuture future = project.scheduleBuild2(0, new Cause.LegacyCodeCause(), new ParametersAction(parameters));
+        final QueueTaskFuture future = project.scheduleBuild2(0, new Cause.UserIdCause(), new ParametersAction(parameters));
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
         final FreeStyleBuild[]  buildHolder = new FreeStyleBuild[1];

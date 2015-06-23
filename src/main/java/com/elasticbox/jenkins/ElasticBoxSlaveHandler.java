@@ -239,7 +239,7 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             ElasticBoxSlave slave = slaveInstanceManager.getSlave(instanceId);
             if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getJSONObject("operation").getString("event"))) {
                 addToTerminatedQueue(slave);
-            } else if (Client.InstanceState.UNAVAILABLE.equals(state) && !slave.getComputer().isTemporarilyOffline()) {
+            } else if (Client.InstanceState.UNAVAILABLE.equals(state) && !slave.getComputer().isOffline()) {
                 Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO,
                         MessageFormat.format("The instance {0} is unavailable, it will be terminated.", slave.getInstancePageUrl()));
                 slavesToRemove.add(slave);

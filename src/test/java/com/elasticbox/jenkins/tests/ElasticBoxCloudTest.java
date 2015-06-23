@@ -101,24 +101,4 @@ public class ElasticBoxCloudTest extends TestBase {
         }
     }
 
-    public void testConfigRoundtrip() throws Exception {
-        JenkinsRule.WebClient webClient = jenkins.createWebClient();
-        HtmlForm configForm = webClient.goTo("configure").getFormByName("config");
-        jenkins.submit(webClient.goTo("configure").getFormByName("config"));
-//        assertEqualBeans(cloud, jenkins.getInstance().clouds.iterator().next(), "endpointUrl,maxInstances,retentionTime,username,password");
-
-        configForm.submit(configForm.getButtonByCaption("Test Connection"));
-
-        // test connection
-        PostMethod post = new PostMethod(MessageFormat.format("{0}descriptorByName/{1}/testConnection?.crumb=test", jenkins.getInstance().getRootUrl(), ElasticBoxCloud.class.getName()));
-        post.setRequestBody(Arrays.asList(new NameValuePair("endpointUrl", cloud.getEndpointUrl()),
-                new NameValuePair("username", cloud.getUsername()),
-                new NameValuePair("password", cloud.getPassword())).toArray(new NameValuePair[0]));
-        HttpClient httpClient = new HttpClient();
-        int status = httpClient.executeMethod(post);
-        String content = post.getResponseBodyAsString();
-        Assert.assertEquals(HttpStatus.SC_OK, status);
-        Assert.assertTrue(content, content.contains(MessageFormat.format("Connection to {0} was successful.", cloud.getEndpointUrl())));
-    }
-
 }
