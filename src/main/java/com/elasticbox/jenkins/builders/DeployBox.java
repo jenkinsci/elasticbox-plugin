@@ -187,9 +187,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
         String boxId = DescriptorHelper.getResolvedBoxVersion(client, workspace, box, boxVersion);
         String policyId = DescriptorHelper.resolveDeploymentPolicy(client, workspace, profile, claims);
-        logger.info("Deploying box {0} with policy {1}", client.getBoxPageUrl(boxId), client.getBoxPageUrl(policyId));
         JSONArray policyVariables = new JSONArray();
         if (StringUtils.isNotBlank(provider)) {
+            logger.info("Deploying box {0}", client.getBoxPageUrl(boxId));
+            policyId = boxId;
             JSONObject providerVariable = new JSONObject();
             providerVariable.put("type", "Text");
             providerVariable.put("name", "provider_id");
@@ -199,6 +200,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
             locationVariable.put("type", "Text");
             locationVariable.put("name", "location");
             locationVariable.put("value", location);
+            policyVariables.add(locationVariable);
+        } else {
+            logger.info("Deploying box {0} with policy {1}", client.getBoxPageUrl(boxId), client.getBoxPageUrl(policyId));
         }
         IProgressMonitor monitor = client.deploy(boxId, policyId, resolver.resolve(instanceName), workspace,
                 new ArrayList(resolvedTags), resolvedVariables, expirationTime, expirationOperation,
