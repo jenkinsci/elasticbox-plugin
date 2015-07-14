@@ -161,7 +161,8 @@ public class DescriptorHelper {
         try {
             for (Object workspace : client.getWorkspaces()) {
                 JSONObject json = (JSONObject) workspace;
-                workspaces.add(json.getString("name"), json.getString("id"));
+                String displayName = MessageFormat.format("{0} ({1})", json.getString("name"), json.getString("id"));
+                workspaces.add(displayName, json.getString("id"));
             }
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "Error fetching workspaces", ex);
