@@ -17,14 +17,17 @@ package com.elasticbox;
  * @author Phong Nguyen Le
  */
 public interface Constants {
-    public static final String AUTOMATIC_UPDATES_OFF = "off";
-    public static final String AUTOMATIC_UPDATES_MAJOR = "major";
-    public static final String AUTOMATIC_UPDATES_MINOR = "minor";
-    public static final String AUTOMATIC_UPDATES_PATCH = "patch";
+    String AUTOMATIC_UPDATES_OFF = "off";
+    String AUTOMATIC_UPDATES_MAJOR = "major";
+    String AUTOMATIC_UPDATES_MINOR = "minor";
+    String AUTOMATIC_UPDATES_PATCH = "patch";
 
-    public static final String AMAZON_PROVIDER_TYPE = "Amazon Web Services";
-    public static final String WINDOWS_CLAIM = "windows";
-    public static final String LINUX_CLAIM = "linux";
-    public static final String CLOUD_FOUNDATION_SERVICE = "CloudFormation Service";
+    String AMAZON_PROVIDER_TYPE = "Amazon Web Services";
+    String WINDOWS_CLAIM = "windows";
+    String LINUX_CLAIM = "linux";
+    String CLOUD_FOUNDATION_SERVICE = "CloudFormation Service";
+
+    String BINDING_TYPE_VARIABLE = "Binding";
+    String PRIVATE_VISIBILITY = "private";
 
 }

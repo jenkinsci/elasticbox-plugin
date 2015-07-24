@@ -301,8 +301,7 @@ var ElasticBoxVariables = (function () {
                 updateBindingOptions = function (currentValue, bindingSelect) {
                     var scope = Dom.getAttribute(bindingSelect, 'data-scope'),
                         deployBoxSteps = variableHolder.getPriorDeployBoxSteps(),
-                        descriptorElement = ElasticBoxUtils.getDescriptorElement(bindingSelect),
-                        descriptorId = Dom.getAttribute(descriptorElement, 'descriptorid'),
+                        descriptorId = variableHolder.buildStepId,
                         tagsOption = Dom.getElementBy(function (option) {
                             return Dom.getAttribute(option, 'value') === '()';
                         }, 'option', bindingSelect),
@@ -344,10 +343,8 @@ var ElasticBoxVariables = (function () {
                                 return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
                             }).join(' ') + bindingSelect.innerHTML;
                     if (!noneOption) {
-                        if (descriptorId === ElasticBoxUtils.DeployBoxDescriptorId) {
-                            if (!variable.required) {
-                                noneOptionText = 'None';
-                            }
+                        if (ElasticBoxUtils.startsWith(descriptorId, ElasticBoxUtils.DeployBoxDescriptorId)) {
+                            noneOptionText = 'None';
                         } else {
                             // Reconfigure or Update operation
                             noneOptionText = 'Unchanged';
@@ -381,19 +378,17 @@ var ElasticBoxVariables = (function () {
                 },
 
                 row = document.createElement('tr'),
-                savedValue, isBindingWithTags;
+                savedValue;
 
-            if (_.isNull(variable.value) || _.isUndefined(variable.value)) {
-                variable.value = '';
-            }
+            variable.value = '';
 
             savedValue = savedVariable && savedVariable.value || variable.value;
             if (variable.type === 'Binding') {
                 isBindingWithTags = savedValue.charAt(0) === '(' && savedValue.charAt(savedValue.length - 1) === ')';
 
                 row.innerHTML = ElasticBoxUtils.format(BINDING_VARIABLE_TEMPLATE,
-                    variable.name, '_' + variable.name, isBindingWithTags ? '()' : savedValue, variable.value, variable.scope,
-                    '_' + variable.name + '_tags', isBindingWithTags ? savedValue.substr(1, savedValue.length - 2) : '');
+                    variable.name, '_' + variable.name, '()', variable.value, variable.scope,
+                    '_' + variable.name + '_tags', savedValue.substr(1, savedValue.length - 2));
             } else {
                 row.innerHTML = ElasticBoxUtils.format(TEXT_VARIABLE_TEMPLATE, variable.name, '_' + variable.name,
                     savedValue, variable.value, variable.scope, variable.type === 'Password' ? 'password' : 'text');
@@ -426,27 +421,9 @@ var ElasticBoxVariables = (function () {
                         }
                     });
 
-                    instancesUrl = getInstancesUrl(variableHolder, variableInput);
-                    if (instancesUrl) {
-                        Connect.asyncRequest('GET', instancesUrl, {
-                            success: function (response) {
-                                variableInput.innerHTML = '';
-                                _.each(response.responseText.evalJSON(), function (instance) {
-                                    var option = document.createElement('option');
-
-                                    option.setAttribute("value", instance.id);
-                                    option.innerHTML = instance.name;
-                                    variableInput.appendChild(option);
-                                });
-                                updateBindingOptions(savedValue, variableInput);
-                                toggleBindingTagsInput(variableInput);
-                            },
-
-                            failure: function (response) {
-                                variableInput.innerHTML = ElasticBoxUtils.format('<option style="color: red;">Error {0}: {1}</option>', response.status, response.statusText);
-                            }
-                        });
-                    }
+                    variableInput.innerHTML = '';
+                    updateBindingOptions(savedValue, variableInput);
+                    toggleBindingTagsInput(variableInput);
                 }
 
             });

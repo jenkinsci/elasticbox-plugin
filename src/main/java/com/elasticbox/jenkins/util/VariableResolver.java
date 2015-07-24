@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins.util;
 
+import com.elasticbox.Constants;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxComputer;
 import com.elasticbox.jenkins.builders.IInstanceProvider;
@@ -94,22 +95,13 @@ public final class VariableResolver {
 
             if (value.startsWith("(") && value.endsWith(")")) {
                 Set<String> bindingTags = resolveTags(value.substring(1, value.length() - 1));
-                JSONArray bindingInstances = DescriptorHelper.getInstances(bindingTags, cloudName, workspace, false);
-                String errorMessage = null;
-                if (bindingInstances.isEmpty()) {
-                    errorMessage = MessageFormat.format("No instance found for binding variable {0} with the following tags: {1}",
-                            variable.getString("name"), StringUtils.join(bindingTags, ", "));
-                } else if (bindingInstances.size() > 1) {
-                    errorMessage = MessageFormat.format("Binding ambiguity for binding variable {0} with the following tags: {1}, {2} instances are found with those tags.",
-                            variable.getString("name"), StringUtils.join(bindingTags, ", "), bindingInstances.size());
-                } else {
-                    variable.put("value", bindingInstances.getJSONObject(0).getString("id"));
+                if (variable.containsKey("value")) {
+                    variable.remove("value");
                 }
-
-                if (errorMessage != null) {
-                    throw new IOException(errorMessage);
-                }
+                variable.put("tags", bindingTags);
             }
+
+            variable.put("visibility", Constants.PRIVATE_VISIBILITY);
         } else if ("File".equals(type)) {
             if (StringUtils.isNotBlank(value)) {
                 variable.put("value", new File(value).toURI().toString());

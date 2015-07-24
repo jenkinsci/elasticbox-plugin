@@ -20,10 +20,11 @@
             "name": "nested",
             "value": "com.elasticbox.jenkins.tests.boxes.test-linux-box"
         }, {
-            "required": true,
+            "required": false,
             "type": "Binding",
-            "name": "REQUIRED_BINDING",
-            "value": "AnyBox"
+            "name": "BINDING",
+            "value": "AnyBox",
+            "visibility": "private"
         }, {
             "required": false,
             "type": "File",

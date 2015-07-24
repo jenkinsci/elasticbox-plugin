@@ -125,10 +125,11 @@ public class BuildStepTest extends BuildStepTestBase {
         assertTrue(MessageFormat.format("Instance {0} is not terminated", Client.getPageUrl(cloud.getEndpointUrl(), testLinuxBoxInstance)),
                 Client.TERMINATE_OPERATIONS.contains(testLinuxBoxInstance.getJSONObject("operation").getString("event")));
         JSONArray variables = testLinuxBoxInstance.getJSONArray("variables");
-        assertEquals(testBindingBoxInstance1.getString("id"), TestUtils.findVariable(variables, "ANY_BINDING").getString("value"));
+        assertEquals(1, TestUtils.findVariable(variables, "ANY_BINDING").getJSONArray("tags").size());
+        assertTrue(TestUtils.findVariable(variables, "ANY_BINDING").getJSONArray("tags").getString(0).equals(TestUtils.TEST_BINDING_INSTANCE_TAG));
+
         assertEquals(MessageFormat.format("SLAVE_HOST_NAME: {0}", variableResolver.resolve("${SLAVE_HOST_NAME}")),
                 TestUtils.findVariable(variables, "VAR_INSIDE").getString("value"));
-        //assertNull(findVariable(variables, "HTTP"));
         assertNull(TestUtils.findVariable(variables, "VAR_WHOLE"));
 
         // check test-nested-box instance
@@ -136,8 +137,8 @@ public class BuildStepTest extends BuildStepTestBase {
                 Client.ON_OPERATIONS.contains(testNestedBoxInstance.getJSONObject("operation").getString("event")) &&
                         !Client.InstanceState.UNAVAILABLE.equals(testNestedBoxInstance.getString("state")));
         variables = testNestedBoxInstance.getJSONArray("variables");
-        assertEquals(testBindingBoxInstance2.getString("id"), TestUtils.findVariable(variables, "ANY_BINDING", "nested").getString("value"));
-        assertEquals(testBindingBoxInstance3.getString("id"), TestUtils.findVariable(variables, "REQUIRED_BINDING").getString("value"));
+        assertEquals(1, TestUtils.findVariable(variables, "ANY_BINDING", "nested").getJSONArray("tags").size());
+        assertEquals(1, TestUtils.findVariable(variables, "BINDING").getJSONArray("tags").size());
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_INSIDE").getString("value"));
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_WHOLE").getString("value"));
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_INSIDE", "nested").getString("value"));

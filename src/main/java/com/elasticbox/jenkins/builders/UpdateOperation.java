@@ -63,9 +63,11 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
         // remove empty variables and resolve binding with tags
         for (Iterator iter = resolvedVariables.iterator(); iter.hasNext();) {
             JSONObject variable = (JSONObject) iter.next();
-            String variableValue = variable.getString("value");
-            if (variableValue.isEmpty()) {
-                iter.remove();
+            if (variable.containsKey("value")) {
+                String variableValue = variable.getString("value");
+                if (variableValue.isEmpty()) {
+                    iter.remove();
+                }
             }
         }
         logger.info(MessageFormat.format("Updating the instances with variables: {0}", resolvedVariables));

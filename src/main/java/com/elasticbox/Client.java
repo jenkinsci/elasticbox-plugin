@@ -461,8 +461,13 @@ public class Client {
                 if (instanceVariable != null) {
                     if ("File".equals(variableJson.getString("type"))) {
                         uploadFileVariable(variableJson);
+                    } else if (Constants.BINDING_TYPE_VARIABLE.equals(variableJson.getString("type")) && variableJson.containsKey("tags")) {
+                        instanceVariable.put("tags", variableJson.getJSONArray("tags"));
                     }
-                    instanceVariable.put("value", variableJson.getString("value"));
+
+                    if (variableJson.containsKey("value")) {
+                        instanceVariable.put("value", variableJson.getString("value"));
+                    }
                 }
             }
             instanceVariables.addAll(newVariables);

@@ -64,6 +64,7 @@ public class TestUtils {
     static final String TEST_NESTED_BOX_NAME = "test-nested-box";
     static final String TEST_BINDING_BOX_NAME = "test-binding-box";
     static final String TEST_BINDING_BOX_INSTANCE_ID = "com.elasticbox.jenkins.tests.instances." + TEST_BINDING_BOX_NAME;
+    static final String TEST_BINDING_INSTANCE_TAG = "test-instance-binding";
 
     static final String JENKINS_SLAVE_BOX_NAME = "Linux Jenkins Slave";
     static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
