@@ -32,7 +32,7 @@
       <instances>1</instances>
       <variables>
         [
-          {"name": "REQUIRED_BINDING", "value": "com.elasticbox.jenkins.tests.instances.test-binding-box", "scope": "", "type": "Binding"}
+          {"name": "BINDING", "value": "com.elasticbox.jenkins.tests.instances.test-binding-box", "scope": "", "type": "Binding"}
         ]
       </variables>
       <expiration class="com.elasticbox.jenkins.builders.InstanceExpiration$AlwaysOn"/>

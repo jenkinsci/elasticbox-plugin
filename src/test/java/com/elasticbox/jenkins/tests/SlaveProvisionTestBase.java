@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins.tests;
 
+import com.elasticbox.Constants;
 import com.elasticbox.jenkins.AbstractSlaveConfiguration;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
@@ -22,12 +23,8 @@ import com.elasticbox.jenkins.util.SlaveInstance;
 import hudson.model.Node;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+
 import jenkins.model.JenkinsLocationConfiguration;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -68,10 +65,11 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         JSONArray variables = new JSONArray();
         SlaveConfiguration testLinuxBoxSlaveConfig = createSlaveConfiguration("test-linux-box", variables);
         JSONObject variable = new JSONObject();
-        variable.put("name", "REQUIRED_BINDING");
+        variable.put("name", "BINDING");
         variable.put("type", "Binding");
         variable.put("scope", "");
-        variable.put("value", newTestBindingBoxInstanceId);
+        variable.put("tags", Arrays.asList(TestUtils.TEST_BINDING_INSTANCE_TAG));
+        variable.put("visibility", Constants.PRIVATE_VISIBILITY);
         variables.add(variable);
         SlaveConfiguration testNestedBoxSlaveConfig = createSlaveConfiguration("test-nested-box", variables);
         variables.clear();

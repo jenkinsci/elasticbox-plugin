@@ -12,14 +12,17 @@
 
 package com.elasticbox.jenkins.tests;
 
+import com.elasticbox.Client;
 import com.elasticbox.jenkins.DescriptorHelper;
+import com.elasticbox.jenkins.util.ClientCache;
+import com.elasticbox.jenkins.util.ObjectFilter;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Result;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.assertj.core.api.Assertions;
@@ -40,10 +43,8 @@ public class BindingWithTagsTest extends BuildStepTestBase {
         ByteArrayOutputStream log = new ByteArrayOutputStream();
         build.getLogText().writeLogTo(0, log);
         String logText = log.toString();
-        Assertions.assertThat(build.getResult()).as(logText).isEqualTo(Result.FAILURE);
-        JSONArray instances = DescriptorHelper.getInstances(Collections.singleton(testTag), cloud.name, TestUtils.TEST_WORKSPACE, true);
-        Assertions.assertThat(logText).contains(
-                MessageFormat.format("Binding ambiguity for binding variable ANY_BINDING with the following tags: {0}, {1} instances are found with those tags", testTag, instances.size()));
+        Assertions.assertThat(build.getResult()).as(logText).isEqualTo(Result.SUCCESS);
+        JSONArray instances = getInstances(Collections.singleton(testTag), cloud.name, TestUtils.TEST_WORKSPACE);
 
         // verify the bindings
         JSONObject testBindingBoxInstance = TestUtils.findInstance(instances, TestUtils.TEST_BINDING_BOX_NAME);
@@ -51,18 +52,32 @@ public class BindingWithTagsTest extends BuildStepTestBase {
 
         JSONObject testLinuxBoxInstance = TestUtils.findInstance(instances, TestUtils.TEST_LINUX_BOX_NAME);
         Assert.assertNotNull(testLinuxBoxInstance);
-        JSONObject bindingVariable = TestUtils.findVariable(testLinuxBoxInstance.getJSONArray("variables"), "ANY_BINDING");
-        Assert.assertEquals(bindingVariable.toString(), testBindingBoxInstance.getString("id"), bindingVariable.getString("value"));
+        JSONArray bindings = testLinuxBoxInstance.getJSONArray("bindings");
+        Assert.assertEquals(MessageFormat.format("Number of bindings unexpected: Found {0}, expected: {1}", bindings.size(), 1),
+                bindings.size(), 1);
+        Assert.assertTrue(MessageFormat.format("Instance is not a binding: {0}", testBindingBoxInstance.getString("id")),
+                bindings.getJSONObject(0).getJSONArray("instances").contains(testBindingBoxInstance.getString("id")));
 
         JSONObject testNestedBoxInstance = TestUtils.findInstance(instances, TestUtils.TEST_NESTED_BOX_NAME);
         Assert.assertNotNull(testNestedBoxInstance);
-        JSONArray variables = testNestedBoxInstance.getJSONArray("variables");
-        bindingVariable = TestUtils.findVariable(variables, "REQUIRED_BINDING");
-        Assert.assertEquals(bindingVariable.toString(), testLinuxBoxInstance.getString("id"), bindingVariable.getString("value"));
-        bindingVariable = TestUtils.findVariable(variables, "ANY_BINDING", "nested");
-        Assert.assertEquals(bindingVariable.toString(), testBindingBoxInstance.getString("id"), bindingVariable.getString("value"));
+
+        bindings = testNestedBoxInstance.getJSONArray("bindings");
+        Assert.assertEquals(MessageFormat.format("Number of bindings unexpected: Found {0}, expected: {1}", bindings.size(), 2),
+                bindings.size(), 2);
 
         TestUtils.cleanUp(testTag, jenkins.getInstance());
+    }
+
+    private JSONArray getInstances(Set<String> tags, String cloud, String workspace) throws IOException {
+        Client client = ClientCache.getClient(cloud);
+        JSONArray instances = DescriptorHelper.getInstances(client, workspace, new DescriptorHelper.InstanceFilterByTags(tags, true));
+        List<String> instanceIDS = new ArrayList<>();
+        for (Object instanceJson : instances) {
+            JSONObject instance = (JSONObject) instanceJson;
+            instanceIDS.add(instance.getString("id"));
+        }
+
+        return client.getInstances(workspace, instanceIDS);
     }
 
 }
