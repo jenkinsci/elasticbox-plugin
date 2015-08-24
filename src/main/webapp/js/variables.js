@@ -354,6 +354,14 @@ var ElasticBoxVariables = (function () {
                         bindingSelect.innerHTML = ElasticBoxUtils.format('<option value="">{0}</option>', noneOptionText) + bindingSelect.innerHTML;
                     }
 
+                    bindingTagsInput = Dom.getNextSiblingBy(bindingSelect, function (element) {
+                        return Dom.hasClass(element, 'eb-binding-tags');
+                    });
+
+                    if (bindingTagsInput && Dom.getAttribute(bindingTagsInput, 'value') === '' && Dom.getStyle(bindingTagsInput, 'display') === 'none') {
+                        currentValue = '';
+                    }
+
                     selectedOption = Dom.getElementBy(function (option) {
                         return Dom.getAttribute(option, 'value') === currentValue;
                     }, 'option', bindingSelect);
