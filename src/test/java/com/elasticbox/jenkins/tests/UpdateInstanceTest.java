@@ -30,6 +30,7 @@ public class UpdateInstanceTest extends BuildStepTestBase {
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
         FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("jobs/test-update-instance.xml"), testParameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
+        Thread.sleep(60000);
         TestUtils.cleanUp(testTag, jenkins.getInstance());
     }
 

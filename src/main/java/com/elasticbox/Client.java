@@ -612,7 +612,8 @@ public class Client {
             String updated = instance.getString("updated");
             String state = instance.getString("state");
             String operation = instance.getJSONObject("operation").getString("event");
-            if (lastModified.equals(updated) || !FINISH_STATES.contains(state)) {
+            if (lastModified.equals(updated) || !FINISH_STATES.contains(state) ||
+                    (operations != null && !operations.contains(operation))) {
                 return false;
             }
 

@@ -160,7 +160,12 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 JSONObject instance = idToInstanceMap.get(slave.getInstanceId());
                 if (instance != null) {
                     String state = instance.getString("state");
-                    String operation = instance.getJSONObject("operation").getString("event");
+                    // This is for backward compatibility.
+                    String operation = instance.optString("operation");
+                    if (operation == null) {
+                        operation = instance.getJSONObject("operation").getString("event");
+                    }
+
                     if (Client.ON_OPERATIONS.contains(operation) && (Client.InstanceState.PROCESSING.equals(state) ||
                             Client.InstanceState.DONE.equals(state))) {
                         pendingSlaves.add(slave);
@@ -522,6 +527,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             // check for unique description
             Set<String> takenDescriptions = new HashSet<String>();
             Map<String, JSONObject> nameToExistingCloudMap = new HashMap<String, JSONObject>();
+
             for (Object cloud : clouds) {
                 JSONObject json = (JSONObject) cloud;
                 String jsonClass = "";

@@ -107,8 +107,7 @@ public class BuildStepTestBase extends TestBase {
 
     protected class TemplateResolveImpl implements TestUtils.TemplateResolver {
         public String resolve(String template) {
-            template = template.replace(TestUtils.DEFAULT_TEST_WORKSPACE,
-                    TestUtils.TEST_WORKSPACE);
+            template = template.replace(TestUtils.DEFAULT_TEST_WORKSPACE, TestUtils.TEST_WORKSPACE);
             for (TestBoxData testBoxData : testBoxDataList) {
                 try {
                     template = template.replace(testBoxData.profileId, testBoxData.getNewProfileId())
