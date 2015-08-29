@@ -31,9 +31,9 @@ import org.junit.Before;
 public abstract class ComputeServiceTestBase extends TestBase {
     protected final TestUtils.MappingTemplateResolver templateResolver = new TestUtils.MappingTemplateResolver();
     protected JSONObject testProvider;
-    protected JSONObject testProfile;    
+    protected JSONObject testProfile;
     protected JSONObject vSphereProfile;
-    
+
     @Before
     public void setupTestData() throws Exception {
         Client client = cloud.getClient();
@@ -45,7 +45,7 @@ public abstract class ComputeServiceTestBase extends TestBase {
                 linuxBox = boxJson;
                 break;
             }
-        }        
+        }
         Assert.assertNotNull(MessageFormat.format("Cannot find public box Linux Compute in workspace ''{0}''", TestUtils.TEST_WORKSPACE), linuxBox);
         String linuxBoxId = linuxBox.getString("id");
         JSONObject linuxBoxVersion = client.getBoxVersions(linuxBoxId).getJSONObject(0);
@@ -64,24 +64,24 @@ public abstract class ComputeServiceTestBase extends TestBase {
         templateResolver.map("{linux-compute-version}", linuxBoxVersion.getString("id"));
         templateResolver.map("{linux-compute-test-profile}", testProfile.getString("id"));
         if (vSphereProfile != null) {
-            templateResolver.map("{linux-compute-vsphere-profile}", vSphereProfile.getString("id"));            
+            templateResolver.map("{linux-compute-vsphere-profile}", vSphereProfile.getString("id"));
         }
-        
+
         templateResolver.map("{workspace}", TestUtils.TEST_WORKSPACE);
     }
-    
+
     protected void runTestJob(String jobTemplatePath) throws Exception {
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         try {
             Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
             String jobXml = templateResolver.resolve(TestUtils.getResourceAsString(jobTemplatePath));
             FreeStyleBuild build = TestUtils.runJob("test", jobXml, testParameters, jenkins.getInstance());
-            TestUtils.assertBuildSuccess(build);   
+            TestUtils.assertBuildSuccess(build);
             validate(build);
         } finally {
             TestUtils.cleanUp(testTag, Jenkins.getInstance());
         }
     }
-    
+
     protected abstract void validate(AbstractBuild build) throws Exception;
 }

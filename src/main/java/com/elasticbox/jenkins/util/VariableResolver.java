@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins.util;
 
+import com.elasticbox.Constants;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxComputer;
 import com.elasticbox.jenkins.builders.IInstanceProvider;
@@ -49,7 +50,7 @@ public final class VariableResolver {
     private final List<IInstanceProvider> instanceProviders;
     private final AbstractBuild build;
     private final Map<String, String> variableValueLookup;
-    
+
     public VariableResolver(AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {
         this(null, null, build, listener);
     }
@@ -63,21 +64,21 @@ public final class VariableResolver {
                 instanceProviders.add((IInstanceProvider) builder);
             }
         }
-        this.build = build;    
-        variableValueLookup = new HashMap<String, String>();  
+        this.build = build;
+        variableValueLookup = new HashMap<String, String>();
         variableValueLookup.putAll(build.getBuildVariables());
         variableValueLookup.putAll(build.getEnvironment(listener));
         Computer computer = build.getBuiltOn().toComputer();
         variableValueLookup.put("SLAVE_HOST_NAME", computer.getHostName());
         if (computer instanceof ElasticBoxComputer) {
-            variableValueLookup.put("SLAVE_HOST_ADDRESS", ((ElasticBoxComputer) computer).getHostAddress());        
+            variableValueLookup.put("SLAVE_HOST_ADDRESS", ((ElasticBoxComputer) computer).getHostAddress());
         }
     }
-    
+
     public String resolve(String value) {
         return Util.replaceMacro(value, variableValueLookup);
     }
-    
+
     public JSONObject resolve(JSONObject variable) throws IOException {
         String value = resolve(variable.getString("value"));
         variable.put("value", value);
@@ -89,40 +90,31 @@ public final class VariableResolver {
                         variable.put("value", instanceProvider.getInstanceId(build));
                         break;
                     }
-                }                
+                }
             }
-            
+
             if (value.startsWith("(") && value.endsWith(")")) {
                 Set<String> bindingTags = resolveTags(value.substring(1, value.length() - 1));
-                JSONArray bindingInstances = DescriptorHelper.getInstances(bindingTags, cloudName, workspace, false);
-                String errorMessage = null;
-                if (bindingInstances.isEmpty()) {
-                    errorMessage = MessageFormat.format("No instance found for binding variable {0} with the following tags: {1}",
-                            variable.getString("name"), StringUtils.join(bindingTags, ", "));
-                } else if (bindingInstances.size() > 1) {
-                    errorMessage = MessageFormat.format("Binding ambiguity for binding variable {0} with the following tags: {1}, {2} instances are found with those tags.",
-                            variable.getString("name"), StringUtils.join(bindingTags, ", "), bindingInstances.size());
-                } else {
-                    variable.put("value", bindingInstances.getJSONObject(0).getString("id"));
+                if (variable.containsKey("value")) {
+                    variable.remove("value");
                 }
-                
-                if (errorMessage != null) {
-                    throw new IOException(errorMessage);
-                }
-            }            
+                variable.put("tags", bindingTags);
+            }
+
+            variable.put("visibility", Constants.PRIVATE_VISIBILITY);
         } else if ("File".equals(type)) {
             if (StringUtils.isNotBlank(value)) {
-                variable.put("value", new File(value).toURI().toString());            
+                variable.put("value", new File(value).toURI().toString());
             }
         }
 
         if (variable.getString("scope").isEmpty()) {
             variable.remove("scope");
         }
-            
+
         return variable;
     }
-    
+
     public Set<String> resolveTags(String tags) {
         Set<String> tagSet = new HashSet<String>();
         if (StringUtils.isNotBlank(tags)) {
@@ -132,17 +124,17 @@ public final class VariableResolver {
                 }
             }
         }
-        return tagSet;        
+        return tagSet;
     }
-    
+
     public JSONArray resolveVariables(String jsonVariables) throws IOException {
         JSONArray resolvedVariables = parseVariables(jsonVariables);
         for (Iterator iter = resolvedVariables.iterator(); iter.hasNext();) {
             resolve((JSONObject) iter.next());
         }
-        
+
         return resolvedVariables;
-        
+
     }
-    
+
 }

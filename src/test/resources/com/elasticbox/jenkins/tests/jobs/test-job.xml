@@ -41,13 +41,16 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <environment>${BUILD_ID}</environment>
       <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;HTTP&quot;,&quot;value&quot;:&quot;80&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Port&quot;}]</variables>
+      <variables>
+        [
+            {"name":"HTTP","value":"80","scope":"","type":"Port"}
+        ]
+      </variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags>${BUILD_ID}, ${TEST_TAG}</tags>
+      <tags>${BUILD_ID},${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075</id>
@@ -56,13 +59,16 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
-      <environment>${TEST_TAG}</environment>
       <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
+      <variables>
+        [
+            {"name":"CONNECTION","value":"connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}","scope":"","type":"Text"}
+        ]
+      </variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags></tags>
+      <tags>${TEST_TAG}, test-instance-binding</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-ba74ebf0-240c-441b-bcfa-bb76d9c3689f</id>
@@ -71,13 +77,16 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
-      <environment>${JOB_NAME}-${BUILD_ID}</environment>
       <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
+      <variables>
+            [
+                {"name":"CONNECTION","value":"connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}","scope":"","type":"Text"}
+            ]
+      </variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags>${TEST_TAG}</tags>
+      <tags>${JOB_NAME}-${BUILD_ID},${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-a924d736-3021-474c-af50-ea1885c3a9cd</id>
@@ -86,18 +95,17 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
-      <environment>${TEST_TAG}</environment>
       <instances>1</instances>
       <variables>
         [
-          {"name": "REQUIRED_BINDING", "value": "com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075", "scope": "", "type": "Binding"},
+          {"name": "BINDING", "value": "(test-instance-binding)", "scope": "", "type": "Binding"},
           {"name": "VAR_FILE", "value": "${WORKSPACE}/test-nested-box.json", "scope": "", "type": "File"}
         ]
       </variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags></tags>
+      <tags>${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
@@ -107,7 +115,12 @@
           <tags>${BUILD_ID}</tags>
           <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
           <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
-          <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;VAR_INSIDE&quot;, &quot;value&quot;: &quot;SLAVE_HOST_NAME: ${SLAVE_HOST_NAME}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}]</variables>
+          <variables>
+            [
+              {"name": "ANY_BINDING", "value": "(test-instance-binding)", "scope": "", "type": "Binding"},
+              {"name": "VAR_INSIDE", "value": "SLAVE_HOST_NAME: ${SLAVE_HOST_NAME}", "scope": "", "type": "Text"}
+            ]
+          </variables>
         </com.elasticbox.jenkins.builders.UpdateOperation>
         <com.elasticbox.jenkins.builders.ReinstallOperation>
           <tags>${BUILD_ID}</tags>
@@ -127,13 +140,27 @@
           <tags>${JOB_NAME}-${BUILD_ID}</tags>
           <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
           <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
-          <variables>[{&quot;name&quot;: &quot;CONNECTION&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}, {&quot;name&quot;: &quot;HTTPS&quot;, &quot;value&quot;: &quot;9443&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Port&quot;}]</variables>
+          <variables>
+            [
+                {"name": "CONNECTION", "value": "", "scope": "", "type": "Text"},
+                {"name": "HTTPS", "value": "9443", "scope": "", "type": "Port"}
+            ]
+          </variables>
         </com.elasticbox.jenkins.builders.UpdateOperation>
         <com.elasticbox.jenkins.builders.UpdateOperation>
-          <tags> ${TEST_TAG}</tags>
+          <tags>${TEST_TAG}</tags>
           <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
           <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
-          <variables>[{&quot;name&quot;: &quot;ANY_BINDING&quot;, &quot;value&quot;: &quot;com.elasticbox.jenkins.builders.DeployBox-ba74ebf0-240c-441b-bcfa-bb76d9c3689f&quot;, &quot;scope&quot;: &quot;nested&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;REQUIRED_BINDING&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Binding&quot;}, {&quot;name&quot;: &quot;VAR_INSIDE&quot;, &quot;value&quot;: &quot;${TEST_TAG}&quot;, &quot;scope&quot;: &quot;nested&quot;, &quot;type&quot;: &quot;Text&quot;}, {&quot;name&quot;: &quot;HTTP&quot;, &quot;value&quot;: &quot;&quot;, &quot;scope&quot;: &quot;nested&quot;, &quot;type&quot;: &quot;Port&quot;}, {&quot;name&quot;: &quot;VAR_WHOLE&quot;, &quot;value&quot;: &quot;${TEST_TAG}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}, {&quot;name&quot;: &quot;VAR_INSIDE&quot;, &quot;value&quot;: &quot;${TEST_TAG}&quot;, &quot;scope&quot;: &quot;&quot;, &quot;type&quot;: &quot;Text&quot;}]</variables>
+          <variables>
+            [
+                {"name": "ANY_BINDING", "value": "(${JOB_NAME}-${BUILD_ID})", "scope": "nested", "type": "Binding"},
+                {"name": "BINDING", "value": "", "scope": "", "type": "Binding"},
+                {"name": "VAR_INSIDE", "value": "${TEST_TAG}", "scope": "nested", "type": "Text"},
+                {"name": "HTTP", "value": "", "scope": "nested", "type": "Port"},
+                {"name": "VAR_WHOLE", "value": "${TEST_TAG}", "scope": "", "type": "Text"},
+                {"name": "VAR_INSIDE", "value": "${TEST_TAG}", "scope": "", "type": "Text"}
+            ]
+          </variables>
         </com.elasticbox.jenkins.builders.UpdateOperation>
         <com.elasticbox.jenkins.builders.ReconfigureOperation>
           <tags> ${TEST_TAG}</tags>
@@ -148,13 +175,16 @@
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
-      <environment>${BUILD_TAG}</environment>
       <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
+      <variables>
+        [
+            {"name":"CONNECTION","value":"","scope":"","type":"Text"}
+        ]
+      </variables>
       <skipIfExisting>false</skipIfExisting>
       <alternateAction>none</alternateAction>
       <waitForCompletion>true</waitForCompletion>
-      <tags>${TEST_TAG}</tags>
+      <tags>${BUILD_TAG},${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
       <cloud>elasticbox</cloud>
@@ -174,9 +204,9 @@
           <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
           <variables>
               [
-                {"name": "REQUIRED_BINDING", "value": "com.elasticbox.jenkins.builders.DeployBox-ad677e58-fb68-4c51-97a1-f2e62e913771", "scope": "", "type": "Binding"}, 
+                {"name": "BINDING", "value": "(${BUILD_TAG})", "scope": "", "type": "Binding"},
                 {"name": "ANY_BINDING", "value": "", "scope": "nested", "type": "Binding"},
-                {"name": "VAR_FILE", "value": "${WORKSPACE}/jenkins.png", "scope": "nested", "type": "File"}                       
+                {"name": "VAR_FILE", "value": "${WORKSPACE}/jenkins.png", "scope": "nested", "type": "File"}
               ]
           </variables>
         </com.elasticbox.jenkins.builders.UpdateOperation>

@@ -37,7 +37,7 @@ import org.kohsuke.stapler.StaplerRequest;
 /**
  *
  * @author Phong Nguyen Le
- * @deprecated 
+ * @deprecated
  */
 public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvider {
     private final String id;
@@ -46,54 +46,54 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
 
     private transient InstanceManager instanceManager;
     private transient ElasticBoxCloud ebCloud;
-    
+
     @DataBoundConstructor
-    public ReconfigureBox(String id, String cloud, String workspace, String box, String instance, String variables, 
+    public ReconfigureBox(String id, String cloud, String workspace, String box, String instance, String variables,
             String buildStep, String buildStepVariables) {
         super(cloud, workspace, box, instance, buildStep);
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
         this.variables = variables;
         this.buildStepVariables = buildStepVariables;
-        
+
         readResolve();
     }
-    
-    static void reconfigure(String instanceId, Client client, JSONArray jsonVariables, 
+
+    static void reconfigure(String instanceId, Client client, JSONArray jsonVariables,
         boolean waitForCompletion, TaskLogger logger) throws IOException, InterruptedException {
         DescriptorHelper.removeInvalidVariables(jsonVariables, instanceId, client);
         IProgressMonitor monitor = client.reconfigure(instanceId, jsonVariables);
         String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl());
-        logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));            
+        logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
         if (waitForCompletion) {
-            logger.info("Waiting for the instance to be reconfigured");        
-            LongOperation.waitForCompletion(Client.InstanceOperation.RECONFIGURE, Collections.singletonList(monitor), 
+            logger.info("Waiting for the instance to be reconfigured");
+            LongOperation.waitForCompletion(Client.InstanceOperation.RECONFIGURE, Collections.singletonList(monitor),
                     client, logger, ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
         }
     }
-    
+
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) 
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Reconfigure Box build step");
-        
+
         IInstanceProvider instanceProvider = getInstanceProvider(build);
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
-        
+
         ebCloud = instanceProvider.getElasticBoxCloud();
         VariableResolver resolver = new VariableResolver(ebCloud.name, null, build, listener);
         String varStr = getBuildStep() == null ? variables : buildStepVariables;
         JSONArray jsonVariables = resolver.resolveVariables(varStr);
-        
+
         Client client = ebCloud.getClient();
         String instanceId = instanceProvider.getInstanceId(build);
         reconfigure(instanceId, client, jsonVariables, true, logger);
         instanceManager.setInstance(build, client.getInstance(instanceId));
         return true;
-    }    
+    }
 
     public String getId() {
         return id;
@@ -106,12 +106,12 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
     public String getBuildStepVariables() {
         return buildStepVariables;
     }
-    
+
     public String getInstanceId(AbstractBuild build) {
         JSONObject instance = instanceManager.getInstance(build);
         return instance != null ? instance.getString("id") : null;
     }
-    
+
     @Override
     public ElasticBoxCloud getElasticBoxCloud() {
         return ebCloud;
@@ -122,17 +122,17 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
         if (instanceManager == null) {
             instanceManager = new InstanceManager();
         }
-        
+
         return super.readResolve();
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends Descriptor {
         @Override
         public String getDisplayName() {
             return "ElasticBox - Reconfigure Box";
         }
-        
+
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
             if (isPreviousBuildStepSelected(formData)) {
@@ -140,21 +140,21 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
             } else {
                 formData.remove("buildStepVariables");
                 if (formData.containsKey("variables")) {
-                    JSONArray boxStack = doGetBoxStack(formData.getString("cloud"), 
+                    JSONArray boxStack = doGetBoxStack(formData.getString("cloud"),
                             formData.getString("instance")).getJsonArray();
                     formData.put("variables", DescriptorHelper.fixVariables(formData.getString("variables"), boxStack));
-                }                            
+                }
             }
-            
+
             return super.newInstance(req, formData);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud, 
+        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud,
                 @QueryParameter String instance) {
             return DescriptorHelper.getInstanceBoxStack(cloud, instance);
         }
-        
-        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud, 
+
+        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud,
                 @QueryParameter String workspace, @QueryParameter String box) {
             return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, box);
         }

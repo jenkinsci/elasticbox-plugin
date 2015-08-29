@@ -30,7 +30,7 @@ public class TaskLogger {
     public TaskListener getTaskListener() {
         return taskListener;
     }
-    
+
     public void info(String msg) {
         taskListener.getLogger().println(PREFIX + msg);
     }
@@ -38,13 +38,13 @@ public class TaskLogger {
     public void info(String format, Object... args) {
         taskListener.getLogger().println(PREFIX + MessageFormat.format(format, args));
     }
-    
+
     public void error(String msg) {
         taskListener.error(PREFIX + msg);
     }
-    
+
     public void error(String format, Object... args) {
         taskListener.error(PREFIX + MessageFormat.format(format, args));
     }
-    
+
 }

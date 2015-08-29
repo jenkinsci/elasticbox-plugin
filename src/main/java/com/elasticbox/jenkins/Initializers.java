@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.jenkins.util.Condition;
+import com.thoughtworks.xstream.XStream;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.slaves.Cloud;
@@ -30,11 +31,11 @@ import org.apache.commons.lang.StringUtils;
  */
 public class Initializers {
     private static final Logger LOGGER = Logger.getLogger(Initializers.class.getName());
-    
+
     @Initializer(after = InitMilestone.JOB_LOADED)
-    public static void tagSlaveInstances() throws IOException {        
+    public static void tagSlaveInstances() throws IOException {
         LOGGER.finest("Tagging slave instances");
-        
+
         // wait for nodes to be set
         new Condition() {
 
@@ -43,7 +44,7 @@ public class Initializers {
                 return Jenkins.getInstance().getNodes() != null;
             }
         }.waitUntilSatisfied(3000);
-        
+
         ElasticBoxExecutor.threadPool.submit(new Runnable() {
 
             public void run() {
@@ -51,21 +52,21 @@ public class Initializers {
                     SlaveInstanceManager manager = new SlaveInstanceManager();
                     for (JSONObject instance : manager.getInstances()) {
                         ElasticBoxSlave slave = manager.getSlave(instance.getString("id"));
-                        ElasticBoxSlaveHandler.getInstance().tagSlaveInstance(instance, slave);        
+                        ElasticBoxSlaveHandler.getInstance().tagSlaveInstance(instance, slave);
                     }
                 } catch (IOException ex) {
                     LOGGER.log(Level.SEVERE, "Error tagging slave instances", ex);
                 }
             }
-            
+
         });
     }
-    
+
     @Initializer(after = InitMilestone.JOB_LOADED)
     public static void setSlaveConfigurationId() throws IOException {
         LOGGER.finest("Fixing old slave configurations");
         boolean saveNeeded = false;
-        
+
         // set the ID of those slave configurations that don't have an ID assigned yet
         for (Cloud cloud : Jenkins.getInstance().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
@@ -78,7 +79,7 @@ public class Initializers {
                 }
             }
         }
-        
+
         if (saveNeeded) {
             Jenkins.getInstance().save();
         }

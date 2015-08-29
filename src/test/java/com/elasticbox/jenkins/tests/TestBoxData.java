@@ -55,5 +55,5 @@ public class TestBoxData {
     public void setNewProfileId(String newProfileId) {
         this.newProfileId = newProfileId;
     }
-    
+
 }

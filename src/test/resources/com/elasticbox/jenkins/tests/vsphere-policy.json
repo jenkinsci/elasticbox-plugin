@@ -1,6 +1,9 @@
 {
+    "claims": ["linux"],
     "profile": {
+        "compute_resource": null,
         "resource_pool": "{resource_pool}",
+        "folder": "{folder}",
         "datacenter": "{datacenter}",
         "network": "{network}",
         "customization_spec": "None",
@@ -8,12 +11,8 @@
         "template": "{template}",
         "flavor": "Tiny",
         "datastore": "{datastore}",
-        "schema": "http://elasticbox.net/schemas/{schema_version}vsphere/compute/profile"
+        "schema": "http://elasticbox.net/schemas/vsphere/compute/profile"
     },
-    "box": {
-        "name": "{box_name}"
-    },
-    "name": "{name}",
-    "provider": "vsphere",
-    "schema": "http://elasticbox.net/schemas/{schema_version}deployment-profile"
+    "schema": "http://elasticbox.net/schemas/boxes/policy",
+    "name": "{name}"
 }

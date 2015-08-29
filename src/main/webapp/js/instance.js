@@ -1,4 +1,4 @@
-/* 
+/*
  * ElasticBox Confidential
  * Copyright (c) 2014 All Right Reserved, ElasticBox Inc.
  *
@@ -16,53 +16,24 @@
 
         refresh = function (populate) {
             var takenLabels = [],
-                
+
                 areBoxesLoaded = function (deployBoxBuildStep) {
                     var boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', deployBoxBuildStep)),
                         boxVersionSelect = _.first(Dom.getElementsByClassName('eb-boxVersion', 'select', deployBoxBuildStep)),
                         boxFirstOption =  ElasticBoxUtils.getElementByTag('option', boxSelect),
                         boxVersionFirstOption = ElasticBoxUtils.getElementByTag('option', boxVersionSelect);
-                
+
                     return !boxFirstOption || !boxVersionFirstOption ||
                         (boxFirstOption.value !== boxFirstOption.innerText && boxVersionFirstOption.value !== boxVersionFirstOption.innerText);
                 },
-                
+
                 updateDeployBoxLabel = function (builder) {
-                    var buildStepLabel = Dom.getElementBy(function (element) {
-                            return ElasticBoxUtils.startsWith(element.innerHTML, ElasticBoxUtils.DeployBoxBuildStepName);
-                        }, null, builder),
-
-                        getSelectionName = function (clazz) {
-                            var select = _.first(Dom.getElementsByClassName(clazz, 'select', builder)),
-                                selectedOption = Dom.getElementBy(function (element) {
-                                    return Dom.getAttribute(element, 'value') === select.value;
-                                }, 'option', select);
-
-                            return selectedOption ? selectedOption.innerText : '';
-                        },
-                        
-                        boxName = getSelectionName('eb-box'),
-                        boxVersionName =  getSelectionName('eb-boxVersion'),
-                        duplicateIndex = 2,
-                        
-                        label;
-                    
-                    if (boxName) {
-                        label = ElasticBoxUtils.format('{0} ({1} - {2})', ElasticBoxUtils.DeployBoxBuildStepName, boxName, boxVersionName);
-                        if (_.contains(takenLabels, label)) {   
-                            for (;_.contains(takenLabels, label + ' (' + duplicateIndex + ')'); duplicateIndex++);
-                            label = label + ' (' + duplicateIndex + ')';
-                        }
-                        takenLabels.push(label);                             
-                    } else {
-                        label = ElasticBoxUtils.DeployBoxBuildStepName;
-                    }
-                    buildStepLabel.innerHTML = label;
+                    ElasticBoxUtils.updateDeployBoxLabel(builder, takenLabels);
                 },
-                                    
+
                 initializeDeployBoxBuildStepLabels = function (buildSteps) {
                     var remainingBuildSteps = [];
-                    
+
                     _.each(buildSteps, function (buildStep) {
                         if (areBoxesLoaded(buildStep)) {
                             updateDeployBoxLabel(buildStep);
@@ -70,7 +41,7 @@
                             remainingBuildSteps.push(buildStep);
                         }
                     });
-                    
+
                     if (remainingBuildSteps.length > 0) {
                         setTimeout(function () {
                             initializeDeployBoxBuildStepLabels(remainingBuildSteps);
@@ -90,7 +61,7 @@
                             setTimeout(refresh, 500);
                         }, ElasticBoxUtils.DeployBoxDescriptorId);
 
-                    }      
+                    }
 
                     Dom.getElementsByClassName('eb-boxVersion', 'select', builder, function (select) {
                         if (!_.some(Event.getListeners(select, 'change'), function (listener) {
@@ -100,10 +71,10 @@
                                 setTimeout(refresh, 500);
                             }, ElasticBoxUtils.DeployBoxDescriptorId);
 
-                        }      
+                        }
                     });
-                }), 
-                                            
+                }),
+
                 nonDeployBoxBuildSteps = Dom.getElementsBy(function (element) {
                     var descriptorId = Dom.getAttribute(element, 'descriptorid');
                     return descriptorId !== ElasticBoxUtils.DeployBoxDescriptorId && ElasticBoxUtils.startsWith(descriptorId, ElasticBoxUtils.DescriptorIdPrefix);
@@ -111,7 +82,7 @@
 
             ElasticBoxUtils.initializeBuildSteps();
             initializeDeployBoxBuildStepLabels(deployBoxBuildSteps);
-                     
+
             _.each(nonDeployBoxBuildSteps, function (buildStep) {
                 var getOptions = function () {
                         var options = ElasticBoxUtils.getPriorDeployBoxSteps(buildStep);
@@ -124,11 +95,11 @@
                             return ElasticBoxUtils.format('<option value="{0}">{1}</option>', step.id, step.name);
                         }).join(' ');
                     },
-                
+
                     descriptorId = Dom.getAttribute(buildStep, 'descriptorid'),
                     buildStepSelect = _.first(Dom.getElementsByClassName('eb-buildstep', 'select', buildStep)),
                     selectedBuildStepId = buildStepSelect && Dom.getAttribute(buildStepSelect, "value") || null,
-            
+
                     updateOptions = function (currentValue, populate) {
                         var selectedOption;
 
@@ -142,13 +113,13 @@
                         if (!selectedOption) {
                             selectedOption = _.first(Dom.getChildren(buildStepSelect));
                         }
-                        
-                        buildStepSelect.value = selectedOption ? Dom.getAttribute(selectedOption, 'value') : null; 
+
+                        buildStepSelect.value = selectedOption ? Dom.getAttribute(selectedOption, 'value') : null;
                         if (populate || currentValue !== buildStepSelect.value) {
                             fireEvent(buildStepSelect, 'change');
-                        } 
+                        }
                     },
-                    
+
                     /**
                      * Waits for the UI load and fill the options for build step (which is a single placeholder option 'loading')
                      * before updating the drop-down combo with valid build steps
@@ -156,48 +127,48 @@
                     populateOptions = function () {
                         var firstOption = Dom.getFirstChild(buildStepSelect),
                             value = firstOption ? Dom.getAttribute(firstOption, "value") : null;
-                        
+
                         if (value && value !== 'loading' && value !== firstOption.innerText) {
                             return;
                         }
-                        
+
                         if (Dom.getAttribute(firstOption, "value") === 'loading') {
                             updateOptions(selectedBuildStepId, true);
                         } else {
                             setTimeout(populateOptions, 100);
-                        } 
+                        }
                     },
-                    
+
                     toggleInstanceType = function (existing) {
                         var priorBuildStepRadio = Dom.getElementBy(function (element) {
                                     return Dom.getAttribute(element, 'value') === 'eb-instance-from-prior-buildstep';
-                                }, 'input', buildStep), 
+                                }, 'input', buildStep),
                             existingInstanceRadio = Dom.getElementBy(function (element) {
                                     return Dom.getAttribute(element, 'value') === 'eb-existing-instance';
-                                }, 'input', buildStep),                        
+                                }, 'input', buildStep),
                             existingInstanceStartRow = Dom.getAncestorByTagName(existingInstanceRadio, 'tr'),
                             priorBuildStepStartRow = Dom.getAncestorByTagName(priorBuildStepRadio, 'tr'),
                             priorBuildStepStyle = existing ? 'display: none;' : '';
-                        
+
                         existingInstanceRadio.checked = existing;
-                        priorBuildStepRadio.checked = !existing;                    
-                        Dom.setAttribute(Dom.getAncestorByTagName(buildStepSelect, 'tr'), 'style', priorBuildStepStyle);     
+                        priorBuildStepRadio.checked = !existing;
+                        Dom.setAttribute(Dom.getAncestorByTagName(buildStepSelect, 'tr'), 'style', priorBuildStepStyle);
                         Dom.setAttribute(Dom.getNextSiblingBy(priorBuildStepStartRow, function (row) {
                             return Dom.getElementsByClassName('eb-variable-inputs', 'tbody', row).length > 0;
                         }), 'style', priorBuildStepStyle);
 
                         for (var sibling = Dom.getNextSibling(existingInstanceStartRow); sibling && sibling !== priorBuildStepStartRow; sibling = Dom.getNextSibling(sibling)) {
                             Dom.setAttribute(sibling, 'style', existing ? '' : 'display: none;');
-                        }                        
+                        }
                     };
-                
+
                 if (buildStepSelect) {
                     if (populate) {
                         toggleInstanceType(!selectedBuildStepId)
                     }
 
                     populateOptions();
-                    
+
                     if (!_.some(Event.getListeners(buildStepSelect, 'focus'), function (listener) {
                         return listener.obj === descriptorId;
                     })) {

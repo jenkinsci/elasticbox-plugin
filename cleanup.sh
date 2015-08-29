@@ -6,7 +6,7 @@ then
 	exit 1
 fi
 
-ELASTICBOX_RELEASE=3
+ELASTICBOX_RELEASE="4.0"
 EBX_ADDRESS=${1}
 EBX_WORKSPACE=${2}
 TAG=${3}
@@ -17,7 +17,7 @@ function delete_boxes() {
 	for BOX_ID in ${BOX_IDS}
 	do
 		BOX_URL=${EBX_ADDRESS}/services/boxes/${BOX_ID}
-		echo Deleting box ${BOX_URL}	
+		echo Deleting box ${BOX_URL}
 		curl -k# -X DELETE -H "ElasticBox-Token: ${EBX_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" ${BOX_URL}
 	done
 }
@@ -38,7 +38,7 @@ do
 	if [ -z $(echo ${EXCLUDED_PROVIDERS} | grep ${PROVIDER_NAME}) ]
 	then
 		echo Deleting provider ${PROVIDER_URL}
-		curl -k# -X DELETE -H "ElasticBox-Token: ${EBX_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" ${PROVIDER_URL}
+		curl -k# -X DELETE -H "ElasticBox-Token: ${EBX_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" "${PROVIDER_URL}"
 		echo
 	fi
 done

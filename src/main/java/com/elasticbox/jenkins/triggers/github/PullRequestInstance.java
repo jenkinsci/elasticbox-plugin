@@ -37,5 +37,5 @@ public class PullRequestInstance {
         }
         return false;
     }
-    
+
 }

@@ -25,12 +25,13 @@ import org.junit.Test;
 public class UpdateInstanceTest extends BuildStepTestBase {
 
     @Test
-    public void testUpdateInstance() throws Exception {    
+    public void testUpdateInstance() throws Exception {
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
         FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("jobs/test-update-instance.xml"), testParameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
-        TestUtils.cleanUp(testTag, jenkins.getInstance());        
+        Thread.sleep(60000);
+        TestUtils.cleanUp(testTag, jenkins.getInstance());
     }
-        
+
 }

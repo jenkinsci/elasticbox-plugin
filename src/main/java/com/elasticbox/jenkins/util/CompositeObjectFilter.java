@@ -23,7 +23,7 @@ import net.sf.json.JSONObject;
  */
 public class CompositeObjectFilter implements ObjectFilter {
     private final List<ObjectFilter> filters;
-    
+
     public CompositeObjectFilter(ObjectFilter... filters) {
         this.filters = new ArrayList<ObjectFilter>(Arrays.asList(filters));
     }
@@ -35,12 +35,12 @@ public class CompositeObjectFilter implements ObjectFilter {
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     public void add(ObjectFilter filter) {
         filters.add(filter);
     }
-    
+
 }

@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -43,13 +41,13 @@ import org.junit.Test;
  *
  * @author Phong Nguyen Le
  */
-public class BuildStepTest extends BuildStepTestBase {    
-    
+public class BuildStepTest extends BuildStepTestBase {
+
     @Test
-    public void testBuildWithSteps() throws Exception {    
-        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test", 
+    public void testBuildWithSteps() throws Exception {
+        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-job.xml").getBytes()));
-        
+
         // copy files for file variables
         FilePath workspace = jenkins.getInstance().getWorkspaceFor(project);
         File testNestedBoxJsonFile = new File(workspace.getRemote(), "test-nested-box.json");
@@ -61,20 +59,19 @@ public class BuildStepTest extends BuildStepTestBase {
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
         FreeStyleBuild build = TestUtils.runJob(project, testParameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
-        
-        // validate the results of executed build steps   
+
+        // validate the results of executed build steps
         VariableResolver variableResolver = new VariableResolver(cloud.name, TestUtils.TEST_WORKSPACE, build, TaskListener.NULL);
         String jobNameAndBuildId = MessageFormat.format("{0}-{1}", variableResolver.resolve("${JOB_NAME}"), variableResolver.resolve("${BUILD_ID}"));
-        String buildId = variableResolver.resolve("${BUILD_ID}");
         String buildTag = variableResolver.resolve("${BUILD_TAG}");
         Client client = new Client(cloud.getEndpointUrl(), cloud.getToken());
         JSONObject testLinuxBox = getTestBox(TestUtils.TEST_LINUX_BOX_NAME);
         JSONObject testBindingBox = getTestBox(TestUtils.TEST_BINDING_BOX_NAME);
-        JSONObject testNestedBox = getTestBox(TestUtils.TEST_NESTED_BOX_NAME);        
+        JSONObject testNestedBox = getTestBox(TestUtils.TEST_NESTED_BOX_NAME);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_LINUX_BOX_NAME), testLinuxBox);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_BINDING_BOX_NAME), testBindingBox);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_NESTED_BOX_NAME), testNestedBox);
-        
+
         JSONArray instances = client.getInstances(TestUtils.TEST_WORKSPACE);
         List<String> instanceIDs = new ArrayList<String>();
         for (Object instance : instances) {
@@ -84,72 +81,68 @@ public class BuildStepTest extends BuildStepTestBase {
             }
         }
         instances = client.getInstances(TestUtils.TEST_WORKSPACE, instanceIDs);
-        
+
         JSONObject testLinuxBoxInstance = null;
         JSONObject testBindingBoxInstance1 = null;
         JSONObject testBindingBoxInstance2 = null;
         JSONObject testBindingBoxInstance3 = null;
-        JSONObject testNestedBoxInstance = null;   
-        Collection<String> testBindingBoxInstanceEnvironments = Arrays.asList(new String[] {
-            testTag, jobNameAndBuildId, buildTag
-        });
+        JSONObject testNestedBoxInstance = null;
         for (Object instance : instances) {
             JSONObject instanceJson = (JSONObject) instance;
             String mainBoxId = instanceJson.getJSONArray("boxes").getJSONObject(0).getString("id");
-            String environment = instanceJson.getString("environment");
+            JSONArray tags = instanceJson.getJSONArray("tags");
             if (mainBoxId.equals(testLinuxBox.getString("id"))) {
-                assertNull(MessageFormat.format("The build deployed more than one instance of box {0}", TestUtils.TEST_LINUX_BOX_NAME), testLinuxBoxInstance);                    
-                assertEquals(buildId, environment);
+                assertNull(MessageFormat.format("The build deployed more than one instance of box {0}", TestUtils.TEST_LINUX_BOX_NAME), testLinuxBoxInstance);
+                assertTrue(MessageFormat.format("The instance {0} does not have tag {1}", client.getPageUrl(instanceJson), testTag), tags.contains(testTag));
                 testLinuxBoxInstance = instanceJson;
             } else if (mainBoxId.equals(testNestedBox.getString("id"))) {
                 assertNull(MessageFormat.format("The build deployed more than one instance of box {0}", TestUtils.TEST_NESTED_BOX_NAME), testNestedBoxInstance);
-                assertEquals(testTag, environment);
-                testNestedBoxInstance = instanceJson;                    
+                assertTrue(MessageFormat.format("The instance {0} does not have tag {1}", client.getPageUrl(instanceJson), testTag), tags.contains(testTag));
+                testNestedBoxInstance = instanceJson;
             } else if (mainBoxId.equals(testBindingBox.getString("id"))) {
-                assertTrue(MessageFormat.format("Unexpected instance with environment ''{0}'' has been deployed", environment),
-                        testBindingBoxInstanceEnvironments.contains(environment));
-                if (environment.equals(testTag)) {
-                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, testTag), testBindingBoxInstance1);
-                    testBindingBoxInstance1 = instanceJson;
-                } else if (environment.equals(jobNameAndBuildId)) {
-                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, jobNameAndBuildId), testBindingBoxInstance2);
+                if (tags.contains(jobNameAndBuildId)) {
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with tag ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, jobNameAndBuildId), testBindingBoxInstance2);
                     testBindingBoxInstance2 = instanceJson;
-                } else if (environment.equals(buildTag)) {                        
-                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with environment ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, buildTag), testBindingBoxInstance3);
+                } else if (tags.contains(buildTag)) {
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with tag ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, buildTag), testBindingBoxInstance3);
                     testBindingBoxInstance3 = instanceJson;
-                } 
-            } else {
-                
-            }           
+                } else if (tags.contains(testTag)) {
+                    assertNull(MessageFormat.format("The build deployed more than one instance of box {0} with tags ''{1}''", TestUtils.TEST_BINDING_BOX_NAME, tags), testBindingBoxInstance1);
+                    testBindingBoxInstance1 = instanceJson;
+                } else {
+                    throw new AssertionError(MessageFormat.format("Unexpected instance of box {0} with tags ''{1}'' has been deployed", TestUtils.TEST_BINDING_BOX_NAME, tags));
+                }
+            }
         }
-        
+
         assertNotNull(testLinuxBoxInstance);
         assertNotNull(testBindingBoxInstance1);
         assertNotNull(testBindingBoxInstance2);
         assertNotNull(testBindingBoxInstance3);
         assertNotNull(testNestedBoxInstance);
-        
+
         // check test-linux-box instance
         assertTrue(MessageFormat.format("Instance {0} is not terminated", Client.getPageUrl(cloud.getEndpointUrl(), testLinuxBoxInstance)),
-                Client.TERMINATE_OPERATIONS.contains(testLinuxBoxInstance.getString("operation")));
-        JSONArray variables = testLinuxBoxInstance.getJSONArray("variables");                
-        assertEquals(testBindingBoxInstance1.getString("id"), TestUtils.findVariable(variables, "ANY_BINDING").getString("value"));
+                Client.TERMINATE_OPERATIONS.contains(testLinuxBoxInstance.getJSONObject("operation").getString("event")));
+        JSONArray variables = testLinuxBoxInstance.getJSONArray("variables");
+        assertEquals(1, TestUtils.findVariable(variables, "ANY_BINDING").getJSONArray("tags").size());
+        assertTrue(TestUtils.findVariable(variables, "ANY_BINDING").getJSONArray("tags").getString(0).equals(TestUtils.TEST_BINDING_INSTANCE_TAG));
+
         assertEquals(MessageFormat.format("SLAVE_HOST_NAME: {0}", variableResolver.resolve("${SLAVE_HOST_NAME}")),
                 TestUtils.findVariable(variables, "VAR_INSIDE").getString("value"));
-        //assertNull(findVariable(variables, "HTTP"));
         assertNull(TestUtils.findVariable(variables, "VAR_WHOLE"));
-        
+
         // check test-nested-box instance
         assertTrue(MessageFormat.format("Instance {0} is not on-line", Client.getPageUrl(cloud.getEndpointUrl(), testNestedBoxInstance)),
-                Client.ON_OPERATIONS.contains(testNestedBoxInstance.getString("operation")) && 
+                Client.ON_OPERATIONS.contains(testNestedBoxInstance.getJSONObject("operation").getString("event")) &&
                         !Client.InstanceState.UNAVAILABLE.equals(testNestedBoxInstance.getString("state")));
         variables = testNestedBoxInstance.getJSONArray("variables");
-        assertEquals(testBindingBoxInstance2.getString("id"), TestUtils.findVariable(variables, "ANY_BINDING", "nested").getString("value"));
-        assertEquals(testBindingBoxInstance3.getString("id"), TestUtils.findVariable(variables, "REQUIRED_BINDING").getString("value"));
+        assertEquals(1, TestUtils.findVariable(variables, "ANY_BINDING", "nested").getJSONArray("tags").size());
+        assertEquals(1, TestUtils.findVariable(variables, "BINDING").getJSONArray("tags").size());
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_INSIDE").getString("value"));
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_WHOLE").getString("value"));
         assertEquals(testTag, TestUtils.findVariable(variables, "VAR_INSIDE", "nested").getString("value"));
-        assertNull(TestUtils.findVariable(variables, "HTTP", "nested"));        
+        assertNull(TestUtils.findVariable(variables, "HTTP", "nested"));
         JSONObject variable = TestUtils.findVariable(variables, "VAR_FILE");
         Assert.assertNotNull(variable);
         Assert.assertNotNull("VAR_FILE is not updated", variable.getString("value"));
@@ -170,9 +163,9 @@ public class BuildStepTest extends BuildStepTestBase {
         } finally {
             fileOutput.close();;
         }
-        FileUtils.contentEquals(file, jenkinsImageFile);                
-        
+        FileUtils.contentEquals(file, jenkinsImageFile);
+
         TestUtils.cleanUp(testTag, jenkins.getInstance());
-    }    
-    
+    }
+
 }

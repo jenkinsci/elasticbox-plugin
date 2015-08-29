@@ -10,19 +10,21 @@
  * written permission is obtained from ElasticBox.
  */
 
-package com.elasticbox.jenkins;
+package com.elasticbox.jenkins.migration;
 
+import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 
 /**
- * Zero is no longer can be used for retention time for unlimited time after version 0.9.2, so we need to replace 0 
+ * Zero is no longer can be used for retention time for unlimited time after version 0.9.2, so we need to replace 0
  * with Integer.MAX_VALUE for any ElasticBox cloud, slave and slave configuration.
- * 
+ *
  * @author Phong Nguyen Le
- * @param <T> 
+ * @param <T>
  */
 public abstract class RetentionTimeConverter<T> extends XStream2.PassthruConverter<T> {
     static final String FIX_ZERO_RETENTION_TIME = "elasticbox.fixZeroRetentionTime";
@@ -68,5 +70,5 @@ public abstract class RetentionTimeConverter<T> extends XStream2.PassthruConvert
     }
 
     protected abstract void fixZeroRetentionTime(T obj);
-    
+
 }

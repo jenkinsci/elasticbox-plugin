@@ -43,48 +43,48 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 break;
             }
         }
-        Assert.assertNotNull(MessageFormat.format("Webhook {0} is not created for repository {1}", webhookUrl, gitHubRepo.getUrl()), webhook);
-        
+        Assert.assertNotNull(MessageFormat.format("Webhook {0} is not created for repository {1}", webhookUrl, gitHubRepo.getHtmlUrl()), webhook);
+
         pullRequest.open();
-        
+
         // check that the job is triggered
         new Condition() {
 
             public boolean satisfied() {
                 return project.getLastBuild() != null;
             }
-            
+
         }.waitUntilSatisfied(60);
-        Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getUrl()), project.getLastBuild());        
-        
+        Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild());
+
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15));
-        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getUrl()), project.getLastBuild().isBuilding());
-        
+        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild().isBuilding());
+
         final List<JSONObject> instances = new ArrayList<JSONObject>();
         instances.addAll(checkBuild(null));
-        
+
         final String triggerPhrase = "Jenkins test this please";
-        pullRequest.comment(triggerPhrase);        
-        Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''", triggerPhrase), 
+        pullRequest.comment(triggerPhrase);
+        Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''", triggerPhrase),
                 waitForNextBuild(30));
-        
+
         updateTriggerPhrase(triggerPhrase);
         pullRequest.comment(triggerPhrase);
-        Assert.assertNotNull(MessageFormat.format("Build is not triggered on posting trigger phrase to pull request {0} after 1 minute", pullRequest.getGHPullRequest().getUrl()), 
+        Assert.assertNotNull(MessageFormat.format("Build is not triggered on posting trigger phrase to pull request {0} after 1 minute", pullRequest.getGHPullRequest().getHtmlUrl()),
                 waitForNextBuild(60));
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15));
-        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getUrl()), project.getLastBuild().isBuilding());
-        
+        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild().isBuilding());
+
         instances.addAll(checkBuild(TestUtils.GITHUB_USER));
-        
-        pullRequest.close();      
+
+        pullRequest.close();
         waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10));
         Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());
-        
+
         pullRequest.comment(triggerPhrase);
         // check that the job is not triggered because the pull request is closed
         Assert.assertNull("Build is triggered even for closed pull request", waitForNextBuild(30));
-        
+
         // enable whitelist and check that that whitelist is enforced
         updateWhitelist(testTag);
         pullRequest.open();
@@ -94,33 +94,33 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         pullRequest.close();
         pullRequest.reopen();
         Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(30));
-        
+
         updateWhitelist(testTag + ',' + TestUtils.GITHUB_USER);
         pullRequest.reopen();
         AbstractBuild build = waitForNextBuild(60);
         Assert.assertNotNull("Build is not triggered after 1 minutes", build);
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15));
-        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getUrl()), build.isBuilding());        
+        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getUrl()), build.isBuilding());
         instances.addAll(checkBuild(null));
-        
+
         pullRequest.comment(triggerPhrase);
         build = waitForNextBuild(60);
         Assert.assertNotNull("Build is not triggered after 1 minutes", build);
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15));
         instances.addAll(checkBuild(TestUtils.GITHUB_USER));
-        
+
         pullRequest.close();
         waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10));
-        Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());  
-        
+        Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());
+
         abortBuildOfClosePullRequest();
     }
-    
+
     public void abortBuildOfClosePullRequest() throws Exception {
         pullRequest.open();
         // check that the job is triggered
         final AbstractBuild build = waitForNextBuild(60);
-        Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getUrl()), build);
+        Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), build);
         Assert.assertTrue(build.isBuilding());
         pullRequest.close();
         new Condition() {
@@ -130,7 +130,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 return !build.isBuilding();
             }
         }.waitUntilSatisfied(60);
-        
+
         for (Object instance : cloud.getClient().getInstances(TestUtils.TEST_WORKSPACE)) {
             JSONObject instanceJson = (JSONObject) instance;
             JSONArray instanceTags = instanceJson.getJSONArray("tags");
@@ -139,7 +139,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
             }
         }
 
-        Assert.assertEquals("Build is not aborted after the pull request is closed", Result.ABORTED, build.getResult());        
+        Assert.assertEquals("Build is not aborted after the pull request is closed", Result.ABORTED, build.getResult());
     }
-    
+
 }

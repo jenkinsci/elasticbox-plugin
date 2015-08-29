@@ -33,5 +33,5 @@ public abstract class Condition {
             }
         }
     }
-    
+
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ELASTICBOX_RELEASE=3
+ELASTICBOX_RELEASE="4.0"
 
 function ebx_token() {
     curl -ksf -H 'Content-Type:application/json' -X POST --data '{"email": "'$1'", "password": "'$2'"}' ${EBX_ADDRESS}/services/security/token
@@ -22,7 +22,7 @@ function upgrade_appliance() {
     fi
 
     echo Start upgrading the appliance
-    curl -ksf -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" -H "ElasticBoxRelease: ${ELASTICBOX_RELEASE}" ${EBX_ADDRESS}/services/appliance/upgrade || true
+    curl -ksf -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" "${EBX_ADDRESS}/services/appliance/upgrade" || true
 
     echo Wait for the appliance services to restart
     sleep 60

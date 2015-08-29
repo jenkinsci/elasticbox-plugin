@@ -34,8 +34,8 @@ public class PullRequestData {
 
     private transient ProjectData projectData;
 
-    public PullRequestData(GHPullRequest pullRequest, ProjectData projectData) {
-        this.pullRequestUrl = pullRequest.getUrl();
+    public PullRequestData(GHPullRequest pullRequest, ProjectData projectData) throws IOException {
+        this.pullRequestUrl = pullRequest.getHtmlUrl();
         this.headSha = pullRequest.getHead().getSha();
         this.lastUpdated = pullRequest.getUpdatedAt();
         this.instances = new ArrayList<PullRequestInstance>();
@@ -58,8 +58,8 @@ public class PullRequestData {
         return instances;
     }
 
-    public boolean update(GHPullRequest pullRequest) {
-        if (!pullRequest.getUrl().equals(pullRequestUrl)) {
+    public boolean update(GHPullRequest pullRequest) throws IOException {
+        if (!pullRequest.getHtmlUrl().equals(pullRequestUrl)) {
             return false;
         }
         if (pullRequest.getUpdatedAt().compareTo(lastUpdated) <= 0) {

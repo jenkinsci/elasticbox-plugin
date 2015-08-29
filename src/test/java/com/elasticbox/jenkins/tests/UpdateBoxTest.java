@@ -35,23 +35,23 @@ import org.junit.Test;
 public class UpdateBoxTest extends BuildStepTestBase {
 
     @Test
-    public void testUpdateBox() throws Exception {    
-        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test", 
+    public void testUpdateBox() throws Exception {
+        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-update-box.xml").getBytes()));
-        
+
         // copy files for box file variables
         FilePath workspace = jenkins.getInstance().getWorkspaceFor(project);
         File testNestedBoxJsonFile = new File(workspace.getRemote(), "test-nested-box.json");
         File jenkinsImageFile = new File(workspace.getRemote(), "jenkins.png");
         FileUtils.copyURLToFile(TestUtils.class.getResource("boxes/test-nested-box.json"), testNestedBoxJsonFile);
         FileUtils.copyURLToFile(TestUtils.class.getResource("jenkins.png"), jenkinsImageFile);
-        
-        
+
+
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
         FreeStyleBuild build = TestUtils.runJob(project, testParameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
-        
+
         // verify the box has been updated and the uploaded files are there
         String boxId = testBoxDataLookup.get("test-nested-box").getJson().getString("id");
         Client client = cloud.getClient();
@@ -76,9 +76,9 @@ public class UpdateBoxTest extends BuildStepTestBase {
         } finally {
             fileOutput.close();;
         }
-        FileUtils.contentEquals(file, jenkinsImageFile);        
-        
-        TestUtils.cleanUp(testTag, jenkins.getInstance());        
+        FileUtils.contentEquals(file, jenkinsImageFile);
+
+        TestUtils.cleanUp(testTag, jenkins.getInstance());
     }
-    
+
 }

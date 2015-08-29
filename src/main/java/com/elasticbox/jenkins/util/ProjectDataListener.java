@@ -19,9 +19,9 @@ import org.apache.tools.ant.ExtensionPoint;
  * @author Phong Nguyen Le
  */
 public abstract class ProjectDataListener extends ExtensionPoint {
-    
+
     protected void onLoad(ProjectData projectData) {}
-    
+
     protected void onSave(ProjectData projectData) {}
-    
+
 }

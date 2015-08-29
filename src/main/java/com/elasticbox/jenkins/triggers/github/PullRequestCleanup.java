@@ -47,7 +47,7 @@ import org.kohsuke.github.GitHub;
 public class PullRequestCleanup extends AsyncPeriodicWork {
     private static final long RECURRENT_PERIOD = Long.getLong(PullRequestCleanup.class.getName() + ".recurrentPeriod", TimeUnit.MINUTES.toMillis(15));
     private static final Logger LOGGER = Logger.getLogger(PullRequestCleanup.class.getName());
-    
+
     public PullRequestCleanup() {
         super(PullRequestCleanup.class.getName());
     }
@@ -65,13 +65,13 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                     pullRequestURLs = new HashSet<String>();
                     pullRequestURLsLookup.put(repoUrl, pullRequestURLs);
                 }
-                pullRequestURLs.add(pullRequestUrl);                
+                pullRequestURLs.add(pullRequestUrl);
                 List<PullRequestData> pullRequestDataList = pullRequestDataLookup.get(pullRequestUrl);
                 if (pullRequestDataList == null) {
                     pullRequestDataList = new ArrayList<PullRequestData>();
                     pullRequestDataLookup.put(pullRequestUrl, pullRequestDataList);
                 }
-                pullRequestDataList.add(pullRequestData);                
+                pullRequestDataList.add(pullRequestData);
             }
         }
         for (Map.Entry<String, Set<String>> entry : pullRequestURLsLookup.entrySet()) {
@@ -82,7 +82,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                     GHRepository repo = gitHub.getRepository(MessageFormat.format("{0}/{1}", repoName.userName, repoName.repositoryName));
                     Set<String> openPullRequestURLs = new HashSet<String>();
                     for (GHPullRequest ghPullRequest : repo.getPullRequests(GHIssueState.OPEN)) {
-                        openPullRequestURLs.add(ghPullRequest.getUrl().toString());
+                        openPullRequestURLs.add(ghPullRequest.getHtmlUrl().toString());
                     }
                     for (String pullRequestUrl : entry.getValue()) {
                         if (!openPullRequestURLs.contains(pullRequestUrl)) {
@@ -107,14 +107,19 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                     LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 }
             }
-                
+
         }
     }
-    
+
+    @Override
+    public Level getNormalLoggingLevel() {
+        return Level.FINEST;
+    }
+
     static int getPullRequestNumber(String url) {
         return Integer.parseInt(url.substring(url.lastIndexOf('/') + 1));
     }
-    
+
     static void deleteInstances(List<PullRequestData> pullRequestDataList, GHPullRequest pullRequest) {
         Set<PullRequestInstance> prInstances = new HashSet<PullRequestInstance>();
         for (PullRequestData prData : pullRequestDataList) {
@@ -126,24 +131,27 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
             if (client != null) {
                 boolean instanceExists = true;
                 try {
-                    LOGGER.info(MessageFormat.format("Terminating instance {0} of pull request {1}", client.getInstanceUrl(instance.id), pullRequest.getUrl()));
+                    LOGGER.info(MessageFormat.format("Terminating instance {0} of pull request {1}", client.getInstanceUrl(instance.id), pullRequest.getHtmlUrl()));
                     client.terminate(instance.id);
                 } catch (ClientException ex) {
                     if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
                         try {
                             client.forceTerminate(instance.id);
                         } catch (IOException ex1) {
-                            LOGGER.log(Level.SEVERE, 
+                            LOGGER.log(Level.SEVERE,
                                     MessageFormat.format("Error force-terminating instance {0}", instance.id), ex1);
+                            commentPullRequest(pullRequest, MessageFormat.format("Instance {0} couldn't be deleted. It requires manual deletion", instance.id));
                         }
                     } else if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                         LOGGER.info(MessageFormat.format("Instance {0} is not found", client.getInstanceUrl(instance.id)));
                         instanceExists = false;
                     } else {
                         LOGGER.log(Level.SEVERE, MessageFormat.format("Error terminating instance {0}", instance.id), ex);
+                        commentPullRequest(pullRequest, MessageFormat.format("Instance {0} couldn't be deleted. It requires manual deletion", instance.id));
                     }
                 } catch (IOException ex) {
                     LOGGER.log(Level.SEVERE, MessageFormat.format("Error terminating instance {0}", instance.id), ex);
+                    commentPullRequest(pullRequest, MessageFormat.format("Instance {0} couldn't be deleted. It requires manual deletion", instance.id));
                 }
                 if (instanceExists) {
                     // add the terminating instance to the DeleteInstancesWorkload so it will be deleted after its termination
@@ -153,14 +161,18 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
             }
         }
         if (!terminatingInstanceURLs.isEmpty()) {
-            try {
-                pullRequest.comment(MessageFormat.format("The following instances are being terminated: {0}",
-                        StringUtils.join(terminatingInstanceURLs, ", ")));
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getUrl(), ex));
-            }
+            commentPullRequest(pullRequest, MessageFormat.format("The following instances are being terminated: {0}",
+                    StringUtils.join(terminatingInstanceURLs, ", ")));
         }
-        
+
+    }
+
+    private static void commentPullRequest(GHPullRequest pullRequest, String message) {
+        try {
+            pullRequest.comment(message);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getUrl(), ex));
+        }
     }
 
     @Override

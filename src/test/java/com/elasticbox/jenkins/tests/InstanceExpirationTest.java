@@ -29,7 +29,7 @@ public class InstanceExpirationTest extends ComputeServiceTestBase {
     @Override
     public void setupTestData() throws Exception {
         super.setupTestData();
-        
+
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.DATE, 1);
         templateResolver.map("{expiration-date}", InstanceExpirationSchedule.DATE_FORMAT.format(calendar.getTime()));
@@ -39,7 +39,7 @@ public class InstanceExpirationTest extends ComputeServiceTestBase {
     @Test
     public void testInstanceExpiration() throws Exception {
         runTestJob("jobs/test-instance-expiration.xml");
-    }    
+    }
 
     @Override
     protected void validate(AbstractBuild build) throws Exception {
@@ -49,11 +49,11 @@ public class InstanceExpirationTest extends ComputeServiceTestBase {
             JSONArray tags = instanceJson.getJSONArray("tags");
             if (tags.contains(testTag)) {
                 if (tags.contains("always-on")) {
-                    Assert.assertFalse(instanceJson.containsKey("lease"));                    
+                    Assert.assertFalse(instanceJson.containsKey("lease"));
                 } else {
                     JSONObject lease = instanceJson.getJSONObject("lease");
                     if (tags.contains("shutdown")) {
-                        Assert.assertEquals("shutdown", lease.getString("operation"));                        
+                        Assert.assertEquals("shutdown", lease.getString("operation"));
                     } else if (tags.contains("terminate")) {
                         Assert.assertEquals("terminate", lease.getString("operation"));
                     } else {
@@ -61,7 +61,7 @@ public class InstanceExpirationTest extends ComputeServiceTestBase {
                     }
                 }
             }
-         }        
+         }
     }
-    
+
 }

@@ -13,7 +13,7 @@ Options:
     -t ElasticBox access token
     -w ElasticBox workspace
     -c Fork count
-    -g GitHub access token
+    -g GitHub test properties
     -? Display this message
 "
 
@@ -41,7 +41,7 @@ do
         t )  EBX_TOKEN=$OPTARG;;
         w )  EBX_WORKSPACE=$OPTARG;;
         c )  FORK_COUNT=$OPTARG;;
-        g )  GITHUB_TOKEN=$OPTARG;;
+        g )  GITHUB_PROPERTIES=$OPTARG;;
         h )  help; exit 0;;
         : )  help "Missing option argument for -$OPTARG"; exit 1;;
         ? )  help "Option does not exist: $OPTARG"; exit 1;;
@@ -84,9 +84,9 @@ then
     BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
 fi
 
-if [[ -n ${GITHUB_TOKEN} ]]
+if [[ -n ${GITHUB_PROPERTIES} ]]
 then
-    BUILD_OPTIONS="${BUILD_OPTIONS} -Dcom.elasticbox.jenkins.test.GitHubAccessToken=${GITHUB_TOKEN}"
+    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.GitHubProperties=${GITHUB_PROPERTIES}"
 fi
 
 cd ${REPOSITORY_FOLDER}

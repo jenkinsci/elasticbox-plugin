@@ -32,15 +32,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 /**
  *
  * @author Phong Nguyen Le
- * @deprecated 
+ * @deprecated
  */
 public class ReinstallBox extends InstanceBuildStep {
 
     @DataBoundConstructor
     public ReinstallBox(String cloud, String workspace, String box, String instance, String buildStep) {
         super(cloud, workspace, box, instance, buildStep);
-    }       
-    
+    }
+
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         TaskLogger logger = new TaskLogger(listener);
@@ -50,25 +50,25 @@ public class ReinstallBox extends InstanceBuildStep {
         if (instanceProvider == null || instanceProvider.getElasticBoxCloud() == null) {
             throw new IOException("No valid ElasticBox cloud is selected for this build step.");
         }
-        
+
         ElasticBoxCloud ebCloud = instanceProvider.getElasticBoxCloud();
         reinstall(instanceProvider.getInstanceId(build), ebCloud.getClient(), null, true, logger);
         return true;
-    }   
-    
-    static void reinstall(String instanceId, Client client, JSONArray jsonVariables, 
+    }
+
+    static void reinstall(String instanceId, Client client, JSONArray jsonVariables,
             boolean waitForCompletion, TaskLogger logger) throws IOException, InterruptedException {
-        IProgressMonitor monitor = client.reinstall(instanceId, 
+        IProgressMonitor monitor = client.reinstall(instanceId,
                 DescriptorHelper.removeInvalidVariables(jsonVariables, instanceId, client));
         String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl());
-        logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));            
+        logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));
         if (waitForCompletion) {
             logger.info("Waiting for the instance to finish reinstall");
-            LongOperation.waitForCompletion(Client.InstanceOperation.REINSTALL, Collections.singletonList(monitor), 
+            LongOperation.waitForCompletion(Client.InstanceOperation.REINSTALL, Collections.singletonList(monitor),
                     client, logger, ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
         }
     }
-    
+
 
     @Extension
     public static final class DescriptorImpl extends Descriptor {

@@ -1,7 +1,8 @@
 {
     "name": "test-nested-box",
-    "service": "Linux Compute",
-    "tags": [],
+    "requirements": [
+        "linux"
+    ],
     "variables": [
         {
             "required": false,
@@ -19,10 +20,11 @@
             "name": "nested",
             "value": "com.elasticbox.jenkins.tests.boxes.test-linux-box"
         }, {
-            "required": true,
+            "required": false,
             "type": "Binding",
-            "name": "REQUIRED_BINDING",
-            "value": "AnyBox"
+            "name": "BINDING",
+            "value": "AnyBox",
+            "visibility": "private"
         }, {
             "required": false,
             "type": "File",
@@ -33,5 +35,5 @@
     "events": {},
     "members": [],
     "id": "com.elasticbox.jenkins.tests.boxes.test-nested-box",
-    "schema": "http://elasticbox.net/schemas/{schema_version}box"
+    "schema": "http://elasticbox.net/schemas/boxes/script"
 }

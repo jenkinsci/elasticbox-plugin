@@ -27,10 +27,10 @@ import org.kohsuke.stapler.QueryParameter;
 public abstract class AbstractBuilder extends Builder {
     private final String cloud;
     private final String workspace;
-    
+
     public AbstractBuilder(String cloud, String workspace) {
         this.cloud = cloud;
-        this.workspace = workspace;   
+        this.workspace = workspace;
     }
 
     public String getCloud() {
@@ -55,7 +55,7 @@ public abstract class AbstractBuilder extends Builder {
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
             return DescriptorHelper.getWorkspaces(cloud);
         }
-        
+
         public FormValidation doCheckCloud(@QueryParameter String value) {
             return DescriptorHelper.checkCloud(value);
         }

@@ -25,12 +25,12 @@ import org.junit.Test;
 public class ManageInstanceTest extends BuildStepTestBase {
 
     @Test
-    public void testManageInstance() throws Exception {    
+    public void testManageInstance() throws Exception {
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
         FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("jobs/test-manage-instance.xml"), testParameters, jenkins.getInstance());
         TestUtils.assertBuildSuccess(build);
-        TestUtils.cleanUp(testTag, jenkins.getInstance());        
+        TestUtils.cleanUp(testTag, jenkins.getInstance());
     }
-    
+
 }

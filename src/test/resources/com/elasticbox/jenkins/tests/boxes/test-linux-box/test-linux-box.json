@@ -1,13 +1,15 @@
 {
     "name": "test-linux-box",
-    "service": "Linux Compute",
-    "tags": [],
+    "requirements": [
+        "linux"
+    ],
     "variables": [
         {
             "required": false,
             "type": "Binding",
             "name": "ANY_BINDING",
-            "value": "AnyBox"
+            "value": "AnyBox",
+            "visibility": "private"
         }, {
             "required": false,
             "type": "Port",
@@ -50,7 +52,7 @@
             "name": "JNLP_SLAVE_OPTIONS",
             "value": "",
             "visibility": "public"
-        }        
+        }
     ],
     "events": {
         "configure": "configure.sh",
@@ -58,5 +60,5 @@
     },
     "members": [],
     "id": "com.elasticbox.jenkins.tests.boxes.test-linux-box",
-    "schema": "http://elasticbox.net/schemas/{schema_version}box"
+    "schema": "http://elasticbox.net/schemas/boxes/script"
 }

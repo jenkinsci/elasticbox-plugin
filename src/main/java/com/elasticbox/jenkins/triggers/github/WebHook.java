@@ -29,7 +29,7 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 @Extension
 public class WebHook implements UnprotectedRootAction {
     private static final Logger LOGGER = Logger.getLogger(WebHook.class.getName());
-    
+
     public String getIconFileName() {
         return null;
     }
@@ -57,5 +57,5 @@ public class WebHook implements UnprotectedRootAction {
             }
         }
     }
-    
+
 }

@@ -15,7 +15,10 @@ written permission is obtained from ElasticBox.
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:entry title="${%Cloud}" field="cloud">
         <f:select clazz="required eb-cloud" />
-    </f:entry>    
+    </f:entry>
+    <f:invisibleEntry>
+        <f:textbox clazz="eb-id help" field="id"/>
+    </f:invisibleEntry>
     <f:entry title="${%Workspace}" field="workspace">
         <f:select clazz="required eb-workspace" />
     </f:entry>
@@ -25,40 +28,20 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Version}" field="boxVersion">
         <f:select clazz="required eb-boxVersion" />
     </f:entry>
-    <f:entry title="${%Deployment Profile}" field="profile">
-        <f:select clazz="required eb-profile" />
-    </f:entry>
-    <f:entry title="${%Number of Instances}" field="instances">
-        <f:textbox clazz="required number" default="1"/>
+    <f:entry title="${%Instance Name}" field="instanceName">
+        <f:textbox clazz="eb-instanceName"/>
     </f:entry>
     <f:entry title="${%Tags}" field="tags">
-        <f:textbox clazz="required"/>
+        <f:textbox/>
     </f:entry>
-    <f:invisibleEntry>
-        <f:textbox clazz="eb-id help" field="id"/>
-    </f:invisibleEntry>
-    <f:invisibleEntry>
-        <f:textbox clazz="eb-variables help" field="variables" default="[]"/>
-    </f:invisibleEntry>
+    <f:entry title="${%Automatic Updates}" field="autoUpdates">
+        <f:select clazz="required" />
+    </f:entry>
     <f:dropdownDescriptorSelector title="Expiration" field="expiration" descriptors="${descriptor.expirationOptions}" />
-    <f:entry>
-        <f:block>
-            <table style="width:100%; margin-left: 15px;" class="setting-leftspace">
-                <tbody class="eb-variable-inputs">
-                    <tr>
-                        <td>
-                            <div class="section-header">Variables</div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
 
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/lib/underscore.min.js" />
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/utils.js" />
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/variables.js" />
-            <script type="text/javascript" src="${resURL}/plugin/elasticbox/js/instance.js" />
-        </f:block>
-    </f:entry>
+    <st:include class="${descriptor.clazz}" page="variables.jelly"/>
+    <st:include class="${descriptor.clazz}" page="policy.jelly"/>
+
     <f:advanced>
         <f:section title="Advanced" />
         <f:entry title="${%If instance already exists}" field="alternateAction">

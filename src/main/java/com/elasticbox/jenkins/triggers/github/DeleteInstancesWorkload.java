@@ -40,7 +40,7 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
             terminatingInstances.add(terminatingInstance);
         }
     }
-    
+
     @Override
     protected ElasticBoxExecutor.ExecutionType getExecutionType() {
         return ElasticBoxExecutor.ExecutionType.ASYNC;
@@ -54,10 +54,10 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
             }
         }
     }
-        
+
     private boolean deleteInstance(PullRequestInstance instance, TaskListener listener) {
         Client client = ClientCache.getClient(instance.cloud);
-        
+
         JSONObject instanceJson;
         try {
             instanceJson = client.getInstance(instance.id);
@@ -68,7 +68,7 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
             log(Level.SEVERE, MessageFormat.format("Error fetching instance {0}", client.getInstanceUrl(instance.id)), ex, listener);
             return false;
         }
-        
+
         String state = instanceJson.getString("state");
         if (Client.InstanceState.UNAVAILABLE.equals(state)) {
             try {
@@ -96,7 +96,7 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
         } catch (IOException ex) {
             log(Level.SEVERE, MessageFormat.format("Error deleting instance {0}", client.getInstanceUrl(instance.id)), ex, listener);
             return false;
-        }                
+        }
     }
-    
+
 }

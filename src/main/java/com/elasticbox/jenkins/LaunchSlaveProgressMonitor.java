@@ -27,7 +27,7 @@ import org.apache.commons.lang.time.StopWatch;
  */
 class LaunchSlaveProgressMonitor implements IProgressMonitor {
     private static final Logger LOGGER = Logger.getLogger(LaunchSlaveProgressMonitor.class.getName());
-    
+
     private final Object waitLock = new Object();
     private final long creationTime;
     private final ElasticBoxSlave slave;
@@ -128,5 +128,5 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
     public long getLaunchTime() {
         return launchTime;
     }
-    
+
 }

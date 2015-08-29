@@ -36,12 +36,12 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
     private static final Logger LOGGER = Logger.getLogger(PullRequestBuildTrigger.class.getName());
-    
+
     private final String triggerPhrase;
     private final String whitelist;
-    
+
     private transient IBuildHandler buildHandler;
-    
+
     @DataBoundConstructor
     public PullRequestBuildTrigger(String triggerPhrase, String whitelist) {
         this.triggerPhrase = triggerPhrase;
@@ -50,7 +50,7 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
     public String getTriggerPhrase() {
         return triggerPhrase;
-    }   
+    }
 
     public String getWhitelist() {
         return whitelist;
@@ -58,7 +58,7 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
     public IBuildHandler getBuildHandler() {
         return buildHandler;
-    }        
+    }
 
     @Override
     public DescriptorImpl getDescriptor() {
@@ -72,24 +72,24 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
             LOGGER.severe(MessageFormat.format("Cannot retrieve build manager. {0} requires GitHub plugin, you need to install GitHub plugin in order to use it.", getDescriptor().getDisplayName()));
             return;
         }
-        
+
         try {
             buildHandler = getDescriptor().getBuildManager().createBuildHandler(project, newInstance);
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         }
-    }    
-    
+    }
+
     @Extension
     public static final class DescriptorImpl extends TriggerDescriptor {
         private String webHookExternalUrl;
 
         private transient BuildManager<?> buildManager;
-        
+
         public DescriptorImpl() {
-            load();            
+            load();
         }
-        
+
         @Override
         public boolean isApplicable(Item item) {
             return true;
@@ -113,25 +113,25 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
             webHookExternalUrl = json.getString("webHookExternalUrl").trim();
             save();
             return true;
-        }                
-        
+        }
+
         public BuildManager<?> getBuildManager() {
             if (buildManager == null) {
                 ExtensionList<BuildManager> buildManagers = Jenkins.getInstance().getExtensionList(BuildManager.class);
                 if (!buildManagers.isEmpty()) {
                     buildManager = buildManagers.get(0);
-                } 
+                }
             }
             return buildManager;
         }
-        
+
         public String getWebHookUrl() {
             String jenkinsUrl = Jenkins.getInstance().getRootUrl();
             if (jenkinsUrl == null) {
                 LOGGER.severe("Jenkins URL is not configured");
                 return null;
             }
-            
+
             if (!jenkinsUrl.endsWith("/")) {
                 jenkinsUrl += '/';
             }
@@ -141,6 +141,6 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
         public String getWebHookExternalUrl() {
             return webHookExternalUrl;
         }
-                
+
     }
 }

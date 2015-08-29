@@ -1,4 +1,4 @@
-/* 
+/*
  * ElasticBox Confidential
  * Copyright (c) 2014 All Right Reserved, ElasticBox Inc.
  *
@@ -16,7 +16,7 @@ var ElasticBoxUtils = (function() {
         DeployBoxBuildStepName = 'ElasticBox - Deploy Box',
 
         Dom = YAHOO.util.Dom,
-        
+
         startsWith = function (str, prefix) {
             return str && str.substr(0, prefix.length) === prefix;
         },
@@ -36,7 +36,7 @@ var ElasticBoxUtils = (function() {
                 waitUtil(condition, method, scope, timeout, elapsedTime - interval);
             }, interval);
         };
-        
+
     return {
         format: function () {
             var args = Array.prototype.slice.call(arguments),
@@ -51,20 +51,20 @@ var ElasticBoxUtils = (function() {
 
             return result;
         },
-        
+
         startsWith: startsWith,
-        
+
         waitUtil: function (condition, method, timeout) {
             waitUtil(condition, method, this, timeout, 0);
         },
-        
+
         uuid: function () {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
                 return v.toString(16);
             });
         },
-        
+
         getElementByTag: function (tag, root) {
             return Dom.getElementBy(function () { return true; }, tag, root);
         },
@@ -76,13 +76,13 @@ var ElasticBoxUtils = (function() {
         ManageInstanceDescriptorId: DescriptorIdPrefix + 'ManageInstance',
         ManageBoxDescriptorId: DescriptorIdPrefix + 'ManageBox',
         ElasticBoxCloudDescriptorId: 'com.elasticbox.jenkins.ElasticBoxCloud',
-        
+
         getDescriptorElement: function (childElement) {
             return Dom.getAncestorBy(childElement, function (element) {
                     return ElasticBoxUtils.startsWith(Dom.getAttribute(element, 'descriptorid'), ElasticBoxUtils.DescriptorIdPrefix);
                 });
         },
-        
+
         getDeployBoxSteps: function (deployBoxStepElements) {
             if (!deployBoxStepElements) {
                 deployBoxStepElements = Dom.getElementsBy(function (element) {
@@ -100,28 +100,82 @@ var ElasticBoxUtils = (function() {
                 };
             });
         },
-        
+
+        updateDeployBoxLabel: function (descriptorElement, takenLabels) {
+            var buildStepLabel = Dom.getElementBy(function (element) {
+                    return ElasticBoxUtils.startsWith(element.innerHTML, ElasticBoxUtils.DeployBoxBuildStepName);
+                }, null, descriptorElement),
+
+                getSelectionName = function (clazz) {
+                    var select = _.first(Dom.getElementsByClassName(clazz, 'select', descriptorElement)),
+                        selectedOption = Dom.getElementBy(function (element) {
+                            return Dom.getAttribute(element, 'value') === select.value;
+                        }, 'option', select);
+
+                    return selectedOption ? selectedOption.innerText : '';
+                },
+                isInBoxNameList = function(instanceName) {
+                    var select = _.first(Dom.getElementsByClassName('eb-box', 'select', descriptorElement));
+
+                    return Dom.getElementBy(function (element) {
+                        return element.innerText === instanceName;
+                    }, 'option', select);
+                },
+
+                instanceName = _.first(Dom.getElementsByClassName('eb-instanceName', 'input')),
+                boxName = getSelectionName('eb-box'),
+                boxVersionName =  getSelectionName('eb-boxVersion'),
+                duplicateIndex = 2,
+
+                label;
+
+            if (boxName) {
+                label = ElasticBoxUtils.format('{0} ({1} - {2})', ElasticBoxUtils.DeployBoxBuildStepName, boxName, boxVersionName);
+                if (_.isUndefined(takenLabels)) {
+                    takenLabels = [];
+                    _.each(this.getDeployBoxSteps(), function (step) {
+                        if (step.element !== descriptorElement) {
+                            takenLabels.push(step.name);
+                        }
+                    });
+                }
+                if (_.contains(takenLabels, label)) {
+                    for (;_.contains(takenLabels, label + ' (' + duplicateIndex + ')'); duplicateIndex++);
+                    label = label + ' (' + duplicateIndex + ')';
+                }
+                takenLabels.push(label);
+            } else {
+                label = ElasticBoxUtils.DeployBoxBuildStepName;
+            }
+            buildStepLabel.innerHTML = label;
+            if (instanceName != null && (isInBoxNameList(instanceName.value) || instanceName.value == "")) {
+                instanceName.value = boxName;
+            } else if (instanceName != null && !isInBoxNameList(instanceName.value)) {
+                instanceName.value = instanceName.value;
+            }
+        },
+
         getBuildStepId: function (buildStepElement) {
             var idInput = _.first(Dom.getElementsByClassName('eb-id', 'input', buildStepElement));
             return idInput ? idInput.value : null;
         },
-        
+
         setBuildStepId: function (buildStepElement) {
             var idInput = _.first(Dom.getElementsByClassName('eb-id', 'input', buildStepElement));
             if(idInput && !idInput.value) {
                 Dom.setAttribute(idInput, 'value', this.format('{0}-{1}', Dom.getAttribute(buildStepElement, 'descriptorid'), this.uuid()));
-            }            
+            }
         },
-        
+
         initializeBuildSteps: function () {
             Dom.getElementsBy(function (element) {
                 var descriptorId = Dom.getAttribute(element, "descriptorid");
                 return descriptorId && ElasticBoxUtils.startsWith(descriptorId, ElasticBoxUtils.DescriptorIdPrefix);
             }, 'div', document, function (buildStepElement) {
                 ElasticBoxUtils.setBuildStepId(buildStepElement);
-            });            
+            });
         },
-        
+
         getPriorDeployBoxSteps: function (buildStepElement, cloudName) {
             var buildStepElements = Dom.getElementsBy(function (element) {
                     return startsWith(Dom.getAttribute(element, 'descriptorid'), DescriptorIdPrefix);
@@ -130,7 +184,7 @@ var ElasticBoxUtils = (function() {
 
             _.some(buildStepElements, function (element) {
                 var cloudSelect;
-                
+
                 if (element === buildStepElement) {
                     return true;
                 }
@@ -144,7 +198,7 @@ var ElasticBoxUtils = (function() {
 
                 return false;
             });
-            
+
             return this.getDeployBoxSteps(deployBoxStepElements);
         }
     };

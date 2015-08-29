@@ -27,14 +27,14 @@ public abstract class InstanceExpiration implements Describable<InstanceExpirati
     }
 
     public static abstract class InstanceExpirationDescriptor extends Descriptor<InstanceExpiration> {
-    } 
-    
+    }
+
     public static final class AlwaysOn extends InstanceExpiration {
 
         @DataBoundConstructor
         public AlwaysOn() {
         }
-        
+
         @Extension
         public static class DescriptorImpl extends InstanceExpirationDescriptor {
 
@@ -42,8 +42,8 @@ public abstract class InstanceExpiration implements Describable<InstanceExpirati
             public String getDisplayName() {
                 return "Always on";
             }
-            
+
         }
-    }   
-    
+    }
+
 }

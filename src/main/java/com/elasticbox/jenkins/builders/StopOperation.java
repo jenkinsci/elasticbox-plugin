@@ -46,12 +46,12 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
 
     public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
         logger.info(MessageFormat.format("Executing {0}", getDescriptor().getDisplayName()));
-        
+
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         Client client = cloud.getClient();
         Set<String> resolvedTags = resolver.resolveTags(getTags());
         logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
-        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, true); 
+        JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, true);
         if (!canPerform(instances, logger)) {
             return;
         }
@@ -60,12 +60,12 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
         for (Object instance : instances) {
             if (Thread.interrupted()) {
                 throw new InterruptedException();
-            }            
+            }
             JSONObject instanceJson = (JSONObject) instance;
             IProgressMonitor monitor = client.shutdown(instanceJson.getString("id"));
             monitors.add(monitor);
             String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
-            logger.info(MessageFormat.format("Stopping instance {0}", instancePageUrl));            
+            logger.info(MessageFormat.format("Stopping instance {0}", instancePageUrl));
         }
         if (isWaitForCompletion()) {
             logger.info(MessageFormat.format("Waiting for {0} to complete stopping", instances.size() > 1 ? "the instances" : "the instance"));
@@ -77,7 +77,7 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
     protected boolean failIfNoInstanceFound() {
         return true;
     }
-    
+
     @Extension
     public static final class DescriptorImpl extends OperationDescriptor {
 
@@ -85,7 +85,7 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
         public String getDisplayName() {
             return "Stop";
         }
-        
+
     }
-    
+
 }

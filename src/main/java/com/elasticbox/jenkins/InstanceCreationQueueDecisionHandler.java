@@ -63,7 +63,7 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                         return false;
                     }
                 }
-                
+
                 LabelAtom label = ElasticBoxLabelFinder.getLabel(instanceCreator.getSlaveConfiguration(), singleUse);
                 if (singleUse) {
                     try {
@@ -81,11 +81,11 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                 } catch (IOException ex) {
                     LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 }
-                
+
             }
         }
-        
+
         return true;
     }
-    
+
 }

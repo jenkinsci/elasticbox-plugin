@@ -1,0 +1,12 @@
+{
+    "claims": ["linux"],
+    "profile": {
+        "image": "test",
+        "instances": 1,
+        "keypair": "test_keypair",
+        "location": "Simulated Location",
+        "flavor": "test.micro",
+        "schema": "http://elasticbox.net/schemas/test/compute/profile"
+    },
+    "schema": "http://elasticbox.net/schemas/boxes/policy"
+}
