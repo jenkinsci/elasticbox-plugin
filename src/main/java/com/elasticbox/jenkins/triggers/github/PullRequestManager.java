@@ -125,7 +125,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         Iterator<GitHub> withAuth = GitHubPlugin.configuration()
                 .findGithubConfig(withHost(gitHubRepoName.getHost())).iterator();
         
-        if(withAuth.hasNext()) {
+        if (withAuth.hasNext()) {
             return withAuth.next();
         } else {
             LOGGER.warning(format("Cannot find any credential for GitHub at {0}", gitHubRepoName.getHost()));

@@ -12,9 +12,8 @@
 
 package com.elasticbox.jenkins.tests;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.elasticbox.jenkins.util.Condition;
-import com.cloudbees.jenkins.Credential;
-import com.cloudbees.jenkins.GitHubPushTrigger;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
@@ -60,6 +59,9 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
+import org.jenkinsci.plugins.github.GitHubPlugin;
+import org.jenkinsci.plugins.github.config.GitHubServerConfig;
+import org.jenkinsci.plugins.github.config.GitHubTokenCredentialsCreator;
 import org.junit.Assert;
 import org.junit.Before;
 import org.kohsuke.github.*;
@@ -125,8 +127,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
         ghPullRequest.close();
         pullRequest = new MockPullRequest(ghPullRequest);
         testTag = UUID.randomUUID().toString().substring(0, 30);
-        GitHubPushTrigger.DescriptorImpl descriptor = (GitHubPushTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(GitHubPushTrigger.class);
-        descriptor.getCredentials().add(new Credential(TestUtils.GITHUB_USER, apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN));
+        
+        StandardCredentials creds = jenkins.getInstance()
+                .getDescriptorByType(GitHubTokenCredentialsCreator.class)
+                .createCredentials(apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN, TestUtils.GITHUB_USER);
+        GitHubServerConfig config = new GitHubServerConfig(creds.getId());
+        config.setApiUrl(apiGithubAddress);
+        GitHubPlugin.configuration().getConfigs().add(config);
+        
         TestUtils.TemplateResolver templateResolver = new TemplateResolveImpl() {
 
             @Override
