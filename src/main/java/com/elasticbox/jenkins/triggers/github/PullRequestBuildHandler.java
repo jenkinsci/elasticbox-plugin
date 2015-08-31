@@ -160,8 +160,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
                     StringUtils.isBlank(git.getUserRemoteConfigs().get(0).getUrl()))) {
                 LOGGER.info(MessageFormat.format("Git is selected as SCM of project {0} but not yet configured, configuring it",
                         project.getFullName()));
-                String url = MessageFormat.format("https://{0}/{1}/{2}.git", gitHubRepoName.host,
-                        gitHubRepoName.userName, gitHubRepoName.repositoryName);
+                String url = MessageFormat.format("https://{0}/{1}/{2}.git", gitHubRepoName.getHost(),
+                        gitHubRepoName.getUserName(), gitHubRepoName.getRepositoryName());
                 userRemoteConfigs.add(new UserRemoteConfig(url, "origin", "+refs/pull/*:refs/remotes/origin/pr/*", null));
                 List<BranchSpec> branches = new ArrayList<BranchSpec>();
                 branches.add(new BranchSpec("${PR_COMMIT}"));

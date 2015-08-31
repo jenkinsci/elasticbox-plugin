@@ -13,8 +13,6 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
-import com.cloudbees.jenkins.Credential;
-import com.cloudbees.jenkins.GitHubPushTrigger;
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.builders.BuilderListener;
@@ -31,26 +29,24 @@ import hudson.model.listeners.ItemListener;
 import hudson.security.ACL;
 import java.io.IOException;
 import java.io.StringReader;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
-import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.github.GitHubPlugin;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GitHub;
+
+import static java.text.MessageFormat.format;
+import static org.jenkinsci.plugins.github.config.GitHubServerConfig.withHost;
 
 /**
  *
@@ -125,58 +121,16 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         return gitHub;
     }
 
-    private String getHost(Credential credential) {
-        if (StringUtils.isNotBlank(credential.apiUrl)) {
-            try {
-                String host = new URL(credential.apiUrl).getHost();
-                return "api.github.com".equals(host) ? "github.com" : host;
-            } catch (MalformedURLException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Invalid GitHub API URL: {0}", credential.apiUrl), ex);
-            }
-        }
-
-        return "github.com";
-    }
-
-    private GitHub connect(Credential credential) {
-        try {
-            return credential.login();
-        } catch (IOException ex) {
-            LOGGER.log(Level.WARNING, MessageFormat.format("Error logging in GitHub at ''{0}'' with credential of user ''{1}''", getHost(credential), credential.username), ex);
+    private GitHub connect(GitHubRepositoryName gitHubRepoName) {
+        Iterator<GitHub> withAuth = GitHubPlugin.configuration()
+                .findGithubConfig(withHost(gitHubRepoName.getHost())).iterator();
+        
+        if(withAuth.hasNext()) {
+            return withAuth.next();
+        } else {
+            LOGGER.warning(format("Cannot find any credential for GitHub at {0}", gitHubRepoName.getHost()));
             return null;
         }
-    }
-
-    private GitHub connect(GitHubRepositoryName gitHubRepoName) {
-        List<Credential> credentials = ((GitHubPushTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(GitHubPushTrigger.class)).getCredentials();
-        List<Credential> hostMatchedCredentials = new ArrayList<Credential>();
-        // try with the credential of the repository owner first
-        for (Credential credential : credentials) {
-            if (gitHubRepoName.host.equals(getHost(credential))) {
-                if (gitHubRepoName.userName.equals(credential.username)) {
-                    GitHub gitHub = connect(credential);
-                    if (gitHub != null) {
-                        return gitHub;
-                    }
-                } else {
-                    hostMatchedCredentials.add(credential);
-                }
-            }
-        }
-
-        if (hostMatchedCredentials.isEmpty()) {
-            LOGGER.warning(MessageFormat.format("Cannot find any credential for GitHub at {0}", gitHubRepoName.host));
-        } else {
-            // try other credentials for the same host
-            for (Credential credential : hostMatchedCredentials) {
-                GitHub gitHub = connect(credential);
-                if (gitHub != null) {
-                    return gitHub;
-                }
-            }
-        }
-
-        return null;
     }
 
     private GitHub createGitHub(JSONObject payload) {

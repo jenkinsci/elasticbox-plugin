@@ -79,7 +79,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
             GitHub gitHub = PullRequestManager.getInstance().createGitHub(repoName);
             if (gitHub != null) {
                 try {
-                    GHRepository repo = gitHub.getRepository(MessageFormat.format("{0}/{1}", repoName.userName, repoName.repositoryName));
+                    GHRepository repo = gitHub.getRepository(MessageFormat.format("{0}/{1}", repoName.getUserName(), repoName.getRepositoryName()));
                     Set<String> openPullRequestURLs = new HashSet<String>();
                     for (GHPullRequest ghPullRequest : repo.getPullRequests(GHIssueState.OPEN)) {
                         openPullRequestURLs.add(ghPullRequest.getHtmlUrl().toString());
