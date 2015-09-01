@@ -89,10 +89,13 @@ public class PullRequestTestBase extends BuildStepTestBase {
     @Override
     public void setup() throws Exception {
         super.setup();
+        boolean customApiUrl;
         if (TestUtils.GITHUB_ADDRESS.equals(MessageFormat.format("https://{0}", TestUtils.GITHUB_PUBLIC_ADDRESS))) {
             apiGithubAddress = MessageFormat.format("https://api.{0}", TestUtils.GITHUB_PUBLIC_ADDRESS);
+            customApiUrl = false;
         } else {
             apiGithubAddress = MessageFormat.format("{0}/api/v3", TestUtils.GITHUB_ADDRESS);
+            customApiUrl = true;
         }
         webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
@@ -132,7 +135,9 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 .getDescriptorByType(GitHubTokenCredentialsCreator.class)
                 .createCredentials(apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN, TestUtils.GITHUB_USER);
         GitHubServerConfig config = new GitHubServerConfig(creds.getId());
+        config.setCustomApiUrl(customApiUrl);
         config.setApiUrl(apiGithubAddress);
+        config.setManageHooks(true);
         GitHubPlugin.configuration().getConfigs().add(config);
         
         TestUtils.TemplateResolver templateResolver = new TemplateResolveImpl() {
