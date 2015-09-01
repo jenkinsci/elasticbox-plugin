@@ -43,9 +43,10 @@ import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContextBuilder;
-import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -1040,24 +1041,6 @@ public class Client {
         return response;
     }
 
-    public static final HttpClient createHttpClient() throws Exception {
-        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-//        clientBuilder.setUserAgent("jenkins/elasticbox");
-        clientBuilder.setHostnameVerifier(SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-        final SSLContextBuilder contextBuilder = SSLContexts.custom();
-        contextBuilder.loadTrustMaterial(null, new TrustStrategy() {
-
-            public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                return true;
-            }
-
-        });
-        SSLContext sslContext = contextBuilder.build();
-        clientBuilder.setSslcontext(sslContext);
-        clientBuilder.setConnectionManager(new PoolingHttpClientConnectionManager());
-        return clientBuilder.build();
-    }
-
     public static synchronized HttpClient getHttpClient() {
         if (httpClient == null) {
             HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
@@ -1069,9 +1052,9 @@ public class Client {
                         return true;
                     }
                 }).build();
-                httpClientBuilder.setSslcontext(sslContext);
+                httpClientBuilder.setSSLContext(sslContext);
 
-                SSLConnectionSocketFactory sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext, SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+                SSLConnectionSocketFactory sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier());
                 Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
                         .register("http", PlainConnectionSocketFactory.getSocketFactory())
                         .register("https", sslConnectionSocketFactory).build();
