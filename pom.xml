@@ -36,11 +36,6 @@
             <name>Ignacio Fuertes</name>
             <email>ignacio@elasticbox.com</email>
         </developer>
-        <developer>
-            <id>riccardoelasticbox</id>
-            <name>Riccardo Coccioli</name>
-            <email>riccardo@elasticbox.com</email>
-        </developer>
     </developers>
 
     <scm>
