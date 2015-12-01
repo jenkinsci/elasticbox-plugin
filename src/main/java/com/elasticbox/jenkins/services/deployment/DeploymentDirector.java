@@ -5,8 +5,6 @@ import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.repository.BoxRepository;
 import com.elasticbox.jenkins.repository.error.RepositoryException;
 import com.elasticbox.jenkins.services.error.ServiceException;
-
-import javax.jnlp.ServiceManagerStub;
 import java.util.List;
 
 /**
