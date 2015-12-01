@@ -31,7 +31,6 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         try {
             final AbstractBox box = boxRepository.getBox(boxToDeploy);
             final List<PolicyBox> policies = new DeploymentDirector(boxRepository).getPolicies(workspace, box);
-
             return new DeployBoxOrderResult<List<PolicyBox>>(policies);
 
         } catch (RepositoryException e) {

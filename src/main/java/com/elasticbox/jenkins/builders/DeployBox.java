@@ -66,6 +66,9 @@ import org.kohsuke.stapler.StaplerRequest;
  * @author Phong Nguyen Le
  */
 public class DeployBox extends Builder implements IInstanceProvider {
+
+    private static final Logger logger = Logger.getLogger(DeployBox.class.getName());
+
     private static final String ACTION_NONE = "none";
     private static final String ACTION_SKIP = "skip";
     private static final String ACTION_RECONFIGURE = Client.InstanceOperation.RECONFIGURE;
@@ -502,8 +505,6 @@ public class DeployBox extends Builder implements IInstanceProvider {
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-        private static final Logger logger = Logger.getLogger(DescriptorImpl.class.getName());
-
         private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
         private static String boxName;
 
@@ -620,7 +621,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
 
-            logger.log(Level.FINE, "doFillProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box);
+            logger.log(Level.FINE, "doFill ProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box);
 
             ListBoxModel profiles = new ListBoxModel();
             try {
@@ -631,6 +632,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 }
 
             } catch (ServiceException e) {
+                logger.log(Level.SEVERE, "ERROR doFillProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box+" return an empty list");
                 e.printStackTrace();
             }
 
