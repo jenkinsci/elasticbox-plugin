@@ -15,14 +15,12 @@ written permission is obtained from ElasticBox.
 	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:section title="Deployment"/>
     <j:set var="policySelectionId" value="${descriptor.uniqueId()}"/>
-    <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Use policy with the following claims" value="claims"
-                  checked="${instance.claims != null || instance.profile == null}">
+    <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Use policy with the following claims" value="claims" checked="${instance.claims != null || instance.profile == null}">
         <f:entry field="claims" help="/plugin/elasticbox/help/claims.html">
             <f:textbox clazz="required eb-claims" />
         </f:entry>
     </f:radioBlock>
-    <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Select a specific policy" value="specific"
-                  checked="${instance.profile != null}">
+    <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Select a specific policy" value="specific" checked="${instance.profile != null}">
         <f:entry field="profile" help="/plugin/elasticbox/help/policy.html">
             <f:select clazz="required eb-profile" />
         </f:entry>

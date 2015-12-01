@@ -17,6 +17,9 @@ package com.elasticbox;
  * @author Phong Nguyen Le
  */
 public interface Constants {
+
+    String ELASTICBOX_SCHEMAS = "http://elasticbox.net/schemas";
+
     String AUTOMATIC_UPDATES_OFF = "off";
     String AUTOMATIC_UPDATES_MAJOR = "major";
     String AUTOMATIC_UPDATES_MINOR = "minor";

@@ -19,6 +19,11 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.box.policy.PolicyBox;
+import com.elasticbox.jenkins.repository.error.RepositoryException;
+import com.elasticbox.jenkins.services.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
@@ -49,7 +54,6 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
-import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
@@ -497,6 +501,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+
+        private static final Logger logger = Logger.getLogger(DescriptorImpl.class.getName());
+
         private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
         private static String boxName;
 
@@ -518,11 +525,13 @@ public class DeployBox extends Builder implements IInstanceProvider {
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
+
         }
 
         @Override
         public String getDisplayName() {
             return "ElasticBox - Deploy Box";
+
         }
 
         public List<? extends Descriptor<InstanceExpiration>> getExpirationOptions() {
@@ -531,6 +540,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+
             DescriptorHelper.fixDeploymentPolicyFormData(formData);
 
             String instanceEnvVariable = formData.getString("instanceEnvVariable").trim();
@@ -585,32 +595,61 @@ public class DeployBox extends Builder implements IInstanceProvider {
         }
 
         public ListBoxModel doFillCloudItems() {
+
             return DescriptorHelper.getClouds();
+
         }
 
-        public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
+         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
+
+             logger.log(Level.FINE, "doFillWorkspaceItems - cloud: "+cloud);
+
             return DescriptorHelper.getWorkspaces(cloud);
         }
 
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
+
+            logger.log(Level.FINE, "doFillBoxItems - cloud: "+cloud+", worksapce: "+workspace);
+
             return DescriptorHelper.getBoxes(cloud, workspace);
         }
 
-        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace,
-                @QueryParameter String box) {
+        public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
             return DescriptorHelper.getBoxVersions(cloud, workspace, box);
         }
 
-        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace,
-                @QueryParameter String box) {
-            return DescriptorHelper.getProfiles(cloud, workspace, box);
+        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
+
+            logger.log(Level.FINE, "doFillProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box);
+
+            ListBoxModel profiles = new ListBoxModel();
+            try {
+                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(cloud).deploymentOptions(workspace, box);
+                final List<PolicyBox> policyBoxList = result.getResult();
+                for (PolicyBox policyBox : policyBoxList) {
+                    profiles.add(policyBox.getName(), policyBox.getId());
+                }
+
+            } catch (ServiceException e) {
+                e.printStackTrace();
+            }
+
+//          ListBoxModel profiles = DescriptorHelper.getProfiles(cloud, workspace, box);
+
+            return profiles;
         }
 
         public ListBoxModel doFillProviderItems(@QueryParameter String cloud, @QueryParameter String workspace) {
+
+            logger.log(Level.FINE, "doFillProviderItems - cloud: "+cloud+", worksapce: "+workspace);
+
             return DescriptorHelper.getCloudFormationProviders(ClientCache.getClient(cloud), workspace);
         }
 
         public ListBoxModel doFillLocationItems(@QueryParameter String cloud, @QueryParameter String provider) {
+
+            logger.log(Level.FINE, "doFillLocationItems - cloud: "+cloud+", provider: "+provider);
+
             return DescriptorHelper.getCloudFormationLocations(ClientCache.getClient(cloud), provider);
         }
 
@@ -627,6 +666,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public FormValidation doCheckCloud(@QueryParameter String value) {
             return DescriptorHelper.checkCloud(value);
+
         }
 
         public ListBoxModel doFillAlternateActionItems() {
