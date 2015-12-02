@@ -12,6 +12,10 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.box.policy.PolicyBox;
+import com.elasticbox.jenkins.services.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.model.BuildableItemWithBuildWrappers;
@@ -24,6 +28,9 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -34,6 +41,9 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Phong Nguyen Le
  */
 public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
+
+    private static final Logger LOGGER = Logger.getLogger(ProjectSlaveConfiguration.class.getName());
+
     static final String SLAVE_CONFIGURATION = "slaveConfiguration";
 
     private final String cloud;
@@ -129,7 +139,27 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace,
                 @QueryParameter String box) {
-            return DescriptorHelper.getProfiles(ClientCache.getClient(cloud), workspace, box);
+//            return DescriptorHelper.getProfiles(ClientCache.getClient(cloud), workspace, box);
+
+            LOGGER.log(Level.FINE, "doFill ProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box);
+
+            ListBoxModel profiles = new ListBoxModel();
+            try {
+
+                if (StringUtils.isEmpty(cloud) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(box))
+                    return profiles;
+
+                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(cloud).deploymentOptions(workspace, box);
+                final List<PolicyBox> policyBoxList = result.getResult();
+                for (PolicyBox policyBox : policyBoxList) {
+                    profiles.add(policyBox.getName(), policyBox.getId());
+                }
+
+            } catch (ServiceException e) {
+                LOGGER.log(Level.SEVERE, "ERROR doFillProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box+" return an empty list");
+                e.printStackTrace();
+            }
+            return  profiles;
         }
 
         public ListBoxModel doFillProviderItems(@QueryParameter String cloud, @QueryParameter String workspace) {

@@ -625,6 +625,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
             ListBoxModel profiles = new ListBoxModel();
             try {
+
+                if (StringUtils.isEmpty(cloud) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(box))
+                    return profiles;
+
                 final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(cloud).deploymentOptions(workspace, box);
                 final List<PolicyBox> policyBoxList = result.getResult();
                 for (PolicyBox policyBox : policyBoxList) {
