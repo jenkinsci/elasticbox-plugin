@@ -18,6 +18,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class BoxFactoryTest {
 
+    
     private String  box = "{\n" +
             "\"updated\": \"2015-11-17 16:47:06.005841\",\n" +
             "\"automatic_updates\": \"off\",\n" +
