@@ -1,6 +1,8 @@
 package com.elasticbox.jenkins.services.deployment;
 
 import com.elasticbox.jenkins.model.box.AbstractBox;
+import com.elasticbox.jenkins.model.box.BoxType;
+import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBoxType;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBox;
 import com.elasticbox.jenkins.model.box.cloudformation.ManagedCloudFormationBox;
@@ -29,9 +31,9 @@ public class CloudFormationManagedDeploymentType extends AbstractDeploymentType 
 
     @Override
     public boolean canManage(AbstractBox boxToDeploy) {
-        if (boxToDeploy.isCloudFormationBox()) {
+        if (boxToDeploy.getType() == BoxType.CLOUDFORMATION) {
             CloudFormationBox cloudFormationBox = (CloudFormationBox)boxToDeploy;
-            return cloudFormationBox.isManagedCloudFormationBox();
+            return cloudFormationBox.getCloudFormationType() == CloudFormationBoxType.MANAGED;
         }
 
         return false;

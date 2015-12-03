@@ -7,8 +7,4 @@ public interface CloudFormationBox {
 
     CloudFormationBoxType getCloudFormationType();
 
-    boolean isManagedCloudFormationBox();
-
-    boolean isTemplateCloudFormationBox();
-
 }

@@ -20,16 +20,6 @@ public class ManagedCloudFormationBox extends PolicyBox implements CloudFormatio
         return CloudFormationBoxType.MANAGED;
     }
 
-    @Override
-    public boolean isManagedCloudFormationBox() {
-        return true;
-    }
-
-    @Override
-    public boolean isTemplateCloudFormationBox() {
-        return false;
-    }
-
     public enum ManagedCloudFormationProfileType implements ProfileType {
 
         RDS("/aws/rds/profile"),

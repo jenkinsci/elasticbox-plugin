@@ -25,16 +25,6 @@ public class TemplateCloudFormationBox extends AbstractBox implements CloudForma
     }
 
     @Override
-    public boolean isManagedCloudFormationBox() {
-        return false;
-    }
-
-    @Override
-    public boolean isTemplateCloudFormationBox() {
-        return true;
-    }
-
-    @Override
     public String[] getRequirements() {
         return requirements;
     }

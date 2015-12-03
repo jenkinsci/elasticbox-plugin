@@ -1,7 +1,6 @@
 package com.elasticbox.jenkins.model.box;
 
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
-import org.jfree.data.time.Week;
 
 /**
  * Created by serna on 11/26/15.

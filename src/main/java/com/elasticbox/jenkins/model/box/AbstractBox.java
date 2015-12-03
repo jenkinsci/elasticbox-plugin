@@ -28,25 +28,4 @@ public class AbstractBox  extends AbstractModel {
         return type;
     }
 
-    public boolean isApplicationBox(){
-        if(this.getType() == BoxType.APPLICATION){
-            return true;
-        }
-        return false;
-    }
-
-    public boolean isCloudFormationBox(){
-        if(this.getType() == BoxType.CLOUDFORMATION){
-            return true;
-        }
-        return false;
-    }
-
-    public boolean isDockerBox(){
-        if(this.getType() == BoxType.DOCKER){
-            return true;
-        }
-        return false;
-    }
-
 }
