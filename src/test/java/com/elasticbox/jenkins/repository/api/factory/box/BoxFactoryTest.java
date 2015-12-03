@@ -18,8 +18,8 @@ import static org.junit.Assert.assertTrue;
  */
 public class BoxFactoryTest {
 
-    
-    private String  box = "{\n" +
+
+    private String  scriptBox = "{\n" +
             "\"updated\": \"2015-11-17 16:47:06.005841\",\n" +
             "\"automatic_updates\": \"off\",\n" +
             "\"requirements\": [\n" +
@@ -237,7 +237,7 @@ public class BoxFactoryTest {
     public void testCreateScriptBox() throws ElasticBoxModelException {
 
 
-        JSONObject jsonBox = (JSONObject) JSONSerializer.toJSON(box);
+        JSONObject jsonBox = (JSONObject) JSONSerializer.toJSON(scriptBox);
 
         ScriptBoxFactory factory = new ScriptBoxFactory();
         final ScriptBox createdBox = factory.create(jsonBox);
@@ -300,7 +300,7 @@ public class BoxFactoryTest {
     public void testCreateAbstractBoxType() throws ElasticBoxModelException {
 
         BoxType [] types = new BoxType[]{BoxType.SCRIPT, BoxType.POLICY, BoxType.CLOUDFORMATION, BoxType.CLOUDFORMATION};
-        String [] boxes = new String[]{box, policyBox, templateCloudFormationBox, managedCloudFormationBox};
+        String [] boxes = new String[]{scriptBox, policyBox, templateCloudFormationBox, managedCloudFormationBox};
 
         int counter = 0;
         for (String box : boxes) {
