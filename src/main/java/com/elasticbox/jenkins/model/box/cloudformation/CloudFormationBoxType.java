@@ -32,7 +32,7 @@ public enum CloudFormationBoxType {
 
     public abstract String[] getIncludedTypes();
 
-    public static CloudFormationBoxType geType(String type) throws ElasticBoxModelException {
+    public static CloudFormationBoxType getType(String type) throws ElasticBoxModelException {
         CloudFormationBoxType[] values = CloudFormationBoxType.values();
         for (CloudFormationBoxType cloudFormationBoxType : values) {
             if ( ArrayUtils.contains(cloudFormationBoxType.getIncludedTypes(), type) ) {

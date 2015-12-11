@@ -1,7 +1,8 @@
 package com.elasticbox.jenkins.repository.api.criteria;
 
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
-import com.elasticbox.jenkins.repository.api.factory.Factory;
+import com.elasticbox.jenkins.repository.api.factory.ModelFactory;
+import com.elasticbox.jenkins.repository.api.factory.box.GenericBoxFactory;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
@@ -15,9 +16,9 @@ import java.util.List;
  */
 public abstract class AbstractJSONCriteria<T> implements JSONCriteria<T> {
 
-    private Factory<T> factory;
+    private ModelFactory<T> factory;
 
-    public AbstractJSONCriteria(Factory<T> factory) {
+    public AbstractJSONCriteria(ModelFactory<T> factory) {
         this.factory = factory;
     }
 

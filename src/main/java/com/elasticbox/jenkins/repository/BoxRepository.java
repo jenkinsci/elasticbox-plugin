@@ -12,7 +12,7 @@ import java.util.List;
  */
 public interface BoxRepository {
 
-    public List<ScriptBox> getNoPolicyBoxes(String workspace) throws RepositoryException;
+    public List<AbstractBox> getNoPolicyBoxes(String workspace) throws RepositoryException;
 
     public List<PolicyBox> getCloudFormationPolicyBoxes(String workspace) throws RepositoryException;
 

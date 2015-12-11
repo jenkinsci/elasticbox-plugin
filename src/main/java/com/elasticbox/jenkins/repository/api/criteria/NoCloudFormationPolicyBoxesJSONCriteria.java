@@ -3,7 +3,8 @@ package com.elasticbox.jenkins.repository.api.criteria;
 import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.profile.PolicyProfileType;
-import com.elasticbox.jenkins.repository.api.factory.Factory;
+import com.elasticbox.jenkins.repository.api.factory.box.BoxFactory;
+import com.elasticbox.jenkins.repository.api.factory.box.PolicyBoxFactory;
 import net.sf.json.JSONObject;
 
 /**
@@ -11,8 +12,12 @@ import net.sf.json.JSONObject;
  */
 public class NoCloudFormationPolicyBoxesJSONCriteria extends BoxJSONCriteria<PolicyBox> {
 
-    public NoCloudFormationPolicyBoxesJSONCriteria(Factory<PolicyBox> factory) {
+    public NoCloudFormationPolicyBoxesJSONCriteria(BoxFactory<PolicyBox> factory) {
         super(factory);
+    }
+
+    public NoCloudFormationPolicyBoxesJSONCriteria() {
+        super(new PolicyBoxFactory());
     }
 
     @Override

@@ -29,7 +29,7 @@ public enum BoxType{
         return false;
     }
 
-    public static BoxType geType(String schema) throws ElasticBoxModelException {
+    public static BoxType getType(String schema) throws ElasticBoxModelException {
         BoxType[] values = BoxType.values();
         for (BoxType boxType : values) {
             if(boxType.isType(schema))

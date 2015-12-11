@@ -8,9 +8,6 @@ import com.elasticbox.jenkins.model.profile.ProfileType;
 import com.elasticbox.jenkins.model.provider.Provider;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Created by serna on 11/26/15.
  */
@@ -33,7 +30,7 @@ public class PolicyBox extends AbstractBox {
         this.profileType = type;
     }
 
-    public ProfileType getProfile() {
+    public ProfileType getProfileType() {
         return profileType;
     }
 
@@ -56,7 +53,7 @@ public class PolicyBox extends AbstractBox {
         public ComplexBuilder() {}
 
         public IdBuilder withProfileType( String schema ){
-            newPolicyProfileType = PolicyProfileType.geType(schema);
+            newPolicyProfileType = PolicyProfileType.getType(schema);
             return new IdBuilder();
         }
 

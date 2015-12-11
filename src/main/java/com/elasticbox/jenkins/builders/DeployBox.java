@@ -640,8 +640,6 @@ public class DeployBox extends Builder implements IInstanceProvider {
                 e.printStackTrace();
             }
 
-//          ListBoxModel profiles = DescriptorHelper.getProfiles(cloud, workspace, box);
-
             return profiles;
         }
 

@@ -10,7 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * Created by serna on 11/29/15.
  */
-public class PolicyBoxFactory implements IBoxFactory<PolicyBox>{
+public class PolicyBoxFactory extends AbstractBoxFactory<PolicyBox>{
 
     @Override
     public PolicyBox create(JSONObject jsonObject) throws ElasticBoxModelException {
@@ -25,17 +25,9 @@ public class PolicyBoxFactory implements IBoxFactory<PolicyBox>{
         return policyBox;
     }
 
+
     @Override
     public boolean canCreate(JSONObject jsonObject) {
-        final String schema = jsonObject.getString("schema");
-        if(StringUtils.isNotBlank(schema) && BoxType.isBox(schema)){
-            try {
-                final BoxType boxType  = BoxType.geType(schema);
-                return boxType == BoxType.POLICY;
-            } catch (ElasticBoxModelException e) {
-                e.printStackTrace();
-            }
-        }
-        return false;
+        return super.canCreate(jsonObject, BoxType.POLICY);
     }
 }

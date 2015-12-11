@@ -1,7 +1,8 @@
 package com.elasticbox.jenkins.repository.api.criteria;
 
 import com.elasticbox.jenkins.model.box.BoxType;
-import com.elasticbox.jenkins.repository.api.factory.Factory;
+import com.elasticbox.jenkins.repository.api.factory.ModelFactory;
+import com.elasticbox.jenkins.repository.api.factory.box.BoxFactory;
 import net.sf.json.JSONObject;
 
 /**
@@ -9,7 +10,7 @@ import net.sf.json.JSONObject;
  */
 public abstract class BoxJSONCriteria<T> extends AbstractJSONCriteria<T> {
 
-    public BoxJSONCriteria(Factory<T> factory) {
+    public BoxJSONCriteria(BoxFactory<T> factory) {
         super(factory);
     }
 

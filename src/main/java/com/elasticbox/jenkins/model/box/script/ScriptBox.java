@@ -15,14 +15,14 @@ import java.util.List;
  */
 public class ScriptBox extends AbstractBox implements ClaimsVsRequirementsDeployable {
 
-    private String [] requirements;
+    private String[] requirements;
 
-    private ScriptBox(String id, String name, String [] requirements) {
+    private ScriptBox(String id, String name, String[] requirements) {
         super(id, name, BoxType.SCRIPT);
         this.requirements = requirements;
     }
 
-    public String [] getRequirements() {
+    public String[] getRequirements() {
         return requirements;
     }
 
@@ -30,9 +30,10 @@ public class ScriptBox extends AbstractBox implements ClaimsVsRequirementsDeploy
 
         private String newId;
         private String newName;
-        private String [] newRequirements;
+        private String[] newRequirements;
 
-        public ComplexBuilder() {}
+        public ComplexBuilder() {
+        }
 
         public NameBuilder withId(String id) {
             newId = id;
@@ -40,25 +41,28 @@ public class ScriptBox extends AbstractBox implements ClaimsVsRequirementsDeploy
         }
 
         public class NameBuilder {
-            private NameBuilder() {}
-            public BoxBuilder withName( String name ) {
+            private NameBuilder() {
+            }
+
+            public BoxBuilder withName(String name) {
                 newName = name;
                 return new BoxBuilder();
             }
         }
 
         public class BoxBuilder {
-            private BoxBuilder() {}
+            private BoxBuilder() {
+            }
 
-            public BoxBuilder withRequirements(String [] requirements){
+            public BoxBuilder withRequirements(String[] requirements) {
                 newRequirements = requirements;
-                return  this;
+                return this;
             }
 
             public ScriptBox build() throws ElasticBoxModelException {
                 if (StringUtils.isNotEmpty(newId) &&
-                            StringUtils.isNotEmpty(newName)){
-                                return  new ScriptBox(newId, newName, newRequirements);
+                        StringUtils.isNotEmpty(newName)) {
+                    return new ScriptBox(newId, newName, newRequirements);
                 }
 
                 throw new ElasticBoxModelException("Not valid parameters for building Box");

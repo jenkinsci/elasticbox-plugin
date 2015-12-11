@@ -1,16 +1,22 @@
 package com.elasticbox.jenkins.repository.api.criteria;
 
+import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
-import com.elasticbox.jenkins.model.box.script.ScriptBox;
-import com.elasticbox.jenkins.repository.api.factory.Factory;
+import com.elasticbox.jenkins.repository.api.factory.ModelFactory;
+import com.elasticbox.jenkins.repository.api.factory.box.BoxFactory;
+import com.elasticbox.jenkins.repository.api.factory.box.GenericBoxFactory;
 import net.sf.json.JSONObject;
 
 /**
  * Created by serna on 11/26/15.
  */
-public class NoPolicyBoxesJSONCriteria extends BoxJSONCriteria<ScriptBox> {
+public class NoPolicyBoxesJSONCriteria extends BoxJSONCriteria<AbstractBox> {
 
-    public NoPolicyBoxesJSONCriteria(Factory<ScriptBox> factory) {
+    public NoPolicyBoxesJSONCriteria() {
+        super(new GenericBoxFactory());
+    }
+
+    public NoPolicyBoxesJSONCriteria(BoxFactory<AbstractBox> factory) {
         super(factory);
     }
 

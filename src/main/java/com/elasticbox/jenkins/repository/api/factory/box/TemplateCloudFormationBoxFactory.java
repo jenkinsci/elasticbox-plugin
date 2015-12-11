@@ -6,12 +6,17 @@ import com.elasticbox.jenkins.model.box.cloudformation.TemplateCloudFormationBox
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.repository.api.factory.JSONFactoryUtils;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang3.StringUtils;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by serna on 11/29/15.
  */
-public class TemplateCloudFormationBoxFactory implements IBoxFactory<TemplateCloudFormationBox> {
+public class TemplateCloudFormationBoxFactory extends AbstractBoxFactory<TemplateCloudFormationBox> {
+
+    private static final Logger logger = Logger.getLogger(TemplateCloudFormationBoxFactory.class.getName());
+
     @Override
     public TemplateCloudFormationBox create(JSONObject jsonObject) throws ElasticBoxModelException {
 
@@ -26,19 +31,19 @@ public class TemplateCloudFormationBoxFactory implements IBoxFactory<TemplateClo
 
     @Override
     public boolean canCreate(JSONObject jsonObject) {
-        final String schema = jsonObject.getString("schema");
-        if(StringUtils.isNotBlank(schema) && BoxType.isBox(schema)){
+
+        if(super.canCreate(jsonObject, BoxType.CLOUDFORMATION)){
+            final String type = jsonObject.getString("type");
             try {
-                final BoxType boxType  = BoxType.geType(schema);
-                if(boxType == BoxType.CLOUDFORMATION){
-                    final String type = jsonObject.getString("type");
-                    final CloudFormationBoxType cloudFormationBoxType = CloudFormationBoxType.geType(type);
-                    return cloudFormationBoxType == CloudFormationBoxType.TEMPLATE;
-                }
+                final CloudFormationBoxType cloudFormationBoxType = CloudFormationBoxType.getType(type);
+                return cloudFormationBoxType == CloudFormationBoxType.TEMPLATE;
             } catch (ElasticBoxModelException e) {
+                logger.log(Level.SEVERE, "There is no CloudFormation type for type: "+type);
                 e.printStackTrace();
             }
+
         }
+
         return false;
     }
 }

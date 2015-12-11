@@ -49,7 +49,7 @@ public class ManagedCloudFormationBox extends PolicyBox implements CloudFormatio
             return schema;
         }
 
-        public static ManagedCloudFormationProfileType geType(String schema) throws ElasticBoxModelException {
+        public static ManagedCloudFormationProfileType getType(String schema) throws ElasticBoxModelException {
             ManagedCloudFormationProfileType[] values = ManagedCloudFormationProfileType.values();
             for (ManagedCloudFormationProfileType type : values) {
                 if(type.isType(schema))
@@ -68,7 +68,7 @@ public class ManagedCloudFormationBox extends PolicyBox implements CloudFormatio
 
         public IdBuilder withManagedCloudFormationType( String profileSchema ){
             try {
-                managedCloudFormationType = ManagedCloudFormationProfileType.geType(profileSchema);
+                managedCloudFormationType = ManagedCloudFormationProfileType.getType(profileSchema);
             } catch (ElasticBoxModelException e) {
                 e.printStackTrace();
             }

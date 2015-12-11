@@ -16,7 +16,7 @@ public enum PolicyProfileType implements ProfileType {
             return ProviderType.AMAZON;
         }
     },
-    AMAZON_EC2("aws/ec2/profile") {
+    AMAZON_EC2("/aws/ec2/profile") {
         @Override
         public ProviderType provider() {
             return ProviderType.AMAZON;
@@ -28,7 +28,7 @@ public enum PolicyProfileType implements ProfileType {
             return ProviderType.AMAZON;
         }
     },
-    AZURE_LINUX("azure/compute/linux/profile") {
+    AZURE_LINUX("/azure/compute/linux/profile") {
         @Override
         public ProviderType provider() {
             return ProviderType.AZURE;
@@ -101,7 +101,7 @@ public enum PolicyProfileType implements ProfileType {
         }
     };
 
-    private static final Logger logger = Logger.getLogger(ProfileType.class.getName());
+    private static final Logger logger = Logger.getLogger(PolicyProfileType.class.getName());
 
     private final String schema;
 
@@ -119,7 +119,7 @@ public enum PolicyProfileType implements ProfileType {
         return schema;
     }
 
-    public static PolicyProfileType geType(String schema) {
+    public static PolicyProfileType getType(String schema) {
         PolicyProfileType[] values = PolicyProfileType.values();
         for (PolicyProfileType type : values) {
             if(type.isType(schema))

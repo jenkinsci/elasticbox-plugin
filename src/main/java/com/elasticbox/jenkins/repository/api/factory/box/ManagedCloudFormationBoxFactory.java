@@ -5,12 +5,17 @@ import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBoxType;
 import com.elasticbox.jenkins.model.box.cloudformation.ManagedCloudFormationBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang3.StringUtils;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by serna on 11/29/15.
  */
-public class ManagedCloudFormationBoxFactory implements IBoxFactory<ManagedCloudFormationBox> {
+public class ManagedCloudFormationBoxFactory extends AbstractBoxFactory<ManagedCloudFormationBox> {
+
+    private static final Logger logger = Logger.getLogger(ManagedCloudFormationBoxFactory.class.getName());
+
     @Override
     public ManagedCloudFormationBox create(JSONObject jsonObject) throws ElasticBoxModelException {
 
@@ -25,18 +30,17 @@ public class ManagedCloudFormationBoxFactory implements IBoxFactory<ManagedCloud
 
     @Override
     public boolean canCreate(JSONObject jsonObject) {
-        final String schema = jsonObject.getString("schema");
-        if(StringUtils.isNotBlank(schema) && BoxType.isBox(schema)){
+
+        if(super.canCreate(jsonObject, BoxType.CLOUDFORMATION)){
+            final String type = jsonObject.getString("type");
             try {
-                final BoxType boxType  = BoxType.geType(schema);
-                if(boxType == BoxType.CLOUDFORMATION){
-                    final String type = jsonObject.getString("type");
-                    final CloudFormationBoxType cloudFormationBoxType = CloudFormationBoxType.geType(type);
-                    return cloudFormationBoxType == CloudFormationBoxType.MANAGED;
-                }
+                final CloudFormationBoxType cloudFormationBoxType = CloudFormationBoxType.getType(type);
+                return cloudFormationBoxType == CloudFormationBoxType.MANAGED;
             } catch (ElasticBoxModelException e) {
+                logger.log(Level.SEVERE, "There is no CloudFormation type for type: "+type);
                 e.printStackTrace();
             }
+
         }
         return false;
     }
