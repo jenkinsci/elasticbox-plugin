@@ -132,8 +132,9 @@ then
     JENKINS_VERSIONS="${JENKINS_VERSIONS} ${SAVED_JENKINS_VERSION}"
 fi
 
-LATEST_JENKINS_VERSION=$(get_latest_jenkins_version)
-if [[ -z $(echo ${JENKINS_VERSIONS} | grep "${LATEST_JENKINS_VERSION}") && -z $(echo ${JENKINS_VERSIONS} | grep latest) ]]
-then
-    build_with_jenkins_version ${LATEST_JENKINS_VERSION}
-fi
+# Remove the build with the last Jenkins version until we decide what to do with Saveable and JS errors
+# LATEST_JENKINS_VERSION=$(get_latest_jenkins_version)
+#if [[ -z $(echo ${JENKINS_VERSIONS} | grep "${LATEST_JENKINS_VERSION}") && -z $(echo ${JENKINS_VERSIONS} | grep latest) ]]
+#then
+#    build_with_jenkins_version ${LATEST_JENKINS_VERSION}
+#fi
