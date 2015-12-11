@@ -139,7 +139,6 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace,
                 @QueryParameter String box) {
-//            return DescriptorHelper.getProfiles(ClientCache.getClient(cloud), workspace, box);
 
             LOGGER.log(Level.FINE, "doFill ProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box);
 
