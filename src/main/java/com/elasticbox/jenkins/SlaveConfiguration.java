@@ -177,8 +177,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 }
 
             } catch (ServiceException e) {
-                LOGGER.log(Level.SEVERE, "ERROR doFillProfileItems - cloud: "+endpointUrl+", workspace: "+workspace+", box: "+box+" return an empty list");
-                e.printStackTrace();
+                LOGGER.log(Level.SEVERE, "ERROR doFillProfileItems - cloud: "+endpointUrl+", workspace: "+workspace+", box: "+box+" return an empty list", e);
             }
 
             return profiles;
