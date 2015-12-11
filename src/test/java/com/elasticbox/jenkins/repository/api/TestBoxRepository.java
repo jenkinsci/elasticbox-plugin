@@ -92,19 +92,5 @@ public class TestBoxRepository {
         }
     }
 
-    @Test
-    public void testGetBoxes() throws IOException, RepositoryException {
-
-        final APIClient api = mock(APIClient.class);
-        String workspace = null;
-        JSONArray array = null;
-        when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getJSONArrayFromFile("allTypeBoxes.json"));
-
-        final List<AbstractBox> noPolicyAndNoApplicationBoxes = new BoxRepositoryAPIImpl(api).getNoPolicyAndNoApplicationBoxes(workspace);
-
-        for (AbstractBox noPolicyAndNoApplicationBox : noPolicyAndNoApplicationBoxes) {
-            System.out.println(noPolicyAndNoApplicationBox.getName());
-        }
-    }
 
 }
