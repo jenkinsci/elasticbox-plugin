@@ -137,8 +137,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
             return checkBoxVersion(value, box, workspace, ClientCache.getClient(cloud));
         }
 
-        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace,
-                @QueryParameter String box) {
+        public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
 
             LOGGER.log(Level.FINE, "doFill ProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box);
 
@@ -148,7 +147,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
                 if (StringUtils.isEmpty(cloud) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(box))
                     return profiles;
 
-                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(cloud).deploymentOptions(workspace, box);
+                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl().deploymentOptions(cloud,workspace, box);
                 final List<PolicyBox> policyBoxList = result.getResult();
                 for (PolicyBox policyBox : policyBoxList) {
                     profiles.add(policyBox.getName(), policyBox.getId());

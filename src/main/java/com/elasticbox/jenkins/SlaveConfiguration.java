@@ -159,18 +159,20 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return checkBoxVersion(value, box, workspace, client);
         }
 
-        public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl,
+        public ListBoxModel doFillProfileItems(
+                @RelativePath("..") @QueryParameter String endpointUrl,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace, @QueryParameter String box) {
-
-//            return DescriptorHelper.getProfiles(createClient(endpointUrl, token), workspace, box);
-
 
             LOGGER.log(Level.FINE, "doFill ProfileItems - cloud: "+endpointUrl+", workspace: "+workspace+", box: "+box);
 
             ListBoxModel profiles = new ListBoxModel();
             try {
-                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(endpointUrl).deploymentOptions(workspace, box);
+
+                if (StringUtils.isEmpty(endpointUrl) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(box))
+                    return profiles;
+
+                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl().deploymentOptions(endpointUrl, token, workspace, box);
                 final List<PolicyBox> policyBoxList = result.getResult();
                 for (PolicyBox policyBox : policyBoxList) {
                     profiles.add(policyBox.getName(), policyBox.getId());

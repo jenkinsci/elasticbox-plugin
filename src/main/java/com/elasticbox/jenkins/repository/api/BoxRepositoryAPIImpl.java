@@ -29,10 +29,6 @@ import java.util.List;
 
     private APIClient client;
 
-    public BoxRepositoryAPIImpl(String cloudName) {
-        this.client = ClientCache.getClient(cloudName);
-    }
-
     public BoxRepositoryAPIImpl(APIClient client) {
         this.client = client;
     }

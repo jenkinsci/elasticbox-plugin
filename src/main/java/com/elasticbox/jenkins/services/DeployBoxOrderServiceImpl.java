@@ -1,5 +1,7 @@
 package com.elasticbox.jenkins.services;
 
+import com.elasticbox.Client;
+import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.model.box.*;
 import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBox;
 import com.elasticbox.jenkins.model.box.cloudformation.ManagedCloudFormationBox;
@@ -10,6 +12,7 @@ import com.elasticbox.jenkins.repository.api.BoxRepositoryAPIImpl;
 import com.elasticbox.jenkins.repository.error.RepositoryException;
 import com.elasticbox.jenkins.services.deployment.DeploymentDirector;
 import com.elasticbox.jenkins.services.error.ServiceException;
+import com.elasticbox.jenkins.util.ClientCache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,13 +23,21 @@ import java.util.List;
  */
 public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
 
-    private BoxRepository boxRepository;
 
-    public DeployBoxOrderServiceImpl(String cloudName) {
-        this.boxRepository = new BoxRepositoryAPIImpl(cloudName);
+
+    public DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(String cloudName, String workspace, String boxToDeploy) throws ServiceException {
+
+        return deploymentOptions(new BoxRepositoryAPIImpl(ClientCache.getClient(cloudName)), workspace, boxToDeploy);
+
     }
 
-    public DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(String workspace, String boxToDeploy) throws ServiceException {
+    public DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(String endpoint, String token, String workspace, String boxToDeploy) throws ServiceException {
+
+        return deploymentOptions(new BoxRepositoryAPIImpl(ClientCache.getClient(endpoint, token)), workspace, boxToDeploy);
+
+    }
+
+    private DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(BoxRepository boxRepository, String workspace, String boxToDeploy) throws ServiceException {
 
         try {
             final AbstractBox box = boxRepository.getBox(boxToDeploy);
@@ -39,6 +50,5 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
 
     }
-
 
 }

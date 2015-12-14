@@ -12,6 +12,8 @@ import java.util.List;
  */
 public interface DeployBoxOrderService {
 
-    public DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(String workspace, String boxToDeploy) throws RepositoryException, ServiceException;
+    public DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(String cloudName, String workspace, String boxToDeploy) throws ServiceException;
+
+    public DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(String endpoint, String token, String workspace, String boxToDeploy) throws ServiceException;
 
 }
