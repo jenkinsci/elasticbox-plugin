@@ -20,7 +20,6 @@ public class FakeAPIClient implements APIClient{
         objects.add(UnitTestingUtils.getFakeCloudFormationManagedBox());
         objects.add(UnitTestingUtils.getFakeCloudFormationTemplateBox());
         objects.add(UnitTestingUtils.getFakeEmptyApplicationBox());
-        
         return objects;
     }
 
