@@ -43,8 +43,7 @@ public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
     public void testBuildWithProjectWithSingleUseSlaveOption() throws Exception {
         final String slaveBoxName = TestUtils.JENKINS_SLAVE_BOX_NAME;
         LOGGER.info(MessageFormat.format("Testing build with single use slave deployed from box {0}", slaveBoxName));
-        ElasticBoxCloud ebCloud = createCloud();
-        Client client = ebCloud.getClient();
+        Client client = cloud.getClient();
         JSONObject slaveBox = null;
         String workspace = TestUtils.TEST_WORKSPACE;
         for (Object box : client.getBoxes(workspace)) {
@@ -58,15 +57,15 @@ public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
         String boxId = slaveBox.getString("id");
         JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/workspaces/{0}/profiles?box_version={1}",
                 workspace, boxId), true);
-        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, ebCloud.getDisplayName()), profiles.size() > 0);
+        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, cloud.getDisplayName()), profiles.size() > 0);
         JSONObject profile = profiles.getJSONObject(0);
         String label = UUID.randomUUID().toString();
 
         // Create a slave configuration with retention time of 2 minutes.
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 2, null, 1, 60);
-        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
-        jenkins.getInstance().clouds.remove(ebCloud);
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
+        jenkins.getInstance().clouds.remove(cloud);
         jenkins.getInstance().clouds.add(newCloud);
 
         // create a project with single-use slave option and tie it to the slave config created above

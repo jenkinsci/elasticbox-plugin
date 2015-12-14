@@ -56,7 +56,6 @@ public class TestUtils {
     static final Jinjava JINJA_RENDER = new Jinjava();
     static final String GITHUB_PUBLIC_ADDRESS = "github.com";
     static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
-    static final String OPS_ACCESS_TOKEN = "elasticbox.jenkins.test.opsAccessToken";
     static final String DEFAULT_TEST_WORKSPACE = "tphongio";
     static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", DEFAULT_TEST_WORKSPACE);
 

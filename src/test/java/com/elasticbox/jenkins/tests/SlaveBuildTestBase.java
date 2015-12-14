@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
+import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SlaveConfiguration;
@@ -27,11 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,11 +51,9 @@ import org.jvnet.hudson.test.JenkinsRule;
  *
  * @author Phong Nguyen Le
  */
-public class SlaveBuildTestBase {
-    protected static final Logger LOGGER = Logger.getLogger(SlaveBuildTestBase.class.getName());
+public class SlaveBuildTestBase extends BuildStepTestBase{
 
-    @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
+    protected static final Logger LOGGER = Logger.getLogger(SlaveBuildTestBase.class.getName());
 
     @Before
     public void setJenkinsURL() throws IOException {
@@ -120,16 +115,7 @@ public class SlaveBuildTestBase {
         } while (!slaves.isEmpty());
     }
 
-    protected ElasticBoxCloud createCloud() throws IOException {
-        String token = System.getProperty(TestUtils.OPS_ACCESS_TOKEN);
-        TestCase.assertNotNull(MessageFormat.format("System property {0} must be specified to run this test", TestUtils.OPS_ACCESS_TOKEN), token);
-        ElasticBoxCloud ebCloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, token, Collections.EMPTY_LIST);
-        jenkins.getInstance().clouds.add(ebCloud);
-        return ebCloud;
-    }
-
     public void testBuildWithProjectSpecificSlave() throws Exception {
-        ElasticBoxCloud cloud = createCloud();
         Client client = cloud.getClient();
         JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", TestUtils.JENKINS_SLAVE_BOX_NAME), true);
         assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", TestUtils.JENKINS_SLAVE_BOX_NAME, cloud.getDisplayName()), profiles.size() > 0);
@@ -149,31 +135,30 @@ public class SlaveBuildTestBase {
     }
 
     public void testBuildWithLinuxSlave() throws Exception {
-        if (System.getProperty(TestUtils.OPS_ACCESS_TOKEN) != null) {
+        if (System.getProperty(TestUtils.ACCESS_TOKEN) != null) {
             testBuildWithSlave(TestUtils.JENKINS_SLAVE_BOX_NAME);
         }
     }
 
     public void testBuildWithWindowsSlave() throws Exception {
-        if (System.getProperty(TestUtils.OPS_ACCESS_TOKEN) != null) {
+        if (System.getProperty(TestUtils.ACCESS_TOKEN) != null) {
             testBuildWithSlave("Windows Jenkins Slave");
         }
     }
 
     private void testBuildWithSlave(String slaveBoxName) throws Exception {
         LOGGER.info(MessageFormat.format("Testing build with slave {0}", slaveBoxName));
-        ElasticBoxCloud ebCloud = createCloud();
-        Client client = ebCloud.getClient();
+        Client client = cloud.getClient();
         JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", URLEncoder.encode(slaveBoxName, "UTF-8")), true);
-        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, ebCloud.getDisplayName()), profiles.size() > 0);
+        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, cloud.getDisplayName()), profiles.size() > 0);
         JSONObject profile = profiles.getJSONObject(0);
         String workspace = profile.getString("owner");
         String box = profile.getJSONObject("box").getString("version");
         String label = UUID.randomUUID().toString();
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, box, box,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
-        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
-        jenkins.getInstance().clouds.remove(ebCloud);
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
+        jenkins.getInstance().clouds.remove(cloud);
         jenkins.getInstance().clouds.add(newCloud);
         FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
         project.setAssignedLabel(jenkins.getInstance().getLabel(label));
@@ -188,8 +173,7 @@ public class SlaveBuildTestBase {
     public void testCancelBuildWithSingleUseSlave() throws Exception {
         final String slaveBoxName = TestUtils.JENKINS_SLAVE_BOX_NAME;
         LOGGER.info(MessageFormat.format("Testing build with single use slave deployed from box {0}", slaveBoxName));
-        ElasticBoxCloud ebCloud = createCloud();
-        Client client = ebCloud.getClient();
+        Client client = cloud.getClient();
         JSONObject slaveBox = null;
         String workspace = TestUtils.TEST_WORKSPACE;
         for (Object box : client.getBoxes(workspace)) {
@@ -203,15 +187,15 @@ public class SlaveBuildTestBase {
         String boxId = slaveBox.getString("id");
         JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/workspaces/{0}/profiles?box_version={1}",
                 workspace, boxId), true);
-        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, ebCloud.getDisplayName()), profiles.size() > 0);
+        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, cloud.getDisplayName()), profiles.size() > 0);
         JSONObject profile = profiles.getJSONObject(0);
         String label = UUID.randomUUID().toString();
 
         // Create a slave configuration with 0 retention time. This means, the slave of this configuration will be killed right after use (single-use)
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
-        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
-        jenkins.getInstance().clouds.remove(ebCloud);
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
+        jenkins.getInstance().clouds.remove(cloud);
         jenkins.getInstance().clouds.add(newCloud);
 
         // Create a project and tie it to the slave configuration created above
