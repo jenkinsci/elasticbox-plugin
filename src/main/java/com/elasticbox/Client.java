@@ -59,9 +59,9 @@ import org.apache.http.util.EntityUtils;
  *
  * @author Phong Nguyen Le
  */
-public class Client {
-    private static final String UTF_8 = "UTF-8";
+public class Client implements APIClient{
 
+    private static final String UTF_8 = "UTF-8";
     public static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
     private static final String DEPLOYMENT_REQUEST_SCHEMA_NAME = "deploy-instance-request";
     private static final String ELASTICBOX_RELEASE = "4.0";
@@ -177,7 +177,7 @@ public class Client {
         return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces", endpointUrl), true);
     }
 
-    private JSONArray getAllBoxes(String workspaceId) throws IOException {
+    public JSONArray getAllBoxes(String workspaceId) throws IOException {
         return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl,
                 URLEncoder.encode(workspaceId, UTF_8)), true);
     }

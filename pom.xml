@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.551</version><!-- version of Jenkins this plugin is built against, oldest supported version is 1.551 -->
+        <version>1.596.1</version><!-- version of Jenkins this plugin is built against, oldest supported version is 1.551 -->
     </parent>
 
     <artifactId>elasticbox</artifactId>
@@ -32,9 +32,9 @@
 
     <developers>
         <developer>
-            <id>ignaciofuertes</id>
-            <name>Ignacio Fuertes</name>
-            <email>ignacio@elasticbox.com</email>
+            <id>oscarserna</id>
+            <name>Oscar Serna</name>
+            <email>serna@elasticbox.com</email>
         </developer>
     </developers>
 
@@ -95,6 +95,12 @@
             <artifactId>commons-io</artifactId>
             <version>2.4</version>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>2.0.2-beta</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <properties>
@@ -139,6 +145,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <compatibleSinceVersion>4.0.0</compatibleSinceVersion>
+                    <pluginFirstClassLoader>true</pluginFirstClassLoader>
                 </configuration>
             </plugin>
         </plugins>

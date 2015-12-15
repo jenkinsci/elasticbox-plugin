@@ -16,6 +16,8 @@ import com.elasticbox.Client;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SlaveConfiguration;
+import com.elasticbox.jenkins.model.box.policy.PolicyBox;
+import com.elasticbox.jenkins.repository.api.BoxRepositoryAPIImpl;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
@@ -23,6 +25,7 @@ import hudson.model.Result;
 import hudson.model.queue.QueueTaskFuture;
 import java.text.MessageFormat;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import junit.framework.TestCase;
@@ -41,8 +44,7 @@ public class BuildWithSingleUseViaLabelSlaveTest extends SlaveBuildTestBase {
     public void testBuildWithSingleUseSlaveViaLabel() throws Exception {
         final String slaveBoxName = TestUtils.JENKINS_SLAVE_BOX_NAME;
         LOGGER.info(MessageFormat.format("Testing build with single use slave deployed from box {0}", slaveBoxName));
-        ElasticBoxCloud ebCloud = createCloud();
-        Client client = ebCloud.getClient();
+        Client client = cloud.getClient();
         JSONObject slaveBox = null;
         String workspace = TestUtils.TEST_WORKSPACE;
         for (Object box : client.getBoxes(workspace)) {
@@ -54,17 +56,23 @@ public class BuildWithSingleUseViaLabelSlaveTest extends SlaveBuildTestBase {
         }
         Assert.assertNotNull(MessageFormat.format("Cannot find slave box {0} in workspace {1}", slaveBoxName, workspace), slaveBox);
         String boxId = slaveBox.getString("id");
-        JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/workspaces/{0}/profiles?box_version={1}",
-                workspace, boxId), true);
-        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, ebCloud.getDisplayName()), profiles.size() > 0);
-        JSONObject profile = profiles.getJSONObject(0);
+
+        final List<PolicyBox> policies = new BoxRepositoryAPIImpl(client).getNoCloudFormationPolicyBoxes(workspace);
+
+        TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, cloud.getDisplayName()), policies.size() > 0);
+
         String label = UUID.randomUUID().toString();
+
         // Create a slave configuration with 0 retention time. This means, the slave of this configuration will be killed right after use (single-use)
+        final PolicyBox policyBox = policies.get(0);
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
-                profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
-        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", ebCloud.getEndpointUrl(), ebCloud.getMaxInstances(), ebCloud.getToken(), Collections.singletonList(slaveConfig));
-        jenkins.getInstance().clouds.remove(ebCloud);
+                policyBox.getId(), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
+
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
+
+        jenkins.getInstance().clouds.remove(cloud);
         jenkins.getInstance().clouds.add(newCloud);
+
         FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
         project.setAssignedLabel(jenkins.getInstance().getLabel(label));
         QueueTaskFuture future = project.scheduleBuild2(0);

@@ -13,6 +13,10 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.box.policy.PolicyBox;
+import com.elasticbox.jenkins.services.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.RelativePath;
@@ -21,6 +25,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -154,10 +159,32 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return checkBoxVersion(value, box, workspace, client);
         }
 
-        public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl,
+        public ListBoxModel doFillProfileItems(
+                @RelativePath("..") @QueryParameter String endpointUrl,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace, @QueryParameter String box) {
-            return DescriptorHelper.getProfiles(createClient(endpointUrl, token), workspace, box);
+
+            LOGGER.log(Level.FINE, "doFill ProfileItems - cloud: "+endpointUrl+", workspace: "+workspace+", box: "+box);
+
+            ListBoxModel profiles = new ListBoxModel();
+            try {
+
+                if (StringUtils.isEmpty(endpointUrl) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(box))
+                    return profiles;
+
+                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl().deploymentOptions(endpointUrl, token, workspace, box);
+                final List<PolicyBox> policyBoxList = result.getResult();
+                for (PolicyBox policyBox : policyBoxList) {
+                    profiles.add(policyBox.getName(), policyBox.getId());
+                }
+
+            } catch (ServiceException e) {
+                LOGGER.log(Level.SEVERE, "ERROR doFillProfileItems - cloud: "+endpointUrl+", workspace: "+workspace+", box: "+box+" return an empty list", e);
+            }
+
+            return profiles;
+
+
         }
 
         public ListBoxModel doFillProviderItems(

@@ -38,10 +38,12 @@ import org.junit.Before;
  */
 public class SlaveProvisionTestBase extends BuildStepTestBase {
 
+
     @Before
     @Override
     public void setup() throws Exception {
         String jenkinsUrl = jenkins.getInstance().getRootUrl();
+        jenkins.timeout = 300;
         if (StringUtils.isBlank(jenkinsUrl)) {
             jenkinsUrl = jenkins.createWebClient().getContextPath();
         }
