@@ -1,7 +1,6 @@
 package com.elasticbox.jenkins.repository.api.factory;
 
 import net.sf.json.JSONArray;
-import org.apache.commons.lang3.ArrayUtils;
 
 /**
  * Created by serna on 11/30/15.

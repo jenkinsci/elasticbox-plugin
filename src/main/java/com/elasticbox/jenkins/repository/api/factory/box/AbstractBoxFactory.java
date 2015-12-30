@@ -4,7 +4,7 @@ import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

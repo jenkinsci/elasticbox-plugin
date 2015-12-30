@@ -5,7 +5,7 @@ import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.profile.ProfileType;
 import com.elasticbox.jenkins.model.provider.ProviderType;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Created by serna on 11/29/15.

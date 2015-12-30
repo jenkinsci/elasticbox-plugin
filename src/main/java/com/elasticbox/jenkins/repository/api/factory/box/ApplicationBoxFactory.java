@@ -7,7 +7,6 @@ import com.elasticbox.jenkins.model.box.script.ScriptBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.repository.api.factory.JSONFactoryUtils;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Created by serna on 11/29/15.
