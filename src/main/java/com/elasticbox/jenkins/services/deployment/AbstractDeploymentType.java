@@ -4,7 +4,7 @@ import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.ClaimsVsRequirementsDeployable;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.repository.BoxRepository;
-import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang.ArrayUtils;
 
 import java.util.*;
 
