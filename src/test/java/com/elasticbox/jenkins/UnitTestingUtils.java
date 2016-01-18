@@ -1,6 +1,5 @@
 package com.elasticbox.jenkins;
 
-import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -14,7 +13,131 @@ import java.io.InputStream;
  */
 public class UnitTestingUtils {
 
+
+    private static String deployScriptBoxRequest = "{\n" +
+            "  \"schema\": \"http://elasticbox.net/schemas/deploy-instance-request\",\n" +
+            "  \"owner\": \"operations\",\n" +
+            "  \"name\": \"RabbitMQ\",\n" +
+            "  \"box\": {\n" +
+            "    \"id\": \"5097988a-895c-4a7b-bf3a-2871a9144a20\",\n" +
+            "    \"variables\": [\n" +
+            "      {\n" +
+            "        \"name\": \"username\",\n" +
+            "        \"type\": \"Text\",\n" +
+            "        \"value\": \"username_value\",\n" +
+            "        \"required\": false,\n" +
+            "        \"visibility\": \"public\"\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"name\": \"password\",\n" +
+            "        \"type\": \"Password\",\n" +
+            "        \"value\": \"password_value\",\n" +
+            "        \"required\": false,\n" +
+            "        \"visibility\": \"public\"\n" +
+            "      }\n" +
+            "    ]\n" +
+            "  },\n" +
+            "  \"instance_tags\": [\n" +
+            "    \"deployment_tag\"\n" +
+            "  ],\n" +
+            "  \"automatic_updates\": \"off\",\n" +
+            "  \"policy_box\": {\n" +
+            "    \"id\": \"1763dddd-2668-4959-8907-3c84b5e98b0e\",\n" +
+            "    \"variables\": [\n" +
+            "      {\n" +
+            "        \"name\": \"policy_box_variable\",\n" +
+            "        \"type\": \"Text\",\n" +
+            "        \"value\": \"value_2\",\n" +
+            "        \"required\": false,\n" +
+            "        \"visibility\": \"public\"\n" +
+            "      }\n" +
+            "    ]\n" +
+            "  }\n" +
+            "}";
+
     private static String applicationBox = "{\n" +
+            "  \"schema\": \"http://elasticbox.net/schemas/boxes/application\",\n" +
+            "  \"updated\": \"2016-01-07 12:38:42.689994\",\n" +
+            "  \"description\": \"just to test that exists\",\n" +
+            "  \"created\": \"2015-12-03 13:53:47.562301\",\n" +
+            "  \"deleted\": null,\n" +
+            "  \"variables\": [],\n" +
+            "  \"uri\": \"/services/boxes/f616cc35-9d33-47d8-8ebd-7c8acebcd906\",\n" +
+            "  \"visibility\": \"workspace\",\n" +
+            "  \"services\": [\n" +
+            "    {\n" +
+            "      \"box\": {\n" +
+            "        \"variables\": [\n" +
+            "          {\n" +
+            "            \"name\": \"var1\",\n" +
+            "            \"value\": \"value for var1 in sb1\"\n" +
+            "          }\n" +
+            "        ],\n" +
+            "        \"id\": \"388d5e7c-2e26-490f-adcf-37cf244ee27f\",\n" +
+            "        \"latest\": true\n" +
+            "      },\n" +
+            "      \"policy\": {\n" +
+            "        \"variables\": [],\n" +
+            "        \"requirements\": [\n" +
+            "          \"test\"\n" +
+            "        ]\n" +
+            "      },\n" +
+            "      \"automatic_updates\": \"off\",\n" +
+            "      \"name\": \"scriptbox1\",\n" +
+            "      \"tags\": [\n" +
+            "        \"sb1\"\n" +
+            "      ]\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"box\": {\n" +
+            "        \"variables\": [\n" +
+            "          {\n" +
+            "            \"name\": \"var1\",\n" +
+            "            \"value\": \"value for var 1 in sb2\"\n" +
+            "          },\n" +
+            "          {\n" +
+            "            \"name\": \"binding\",\n" +
+            "            \"value\": \"sb1\"\n" +
+            "          }\n" +
+            "        ],\n" +
+            "        \"id\": \"7ba69b26-3c8d-4ebd-9578-1982d3a8b293\",\n" +
+            "        \"latest\": true\n" +
+            "      },\n" +
+            "      \"policy\": {\n" +
+            "        \"variables\": [],\n" +
+            "        \"requirements\": [\n" +
+            "          \"test\"\n" +
+            "        ]\n" +
+            "      },\n" +
+            "      \"automatic_updates\": \"off\",\n" +
+            "      \"name\": \"scriptbox2\",\n" +
+            "      \"tags\": []\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"box\": {\n" +
+            "        \"variables\": [],\n" +
+            "        \"id\": \"3fbca6e6-7371-4628-861e-677c28954d2d\",\n" +
+            "        \"latest\": true\n" +
+            "      },\n" +
+            "      \"policy\": {\n" +
+            "        \"variables\": [],\n" +
+            "        \"requirements\": [\n" +
+            "          \"test\"\n" +
+            "        ]\n" +
+            "      },\n" +
+            "      \"automatic_updates\": \"off\",\n" +
+            "      \"name\": \"scriptbox3\",\n" +
+            "      \"tags\": []\n" +
+            "    }\n" +
+            "  ],\n" +
+            "  \"members\": [],\n" +
+            "  \"owner\": \"operations\",\n" +
+            "  \"organization\": \"elasticbox\",\n" +
+            "  \"id\": \"f616cc35-9d33-47d8-8ebd-7c8acebcd906\",\n" +
+            "  \"name\": \"ApplicationBoxTest\"\n" +
+            "}";
+
+    private static String emptyApplicationBox = "{\n" +
             "\"updated\": \"2015-12-03 13:53:47.562301\",\n" +
             "\"description\": \"just to test that exists\",\n" +
             "\"created\": \"2015-12-03 13:53:47.562301\",\n" +
@@ -273,6 +396,10 @@ public class UnitTestingUtils {
 
 
     public static JSONObject getFakeEmptyApplicationBox(){
+        return (JSONObject) JSONSerializer.toJSON(emptyApplicationBox);
+    }
+
+    public static JSONObject getFakeApplicationBox(){
         return (JSONObject) JSONSerializer.toJSON(applicationBox);
     }
 
@@ -323,6 +450,11 @@ public class UnitTestingUtils {
         String jsonTxt = IOUtils.toString(is);
         return (JSONArray) JSONSerializer.toJSON(jsonTxt);
     }
+
+    public static JSONObject getFakeScriptBoxDeployRequest(){
+            return (JSONObject) JSONSerializer.toJSON(deployScriptBoxRequest);
+    }
+
 
 
 }

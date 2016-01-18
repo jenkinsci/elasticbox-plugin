@@ -10,9 +10,7 @@ information or reproduction of this material is strictly forbidden unless prior
 written permission is obtained from ElasticBox.
 -->
 <?jelly escape-by-default='true'?>
-
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
-	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:section title="Variables" />
     <f:invisibleEntry>
         <f:textbox clazz="eb-variables help" field="variables" default="[]"/>

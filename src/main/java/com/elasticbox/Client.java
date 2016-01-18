@@ -725,6 +725,9 @@ public class Client implements APIClient{
         deployRequest.put("instance_tags", instanceTags);
 
         JSONObject instance = doPost("/services/instances", deployRequest);
+
+
+
         return new InstanceProgressMonitor(endpointUrl + instance.getString("uri"),
                 Collections.singleton(InstanceOperation.DEPLOY), instance.getString("updated"));
     }

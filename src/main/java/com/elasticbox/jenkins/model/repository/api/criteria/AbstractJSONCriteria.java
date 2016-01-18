@@ -21,23 +21,26 @@ public abstract class AbstractJSONCriteria<T> implements JSONCriteria<T> {
         this.factory = factory;
     }
 
-    abstract boolean fits(JSONObject jsonObject);
+    protected abstract boolean fits(JSONObject jsonObject);
 
     @Override
-    public List<T> fits(JSONArray array){
-        List<T> matched = new ArrayList<>();
-            for (Iterator iter = array.iterator(); iter.hasNext();) {
-                try {
-                    JSONObject jsonObject = (JSONObject) iter.next();
-                    if(fits(jsonObject))
-                        matched.add(factory.create(jsonObject));
+    public List<T> filter(JSONArray array){
 
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                } catch (ElasticBoxModelException e) {
-                    e.printStackTrace();
-                }
+        List<T> matched = new ArrayList<>();
+
+        for (Iterator iter = array.iterator(); iter.hasNext();) {
+            try {
+                JSONObject jsonObject = (JSONObject) iter.next();
+                if(fits(jsonObject))
+                    matched.add(factory.create(jsonObject));
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            } catch (ElasticBoxModelException e) {
+                e.printStackTrace();
             }
+        }
+
         return  matched;
     }
 

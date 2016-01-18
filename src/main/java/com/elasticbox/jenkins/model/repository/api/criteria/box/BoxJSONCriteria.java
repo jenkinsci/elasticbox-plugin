@@ -14,10 +14,10 @@ public abstract class BoxJSONCriteria<T> extends AbstractJSONCriteria<T> {
         super(factory);
     }
 
-    protected abstract boolean performFit(JSONObject jsonObject);
+    abstract boolean performFit(JSONObject jsonObject);
 
     @Override
-    boolean fits(JSONObject jsonObject) {
+    protected boolean fits(JSONObject jsonObject) {
 
         if(!BoxType.isBox(jsonObject.getString("schema")))
             return false;

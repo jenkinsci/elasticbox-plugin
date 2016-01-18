@@ -16,6 +16,7 @@ import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.Constants;
+import com.elasticbox.jenkins.model.services.deployment.types.DeploymentType;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.JsonUtil;
@@ -572,26 +573,43 @@ public class DescriptorHelper {
     }
 
     public static void fixDeploymentPolicyFormData(JSONObject formData) {
-        if (formData.getString("cloudFormationSelected").equals("true")) {
-            formData.remove("profile");
-            formData.remove("claims");
-        } else {
-            String policySelection = null;
-            for (Object entry : formData.entrySet()) {
-                Map.Entry mapEntry = (Map.Entry) entry;
-                if (mapEntry.getKey().toString().startsWith("policySelection-")) {
-                    policySelection = mapEntry.getValue().toString();
-                    break;
-                }
-            }
-            if ("claims".equals(policySelection)) {
+
+        final DeploymentType boxDeploymentType = DeploymentType.getType(formData.getString("boxDeploymentType"));
+
+        switch (boxDeploymentType){
+            case APPLICATIONBOX_DEPLOYMENT_TYPE:
                 formData.remove("profile");
-            } else {
+                formData.remove("provider");
+                formData.remove("location");
+                break;
+
+            case CLOUDFORMATIONMANAGED_DEPLOYMENT_TYPE:
+                formData.remove("profile");
                 formData.remove("claims");
-            }
-            formData.remove("provider");
-            formData.remove("location");
+                break;
+
+            default:
+                String policySelection = null;
+                for (Object entry : formData.entrySet()) {
+                    Map.Entry mapEntry = (Map.Entry) entry;
+                    if (mapEntry.getKey().toString().startsWith("policySelection-")) {
+                        policySelection = mapEntry.getValue().toString();
+                        break;
+                    }
+                }
+                if ("claims".equals(policySelection)) {
+                    formData.remove("profile");
+                } else {
+                    formData.remove("claims");
+                }
+
+                formData.remove("provider");
+                formData.remove("location");
+
+                break;
         }
+
+
     }
 
     private static ListBoxModel sort(ListBoxModel model) {

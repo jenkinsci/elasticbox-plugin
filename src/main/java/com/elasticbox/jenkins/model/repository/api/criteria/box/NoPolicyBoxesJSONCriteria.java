@@ -2,7 +2,6 @@ package com.elasticbox.jenkins.model.repository.api.criteria.box;
 
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
-import com.elasticbox.jenkins.model.repository.api.criteria.BoxJSONCriteria;
 import com.elasticbox.jenkins.model.repository.api.factory.box.BoxFactory;
 import com.elasticbox.jenkins.model.repository.api.factory.box.GenericBoxFactory;
 import net.sf.json.JSONObject;

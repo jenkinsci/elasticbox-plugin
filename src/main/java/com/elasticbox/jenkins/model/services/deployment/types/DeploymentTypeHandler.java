@@ -20,6 +20,5 @@ public interface DeploymentTypeHandler {
 
     DeploymentValidationResult validateDeploymentData(DeployBox deployData);
 
-    DeploymentType getType();
-
+    DeploymentType getManagedType();
 }

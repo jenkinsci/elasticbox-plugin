@@ -18,6 +18,23 @@ package com.elasticbox;
  */
 public interface Constants {
 
+    //---------- Validation deployment data
+    String AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS = "Policy box or requirements to find one are mandatory";
+    String PROVIDER_SHOULD_BE_PROVIDED = "Provider are mandatory";
+    String LOCATION_SHOULD_BE_PROVIDED = "Location are mandatory";
+
+    //---------- Boxes
+    String BOX_ANY_BOX = "AnyBox";
+    String BOX_LATEST_BOX_VERSION = "LATEST";
+
+    //-----------Instances
+    String INSTANCE_ACTION_NONE = "none";
+    String INSTANCE_ACTION_SKIP = "skip";
+    String INSTANCE_ACTION_RECONFIGURE = Client.InstanceOperation.RECONFIGURE;
+    String INSTANCE_ACTION_REINSTALL = Client.InstanceOperation.REINSTALL;
+    String INSTANCE_ACTION_DELETE_AND_DEPLOY = "deleteAndDeploy";
+
+
     String ELASTICBOX_SCHEMAS = "http://elasticbox.net/schemas";
 
     String AUTOMATIC_UPDATES_OFF = "off";

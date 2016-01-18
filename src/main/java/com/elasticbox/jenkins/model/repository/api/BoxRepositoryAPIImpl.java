@@ -5,10 +5,10 @@ import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
-import com.elasticbox.jenkins.model.repository.api.criteria.CloudFormationPolicyBoxesJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.criteria.NoCloudFormationPolicyBoxesJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.criteria.NoPolicyAndNoApplicationBoxes;
-import com.elasticbox.jenkins.model.repository.api.criteria.NoPolicyBoxesJSONCriteria;
+import com.elasticbox.jenkins.model.repository.api.criteria.box.CloudFormationPolicyBoxesJSONCriteria;
+import com.elasticbox.jenkins.model.repository.api.criteria.box.NoCloudFormationPolicyBoxesJSONCriteria;
+import com.elasticbox.jenkins.model.repository.api.criteria.box.NoPolicyAndNoApplicationBoxes;
+import com.elasticbox.jenkins.model.repository.api.criteria.box.NoPolicyBoxesJSONCriteria;
 import com.elasticbox.jenkins.model.repository.api.factory.box.GenericBoxFactory;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import net.sf.json.JSONArray;
@@ -32,7 +32,7 @@ import java.util.List;
     public List<AbstractBox> getNoPolicyAndNoApplicationBoxes(String workspace) throws RepositoryException {
         try {
             JSONArray boxesFromAPI = client.getAllBoxes(workspace);
-            return  new NoPolicyAndNoApplicationBoxes().fits(boxesFromAPI);
+            return  new NoPolicyAndNoApplicationBoxes().filter(boxesFromAPI);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RepositoryException("Error retrieving no policies and no application boxes from API, workspace: "+workspace);
@@ -48,7 +48,7 @@ import java.util.List;
     public List<AbstractBox> getNoPolicyBoxes(String workspace) throws RepositoryException {
         try {
             JSONArray boxesFromAPI = client.getAllBoxes(workspace);
-            return new NoPolicyBoxesJSONCriteria().fits(boxesFromAPI);
+            return new NoPolicyBoxesJSONCriteria().filter(boxesFromAPI);
         } catch (IOException e) {
             e.printStackTrace();
             throw new RepositoryException("Error retrieving no policies boxes from API, workspace: "+workspace);
@@ -63,7 +63,7 @@ import java.util.List;
     public List<PolicyBox> getCloudFormationPolicyBoxes(String workspace) throws RepositoryException {
         try{
             JSONArray boxesFromAPI = client.getAllBoxes(workspace);
-            List<PolicyBox> policyBoxes = new CloudFormationPolicyBoxesJSONCriteria().fits(boxesFromAPI);
+            List<PolicyBox> policyBoxes = new CloudFormationPolicyBoxesJSONCriteria().filter(boxesFromAPI);
             return policyBoxes;
         } catch (IOException e) {
             e.printStackTrace();
@@ -79,7 +79,7 @@ import java.util.List;
     public List<PolicyBox> getNoCloudFormationPolicyBoxes(String workspace) throws RepositoryException {
         try{
             JSONArray boxesFromAPI = client.getAllBoxes(workspace);
-            List<PolicyBox> policyBoxes = new NoCloudFormationPolicyBoxesJSONCriteria().fits(boxesFromAPI);
+            List<PolicyBox> policyBoxes = new NoCloudFormationPolicyBoxesJSONCriteria().filter(boxesFromAPI);
             return policyBoxes;
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,37 +1,25 @@
-<!--
-ElasticBox Confidential
-Copyright (c) 2014 All Right Reserved, ElasticBox Inc.
-
-NOTICE:  All information contained herein is, and remains the property
-of ElasticBox. The intellectual and technical concepts contained herein are
-proprietary and may be covered by U.S. and Foreign Patents, patents in process,
-and are protected by trade secret or copyright law. Dissemination of this
-information or reproduction of this material is strictly forbidden unless prior
-written permission is obtained from ElasticBox.
--->
 <?jelly escape-by-default='true'?>
-
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
-	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:section title="Deployment"/>
+    <st:out value="${instance}"/>
     <j:set var="policySelectionId" value="${descriptor.uniqueId()}"/>
-    <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Use policy with the following claims" value="claims" checked="${instance.claims != null || instance.profile == null}">
+    <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Use policy with the following claims" value="claims" checked="${(instance.claims!=null) or (instance.profile==null)}">
         <f:entry field="claims" help="/plugin/elasticbox/help/claims.html">
-            <f:textbox clazz="required eb-claims" />
+            <f:textbox id="policySelection-policy-claims" clazz="required eb-claims" />
         </f:entry>
     </f:radioBlock>
     <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Select a specific policy" value="specific" checked="${instance.profile != null}">
         <f:entry field="profile" help="/plugin/elasticbox/help/policy.html">
-            <f:select clazz="required eb-profile" />
+            <f:select id="policySelection-policy" clazz="required eb-profile" />
         </f:entry>
     </f:radioBlock>
     <f:invisibleEntry>
         <f:textbox name="cloudFormationSelected" clazz="eb-cloud-formation-selected help" default="false"/>
     </f:invisibleEntry>
     <f:entry title="${%Provider}" field="provider">
-        <f:select clazz="required eb-provider" />
+        <f:select id="policySelection-provider" clazz="required eb-provider" />
     </f:entry>
     <f:entry title="${%Region}" field="location">
-        <f:select clazz="required eb-location" />
+        <f:select id="policySelection-provider-location" clazz="required eb-location" />
     </f:entry>
 </j:jelly>

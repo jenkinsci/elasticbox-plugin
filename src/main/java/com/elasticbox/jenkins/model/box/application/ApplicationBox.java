@@ -3,10 +3,13 @@ package com.elasticbox.jenkins.model.box.application;
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
+import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.profile.PolicyProfileType;
 import com.elasticbox.jenkins.model.profile.ProfileType;
 import com.elasticbox.jenkins.model.provider.Provider;
 import org.apache.commons.lang.StringUtils;
+
+import java.util.List;
 
 /**
  * Created by serna on 11/26/15.

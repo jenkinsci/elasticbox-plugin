@@ -3,7 +3,6 @@ package com.elasticbox.jenkins.model.repository.api.criteria.box;
 import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.profile.PolicyProfileType;
-import com.elasticbox.jenkins.model.repository.api.criteria.BoxJSONCriteria;
 import com.elasticbox.jenkins.model.repository.api.factory.box.BoxFactory;
 import com.elasticbox.jenkins.model.repository.api.factory.box.PolicyBoxFactory;
 import net.sf.json.JSONObject;

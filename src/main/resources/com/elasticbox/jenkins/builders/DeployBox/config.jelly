@@ -10,14 +10,16 @@ information or reproduction of this material is strictly forbidden unless prior
 written permission is obtained from ElasticBox.
 -->
 <?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
-	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:entry title="${%Cloud}" field="cloud">
         <f:select clazz="required eb-cloud" />
     </f:entry>
     <f:invisibleEntry>
         <f:textbox clazz="eb-id help" field="id"/>
+    </f:invisibleEntry>
+    <f:invisibleEntry>
+        <f:select field="boxDeploymentType" clazz="eb-boxDeploymentType"/>
     </f:invisibleEntry>
     <f:entry title="${%Workspace}" field="workspace">
         <f:select clazz="required eb-workspace" />
@@ -40,6 +42,7 @@ written permission is obtained from ElasticBox.
     <f:dropdownDescriptorSelector title="Expiration" field="expiration" descriptors="${descriptor.expirationOptions}" />
 
     <st:include class="${descriptor.clazz}" page="variables.jelly"/>
+
     <st:include class="${descriptor.clazz}" page="policy.jelly"/>
 
     <f:advanced>

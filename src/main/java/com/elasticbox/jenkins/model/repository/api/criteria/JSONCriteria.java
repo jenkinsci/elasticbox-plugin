@@ -9,6 +9,6 @@ import java.util.List;
  */
 public interface JSONCriteria<T> {
 
-    List<T> fits(JSONArray array);
+    List<T> filter(JSONArray array);
 
 }

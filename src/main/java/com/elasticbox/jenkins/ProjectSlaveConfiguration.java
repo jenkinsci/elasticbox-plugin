@@ -14,8 +14,10 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.services.DeployBoxOrderServiceImpl;
-import com.elasticbox.jenkins.services.error.ServiceException;
+import com.elasticbox.jenkins.model.repository.BoxRepository;
+import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.services.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.model.BuildableItemWithBuildWrappers;
@@ -142,12 +144,15 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
             LOGGER.log(Level.FINE, "doFill ProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box);
 
             ListBoxModel profiles = new ListBoxModel();
-            try {
 
                 if (StringUtils.isEmpty(cloud) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(box))
                     return profiles;
 
-                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl().deploymentOptions(cloud,workspace, box);
+            try {
+
+                final BoxRepository boxRepository = new BoxRepositoryAPIImpl((ClientCache.getClient(cloud)));
+
+                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(boxRepository).deploymentPolicies(workspace, box);
                 final List<PolicyBox> policyBoxList = result.getResult();
                 for (PolicyBox policyBox : policyBoxList) {
                     profiles.add(policyBox.getName(), policyBox.getId());

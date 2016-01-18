@@ -35,9 +35,17 @@ var ElasticBoxUtils = (function() {
             setTimeout(function () {
                 waitUtil(condition, method, scope, timeout, elapsedTime - interval);
             }, interval);
+        },
+
+        deploymentOptionsNeeded =  function(boxDeploymentType){
+            if(boxDeploymentType === 'ApplicationBox'){
+                return true;
+            }
+            return false;
         };
 
     return {
+
         format: function () {
             var args = Array.prototype.slice.call(arguments),
                 result = args.shift(),
@@ -51,6 +59,8 @@ var ElasticBoxUtils = (function() {
 
             return result;
         },
+
+        deploymentOptionsNeeded: deploymentOptionsNeeded,
 
         startsWith: startsWith,
 

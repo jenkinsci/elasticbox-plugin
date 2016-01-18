@@ -15,6 +15,11 @@ import java.util.*;
  */
 public abstract class AbstractDeploymentTypeHandler implements DeploymentTypeHandler {
 
+    private DeploymentType deploymentType;
+
+    public AbstractDeploymentTypeHandler(DeploymentType deploymentType) {
+        this.deploymentType = deploymentType;
+    }
 
     List<PolicyBox> matchRequirementsVsClaims(List<PolicyBox> policyBoxes, AbstractBox boxToDeploy){
 
@@ -50,41 +55,9 @@ public abstract class AbstractDeploymentTypeHandler implements DeploymentTypeHan
         return policyBoxes;
     }
 
-    @Override
-    public boolean canValidate(String deploymentTypeId) {
-        return getId().equals(deploymentTypeId);
+
+
+    public DeploymentType getManagedType() {
+        return deploymentType;
     }
-
-    @Override
-    public DeploymentValidationResult validateDeploymentData(DeployBox deployData) {
-        final DeploymentValidationResult ok = new DeploymentValidationResult() {
-            @Override
-            public boolean isOk() {
-                return true;
-            }
-
-            @Override
-            public List<String> messages() {
-                return new ArrayList<>();
-            }
-        };
-
-        if(StringUtils.isNotEmpty(deployData.getProfile()) || StringUtils.isNotEmpty(deployData.getClaims())){
-            return ok;
-        }
-
-        return new DeploymentValidationResult() {
-            @Override
-            public boolean isOk() {
-                return false;
-            }
-
-            @Override
-            public List<String> messages() {
-                return new ArrayList<String>(){{add(Constants.AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS);}};
-            }
-        };
-    }
-
-
 }

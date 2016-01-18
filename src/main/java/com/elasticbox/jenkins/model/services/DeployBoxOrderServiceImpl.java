@@ -3,12 +3,11 @@ package com.elasticbox.jenkins.model.services;
 import com.elasticbox.jenkins.model.box.*;
 import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.repository.BoxRepository;
-import com.elasticbox.jenkins.repository.api.BoxRepositoryAPIImpl;
-import com.elasticbox.jenkins.repository.error.RepositoryException;
-import com.elasticbox.jenkins.model.services.deployment.DeploymentDirector;
+import com.elasticbox.jenkins.model.repository.BoxRepository;
+import com.elasticbox.jenkins.model.repository.error.RepositoryException;
+import com.elasticbox.jenkins.model.services.deployment.types.DeploymentTypeHandler;
+import com.elasticbox.jenkins.model.services.deployment.types.DeploymentTypeDirector;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
-import com.elasticbox.jenkins.util.ClientCache;
 
 import java.util.List;
 
@@ -18,25 +17,34 @@ import java.util.List;
  */
 public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
 
+    private BoxRepository boxRepository;
 
-
-    public DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(String cloudName, String workspace, String boxToDeploy) throws ServiceException {
-
-        return deploymentOptions(new BoxRepositoryAPIImpl(ClientCache.getClient(cloudName)), workspace, boxToDeploy);
-
+    public DeployBoxOrderServiceImpl(BoxRepository boxRepository) {
+        this.boxRepository = boxRepository;
     }
 
-    public DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(String endpoint, String token, String workspace, String boxToDeploy) throws ServiceException {
-
-        return deploymentOptions(new BoxRepositoryAPIImpl(ClientCache.getClient(endpoint, token)), workspace, boxToDeploy);
-
-    }
-
-    private DeployBoxOrderResult<List<PolicyBox>> deploymentOptions(BoxRepository boxRepository, String workspace, String boxToDeploy) throws ServiceException {
+    @Override
+    public DeploymentTypeHandler deploymentType(String boxToDeploy) throws ServiceException {
 
         try {
             final AbstractBox box = boxRepository.getBox(boxToDeploy);
-            final List<PolicyBox> policies = new DeploymentDirector(boxRepository).getPolicies(workspace, box);
+
+            final DeploymentTypeHandler deploymentTypeHandler = new DeploymentTypeDirector().getDeploymentType(box);
+            return deploymentTypeHandler;
+
+        } catch (RepositoryException e) {
+            e.printStackTrace();
+            throw new ServiceException("Impossible to retrieve box: "+boxToDeploy);
+        }
+    }
+
+
+    @Override
+    public DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy) throws ServiceException {
+
+        try {
+            final AbstractBox box = boxRepository.getBox(boxToDeploy);
+            final List<PolicyBox> policies = new DeploymentTypeDirector().getPolicies(boxRepository, workspace, box);
             return new DeployBoxOrderResult<List<PolicyBox>>(policies);
 
         } catch (RepositoryException e) {
@@ -45,5 +53,8 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
 
     }
+
+
+
 
 }
