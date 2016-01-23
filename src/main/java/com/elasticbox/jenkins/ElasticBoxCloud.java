@@ -102,6 +102,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         retentionTime = 0;
     }
 
+
+
     protected Object readResolve() {
         if (StringUtils.isBlank(description) && StringUtils.isNotBlank(username)) {
             description = getDisplayName();

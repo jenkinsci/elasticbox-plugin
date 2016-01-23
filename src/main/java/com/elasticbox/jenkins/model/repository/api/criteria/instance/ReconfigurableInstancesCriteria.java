@@ -20,6 +20,7 @@ import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.api.criteria.AbstractJSONCriteria;
 import com.elasticbox.jenkins.model.repository.api.factory.ModelFactory;
+import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
 import net.sf.json.JSONObject;
 
 /**
@@ -28,8 +29,7 @@ import net.sf.json.JSONObject;
 public class ReconfigurableInstancesCriteria extends AbstractJSONCriteria<Instance> {
 
     public ReconfigurableInstancesCriteria() {
-        //TODO replace null by a factory to build Instances from JSON
-        this(null);
+        this(new InstanceFactoryImpl());
     }
 
     public ReconfigurableInstancesCriteria(ModelFactory<Instance> factory) {

@@ -68,7 +68,7 @@ public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
         jenkins.getInstance().clouds.remove(cloud);
         jenkins.getInstance().clouds.add(newCloud);
 
-        // create a project with single-use slave option and tie it to the slave config created above
+        // create a project with single-use slave option and tie it to the slave configuration created above
         FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
         project.getBuildWrappersList().add(new SingleUseSlaveBuildOption());
         project.setAssignedLabel(jenkins.getInstance().getLabel(label));

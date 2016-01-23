@@ -69,6 +69,9 @@ public class BoxFactoryTest {
         ManagedCloudFormationBoxFactory factory = new ManagedCloudFormationBoxFactory();
         final ManagedCloudFormationBox managedCloudFormationBox = factory.create(UnitTestingUtils.getFakeCloudFormationManagedBox());
 
+        assertTrue("box member role was not set", managedCloudFormationBox.getMembers()[0].getRole().getValue().equals("collaborator"));
+        assertTrue("box memmber workspace set", managedCloudFormationBox.getMembers()[0].getWorkspace().equals("jenkins1"));
+
         assertTrue("box id was not set", managedCloudFormationBox.getId().equals("02fab23c-5278-41ec-8d9e-0f7936582937"));
         assertTrue("box name was not set", managedCloudFormationBox.getName().equals("CF Managed"));
         assertTrue("box type was not set", managedCloudFormationBox.getCloudFormationType() == CloudFormationBoxType.MANAGED);

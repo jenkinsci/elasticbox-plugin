@@ -19,9 +19,11 @@ public class ManagedCloudFormationBoxFactory extends AbstractBoxFactory<ManagedC
     @Override
     public ManagedCloudFormationBox create(JSONObject jsonObject) throws ElasticBoxModelException {
 
-        ManagedCloudFormationBox managedCloudFormationBox = new ManagedCloudFormationBox.ComplexBuilder()
-                .withManagedCloudFormationType(jsonObject.getJSONObject("profile").getString("schema"))
+        ManagedCloudFormationBox managedCloudFormationBox = new ManagedCloudFormationBox.ManagedCloudFormationPolicyBoxBuilder()
+                .withOwner(jsonObject.getString("owner"))
+                .withProfileType(jsonObject.getJSONObject("profile").getString("schema"))
                 .withId(jsonObject.getString("id"))
+                .withMembers(getMembers(jsonObject.getJSONArray("members")))
                 .withName(jsonObject.getString("name"))
                 .build();
 

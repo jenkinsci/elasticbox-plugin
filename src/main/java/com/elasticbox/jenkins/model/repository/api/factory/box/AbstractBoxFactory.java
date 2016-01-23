@@ -3,6 +3,8 @@ package com.elasticbox.jenkins.model.repository.api.factory.box;
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
+import com.elasticbox.jenkins.model.member.Member;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 
@@ -29,4 +31,20 @@ public abstract  class AbstractBoxFactory<T extends AbstractBox> implements BoxF
         }
         return false;
     }
+
+    protected Member[] getMembers(JSONArray memberArrayObject){
+        if(!memberArrayObject.isEmpty()){
+            int counter = 0;
+            Member [] members = new Member[memberArrayObject.size()];
+            for (Object memberObject : memberArrayObject) {
+                JSONObject memberJson = (JSONObject) memberObject;
+                Member member = new Member(Member.Role.findByValue(memberJson.getString("role")),memberJson.getString("workspace"));
+                members[counter] = member;
+                counter++;
+            }
+            return members;
+        }
+        return new Member[0];
+    }
+
 }

@@ -19,14 +19,15 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
-import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentDataTypeValidator;
+import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentDataTypeValidatorFactory;
+import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
-import com.elasticbox.jenkins.model.services.DeployBoxOrderServiceImpl;
-import com.elasticbox.jenkins.model.services.deployment.DeploymentValidationResult;
-import com.elasticbox.jenkins.model.services.deployment.types.DeploymentTypeDirector;
-import com.elasticbox.jenkins.model.services.deployment.types.DeploymentTypeHandler;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentValidationResult;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
@@ -355,6 +356,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         JSONObject instance = client.getInstance(instanceId);
 
         Set<String> resolvedTags = resolver.resolveTags(tags);
+
         if (waitForCompletion && !resolvedTags.isEmpty()) {
             JSONArray instanceTags = instance.getJSONArray("tags");
             int oldSize = instanceTags.size();
@@ -583,7 +585,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
             DeployBox deployBox = (DeployBox) super.newInstance(req, formData);
 
             //Validate the data provided for deployment. Different data should be provided according to the box type to deploy
-            final DeploymentValidationResult deploymentValidationResult = new DeploymentTypeDirector().validateDeploymentData(deployBox);
+            final DeploymentType deploymentType = DeploymentType.findBy(deployBox.getBoxDeploymentType());
+            final DeploymentDataTypeValidator validator = DeploymentDataTypeValidatorFactory.createValidator(deploymentType);
+            final DeploymentValidationResult deploymentValidationResult = validator.validateDeploymentDataType(deployBox);
             if (!deploymentValidationResult.isOk()){
                 final List<DeploymentValidationResult.Cause> causes = deploymentValidationResult.causes();
                 throw new FormException(causes.get(0).message(), causes.get(0).field());
@@ -643,9 +647,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
             try {
 
                 final BoxRepository boxRepository = new BoxRepositoryAPIImpl((ClientCache.getClient(cloud)));
-
-                final DeploymentTypeHandler deploymentType = new DeployBoxOrderServiceImpl(boxRepository).deploymentType(box);
-                final String id = deploymentType.getManagedType().getId();
+                final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(boxRepository).deploymentType(box);
+                final String id = deploymentType.getValue();
                 boxDeploymentType.add(id, id);
 
             } catch (ServiceException e) {

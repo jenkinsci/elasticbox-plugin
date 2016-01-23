@@ -24,10 +24,7 @@ import java.text.MessageFormat;
 import java.util.*;
 import javax.net.ssl.SSLContext;
 
-import net.sf.json.JSON;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONException;
-import net.sf.json.JSONObject;
+import net.sf.json.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -60,11 +57,6 @@ import org.apache.http.util.EntityUtils;
  * @author Phong Nguyen Le
  */
 public class Client implements APIClient{
-
-    private static final String UTF_8 = "UTF-8";
-    public static final String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
-    private static final String DEPLOYMENT_REQUEST_SCHEMA_NAME = "deploy-instance-request";
-    private static final String ELASTICBOX_RELEASE = "4.0";
 
     public static interface InstanceState {
         String PROCESSING = "processing";
@@ -179,7 +171,7 @@ public class Client implements APIClient{
 
     public JSONArray getAllBoxes(String workspaceId) throws IOException {
         return (JSONArray) doGet(MessageFormat.format("{0}/services/workspaces/{1}/boxes", endpointUrl,
-                URLEncoder.encode(workspaceId, UTF_8)), true);
+                URLEncoder.encode(workspaceId, Constants.UTF_8)), true);
     }
 
     public JSONArray getBoxes(String workspaceId) throws IOException {
@@ -242,7 +234,7 @@ public class Client implements APIClient{
     public JSONObject createWorkspace(String name) throws IOException {
         JSONObject workspace = new JSONObject();
         workspace.put("name", name);
-        workspace.put("schema", BASE_ELASTICBOX_SCHEMA + "workspaces/team");
+        workspace.put("schema", Constants.BASE_ELASTICBOX_SCHEMA + "workspaces/team");
         return doPost("/services/workspaces", workspace);
     }
 
@@ -675,6 +667,7 @@ public class Client implements APIClient{
                 Constants.AUTOMATIC_UPDATES_OFF);
     }
 
+
     public IProgressMonitor deploy(String boxVersion, String policyId, String instanceName, String workspaceId,
             List<String> tags, JSONArray variables, String expirationTime, String expirationOperation,
             JSONArray policyVariables, String automaticUpdates)
@@ -706,7 +699,7 @@ public class Client implements APIClient{
         }
 
         JSONObject deployRequest = new JSONObject();
-        deployRequest.put("schema", BASE_ELASTICBOX_SCHEMA + DEPLOYMENT_REQUEST_SCHEMA_NAME);
+        deployRequest.put("schema", Constants.BASE_ELASTICBOX_SCHEMA + Constants.DEPLOYMENT_REQUEST_SCHEMA_NAME);
         deployRequest.put("name", name);
         deployRequest.put("box", box);
         deployRequest.put("owner", workspaceId);
@@ -725,8 +718,6 @@ public class Client implements APIClient{
         deployRequest.put("instance_tags", instanceTags);
 
         JSONObject instance = doPost("/services/instances", deployRequest);
-
-
 
         return new InstanceProgressMonitor(endpointUrl + instance.getString("uri"),
                 Collections.singleton(InstanceOperation.DEPLOY), instance.getString("updated"));
@@ -813,7 +804,7 @@ public class Client implements APIClient{
 
     public IProgressMonitor createTemplate(String name, JSONObject instance, String datacenter, String folder, String datastore) throws IOException {
         JSONObject taskInput = new JSONObject();
-        taskInput.put("schema", BASE_ELASTICBOX_SCHEMA + "vsphere/tasks/create-template");
+        taskInput.put("schema", Constants.BASE_ELASTICBOX_SCHEMA + "vsphere/tasks/create-template");
         taskInput.put("name", name);
         taskInput.put("instance_id", instance.getString("id"));
         if (StringUtils.isNotBlank(datacenter)) {
@@ -850,12 +841,18 @@ public class Client implements APIClient{
         }
     }
 
-    public JSONObject doPost(String url, JSONObject resource) throws IOException {
+    public <T extends JSON> T doPost(String url, JSONObject resource) throws IOException {
         HttpPost post = new HttpPost(prepareUrl(url));
         post.setEntity(new StringEntity(resource.toString(), ContentType.APPLICATION_JSON));
         try {
             HttpResponse response = execute(post);
-            return JSONObject.fromObject(getResponseBodyAsString(response));
+            T jsonResponse =  (T)JSONObject.fromObject(getResponseBodyAsString(response));
+            if (!jsonResponse.isArray()){
+                return jsonResponse;
+            }
+
+            return (T)JSONArray.fromObject(getResponseBodyAsString(response));
+
         } finally {
             post.reset();
         }
@@ -1007,7 +1004,7 @@ public class Client implements APIClient{
 
     private void setRequiredHeaders(HttpRequestBase request) {
         request.setHeader("ElasticBox-Token", token);
-        request.setHeader("ElasticBox-Release", ELASTICBOX_RELEASE);
+        request.setHeader("ElasticBox-Release", Constants.ELASTICBOX_RELEASE);
     }
 
     public static String getResponseBodyAsString(HttpResponse response) throws IOException {

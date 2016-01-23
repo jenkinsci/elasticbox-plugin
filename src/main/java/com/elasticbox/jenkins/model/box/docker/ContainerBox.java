@@ -10,41 +10,20 @@ import org.apache.commons.lang.StringUtils;
  */
 public class ContainerBox extends AbstractBox {
 
-    public ContainerBox(String id, String name) {
-        super(id, name, BoxType.DOCKER);
+    public ContainerBox(ContainerBoxBuilder builder) {
+        super(builder);
     }
 
-    public static class ComplexBuilder {
+    public static class ContainerBoxBuilder extends AbstractBox.ComplexBuilder<ContainerBoxBuilder, ContainerBox> {
 
-        private String newId;
-        private String newName;
-
-        public ComplexBuilder() {}
-
-        public NameBuilder withId(String id) {
-            newId = id;
-            return new NameBuilder();
+        public ContainerBoxBuilder() {
+            this.type = BoxType.DOCKER;
         }
 
-        public class NameBuilder {
-            private NameBuilder() {}
-            public BoxBuilder withName( String name ) {
-                newName = name;
-                return new BoxBuilder();
-            }
-        }
-
-        public class BoxBuilder {
-            private BoxBuilder() {}
-
-            public ContainerBox build() throws ElasticBoxModelException {
-                if (StringUtils.isNotEmpty(newId) &&
-                        StringUtils.isNotEmpty(newName)){
-                    return  new ContainerBox(newId, newName);
-                }
-
-                throw new ElasticBoxModelException("Not valid parameters for building Container(Docker) Box");
-            }
+        @Override
+        public ContainerBox build() {
+            return new ContainerBox(this);
         }
     }
+
 }

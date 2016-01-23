@@ -16,12 +16,17 @@ package com.elasticbox.jenkins.model.repository;
 
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.instance.Instance;
+import com.elasticbox.jenkins.model.repository.error.RepositoryException;
+
+import java.util.List;
 
 /**
  * Created by serna on 1/7/16.
  */
 public interface InstanceRepository {
 
-     Instance deploy(AbstractBox box);
+     public List<Instance> getInstances(String workspace, String [] id) throws RepositoryException;
+
+     public Instance getInstance(String instanceId) throws RepositoryException;
 
 }

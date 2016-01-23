@@ -18,6 +18,11 @@ package com.elasticbox;
  */
 public interface Constants {
 
+    String UTF_8 = "UTF-8";
+    String BASE_ELASTICBOX_SCHEMA = "http://elasticbox.net/schemas/";
+    String ELASTICBOX_RELEASE = "4.0";
+
+
     //---------- Validation deployment data
     String AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS = "Policy box or requirements to find one are mandatory";
     String PROVIDER_SHOULD_BE_PROVIDED = "Provider are mandatory";
@@ -33,15 +38,23 @@ public interface Constants {
     String INSTANCE_ACTION_RECONFIGURE = Client.InstanceOperation.RECONFIGURE;
     String INSTANCE_ACTION_REINSTALL = Client.InstanceOperation.REINSTALL;
     String INSTANCE_ACTION_DELETE_AND_DEPLOY = "deleteAndDeploy";
+    String INSTANCES_PAGE_URL_PATTERN = "{0}/#/instances/{1}/{2}";
+    String INSTANCES_API_RESOURCE = "/services/instances";
 
+    String DEPLOYMENT_REQUEST_SCHEMA_NAME = "deploy-instance-request";
+    String DEPLOYMENT_APPLICATION_REQUEST_SCHEMA_NAME = "deploy/application";
 
-    String ELASTICBOX_SCHEMAS = "http://elasticbox.net/schemas";
+    long DEFAULT_DEPLOYMENT_APPLICATION_BOX_TIMEOUT = 3700;
+
+    String LATEST_BOX_VERSION = "LATEST";
+    String ANY_BOX = "AnyBox";
 
     String AUTOMATIC_UPDATES_OFF = "off";
     String AUTOMATIC_UPDATES_MAJOR = "major";
     String AUTOMATIC_UPDATES_MINOR = "minor";
     String AUTOMATIC_UPDATES_PATCH = "patch";
 
+    //-----------Provider
     String AMAZON_PROVIDER_TYPE = "Amazon Web Services";
     String WINDOWS_CLAIM = "windows";
     String LINUX_CLAIM = "linux";
@@ -50,4 +63,6 @@ public interface Constants {
     String BINDING_TYPE_VARIABLE = "Binding";
     String PRIVATE_VISIBILITY = "private";
 
+    //-----------Log
+    String LOG_PREFIX = "[ElasticBox] - ";
 }

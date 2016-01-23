@@ -20,6 +20,7 @@ import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.api.criteria.AbstractJSONCriteria;
 import com.elasticbox.jenkins.model.repository.api.factory.ModelFactory;
+import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
 import net.sf.json.JSONObject;
 
 /**
@@ -30,11 +31,10 @@ public class InstancesByBoxCriteria extends AbstractJSONCriteria<Instance> {
     private String boxId;
 
     public InstancesByBoxCriteria(String boxId) {
-        //TODO replace null by a factory to build Instances from JSON
-        this(null, boxId);
+        this(boxId, new InstanceFactoryImpl());
     }
 
-    public InstancesByBoxCriteria(ModelFactory<Instance> factory, String boxId) {
+    public InstancesByBoxCriteria(String boxId, ModelFactory<Instance> factory) {
         super(factory);
         this.boxId = boxId;
     }

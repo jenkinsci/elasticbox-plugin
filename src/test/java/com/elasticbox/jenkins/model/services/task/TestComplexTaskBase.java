@@ -35,7 +35,7 @@ public class TestComplexTaskBase {
             }
 
             @Override
-            void performExecute() throws TaskException {
+            protected void performExecute() throws TaskException {
                 try {
                     Thread.sleep(takeTime);
                     counter.incrementAndGet();

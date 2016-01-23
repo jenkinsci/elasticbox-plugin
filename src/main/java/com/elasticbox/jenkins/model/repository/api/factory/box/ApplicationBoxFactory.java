@@ -11,8 +11,10 @@ import net.sf.json.JSONObject;
 public class ApplicationBoxFactory extends AbstractBoxFactory<ApplicationBox> {
     @Override
     public ApplicationBox create(JSONObject jsonObject) throws ElasticBoxModelException {
-        ApplicationBox box = new ApplicationBox.ComplexBuilder()
+        ApplicationBox box = new ApplicationBox.ApplicationBoxBuilder()
+                .withOwner(jsonObject.getString("owner"))
                 .withId(jsonObject.getString("id"))
+                .withMembers(getMembers(jsonObject.getJSONArray("members")))
                 .withName(jsonObject.getString("name"))
                 .build();
 

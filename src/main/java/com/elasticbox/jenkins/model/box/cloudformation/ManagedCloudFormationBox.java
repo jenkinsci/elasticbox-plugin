@@ -1,7 +1,9 @@
 package com.elasticbox.jenkins.model.box.cloudformation;
 
+import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
+import com.elasticbox.jenkins.model.box.policy.PolicyBoxBuilder;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.profile.ProfileType;
 import com.elasticbox.jenkins.model.provider.ProviderType;
@@ -12,8 +14,9 @@ import org.apache.commons.lang.StringUtils;
  */
 public class ManagedCloudFormationBox extends PolicyBox implements CloudFormationBox {
 
-    private ManagedCloudFormationBox(String id, String name, ProfileType type) {
-        super(id, name, BoxType.CLOUDFORMATION, type);
+    private ManagedCloudFormationBox(ManagedCloudFormationPolicyBoxBuilder builder) {
+        super(builder);
+
     }
 
     public CloudFormationBoxType getCloudFormationType() {
@@ -60,51 +63,25 @@ public class ManagedCloudFormationBox extends PolicyBox implements CloudFormatio
 
     }
 
-    public static class ComplexBuilder {
+    public static class ManagedCloudFormationPolicyBoxBuilder extends PolicyBoxBuilder<ManagedCloudFormationPolicyBoxBuilder,ManagedCloudFormationBox> {
 
-        private ManagedCloudFormationProfileType managedCloudFormationType;
-        private String newId;
-        private String newName;
 
-        public IdBuilder withManagedCloudFormationType( String profileSchema ){
-            try {
-                managedCloudFormationType = ManagedCloudFormationProfileType.getType(profileSchema);
-            } catch (ElasticBoxModelException e) {
-                e.printStackTrace();
-            }
-            return new IdBuilder();
+        public ManagedCloudFormationPolicyBoxBuilder() {
+            this.type = BoxType.CLOUDFORMATION;
         }
 
-        public class IdBuilder {
-            private IdBuilder() {}
-            public NameBuilder withId( String id ) {
-                newId = id;
-                return new NameBuilder();
-            }
+        @Override
+        public ManagedCloudFormationPolicyBoxBuilder withProfileType(String profileSchema) {
+            this.profileType = ManagedCloudFormationProfileType.getType(profileSchema);
+            return getThis();
         }
 
-        public class NameBuilder {
-            private NameBuilder() {}
-            public CloudFormationBuilder withName( String name ) {
-                newName = name;
-                return new CloudFormationBuilder();
-            }
-        }
-
-        public class CloudFormationBuilder {
-            private CloudFormationBuilder() {}
-
-            public ManagedCloudFormationBox build() throws ElasticBoxModelException {
-                if (managedCloudFormationType!=null &&
-                        StringUtils.isNotEmpty(newId) &&
-                        StringUtils.isNotEmpty(newName)){
-                    return new ManagedCloudFormationBox(newId, newName, managedCloudFormationType);
-                }
-
-                throw new ElasticBoxModelException("Not valid parameters for building CloudFormation box");
-            }
+        @Override
+        public ManagedCloudFormationBox build() {
+            return new ManagedCloudFormationBox(this);
         }
 
     }
+
 
 }

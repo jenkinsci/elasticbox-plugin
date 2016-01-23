@@ -15,13 +15,17 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by serna on 11/26/15.
  */
     public class BoxRepositoryAPIImpl implements BoxRepository {
 
+    private static final Logger logger = Logger.getLogger(BoxRepositoryAPIImpl.class.getName());
 
     private APIClient client;
 
@@ -34,7 +38,7 @@ import java.util.List;
             JSONArray boxesFromAPI = client.getAllBoxes(workspace);
             return  new NoPolicyAndNoApplicationBoxes().filter(boxesFromAPI);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "There is an error retrieving boxes for this workspace: " + workspace + " from the API", e);
             throw new RepositoryException("Error retrieving no policies and no application boxes from API, workspace: "+workspace);
         }
 
@@ -50,7 +54,7 @@ import java.util.List;
             JSONArray boxesFromAPI = client.getAllBoxes(workspace);
             return new NoPolicyBoxesJSONCriteria().filter(boxesFromAPI);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "There is an error retrieving boxes for this workspace: " + workspace + " from the API", e);
             throw new RepositoryException("Error retrieving no policies boxes from API, workspace: "+workspace);
         }
     }
@@ -66,7 +70,7 @@ import java.util.List;
             List<PolicyBox> policyBoxes = new CloudFormationPolicyBoxesJSONCriteria().filter(boxesFromAPI);
             return policyBoxes;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "There is an error retrieving boxes for this workspace: " + workspace + " from the API", e);
             throw new RepositoryException("Error retrieving cloudformation policies boxes from API, workspace: "+workspace);
         }
     }
@@ -82,7 +86,7 @@ import java.util.List;
             List<PolicyBox> policyBoxes = new NoCloudFormationPolicyBoxesJSONCriteria().filter(boxesFromAPI);
             return policyBoxes;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "There is an error retrieving boxes for this workspace: " + workspace + " from the API", e);
             throw new RepositoryException("Error retrieving no cloudformation policies boxes from API, workspace: "+workspace);
         }
     }
@@ -94,15 +98,35 @@ import java.util.List;
             final AbstractBox box = new GenericBoxFactory().create(json);
             return box;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "There is an error retrieving box: " + boxId + " from the API", e);
             throw new RepositoryException("Error retrieving box: "+boxId+" from API");
         } catch (ElasticBoxModelException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error converting box: \"+boxId+\" from JSON", e);
             throw new RepositoryException("Error converting box: "+boxId+" from JSON");
         }
     }
 
+    @Override
+    public List<AbstractBox> getBoxVersions(String boxId) throws RepositoryException {
+        try{
+            JSONArray jsonArray = client.getBoxVersions(boxId);
+            final GenericBoxFactory genericBoxFactory = new GenericBoxFactory();
+            List<AbstractBox> boxVersions =  new ArrayList<>();
+            for (Object jsonElement : jsonArray) {
+                JSONObject jsonBox = (JSONObject)jsonElement;
+                final AbstractBox abstractBox = genericBoxFactory.create(jsonBox);
+                boxVersions.add(abstractBox);
+            }
+            return boxVersions;
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "There is an error retrieving box versions for box: " + boxId, e);
+            throw new RepositoryException("Error retrieving box versions for box: "+boxId);
+        } catch (ElasticBoxModelException e) {
+            logger.log(Level.SEVERE, "Error converting box version to boxes model for: "+boxId, e);
+            throw new RepositoryException("Error converting box version to boxes model for: "+boxId);
+        }
 
+    }
 
 
 }

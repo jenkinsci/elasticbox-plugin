@@ -13,6 +13,107 @@ import java.io.InputStream;
  */
 public class UnitTestingUtils {
 
+    private static String processingInstance = "{\n" +
+            "    \"box\": \"388d5e7c-2e26-490f-adcf-37cf244ee27f\",\n" +
+            "    \"policy_box\": {\n" +
+            "      \"profile\": {\n" +
+            "        \"image\": \"test\",\n" +
+            "        \"instances\": 1,\n" +
+            "        \"keypair\": \"test_keypair\",\n" +
+            "        \"location\": \"Simulated Location\",\n" +
+            "        \"flavor\": \"test.micro\",\n" +
+            "        \"schema\": \"http://elasticbox.net/schemas/test/compute/profile\"\n" +
+            "      },\n" +
+            "      \"provider_id\": \"0476718d-2b00-45ce-8a1c-30b10a16cfc7\",\n" +
+            "      \"automatic_updates\": \"off\",\n" +
+            "      \"name\": \"TestDeploymentPolicy\",\n" +
+            "      \"created\": \"2016-01-07 12:26:33.685146\",\n" +
+            "      \"deleted\": null,\n" +
+            "      \"variables\": [],\n" +
+            "      \"updated\": \"2016-01-07 12:26:33.685146\",\n" +
+            "      \"lifespan\": {\n" +
+            "        \"operation\": \"none\"\n" +
+            "      },\n" +
+            "      \"visibility\": \"workspace\",\n" +
+            "      \"members\": [],\n" +
+            "      \"claims\": [\n" +
+            "        \"test\"\n" +
+            "      ],\n" +
+            "      \"owner\": \"operations\",\n" +
+            "      \"organization\": \"elasticbox\",\n" +
+            "      \"id\": \"1763dddd-2668-4959-8907-3c84b5e98b0e\",\n" +
+            "      \"schema\": \"http://elasticbox.net/schemas/boxes/policy\"\n" +
+            "    },\n" +
+            "    \"updated\": \"2016-01-11 11:31:22.270675\",\n" +
+            "    \"automatic_updates\": \"off\",\n" +
+            "    \"name\": \"scriptbox1\",\n" +
+            "    \"service\": {\n" +
+            "      \"type\": \"Linux Compute\",\n" +
+            "      \"id\": \"eb-w02mw\",\n" +
+            "      \"machines\": []\n" +
+            "    },\n" +
+            "    \"tags\": [\n" +
+            "      \"sb1\",\n" +
+            "      \"deploy2\"\n" +
+            "    ],\n" +
+            "    \"deleted\": null,\n" +
+            "    \"variables\": [\n" +
+            "      {\n" +
+            "        \"required\": true,\n" +
+            "        \"type\": \"Text\",\n" +
+            "        \"name\": \"var1\",\n" +
+            "        \"value\": \"value for var1 in sb1\",\n" +
+            "        \"visibility\": \"public\"\n" +
+            "      }\n" +
+            "    ],\n" +
+            "    \"created\": \"2016-01-11 11:31:22.270675\",\n" +
+            "    \"state\": \"processing\",\n" +
+            "    \"uri\": \"/services/instances/i-kbfgmo\",\n" +
+            "    \"application\": {\n" +
+            "      \"id\": \"f616cc35-9d33-47d8-8ebd-7c8acebcd906\",\n" +
+            "      \"name\": \"ApplicationBoxTestDeployName\"\n" +
+            "    },\n" +
+            "    \"boxes\": [\n" +
+            "      {\n" +
+            "        \"updated\": \"2016-01-07 12:04:30.407625\",\n" +
+            "        \"automatic_updates\": \"off\",\n" +
+            "        \"requirements\": [\n" +
+            "          \"test\",\n" +
+            "          \"linux\"\n" +
+            "        ],\n" +
+            "        \"name\": \"scriptbox1\",\n" +
+            "        \"created\": \"2016-01-07 12:03:37.413823\",\n" +
+            "        \"deleted\": null,\n" +
+            "        \"variables\": [\n" +
+            "          {\n" +
+            "            \"required\": true,\n" +
+            "            \"type\": \"Text\",\n" +
+            "            \"name\": \"var1\",\n" +
+            "            \"value\": \"\",\n" +
+            "            \"visibility\": \"public\"\n" +
+            "          }\n" +
+            "        ],\n" +
+            "        \"visibility\": \"workspace\",\n" +
+            "        \"id\": \"388d5e7c-2e26-490f-adcf-37cf244ee27f\",\n" +
+            "        \"members\": [],\n" +
+            "        \"owner\": \"operations\",\n" +
+            "        \"organization\": \"elasticbox\",\n" +
+            "        \"events\": {},\n" +
+            "        \"schema\": \"http://elasticbox.net/schemas/boxes/script\"\n" +
+            "      }\n" +
+            "    ],\n" +
+            "    \"members\": [],\n" +
+            "    \"bindings\": [],\n" +
+            "    \"owner\": \"operations\",\n" +
+            "    \"operation\": {\n" +
+            "      \"event\": \"deploy\",\n" +
+            "      \"workspace\": \"operations\",\n" +
+            "      \"created\": \"2016-01-11 11:31:22.268407\"\n" +
+            "    },\n" +
+            "    \"id\": \"i-kbfgmo\",\n" +
+            "    \"schema\": \"http://elasticbox.net/schemas/instance\"\n" +
+            "  }";
+
 
     private static String deployScriptBoxRequest = "{\n" +
             "  \"schema\": \"http://elasticbox.net/schemas/deploy-instance-request\",\n" +
@@ -386,7 +487,14 @@ public class UnitTestingUtils {
             "\"updated\": \"2015-11-25 16:40:25.599207\",\n" +
             "\"visibility\": \"workspace\",\n" +
             "\"uri\": \"/services/boxes/02fab23c-5278-41ec-8d9e-0f7936582937\",\n" +
-            "\"members\": [],\n" +
+            "\"members\": [{\n" +
+            "\"role\": \"collaborator\",\n" +
+            "\"workspace\": \"jenkins1\"\n" +
+            "},\n" +
+            "{\n" +
+            "\"role\": \"collaborator\",\n" +
+            "\"workspace\": \"engineering\"\n" +
+            "}],\n" +
             "\"owner\": \"operations\",\n" +
             "\"organization\": \"elasticbox\",\n" +
             "\"type\": \"Dynamo DB Domain\",\n" +
@@ -394,6 +502,10 @@ public class UnitTestingUtils {
             "\"description\": \"No tiene policy\"\n" +
             "}";
 
+
+    public static JSONObject getFakeProcessingInstance(){
+        return (JSONObject) JSONSerializer.toJSON(processingInstance);
+    }
 
     public static JSONObject getFakeEmptyApplicationBox(){
         return (JSONObject) JSONSerializer.toJSON(emptyApplicationBox);

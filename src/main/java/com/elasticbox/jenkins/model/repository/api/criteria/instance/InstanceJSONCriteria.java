@@ -14,10 +14,10 @@
 
 package com.elasticbox.jenkins.model.repository.api.criteria.instance;
 
-import com.elasticbox.jenkins.model.box.BoxType;
+import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.api.criteria.AbstractJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.factory.box.BoxFactory;
 import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactory;
+import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
 import net.sf.json.JSONObject;
 
 /**

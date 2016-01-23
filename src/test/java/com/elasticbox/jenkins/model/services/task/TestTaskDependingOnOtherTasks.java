@@ -40,7 +40,6 @@ public class TestTaskDependingOnOtherTasks extends TestComplexTaskBase{
         task.execute();
 
         assertTrue("The task should be finished ok", task.isDone());
-        assertTrue("The task should be finished ok", task.isChecked());
 
         assertTrue("The simple should be finished ok", simpleTask.isDone());
         assertTrue("The scheduled should be finished ok", scheduledPoolingTask.isDone());
@@ -70,7 +69,6 @@ public class TestTaskDependingOnOtherTasks extends TestComplexTaskBase{
         task.execute();
 
         assertTrue("The task should be finished ok", task.isDone());
-        assertTrue("The task should be checked NO ok", !task.isChecked());
 
         assertTrue("The simple should be finished NO ok", !simpleTask.isDone());
         assertTrue("The scheduled should be finished ok", scheduledPoolingTask.isDone());
@@ -100,7 +98,6 @@ public class TestTaskDependingOnOtherTasks extends TestComplexTaskBase{
         task.execute();
 
         assertTrue("The task should be finished ok", task.isDone());
-        assertTrue("The task should be checked NO ok", !task.isChecked());
 
         assertTrue("The simple should be finished NO ok", simpleTask.isDone());
         assertTrue("The scheduled should be finished ok", !scheduledPoolingTask.isDone());

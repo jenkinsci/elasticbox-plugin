@@ -12,11 +12,11 @@
 
 package com.elasticbox.jenkins;
 
-import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
-import com.elasticbox.jenkins.model.services.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;

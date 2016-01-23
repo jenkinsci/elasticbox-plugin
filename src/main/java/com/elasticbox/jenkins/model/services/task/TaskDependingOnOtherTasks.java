@@ -5,13 +5,17 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by serna on 12/6/15.
  */
 public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
 
-    public static final String LINKED_TASK_THREAD_NAME = "LinkedTask";
+    private static final Logger logger = Logger.getLogger(TaskDependingOnOtherTasks.class.getName());
+
+    public static final String LINKED_TASK_THREAD_NAME = "DependingOnTaskThread";
 
     private List<Task<?>> dependingOnTasks;
 
@@ -32,13 +36,7 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
         this.executorService = executor;
     }
 
-    public List<Task<?>> getLinkedTasks() {
-        return dependingOnTasks;
-    }
-
-    public Long getTimeout() {
-        return timeout;
-    }
+    protected abstract boolean prepareDependingOnTasks(R mainTaskResult, List<Task<?>> dependingOnTasks);
 
     @Override
     public void execute() throws TaskException {
@@ -46,43 +44,32 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
         final CountDownLatch countDownLatch = new CountDownLatch(dependingOnTasks.size());
 
         try {
+
             performExecute();
 
-            for (final Task task : dependingOnTasks) {
-                executorService.submit(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    new EnableTaskWaitForThisToFinishDecorator(task, countDownLatch).execute();
-                                } catch (TaskException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-                );
+            if(prepareDependingOnTasks(result, dependingOnTasks)){
+                for (final Task task : dependingOnTasks) {
+                    executorService.submit(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        new EnableTaskWaitForThisToFinishDecorator(task, countDownLatch).execute();
+                                    } catch (TaskException e) {
+                                        logger.log(Level.SEVERE, "Error executing dependingOnTask: "+task.getClass().getSimpleName(),e);
+                                        countDownLatch.countDown();
+                                    }}});
+                }
+
+                if (!countDownLatch.await(timeout, TimeUnit.SECONDS)){
+                    logger.log(Level.SEVERE, "Error, timeout reached executing: "+this.getClass().getSimpleName());
+                    throw new TaskException("Error, timeout reached executing: "+this.getClass().getSimpleName());
+                }
+
+                logger.log(Level.INFO, "Task "+this.getClass().getSimpleName()+" finished");
             }
 
-            if (!countDownLatch.await(timeout, TimeUnit.SECONDS)){
-                //TODO logger timeout reached
-                System.out.println("Timeout reached before checking if main task is completed");
-                return;
-            }
-
-            for (Task<?> task : dependingOnTasks) {
-                if (!task.isDone())
-                    return;
-            }
-
-            checked = true;
-
-        } catch (TaskException e) {
-            //TODO logger error doing the main task
-            e.printStackTrace();
-            throw e;
         } catch (InterruptedException e) {
-            //TODO logger
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Thread interrupted waiting for dependingOnTasks to finish",e);
             throw new TaskException("Thread interrupted before completion");
         }finally {
             executorService.shutdownNow();
@@ -90,11 +77,15 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
 
     }
 
-    public boolean isChecked() {
-        return checked;
+    public Long getTimeout() {
+        return timeout;
     }
 
-    protected boolean areTasksToCheckDone(){
+    protected List<Task<?>> getDependingOnTasks() {
+        return dependingOnTasks;
+    }
+
+    protected boolean allDependingOnTasksDone(){
         for (Task<?> task : dependingOnTasks) {
             if (!task.isDone())
                 return false;
@@ -102,7 +93,7 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
         return true;
     }
 
-    protected List<Task<?>> getFailures(){
+    protected List<Task<?>> getDependingOnTasksFailures(){
         List failures =  new ArrayList();
         for (Task<?> task : dependingOnTasks) {
             if (!task.isDone())
@@ -117,7 +108,6 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
 
     public static abstract class AbstractBuilder<B extends AbstractBuilder<B,T>,T> implements Builder<T> {
 
-        protected Task taskToExecute;
         protected List<Task<?>> dependingOnTasks =  new ArrayList<>();
         protected Long timeout;
 

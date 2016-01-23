@@ -13,10 +13,12 @@ public class ScriptBoxFactory extends AbstractBoxFactory<ScriptBox> {
     @Override
     public ScriptBox create(JSONObject jsonObject) throws ElasticBoxModelException {
 
-        ScriptBox box = new ScriptBox.ComplexBuilder()
+        final ScriptBox box = new ScriptBox.ScriptBoxBuilder()
+                .withOwner(jsonObject.getString("owner"))
                 .withId(jsonObject.getString("id"))
                 .withName(jsonObject.getString("name"))
                 .withRequirements(JSONFactoryUtils.toStringArray(jsonObject.getJSONArray("requirements")))
+                .withMembers(getMembers(jsonObject.getJSONArray("members")))
                 .build();
 
         return  box;

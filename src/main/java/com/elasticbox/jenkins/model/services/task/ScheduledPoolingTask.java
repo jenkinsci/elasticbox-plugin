@@ -3,11 +3,15 @@ package com.elasticbox.jenkins.model.services.task;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by serna on 12/7/15.
  */
 public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
+
+    private static final Logger logger = Logger.getLogger(ScheduledPoolingTask.class.getName());
 
     private long delay;
     private long initialDelay;
@@ -20,7 +24,7 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
     public ScheduledPoolingTask(long delay, long initialDelay, long timeout) {
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("ScheduledPoolingTask-%d")
+                .setNameFormat("ScheduledPoolingTask["+this.getClass().getSimpleName()+"]-%d")
                 .build();
 
         this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(threadFactory);
@@ -46,11 +50,15 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
                             if (isDone()) {
                                 scheduledFuture.cancel(true);
                                 countDownLatch.countDown();
+                            } else {
+                                result = null;
                             }
 
                         } catch (TaskException e) {
-                            //TODO logger
-                            e.printStackTrace();
+                            result = null;
+                            logger.log(Level.SEVERE, "Error executing task: "+this.getClass().getSimpleName(),e);
+                            scheduledFuture.cancel(true);
+                            countDownLatch.countDown();
                         }
                     }
                 }, initialDelay, delay, TimeUnit.SECONDS);
@@ -58,14 +66,15 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
         try {
             final boolean await = countDownLatch.await(timeout, TimeUnit.SECONDS);
             if (!await){
-                //TODO logger
-                throw new TaskException("Timeout reached");
+                logger.log(Level.SEVERE, "Timeout reached("+timeout+" secs) executing task: "+this.getClass().getSimpleName());
+                throw new TaskException("Timeout reached("+timeout+" secs) executing task: "+this.getClass().getSimpleName());
+            }else{
+                logger.log(Level.INFO, "ScheduledPoolingTask: "+this.getClass().getSimpleName()+" finished, OK?: "+isDone());
             }
 
         } catch (InterruptedException e) {
-            //TODO logger
-            e.printStackTrace();
-            throw new TaskException("Thread interrupted before completion");
+            logger.log(Level.SEVERE, "Thread interrupted before completion executing task: "+this.getClass().getSimpleName(),e);
+            throw new TaskException("Thread interrupted before completion executing task: "+this.getClass().getSimpleName());
         }finally {
             scheduledExecutorService.shutdownNow();
         }

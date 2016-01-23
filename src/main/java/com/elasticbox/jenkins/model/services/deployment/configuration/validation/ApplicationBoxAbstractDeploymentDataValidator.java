@@ -12,44 +12,42 @@
  *
  */
 
-package com.elasticbox.jenkins.model.services.deployment.types;
+package com.elasticbox.jenkins.model.services.deployment.configuration.validation;
 
+import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.builders.DeployBox;
-import com.elasticbox.jenkins.model.box.AbstractBox;
-import com.elasticbox.jenkins.model.box.BoxType;
-import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.model.repository.BoxRepository;
-import com.elasticbox.jenkins.model.repository.error.RepositoryException;
-import com.elasticbox.jenkins.model.services.deployment.DeploymentValidationResult;
+import com.elasticbox.jenkins.builders.InstanceExpiration;
+import com.elasticbox.jenkins.builders.InstanceExpirationSchedule;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.deployment.execution.context.ApplicationBoxDeploymentContext;
+import com.elasticbox.jenkins.util.TaskLogger;
+import com.elasticbox.jenkins.util.VariableResolver;
+import hudson.AbortException;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import org.apache.commons.lang.StringUtils;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by serna on 11/30/15.
  */
-public class ApplicationBoxDeploymentTypeHandler extends AbstractDeploymentTypeHandler {
+public class ApplicationBoxAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
 
-    public ApplicationBoxDeploymentTypeHandler() {
-        super(DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE);
+    @Override
+    public DeploymentType getManagedType() {
+        return DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE;
     }
 
     @Override
-    public List<PolicyBox> retrievePoliciesToDeploy(BoxRepository boxRepository, String workspace, final AbstractBox boxToDeploy) throws RepositoryException {
-        return new ArrayList<PolicyBox>();
-    }
-
-    @Override
-    public boolean canManage(AbstractBox boxToDeploy) {
-        return boxToDeploy.getType() == BoxType.APPLICATION;
-    }
-
-
-    @Override
-    public DeploymentValidationResult validateDeploymentData(DeployBox deployData) {
+    public DeploymentValidationResult validateDeploymentDataType(DeployBox deployData) {
 
         final String claims = deployData.getClaims();
         final Set<String> claimsSet = new HashSet<String>();

@@ -18,6 +18,7 @@ import com.elasticbox.Client;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.api.criteria.AbstractJSONCriteria;
 import com.elasticbox.jenkins.model.repository.api.factory.ModelFactory;
+import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
 import net.sf.json.JSONObject;
 
 /**
@@ -26,8 +27,7 @@ import net.sf.json.JSONObject;
 public class ReinstallableInstancesCriteria extends AbstractJSONCriteria<Instance> {
 
     public ReinstallableInstancesCriteria() {
-        //TODO replace null by a factory to build Instances from JSON
-        this(null);
+        this(new InstanceFactoryImpl());
     }
 
     public ReinstallableInstancesCriteria(ModelFactory<Instance> factory) {

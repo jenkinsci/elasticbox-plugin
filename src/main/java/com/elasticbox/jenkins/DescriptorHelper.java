@@ -16,7 +16,7 @@ import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.Constants;
-import com.elasticbox.jenkins.model.services.deployment.types.DeploymentType;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.JsonUtil;
@@ -574,7 +574,7 @@ public class DescriptorHelper {
 
     public static void fixDeploymentPolicyFormData(JSONObject formData) {
 
-        final DeploymentType boxDeploymentType = DeploymentType.getType(formData.getString("boxDeploymentType"));
+        final DeploymentType boxDeploymentType = DeploymentType.findBy(formData.getString("boxDeploymentType"));
 
         switch (boxDeploymentType){
             case APPLICATIONBOX_DEPLOYMENT_TYPE:

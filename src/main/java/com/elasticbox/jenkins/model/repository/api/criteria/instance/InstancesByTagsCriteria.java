@@ -18,6 +18,8 @@ import com.elasticbox.Client;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.api.criteria.AbstractJSONCriteria;
 import com.elasticbox.jenkins.model.repository.api.factory.ModelFactory;
+import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactory;
+import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
 import net.sf.json.JSONObject;
 
 import java.util.*;
@@ -33,8 +35,7 @@ public class InstancesByTagsCriteria extends AbstractJSONCriteria<Instance> {
     final boolean excludeInaccessible;
 
     public InstancesByTagsCriteria(Set<String> tags, boolean excludeInaccessible) {
-        //TODO replace null by a factory to build Instances from JSON
-        this(tags, excludeInaccessible, null);
+        this(tags, excludeInaccessible, new InstanceFactoryImpl());
     }
 
 

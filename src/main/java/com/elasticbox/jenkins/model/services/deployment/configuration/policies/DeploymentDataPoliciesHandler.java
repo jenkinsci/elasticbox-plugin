@@ -12,21 +12,21 @@
  *
  */
 
-package com.elasticbox.jenkins.model.services;
+package com.elasticbox.jenkins.model.services.deployment.configuration.policies;
 
-import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.model.services.deployment.types.DeploymentTypeHandler;
-import com.elasticbox.jenkins.model.services.error.ServiceException;
+import com.elasticbox.jenkins.model.repository.BoxRepository;
+import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 
 import java.util.List;
 
 /**
- * Created by serna on 1/13/16.
+ * Created by serna on 1/22/16.
  */
-public interface DeployBoxOrderService {
+public interface DeploymentDataPoliciesHandler {
 
-    DeploymentTypeHandler deploymentType(String boxToDeploy) throws ServiceException;
+    List<PolicyBox> retrievePoliciesToDeploy(BoxRepository boxRepository, String workspace, final AbstractBox boxToDeploy) throws RepositoryException;
 
-    DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy) throws ServiceException;
+    boolean canManage(AbstractBox boxToDeploy);
 }

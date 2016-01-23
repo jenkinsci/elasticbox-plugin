@@ -20,7 +20,8 @@ public class TemplateCloudFormationBoxFactory extends AbstractBoxFactory<Templat
     @Override
     public TemplateCloudFormationBox create(JSONObject jsonObject) throws ElasticBoxModelException {
 
-        TemplateCloudFormationBox templateCloudFormationBox = new TemplateCloudFormationBox.ComplexBuilder()
+        TemplateCloudFormationBox templateCloudFormationBox = new TemplateCloudFormationBox.TemplateCloudFormationBoxBuilder()
+                .withOwner(jsonObject.getString("owner"))
                 .withId(jsonObject.getString("id"))
                 .withName(jsonObject.getString("name"))
                 .withRequirements(JSONFactoryUtils.toStringArray(jsonObject.getJSONArray("requirements")))

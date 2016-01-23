@@ -1,15 +1,14 @@
-package com.elasticbox.jenkins.model.services;
+package com.elasticbox.jenkins.model.services.deployment;
 
 import com.elasticbox.jenkins.model.box.*;
-import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.services.deployment.configuration.policies.AbstractDeploymentDataPoliciesHandler;
+import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
-import com.elasticbox.jenkins.model.services.deployment.types.DeploymentTypeHandler;
-import com.elasticbox.jenkins.model.services.deployment.types.DeploymentTypeDirector;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * This is how we decided to encapsulate the business logic. So, this service model the deploy box
@@ -24,13 +23,12 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
     }
 
     @Override
-    public DeploymentTypeHandler deploymentType(String boxToDeploy) throws ServiceException {
+    public DeploymentType deploymentType(String boxToDeploy) throws ServiceException {
 
         try {
             final AbstractBox box = boxRepository.getBox(boxToDeploy);
-
-            final DeploymentTypeHandler deploymentTypeHandler = new DeploymentTypeDirector().getDeploymentType(box);
-            return deploymentTypeHandler;
+            final DeploymentType type = DeploymentType.findBy(box);
+            return type;
 
         } catch (RepositoryException e) {
             e.printStackTrace();
@@ -44,7 +42,7 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
 
         try {
             final AbstractBox box = boxRepository.getBox(boxToDeploy);
-            final List<PolicyBox> policies = new DeploymentTypeDirector().getPolicies(boxRepository, workspace, box);
+            final List<PolicyBox> policies = AbstractDeploymentDataPoliciesHandler.getPolicies(boxRepository, workspace, box);
             return new DeployBoxOrderResult<List<PolicyBox>>(policies);
 
         } catch (RepositoryException e) {
@@ -53,7 +51,6 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
 
     }
-
 
 
 

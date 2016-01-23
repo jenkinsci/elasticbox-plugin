@@ -1,12 +1,22 @@
-package com.elasticbox.jenkins.model.services.deployment.types;
+/*
+ *
+ *  ElasticBox Confidential
+ *  Copyright (c) 2016 All Right Reserved, ElasticBox Inc.
+ *
+ *  NOTICE:  All information contained herein is, and remains the property
+ *  of ElasticBox. The intellectual and technical concepts contained herein are
+ *  proprietary and may be covered by U.S. and Foreign Patents, patents in process,
+ *  and are protected by trade secret or copyright law. Dissemination of this
+ *  information or reproduction of this material is strictly forbidden unless prior
+ *  written permission is obtained from ElasticBox.
+ *
+ */
+
+package com.elasticbox.jenkins.model.services.deployment.configuration.validation;
 
 import com.elasticbox.Constants;
 import com.elasticbox.jenkins.builders.DeployBox;
-import com.elasticbox.jenkins.model.box.AbstractBox;
-import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.model.repository.BoxRepository;
-import com.elasticbox.jenkins.model.repository.error.RepositoryException;
-import com.elasticbox.jenkins.model.services.deployment.DeploymentValidationResult;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -17,28 +27,15 @@ import java.util.Set;
 /**
  * Created by serna on 11/30/15.
  */
-public class PolicyBasedDeploymentTypeHandler extends AbstractDeploymentTypeHandler {
+public class PolicyBasedAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
 
-
-    public PolicyBasedDeploymentTypeHandler() {
-        super(DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE);
+    @Override
+    public DeploymentType getManagedType() {
+        return DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE;
     }
 
     @Override
-    public List<PolicyBox> retrievePoliciesToDeploy(BoxRepository boxRepository, String workspace, final AbstractBox boxToDeploy) throws RepositoryException {
-
-        List<PolicyBox> noCloudFormationPolicyBoxes = boxRepository.getNoCloudFormationPolicyBoxes(workspace);
-        return matchRequirementsVsClaims(noCloudFormationPolicyBoxes, boxToDeploy);
-
-    }
-
-    @Override
-    public boolean canManage(AbstractBox boxToDeploy) {
-        return true;
-    }
-
-    @Override
-    public DeploymentValidationResult validateDeploymentData(DeployBox deployData) {
+    public DeploymentValidationResult validateDeploymentDataType(DeployBox deployData) {
         final String profile = deployData.getProfile();
         final String claims = deployData.getClaims();
         final DeploymentValidationResult ok = new DeploymentValidationResult() {

@@ -12,31 +12,17 @@
  *
  */
 
-package com.elasticbox.jenkins.model.services.deployment;
+package com.elasticbox.jenkins.model.repository.api.serializer.deployment;
 
-import com.elasticbox.jenkins.model.services.deployment.types.DeploymentType;
-
-import java.util.List;
+import com.elasticbox.jenkins.model.services.deployment.execution.context.AbstractBoxDeploymentContext;
+import com.elasticbox.jenkins.model.services.deployment.execution.order.AbstractDeployBoxOrder;
+import net.sf.json.JSONObject;
 
 /**
- * Created by serna on 1/14/16.
+ * Created by serna on 1/22/16.
  */
-public interface DeploymentValidationResult {
+public interface BoxDeploymentRequestSerializer<R extends AbstractDeployBoxOrder,T extends AbstractBoxDeploymentContext<R>> {
 
-    boolean isOk();
-
-    List<Cause> causes();
-
-    DeploymentData getDeploymentData();
-
-    interface Cause{
-        String message();
-        String field();
-    }
-
-    interface DeploymentData {
-
-        DeploymentType getDeploymentType();
-    }
+     JSONObject createRequest(T context);
 
 }

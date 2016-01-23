@@ -14,6 +14,8 @@
 
 package com.elasticbox.jenkins.model.services.task;
 
+import java.util.List;
+
 /**
  * Created by serna on 12/9/15.
  */
@@ -30,7 +32,7 @@ public class TaskDependingOnOtherTasksExample extends TaskDependingOnOtherTasks<
     }
 
     @Override
-    void performExecute() throws TaskException {
+    protected void performExecute() throws TaskException {
         if (exception){
             throw new TaskException("Exception in main task");
         }
@@ -52,6 +54,12 @@ public class TaskDependingOnOtherTasksExample extends TaskDependingOnOtherTasks<
     @Override
     public Integer getResult() {
         return executionCounter;
+    }
+
+
+    @Override
+    protected boolean prepareDependingOnTasks(Integer mainTaskResult, List<Task<?>> dependingOnTasks) {
+        return true;
     }
 
 

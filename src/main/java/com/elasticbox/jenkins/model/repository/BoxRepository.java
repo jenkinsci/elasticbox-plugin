@@ -19,4 +19,6 @@ public interface BoxRepository {
 
     public AbstractBox getBox(String boxId) throws RepositoryException;
 
+    public List<AbstractBox> getBoxVersions(String boxId) throws RepositoryException;
+
 }

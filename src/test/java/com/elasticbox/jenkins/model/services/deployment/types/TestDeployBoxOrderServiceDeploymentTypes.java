@@ -19,13 +19,12 @@ import com.elasticbox.jenkins.UnitTestingUtils;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
-import com.elasticbox.jenkins.model.services.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 import net.sf.json.JSONObject;
 import org.junit.Test;
-
 import java.io.IOException;
-
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,25 +37,25 @@ public class TestDeployBoxOrderServiceDeploymentTypes {
     @Test
     public void testPolicyBasedDeploymentType() throws IOException, RepositoryException, ServiceException {
 
-        testDeploymentType(UnitTestingUtils.getFakeScriptBox(), PolicyBasedDeploymentTypeHandler.class);
+        testDeploymentType(UnitTestingUtils.getFakeScriptBox(), DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE);
 
     }
 
     @Test
     public void testApplicationBoxBasedDeploymentType() throws IOException, RepositoryException, ServiceException {
 
-        testDeploymentType(UnitTestingUtils.getFakeApplicationBox(), ApplicationBoxDeploymentTypeHandler.class);
+        testDeploymentType(UnitTestingUtils.getFakeApplicationBox(), DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE);
 
     }
 
     @Test
     public void testCloudFormationManagedDeploymentType() throws IOException, RepositoryException, ServiceException {
 
-        testDeploymentType(UnitTestingUtils.getFakeCloudFormationManagedBox(), CloudFormationManagedDeploymentTypeHandler.class);
+        testDeploymentType(UnitTestingUtils.getFakeCloudFormationManagedBox(), DeploymentType.CLOUDFORMATIONMANAGED_DEPLOYMENT_TYPE);
 
     }
 
-    private void testDeploymentType(JSONObject fakeBox, Class deploymentTypeClass) throws IOException, ServiceException {
+    private void testDeploymentType(JSONObject fakeBox, DeploymentType targetDeploymentType) throws IOException, ServiceException {
 
         final APIClient api = mock(APIClient.class);
         when(api.getBox(fakeBox.getString("id"))).thenReturn(fakeBox);
@@ -65,9 +64,9 @@ public class TestDeployBoxOrderServiceDeploymentTypes {
 
         final DeployBoxOrderServiceImpl deployBoxOrderService = new DeployBoxOrderServiceImpl(boxRepository);
 
-        final DeploymentTypeHandler deploymentTypeHandler = deployBoxOrderService.deploymentType(fakeBox.getString("id"));
+        final DeploymentType deploymentType = deployBoxOrderService.deploymentType(fakeBox.getString("id"));
 
-        assertTrue("Deployment type should be "+deploymentTypeClass.getSimpleName(), deploymentTypeHandler.getClass() == deploymentTypeClass);
+        assertTrue("Deployment type should be "+targetDeploymentType, deploymentType == targetDeploymentType);
 
     }
 

@@ -37,7 +37,7 @@ public class TestScheduledPoolingTask {
             }
 
             @Override
-            void performExecute() throws TaskException {
+            protected void performExecute() throws TaskException {
                 System.out.println("Execution "+counter);
                 counter.incrementAndGet();
             }
@@ -68,7 +68,7 @@ public class TestScheduledPoolingTask {
             }
 
             @Override
-            void performExecute() throws TaskException {
+            protected void performExecute() throws TaskException {
                 counter.incrementAndGet();
             }
 
@@ -95,7 +95,7 @@ public class TestScheduledPoolingTask {
             }
 
             @Override
-            void performExecute() throws TaskException {
+            protected void performExecute() throws TaskException {
                 throw new TaskException("Throwing an error");
             }
 

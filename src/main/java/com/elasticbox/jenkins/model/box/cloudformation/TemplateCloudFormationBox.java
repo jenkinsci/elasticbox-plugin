@@ -15,9 +15,9 @@ public class TemplateCloudFormationBox extends AbstractBox implements CloudForma
 
     private String [] requirements;
 
-    private TemplateCloudFormationBox(String id, String name, String [] requirements) {
-        super(id, name, BoxType.CLOUDFORMATION);
-        this.requirements = requirements;
+    private TemplateCloudFormationBox(TemplateCloudFormationBoxBuilder builder) {
+        super(builder);
+        this.requirements = builder.requirements;
     }
 
     public CloudFormationBoxType getCloudFormationType() {
@@ -29,43 +29,24 @@ public class TemplateCloudFormationBox extends AbstractBox implements CloudForma
         return requirements;
     }
 
-    public static class ComplexBuilder {
 
-        private String newId;
-        private String newName;
-        private String [] newRequirements;
+    public static class TemplateCloudFormationBoxBuilder extends AbstractBox.ComplexBuilder<TemplateCloudFormationBoxBuilder, TemplateCloudFormationBox> {
 
-        public NameBuilder withId( String id ){
-            newId = id;
-            return new NameBuilder();
+        private String[] requirements;
+
+        public TemplateCloudFormationBoxBuilder() {
+            this.type = BoxType.CLOUDFORMATION;
         }
 
-        public class NameBuilder {
-            private NameBuilder() {}
-            public CloudFormationBuilder withName( String name ) {
-                newName = name;
-                return new CloudFormationBuilder();
-            }
+        public TemplateCloudFormationBoxBuilder withRequirements(String[] requirements) {
+            this.requirements = requirements;
+            return getThis();
         }
 
-        public class CloudFormationBuilder {
-            private CloudFormationBuilder() {}
-
-            public CloudFormationBuilder withRequirements(String [] requirements){
-                newRequirements = requirements;
-                return  this;
-            }
-
-            public TemplateCloudFormationBox build() throws ElasticBoxModelException {
-                if (StringUtils.isNotEmpty(newId) &&
-                        StringUtils.isNotEmpty(newName)){
-                    return new TemplateCloudFormationBox(newId, newName, newRequirements);
-                }
-
-                throw new ElasticBoxModelException("Not valid parameters for building Template CloudFormation box");
-            }
+        @Override
+        public TemplateCloudFormationBox build() {
+            return new TemplateCloudFormationBox(this);
         }
-
     }
 
 }
