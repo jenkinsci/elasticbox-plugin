@@ -97,6 +97,7 @@ public class ApplicationBoxDeploymentContext extends AbstractBoxDeploymentContex
             }
 
             return new ApplicationBoxDeploymentContext.Builder()
+                    .logger(logger)
                     .cloud(cloud)
                     .build(build)
                     .launcher(launcher)
@@ -110,6 +111,7 @@ public class ApplicationBoxDeploymentContext extends AbstractBoxDeploymentContex
                     .expirationOperation(expirationOperation)
                     .expirationTime(expirationTime)
                     .deploymentType(deployBox.getBoxDeploymentType())
+                    .waitForDone(deployBox.isWaitForCompletion())
                     .build();
 
         }

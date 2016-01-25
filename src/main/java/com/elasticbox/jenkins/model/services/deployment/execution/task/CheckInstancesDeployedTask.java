@@ -32,12 +32,13 @@ public class CheckInstancesDeployedTask extends ScheduledPoolingTask<List<Instan
 
     private static final Logger logger = Logger.getLogger(CheckInstancesDeployedTask.class.getName());
 
-    private static final long DEFAULT_DELAY = 360;
+    private static final long DEFAULT_DELAY = 200;
     private static final long DEFAULT_INITIAL_DELAY = 3;
     private static final long DEFAULT_TIMEOUT = 3600;
+    private static final long ALL_INSTANCES_DONE_REQUIRED_TIMES = 2;
 
+    private boolean done = false;
     private int okCounter = 0;
-    private int counter = 0;
     private List<Instance> instances =  new ArrayList<>();
     private AbstractBoxDeploymentContext deploymentContext;
 
@@ -57,52 +58,62 @@ public class CheckInstancesDeployedTask extends ScheduledPoolingTask<List<Instan
 
     @Override
     protected void performExecute() throws TaskException {
-        if(!instances.isEmpty()){
+        if(instances.isEmpty()){
             logger.log(Level.SEVERE, "Error executing task: "+this.getClass().getSimpleName()+", there are no instances to check");
             return;
         }
-        try {
-            counter++;
+        if(!done){
+            try {
 
-            String [] ids = new String[instances.size()];
-            int instanceCounter = 0;
-            for (Instance instance: getInstances()){
-                ids[instanceCounter] = instance.getId();
-                instanceCounter++;
+                String [] ids = new String[instances.size()];
+                int instanceCounter = 0;
+                for (Instance instance: getInstances()){
+                    ids[instanceCounter] = instance.getId();
+                    instanceCounter++;
+                }
+
+                final String owner = deploymentContext.getOrder().getOwner();
+                result = deploymentContext.getInstanceRepository().getInstances(owner, ids);
+
+                if(result != null && !getResult().isEmpty()){
+                    final String endpointUrl = deploymentContext.getCloud().getEndpointUrl();
+                    boolean allInstancesDone = true;
+                    for (Instance instance : getResult()) {
+                        if(instance.getState() != Instance.State.DONE){
+                            allInstancesDone = false;
+                        }
+                        logger.log(Level.INFO, "CheckInstancesDeployedTask executed ["+counter+"], Instance: "+instance.getInstancePageURL(instance.getInstancePageURL(endpointUrl))+", state: "+instance.getState());
+                        deploymentContext.getLogger().info("CheckInstancesDeployedTask executed ["+counter+"], Instance: "+instance.getInstancePageURL(instance.getInstancePageURL(endpointUrl))+", state: "+instance.getState());
+                    }
+                    if (allInstancesDone){
+                        okCounter++;
+                    }
+                }
+
+            } catch (RepositoryException e) {
+                logger.log(Level.SEVERE, "Error executing task: CheckInstancesDeployedTask",e);
+                throw new TaskException("Error executing task: CheckInstancesDeployedTask",e);
             }
-            final String owner = deploymentContext.getOrder().getOwner();
-            result = deploymentContext.getInstanceRepository().getInstances(owner, ids);
-
-        } catch (RepositoryException e) {
-            logger.log(Level.SEVERE, "Error executing task: CheckInstancesDeployedTask",e);
-            throw new TaskException("Error executing task: CheckInstancesDeployedTask",e);
         }
+        logger.log(Level.WARNING, "CheckInstancesDeployedTask executed ["+counter+"], but it's already done");
+        deploymentContext.getLogger().info("CheckInstancesDeployedTask executed ["+counter+"], but it's already done");
+
     }
 
     @Override
     public boolean isDone() {
         final List<Instance> instances = getResult();
         if (instances != null && !instances.isEmpty()){
-            boolean done = true;
             for (Instance instance : instances) {
                 if(instance.getState() != Instance.State.DONE){
-                    done = false;
-                    break;
+                    return false;
                 }
             }
-            if (done ){
-                okCounter++;
-                if(okCounter == 2){
-                    logger.log(Level.INFO, "CheckInstancesDeployedTask executed: ["+counter+"] times, all instances were DONE ["+okCounter+"] times");
-                    deploymentContext.getLogger().info("CheckInstancesDeployedTask executed: {0} times, all instances were DONE {1} times", counter, okCounter);
-                    return true;
-                }
-                logger.log(Level.INFO, "CheckInstancesDeployedTask executed: ["+counter+"] times, all instances were DONE ["+okCounter+"] times");
-                deploymentContext.getLogger().info("CheckInstancesDeployedTask executed: {0} times, all instances were DONE {1} times", counter, okCounter);
+            if(okCounter == ALL_INSTANCES_DONE_REQUIRED_TIMES ){
+                done = true;
             }
-            return  false;
         }
-        return false;
+        return done;
     }
 
     public void setInstances(List<Instance> instances) {

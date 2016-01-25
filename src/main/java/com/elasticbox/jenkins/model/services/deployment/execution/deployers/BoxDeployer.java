@@ -24,8 +24,8 @@ import java.util.List;
 /**
  * Created by serna on 1/23/16.
  */
-public interface BoxDeployer<R, T extends AbstractBoxDeploymentContext> {
+public interface BoxDeployer<T extends AbstractBoxDeploymentContext> {
 
-    R deploy(T context) throws RepositoryException;
+    List<Instance> deploy(T context) throws RepositoryException;
 
 }

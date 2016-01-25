@@ -1,5 +1,7 @@
 package com.elasticbox.jenkins;
 
+import com.elasticbox.jenkins.model.instance.Instance;
+import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -7,13 +9,215 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by serna on 12/3/15.
  */
 public class UnitTestingUtils {
 
-    private static String processingInstance = "{\n" +
+    private static String processingInstance3 = "{\n" +
+            "    \"box\": \"3fbca6e6-7371-4628-861e-677c28954d2d\",\n" +
+            "    \"policy_box\": {\n" +
+            "      \"profile\": {\n" +
+            "        \"image\": \"test\",\n" +
+            "        \"instances\": 1,\n" +
+            "        \"keypair\": \"test_keypair\",\n" +
+            "        \"location\": \"Simulated Location\",\n" +
+            "        \"flavor\": \"test.micro\",\n" +
+            "        \"schema\": \"http://elasticbox.net/schemas/test/compute/profile\"\n" +
+            "      },\n" +
+            "      \"provider_id\": \"0476718d-2b00-45ce-8a1c-30b10a16cfc7\",\n" +
+            "      \"automatic_updates\": \"off\",\n" +
+            "      \"name\": \"TestDeploymentPolicy\",\n" +
+            "      \"created\": \"2016-01-07 12:26:33.685146\",\n" +
+            "      \"deleted\": null,\n" +
+            "      \"variables\": [],\n" +
+            "      \"updated\": \"2016-01-07 12:26:33.685146\",\n" +
+            "      \"lifespan\": {\n" +
+            "        \"operation\": \"none\"\n" +
+            "      },\n" +
+            "      \"visibility\": \"workspace\",\n" +
+            "      \"members\": [],\n" +
+            "      \"claims\": [\n" +
+            "        \"test\"\n" +
+            "      ],\n" +
+            "      \"owner\": \"operations\",\n" +
+            "      \"organization\": \"elasticbox\",\n" +
+            "      \"id\": \"1763dddd-2668-4959-8907-3c84b5e98b0e\",\n" +
+            "      \"schema\": \"http://elasticbox.net/schemas/boxes/policy\"\n" +
+            "    },\n" +
+            "    \"updated\": \"2016-01-11 11:31:22.489472\",\n" +
+            "    \"automatic_updates\": \"off\",\n" +
+            "    \"name\": \"scriptbox3\",\n" +
+            "    \"service\": {\n" +
+            "      \"type\": \"Linux Compute\",\n" +
+            "      \"id\": \"eb-ipe9k\",\n" +
+            "      \"machines\": []\n" +
+            "    },\n" +
+            "    \"tags\": [\n" +
+            "      \"deploy2\"\n" +
+            "    ],\n" +
+            "    \"deleted\": null,\n" +
+            "    \"variables\": [],\n" +
+            "    \"created\": \"2016-01-11 11:31:22.489472\",\n" +
+            "    \"state\": \"processing\",\n" +
+            "    \"uri\": \"/services/instances/i-bcf8va\",\n" +
+            "    \"application\": {\n" +
+            "      \"id\": \"f616cc35-9d33-47d8-8ebd-7c8acebcd906\",\n" +
+            "      \"name\": \"ApplicationBoxTestDeployName\"\n" +
+            "    },\n" +
+            "    \"boxes\": [\n" +
+            "      {\n" +
+            "        \"updated\": \"2016-01-07 12:22:58.596293\",\n" +
+            "        \"automatic_updates\": \"off\",\n" +
+            "        \"requirements\": [\n" +
+            "          \"test\"\n" +
+            "        ],\n" +
+            "        \"name\": \"scriptbox3\",\n" +
+            "        \"created\": \"2016-01-07 12:22:58.596293\",\n" +
+            "        \"deleted\": null,\n" +
+            "        \"variables\": [],\n" +
+            "        \"visibility\": \"workspace\",\n" +
+            "        \"events\": {},\n" +
+            "        \"members\": [],\n" +
+            "        \"owner\": \"operations\",\n" +
+            "        \"organization\": \"elasticbox\",\n" +
+            "        \"id\": \"3fbca6e6-7371-4628-861e-677c28954d2d\",\n" +
+            "        \"schema\": \"http://elasticbox.net/schemas/boxes/script\"\n" +
+            "      }\n" +
+            "    ],\n" +
+            "    \"members\": [],\n" +
+            "    \"bindings\": [],\n" +
+            "    \"owner\": \"operations\",\n" +
+            "    \"operation\": {\n" +
+            "      \"event\": \"deploy\",\n" +
+            "      \"workspace\": \"operations\",\n" +
+            "      \"created\": \"2016-01-11 11:31:22.486439\"\n" +
+            "    },\n" +
+            "    \"id\": \"i-bcf8va\",\n" +
+            "    \"schema\": \"http://elasticbox.net/schemas/instance\"\n" +
+            "  }";
+
+    private static String processingInstance2 = "{\n" +
+            "    \"box\": \"7ba69b26-3c8d-4ebd-9578-1982d3a8b293\",\n" +
+            "    \"policy_box\": {\n" +
+            "      \"profile\": {\n" +
+            "        \"image\": \"test\",\n" +
+            "        \"instances\": 1,\n" +
+            "        \"keypair\": \"test_keypair\",\n" +
+            "        \"location\": \"Simulated Location\",\n" +
+            "        \"flavor\": \"test.micro\",\n" +
+            "        \"schema\": \"http://elasticbox.net/schemas/test/compute/profile\"\n" +
+            "      },\n" +
+            "      \"provider_id\": \"0476718d-2b00-45ce-8a1c-30b10a16cfc7\",\n" +
+            "      \"automatic_updates\": \"off\",\n" +
+            "      \"name\": \"TestDeploymentPolicy\",\n" +
+            "      \"created\": \"2016-01-07 12:26:33.685146\",\n" +
+            "      \"deleted\": null,\n" +
+            "      \"variables\": [],\n" +
+            "      \"updated\": \"2016-01-07 12:26:33.685146\",\n" +
+            "      \"lifespan\": {\n" +
+            "        \"operation\": \"none\"\n" +
+            "      },\n" +
+            "      \"visibility\": \"workspace\",\n" +
+            "      \"members\": [],\n" +
+            "      \"claims\": [\n" +
+            "        \"test\"\n" +
+            "      ],\n" +
+            "      \"owner\": \"operations\",\n" +
+            "      \"organization\": \"elasticbox\",\n" +
+            "      \"id\": \"1763dddd-2668-4959-8907-3c84b5e98b0e\",\n" +
+            "      \"schema\": \"http://elasticbox.net/schemas/boxes/policy\"\n" +
+            "    },\n" +
+            "    \"updated\": \"2016-01-11 11:31:22.384439\",\n" +
+            "    \"automatic_updates\": \"off\",\n" +
+            "    \"name\": \"scriptbox2\",\n" +
+            "    \"service\": {\n" +
+            "      \"type\": \"Linux Compute\",\n" +
+            "      \"id\": \"eb-huyzi\",\n" +
+            "      \"machines\": []\n" +
+            "    },\n" +
+            "    \"tags\": [\n" +
+            "      \"deploy2\"\n" +
+            "    ],\n" +
+            "    \"deleted\": null,\n" +
+            "    \"variables\": [\n" +
+            "      {\n" +
+            "        \"required\": true,\n" +
+            "        \"type\": \"Text\",\n" +
+            "        \"name\": \"var1\",\n" +
+            "        \"value\": \"value for var 1 in sb2\",\n" +
+            "        \"visibility\": \"public\"\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"name\": \"binding\",\n" +
+            "        \"tags\": [\n" +
+            "          \"sb1\",\n" +
+            "          \"deploy2\"\n" +
+            "        ],\n" +
+            "        \"required\": false,\n" +
+            "        \"visibility\": \"private\",\n" +
+            "        \"type\": \"Binding\"\n" +
+            "      }\n" +
+            "    ],\n" +
+            "    \"created\": \"2016-01-11 11:31:22.384439\",\n" +
+            "    \"state\": \"processing\",\n" +
+            "    \"uri\": \"/services/instances/i-c47q2a\",\n" +
+            "    \"application\": {\n" +
+            "      \"id\": \"f616cc35-9d33-47d8-8ebd-7c8acebcd906\",\n" +
+            "      \"name\": \"ApplicationBoxTestDeployName\"\n" +
+            "    },\n" +
+            "    \"boxes\": [\n" +
+            "      {\n" +
+            "        \"updated\": \"2016-01-07 12:06:09.184249\",\n" +
+            "        \"automatic_updates\": \"off\",\n" +
+            "        \"requirements\": [\n" +
+            "          \"test\",\n" +
+            "          \"local\"\n" +
+            "        ],\n" +
+            "        \"name\": \"scriptbox2\",\n" +
+            "        \"created\": \"2016-01-07 12:05:06.097307\",\n" +
+            "        \"deleted\": null,\n" +
+            "        \"variables\": [\n" +
+            "          {\n" +
+            "            \"required\": true,\n" +
+            "            \"type\": \"Text\",\n" +
+            "            \"name\": \"var1\",\n" +
+            "            \"value\": \"\",\n" +
+            "            \"visibility\": \"public\"\n" +
+            "          },\n" +
+            "          {\n" +
+            "            \"required\": false,\n" +
+            "            \"type\": \"Binding\",\n" +
+            "            \"name\": \"binding\",\n" +
+            "            \"value\": \"388d5e7c-2e26-490f-adcf-37cf244ee27f\",\n" +
+            "            \"visibility\": \"private\"\n" +
+            "          }\n" +
+            "        ],\n" +
+            "        \"visibility\": \"workspace\",\n" +
+            "        \"events\": {},\n" +
+            "        \"members\": [],\n" +
+            "        \"owner\": \"operations\",\n" +
+            "        \"organization\": \"elasticbox\",\n" +
+            "        \"id\": \"7ba69b26-3c8d-4ebd-9578-1982d3a8b293\",\n" +
+            "        \"schema\": \"http://elasticbox.net/schemas/boxes/script\"\n" +
+            "      }\n" +
+            "    ],\n" +
+            "    \"members\": [],\n" +
+            "    \"bindings\": [],\n" +
+            "    \"owner\": \"operations\",\n" +
+            "    \"operation\": {\n" +
+            "      \"event\": \"deploy\",\n" +
+            "      \"workspace\": \"operations\",\n" +
+            "      \"created\": \"2016-01-11 11:31:22.371869\"\n" +
+            "    },\n" +
+            "    \"id\": \"i-c47q2a\",\n" +
+            "    \"schema\": \"http://elasticbox.net/schemas/instance\"\n" +
+            "  }";
+
+    private static String processingInstance1 = "{\n" +
             "    \"box\": \"388d5e7c-2e26-490f-adcf-37cf244ee27f\",\n" +
             "    \"policy_box\": {\n" +
             "      \"profile\": {\n" +
@@ -503,8 +707,58 @@ public class UnitTestingUtils {
             "}";
 
 
+    public static JSONArray getFakeProcessingInstancesArray(){
+        final JSONObject instance1 = (JSONObject) JSONSerializer.toJSON(processingInstance1);
+        final JSONObject instance2 = (JSONObject) JSONSerializer.toJSON(processingInstance2);
+        final JSONObject instance3 = (JSONObject) JSONSerializer.toJSON(processingInstance3);
+        final JSONArray jsonArray = new JSONArray();
+        jsonArray.add(instance1);
+        jsonArray.add(instance2);
+        jsonArray.add(instance3);
+        return jsonArray;
+    }
+
+    public static List<Instance> getFakeProcessingInstancesList(){
+        final JSONObject instance1JSON = (JSONObject) JSONSerializer.toJSON(processingInstance1);
+        final Instance instance1 = new InstanceFactoryImpl().create(instance1JSON);
+
+        final JSONObject instance2JSON = (JSONObject) JSONSerializer.toJSON(processingInstance2);
+        final Instance instance2 = new InstanceFactoryImpl().create(instance2JSON);
+
+        final JSONObject instance3JSON = (JSONObject) JSONSerializer.toJSON(processingInstance3);
+        final Instance instance3 = new InstanceFactoryImpl().create(instance3JSON);
+
+        List<Instance> instances = new ArrayList<>();
+        instances.add(instance1);
+        instances.add(instance2);
+        instances.add(instance3);
+
+        return instances;
+    }
+
+    public static List<Instance> getFakeDoneInstancesList(){
+        final JSONObject instance1JSON = (JSONObject) JSONSerializer.toJSON(processingInstance1);
+        instance1JSON.put("state", "done");
+        final Instance instance1 = new InstanceFactoryImpl().create(instance1JSON);
+
+        final JSONObject instance2JSON = (JSONObject) JSONSerializer.toJSON(processingInstance2);
+        instance2JSON.put("state", "done");
+        final Instance instance2 = new InstanceFactoryImpl().create(instance2JSON);
+
+        final JSONObject instance3JSON = (JSONObject) JSONSerializer.toJSON(processingInstance3);
+        instance3JSON.put("state", "done");
+        final Instance instance3 = new InstanceFactoryImpl().create(instance3JSON);
+
+        List<Instance> instances = new ArrayList<>();
+        instances.add(instance1);
+        instances.add(instance2);
+        instances.add(instance3);
+
+        return instances;
+    }
+
     public static JSONObject getFakeProcessingInstance(){
-        return (JSONObject) JSONSerializer.toJSON(processingInstance);
+        return (JSONObject) JSONSerializer.toJSON(processingInstance1);
     }
 
     public static JSONObject getFakeEmptyApplicationBox(){

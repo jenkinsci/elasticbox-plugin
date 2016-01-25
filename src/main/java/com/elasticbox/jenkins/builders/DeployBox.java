@@ -19,9 +19,15 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.model.instance.Instance;
+import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentDataTypeValidator;
 import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentDataTypeValidatorFactory;
+import com.elasticbox.jenkins.model.services.deployment.execution.context.AbstractBoxDeploymentContext;
+import com.elasticbox.jenkins.model.services.deployment.execution.context.DeploymentContextFactory;
+import com.elasticbox.jenkins.model.services.deployment.execution.deployers.BoxDeployer;
+import com.elasticbox.jenkins.model.services.deployment.execution.deployers.BoxDeployerFactory;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
@@ -393,10 +399,19 @@ public class DeployBox extends Builder implements IInstanceProvider {
             throw new IOException(MessageFormat.format("Cannod find ElasticBox cloud ''{0}''.", getCloud()));
         }
 
+        //TODO
+        //Temporary solution just to test that the application box deployment works fine
+        final DeploymentType deploymentType = DeploymentType.findBy(getBoxDeploymentType());
+        if(deploymentType == DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE){
+            final AbstractBoxDeploymentContext deploymentContext = DeploymentContextFactory.createDeploymentContext(this, new VariableResolver(getCloud(), workspace, build, listener), ebCloud, build, launcher, listener, logger);
+            final BoxRepository boxRepository = new BoxRepositoryAPIImpl((ClientCache.getClient(cloud)));
+            final DeployBoxOrderResult<List<Instance>> deployedInstances = new DeployBoxOrderServiceImpl(boxRepository).deploy(deploymentContext);
+
+            return true;
+        }
 
         Result result = doPerform(build, ebCloud, logger);
         instanceManager.setInstance(build, result.instance);
-
         if (StringUtils.isNotBlank(instanceEnvVariable)) {
             injectEnvVariables(build, result, ebCloud.getClient());
         }

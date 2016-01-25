@@ -13,6 +13,7 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
 
     private static final Logger logger = Logger.getLogger(ScheduledPoolingTask.class.getName());
 
+    protected int counter = 0;
     private long delay;
     private long initialDelay;
     private long timeout;
@@ -47,6 +48,8 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
                         try {
                             performExecute();
 
+                            counter++;
+
                             if (isDone()) {
                                 scheduledFuture.cancel(true);
                                 countDownLatch.countDown();
@@ -69,7 +72,7 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
                 logger.log(Level.SEVERE, "Timeout reached("+timeout+" secs) executing task: "+this.getClass().getSimpleName());
                 throw new TaskException("Timeout reached("+timeout+" secs) executing task: "+this.getClass().getSimpleName());
             }else{
-                logger.log(Level.INFO, "ScheduledPoolingTask: "+this.getClass().getSimpleName()+" finished, OK?: "+isDone());
+                logger.log(Level.INFO, "ScheduledPoolingTask: "+this.getClass().getSimpleName()+" finished");
             }
 
         } catch (InterruptedException e) {
@@ -81,4 +84,7 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
 
     }
 
+    public int getCounter() {
+        return counter;
+    }
 }

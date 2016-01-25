@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 /**
  * Created by serna on 1/19/16.
  */
-public class ApplicationBoxDeployer implements BoxDeployer<List<Instance>, ApplicationBoxDeploymentContext>{
+public class ApplicationBoxDeployer implements BoxDeployer<ApplicationBoxDeploymentContext>{
 
     private static final Logger logger = Logger.getLogger(ApplicationBoxDeployer.class.getName());
 

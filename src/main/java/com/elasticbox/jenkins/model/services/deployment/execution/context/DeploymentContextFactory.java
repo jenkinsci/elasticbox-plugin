@@ -54,7 +54,8 @@ public abstract class DeploymentContextFactory<T extends AbstractBoxDeploymentCo
     }
 
 
-    public static <T extends AbstractBoxDeploymentContext> T createDeploymentContext(DeployBox deployBox,
+    public static <T extends AbstractBoxDeploymentContext> T createDeploymentContext(
+                                            DeployBox deployBox,
                                             VariableResolver variableResolver,
                                             ElasticBoxCloud cloud,
                                             AbstractBuild<?, ?> build,
