@@ -33,7 +33,8 @@ public class TestBoxRepository {
         final List<AbstractBox> noPolicyAndNoApplicationBoxes = new BoxRepositoryAPIImpl(api).getNoPolicyAndNoApplicationBoxes(workspace);
 
         for (AbstractBox box : noPolicyAndNoApplicationBoxes) {
-            assertTrue("Application boxes should not be retrieved", box.getType() != BoxType.APPLICATION && box.getType() != BoxType.POLICY);
+            assertTrue("Application boxes should not be retrieved", box.getType() != BoxType.APPLICATION);
+            assertTrue("Application boxes should not be retrieved", box.getType() != BoxType.POLICY);
         }
     }
 

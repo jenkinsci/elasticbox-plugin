@@ -15,10 +15,17 @@ package com.elasticbox.jenkins.builders;
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.jenkins.model.box.AbstractBox;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
+import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.RelativePath;
 import hudson.model.AbstractBuild;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -26,16 +33,24 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import hudson.util.ListBoxModel;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 /**
  *
  * @author Phong Nguyen Le
  */
 public class UpdateOperation extends BoxRequiredOperation implements IOperation.InstanceOperation {
+
+    private static final Logger logger = Logger.getLogger(UpdateOperation.class.getName());
+
 
     @DataBoundConstructor
     public UpdateOperation(String box, String boxVersion, String tags, String variables) {
@@ -86,6 +101,35 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
 
     @Extension
     public static final class DescriptorImpl extends Descriptor {
+
+        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud, @RelativePath("..") @QueryParameter String workspace) {
+
+            logger.log(Level.FINE, "doFillBoxItems - cloud: "+cloud+", workspace: "+workspace);
+
+            ListBoxModel updateableBoxes = new ListBoxModel();
+
+            if (StringUtils.isEmpty(cloud) || StringUtils.isEmpty(workspace)) {
+                return updateableBoxes;
+            }
+
+            try {
+                final DeployBoxOrderResult<List<AbstractBox>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).updateableBoxes(workspace);
+                final List<AbstractBox> boxes = result.getResult();
+                for (AbstractBox box : boxes) {
+                    updateableBoxes.add(box.getName(), box.getId());
+                }
+
+
+            } catch (ServiceException e) {
+                logger.log(Level.SEVERE, "error in doFillBoxItems - cloud: "+cloud+", workspace: "+workspace, e);
+                return updateableBoxes;
+            }
+
+            return updateableBoxes;
+        }
+
+
+
 
         @Override
         public String getDisplayName() {

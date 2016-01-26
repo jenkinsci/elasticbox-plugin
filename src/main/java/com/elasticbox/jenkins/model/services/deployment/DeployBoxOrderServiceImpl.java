@@ -55,6 +55,19 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
     }
 
+    @Override
+    public DeployBoxOrderResult<List<AbstractBox>> updateableBoxes(String workspace) throws ServiceException {
+
+        try {
+            final List<AbstractBox> updateableBoxes = boxRepository.getNoPolicyAndNoApplicationBoxes(workspace);
+            return new DeployBoxOrderResult<List<AbstractBox>>(updateableBoxes);
+
+        } catch (RepositoryException e) {
+            logger.log(Level.SEVERE, "Impossible to retrieve updateable boxes (no policies neither application boxes) for workspace: "+workspace);
+            throw new ServiceException("Impossible to retrieve updateable boxes (no policies neither application boxes) for workspace: "+workspace);
+        }
+    }
+
 
     @Override
     public DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy) throws ServiceException {

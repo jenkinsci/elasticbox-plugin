@@ -14,6 +14,7 @@
 
 package com.elasticbox.jenkins.model.services.deployment;
 
+import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.services.deployment.configuration.policies.DeploymentDataPoliciesHandler;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
@@ -25,6 +26,8 @@ import java.util.List;
  * Created by serna on 1/13/16.
  */
 public interface DeployBoxOrderService {
+
+    DeployBoxOrderResult<List<AbstractBox>> updateableBoxes(String workspace) throws ServiceException;
 
     DeploymentType deploymentType(String boxToDeploy) throws ServiceException;
 
