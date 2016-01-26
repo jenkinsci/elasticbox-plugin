@@ -54,8 +54,7 @@ public abstract class BoxRequiredOperation extends Operation {
 
     public static abstract class Descriptor extends OperationDescriptor {
 
-        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud,
-                @RelativePath("..") @QueryParameter String workspace) {
+        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud, @RelativePath("..") @QueryParameter String workspace) {
             return DescriptorHelper.getBoxes(cloud, workspace);
         }
 
