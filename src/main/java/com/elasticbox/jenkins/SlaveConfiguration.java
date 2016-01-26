@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
@@ -140,10 +141,31 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return DescriptorHelper.getWorkspaces(createClient(endpointUrl, token));
         }
 
-        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String workspace) {
-            return DescriptorHelper.getBoxes(createClient(endpointUrl, token), workspace);
+        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String endpointUrl, @RelativePath("..") @QueryParameter String token, @QueryParameter String workspace) {
+
+            LOGGER.log(Level.FINE, "doFillBoxItems - cloud: "+endpointUrl+", workspace: "+workspace);
+
+            ListBoxModel listBoxModel = new ListBoxModel();
+
+            if (StringUtils.isEmpty(endpointUrl) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(token)) {
+                return listBoxModel;
+            }
+
+            try {
+                final DeployBoxOrderResult<List<AbstractBox>> result = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).updateableBoxes(workspace);
+                final List<AbstractBox> boxes = result.getResult();
+                for (AbstractBox box : boxes) {
+                    listBoxModel.add(box.getName(), box.getId());
+                }
+
+
+            } catch (ServiceException e) {
+                LOGGER.log(Level.SEVERE, "error in doFillBoxItems - cloud: "+endpointUrl+", workspace: "+workspace, e);
+                return listBoxModel;
+            }
+
+            return listBoxModel;
+
         }
 
         public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String endpointUrl,

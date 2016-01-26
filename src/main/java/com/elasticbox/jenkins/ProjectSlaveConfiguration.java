@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
@@ -126,7 +127,30 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
-            return DescriptorHelper.getBoxes(ClientCache.getClient(cloud), workspace);
+
+            LOGGER.log(Level.FINE, "doFillBoxItems - cloud: "+cloud+", workspace: "+workspace);
+
+            ListBoxModel updateableBoxes = new ListBoxModel();
+
+            if (StringUtils.isEmpty(cloud) || StringUtils.isEmpty(workspace)) {
+                return updateableBoxes;
+            }
+
+            try {
+                final DeployBoxOrderResult<List<AbstractBox>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).updateableBoxes(workspace);
+                final List<AbstractBox> boxes = result.getResult();
+                for (AbstractBox box : boxes) {
+                    updateableBoxes.add(box.getName(), box.getId());
+                }
+
+
+            } catch (ServiceException e) {
+                LOGGER.log(Level.SEVERE, "error in doFillBoxItems - cloud: "+cloud+", workspace: "+workspace, e);
+                return updateableBoxes;
+            }
+
+            return updateableBoxes;
+
         }
 
         public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace,
