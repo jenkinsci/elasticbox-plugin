@@ -1,7 +1,6 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
     <f:section title="Deployment"/>
-    <st:out value="${instance}"/>
     <j:set var="policySelectionId" value="${descriptor.uniqueId()}"/>
     <f:radioBlock name="policySelection-${policySelectionId}" inline="true" title="Use policy with the following claims" value="claims" checked="${(instance.claims!=null) or (instance.profile==null)}">
         <f:entry field="claims" help="/plugin/elasticbox/help/claims.html">
