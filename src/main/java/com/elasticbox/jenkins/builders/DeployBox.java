@@ -20,6 +20,9 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.model.instance.Instance;
+import com.elasticbox.jenkins.model.repository.InstanceRepository;
+import com.elasticbox.jenkins.model.repository.api.DeploymentOrderRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.repository.api.InstanceRepositoryAPIImpl;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentDataTypeValidator;
@@ -404,9 +407,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
         final DeploymentType deploymentType = DeploymentType.findBy(getBoxDeploymentType());
         if(deploymentType == DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE){
             final AbstractBoxDeploymentContext deploymentContext = DeploymentContextFactory.createDeploymentContext(this, new VariableResolver(getCloud(), workspace, build, listener), ebCloud, build, launcher, listener, logger);
-            final BoxRepository boxRepository = new BoxRepositoryAPIImpl((ClientCache.getClient(cloud)));
-            final DeployBoxOrderResult<List<Instance>> deployedInstances = new DeployBoxOrderServiceImpl(boxRepository).deploy(deploymentContext);
-
+            final DeployBoxOrderResult<List<Instance>> deployResult = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).deploy(deploymentContext);
+            final List<Instance> instances = deployResult.getResult();
+            for (Instance instance : instances) {
+                instanceManager.setInstance(build, instance);
+            }
             return true;
         }
 
@@ -533,8 +538,8 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
 
     public String getInstanceId(AbstractBuild build) {
-        JSONObject instance = instanceManager.getInstance(build);
-        return instance != null ? instance.getString("id") : null;
+        final Instance instance = instanceManager.getInstance(build);
+        return instance != null ? instance.getId() : null;
     }
 
     public ElasticBoxCloud getElasticBoxCloud() {
@@ -660,9 +665,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
 
             try {
-
-                final BoxRepository boxRepository = new BoxRepositoryAPIImpl((ClientCache.getClient(cloud)));
-                final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(boxRepository).deploymentType(box);
+                final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).deploymentType(box);
                 final String id = deploymentType.getValue();
                 boxDeploymentType.add(id, id);
 
@@ -686,9 +689,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
             try {
 
-                final BoxRepository boxRepository = new BoxRepositoryAPIImpl((ClientCache.getClient(cloud)));
+                final Client client = ClientCache.getClient(cloud);
 
-                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(boxRepository).deploymentPolicies(workspace, box);
+                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(client).deploymentPolicies(workspace, box);
                 final List<PolicyBox> policyBoxList = result.getResult();
                 for (PolicyBox policyBox : policyBoxList) {
                     profiles.add(policyBox.getName(), policyBox.getId());

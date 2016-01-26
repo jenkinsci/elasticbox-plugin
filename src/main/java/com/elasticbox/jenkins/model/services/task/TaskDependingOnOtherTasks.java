@@ -36,7 +36,10 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
         this.executorService = executor;
     }
 
-    protected abstract boolean prepareDependingOnTasks(R mainTaskResult, List<Task<?>> dependingOnTasks);
+    protected boolean beforeMainTaskExecution(List<Task<?>> dependingOnTasks){return true;};
+    protected boolean beforeDependingOnTasksExecution(R mainTaskResult, List<Task<?>> dependingOnTasks){return true;};
+    protected boolean afterDependingOnTasksExecution(R mainTaskResult, List<Task<?>> dependingOnTasks){return true;};
+    protected boolean onExecutionError(R mainTaskResult, List<Task<?>> dependingOnTasks, Throwable error){return true;};
 
     @Override
     public void execute() throws TaskException {
@@ -45,9 +48,11 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
 
         try {
 
+            beforeMainTaskExecution(dependingOnTasks);
+
             performExecute();
 
-            if(prepareDependingOnTasks(result, dependingOnTasks)){
+            if(beforeDependingOnTasksExecution(result, dependingOnTasks)){
                 for (final Task task : dependingOnTasks) {
                     executorService.submit(new Runnable() {
                                 @Override
@@ -62,15 +67,20 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
 
                 if (!countDownLatch.await(timeout, TimeUnit.SECONDS)){
                     logger.log(Level.SEVERE, "Error, timeout reached executing: "+this.getClass().getSimpleName());
-                    throw new TaskException("Error, timeout reached executing: "+this.getClass().getSimpleName());
+                    final TaskException taskException = new TaskException("Error, timeout reached executing: " + this.getClass().getSimpleName());
+                    onExecutionError(result, dependingOnTasks, taskException);
+                    throw taskException;
                 }
 
                 logger.log(Level.INFO, "Task "+this.getClass().getSimpleName()+" finished");
+                afterDependingOnTasksExecution(result, dependingOnTasks);
             }
 
         } catch (InterruptedException e) {
             logger.log(Level.SEVERE, "Thread interrupted waiting for dependingOnTasks to finish",e);
-            throw new TaskException("Thread interrupted before completion");
+            final TaskException taskException = new TaskException("Thread interrupted before completion");
+            onExecutionError(result, dependingOnTasks, taskException);
+            throw taskException;
         }finally {
             executorService.shutdownNow();
         }

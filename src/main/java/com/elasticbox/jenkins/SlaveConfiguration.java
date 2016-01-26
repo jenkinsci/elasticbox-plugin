@@ -174,9 +174,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                     return profiles;
 
             try {
-                final BoxRepository boxRepository = new BoxRepositoryAPIImpl(ClientCache.getClient(endpointUrl, token));
-
-                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(boxRepository).deploymentPolicies(workspace, box);
+                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(endpointUrl, token)).deploymentPolicies(workspace, box);
                 final List<PolicyBox> policyBoxList = result.getResult();
                 for (PolicyBox policyBox : policyBoxList) {
                     profiles.add(policyBox.getName(), policyBox.getId());

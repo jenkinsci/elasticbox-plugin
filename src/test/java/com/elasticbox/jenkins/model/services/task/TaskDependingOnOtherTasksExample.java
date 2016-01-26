@@ -57,12 +57,6 @@ public class TaskDependingOnOtherTasksExample extends TaskDependingOnOtherTasks<
     }
 
 
-    @Override
-    protected boolean prepareDependingOnTasks(Integer mainTaskResult, List<Task<?>> dependingOnTasks) {
-        return true;
-    }
-
-
     public static class Builder extends AbstractBuilder<Builder, TaskDependingOnOtherTasksExample> {
 
         private int executionTime;

@@ -157,7 +157,7 @@ public class Client implements APIClient{
     public String generateToken(String description) throws IOException {
         JSONObject requestBody = new JSONObject();
         requestBody.put("description", description);
-        JSONObject tokenInfo = doPost("/services/tokens", requestBody);
+        JSONObject tokenInfo = doPost("/services/tokens", requestBody, false);
         return tokenInfo.getString("value");
     }
 
@@ -235,7 +235,7 @@ public class Client implements APIClient{
         JSONObject workspace = new JSONObject();
         workspace.put("name", name);
         workspace.put("schema", Constants.BASE_ELASTICBOX_SCHEMA + "workspaces/team");
-        return doPost("/services/workspaces", workspace);
+        return doPost("/services/workspaces", workspace, false);
     }
 
     public JSONObject createBox(JSONObject box) throws IOException, URISyntaxException {
@@ -260,11 +260,11 @@ public class Client implements APIClient{
                 events.put(mapEntry.getKey().toString(), event);
             }
         }
-        return doPost("/services/boxes", box);
+        return doPost("/services/boxes", box, false);
     }
 
     public IProgressMonitor createProvider(JSONObject provider) throws IOException {
-        provider = doPost("/services/providers", provider);
+        provider = doPost("/services/providers", provider, false);
         return new ProviderProgressMonitor(endpointUrl + provider.getString("uri"), provider.getString("updated"));
     }
 
@@ -717,7 +717,7 @@ public class Client implements APIClient{
         }
         deployRequest.put("instance_tags", instanceTags);
 
-        JSONObject instance = doPost("/services/instances", deployRequest);
+        JSONObject instance = doPost("/services/instances", deployRequest, false);
 
         return new InstanceProgressMonitor(endpointUrl + instance.getString("uri"),
                 Collections.singleton(InstanceOperation.DEPLOY), instance.getString("updated"));
@@ -816,7 +816,7 @@ public class Client implements APIClient{
                 taskInput.put("datastore", datastore);
             }
         }
-        JSONObject task = doPost(MessageFormat.format("{0}/template", instance.getString("uri")), taskInput);
+        JSONObject task = doPost(MessageFormat.format("{0}/template", instance.getString("uri")), taskInput, false);
         return new TaskProgressMonitor(task);
     }
 
@@ -841,19 +841,14 @@ public class Client implements APIClient{
         }
     }
 
-    public <T extends JSON> T doPost(String url, JSONObject resource) throws IOException {
+    public <T extends JSON> T doPost(String url, JSONObject resource, boolean isArray) throws IOException {
         HttpPost post = new HttpPost(prepareUrl(url));
         post.setEntity(new StringEntity(resource.toString(), ContentType.APPLICATION_JSON));
         try {
             HttpResponse response = execute(post);
-            T jsonResponse =  (T)JSONObject.fromObject(getResponseBodyAsString(response));
-            if (!jsonResponse.isArray()){
-                return jsonResponse;
-            }
-
-            return (T)JSONArray.fromObject(getResponseBodyAsString(response));
-
-        } finally {
+            return isArray ? (T)JSONArray.fromObject(getResponseBodyAsString(response)) : (T)JSONObject.fromObject(getResponseBodyAsString(response));
+        }
+        finally {
             post.reset();
         }
     }

@@ -23,6 +23,6 @@ public interface APIClient {
 
     public JSONArray getInstances(String workspaceId, List<String> instanceIDs) throws IOException;
 
-    public <T extends JSON> T doPost(String url, JSONObject resource) throws IOException;
+    public <T extends JSON> T doPost(String url, JSONObject resource, boolean isArray) throws IOException;
 
 }

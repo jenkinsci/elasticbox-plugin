@@ -25,6 +25,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.AbstractDeployBoxOrder;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Set;
 
@@ -190,12 +191,16 @@ public abstract class AbstractBoxDeploymentContext<T extends AbstractDeployBoxOr
         }
 
         public B expirationTime(String expirationTime){
-            this.expirationTime = expirationTime;
+            if(StringUtils.isNotEmpty(expirationTime)){
+                this.expirationTime = expirationTime;
+            }
             return getThis();
         }
 
         public B expirationOperation(String expirationOperation){
-            this.expirationOperation = expirationOperation;
+            if(StringUtils.isNotEmpty(expirationTime)) {
+                this.expirationOperation = expirationOperation;
+            }
             return getThis();
         }
 

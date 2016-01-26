@@ -18,6 +18,7 @@ import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.ApplicationBoxDeploymentContext;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.ApplicationBoxDeploymentOrder;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Created by serna on 1/22/16.
@@ -28,14 +29,21 @@ public class ApplicationBoxDeploymentSerializer implements BoxDeploymentRequestS
     public JSONObject createRequest(ApplicationBoxDeploymentContext context) {
 
         final ApplicationBoxDeploymentOrder order = context.getOrder();
+
+        Box box = new Box(context.getBoxToDeployId());
+        Lease lease = null;
+        if(StringUtils.isNotEmpty(order.getExpirationTime()) && StringUtils.isNotEmpty(order.getExpirationOperation())){
+            lease = new Lease(order.getExpirationTime(), order.getExpirationOperation());
+        }
+
         final ApplicationBoxDeploymentRequestObject applicationBoxDeploymentRequestObject = new ApplicationBoxDeploymentRequestObject(
                 order.getName(),
                 order.getOwner(),
                 Constants.BASE_ELASTICBOX_SCHEMA + Constants.DEPLOYMENT_APPLICATION_REQUEST_SCHEMA_NAME,
                 order.getTags(),
                 order.getRequirements(),
-                new Box(context.getBoxToDeployId()),
-                new Lease(order.getExpirationTime(), order.getExpirationOperation()));
+                box,
+                lease);
 
         return JSONObject.fromObject(applicationBoxDeploymentRequestObject);
     }

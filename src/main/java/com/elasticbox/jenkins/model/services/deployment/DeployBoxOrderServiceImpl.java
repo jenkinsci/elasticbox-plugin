@@ -1,7 +1,13 @@
 package com.elasticbox.jenkins.model.services.deployment;
 
+import com.elasticbox.APIClient;
 import com.elasticbox.jenkins.model.box.*;
 import com.elasticbox.jenkins.model.instance.Instance;
+import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
+import com.elasticbox.jenkins.model.repository.InstanceRepository;
+import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.repository.api.DeploymentOrderRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.repository.api.InstanceRepositoryAPIImpl;
 import com.elasticbox.jenkins.model.services.deployment.configuration.policies.AbstractDeploymentDataPoliciesHandler;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.AbstractBoxDeploymentContext;
 import com.elasticbox.jenkins.model.services.deployment.execution.deployers.BoxDeployer;
@@ -24,10 +30,15 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
 
     private static final Logger logger = Logger.getLogger(DeployBoxOrderServiceImpl.class.getName());
 
-    private BoxRepository boxRepository;
+    private final InstanceRepository instanceRepository;
+    private final DeploymentOrderRepository deploymentOrderRepository;
+    private final BoxRepository boxRepository;
 
-    public DeployBoxOrderServiceImpl(BoxRepository boxRepository) {
-        this.boxRepository = boxRepository;
+    public DeployBoxOrderServiceImpl(APIClient client) {
+
+        this.boxRepository = new BoxRepositoryAPIImpl(client);
+        this.instanceRepository = new InstanceRepositoryAPIImpl(client);
+        this.deploymentOrderRepository =  new DeploymentOrderRepositoryAPIImpl(client);
     }
 
     @Override
@@ -61,8 +72,15 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
     }
 
     public <T extends AbstractBoxDeploymentContext>DeployBoxOrderResult<List<Instance>> deploy(T context) throws ServiceException{
+
+        context.setBoxRepository(boxRepository);
+        context.setDeploymentOrderRepository(deploymentOrderRepository);
+        context.setInstanceRepository(instanceRepository);
+
         final BoxDeployer boxDeployer = BoxDeployerFactory.createBoxDeployer(context);
         try {
+            context.setBoxRepository(boxRepository);
+
             final List<Instance> instancesDeployed = boxDeployer.deploy(context);
             return  new DeployBoxOrderResult<List<Instance>>(instancesDeployed);
 

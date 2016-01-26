@@ -12,6 +12,8 @@
 
 package com.elasticbox.jenkins.builders;
 
+import com.elasticbox.jenkins.model.instance.Instance;
+import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
 import hudson.model.AbstractBuild;
 import java.util.Iterator;
 import java.util.Map;
@@ -23,17 +25,24 @@ import net.sf.json.JSONObject;
  * @author Phong Nguyen Le
  */
 class InstanceManager {
-    private final Map<String, JSONObject> buildIdToInstanceMap;
+    private final Map<String, Instance> buildIdToInstanceMap;
 
     public InstanceManager() {
-        buildIdToInstanceMap = new ConcurrentHashMap<String, JSONObject>();
+        buildIdToInstanceMap = new ConcurrentHashMap<String, Instance>();
     }
 
-    public JSONObject getInstance(AbstractBuild build) {
+    public Instance getInstance(AbstractBuild build) {
         return buildIdToInstanceMap.get(build.getId());
     }
 
-    public void setInstance(AbstractBuild build, JSONObject instance) {
+    public void setInstance(AbstractBuild build, JSONObject jsonInstance) {
+
+        final Instance instance = new InstanceFactoryImpl().create(jsonInstance);
+        this.setInstance(build, instance);
+
+    }
+
+    public void setInstance(AbstractBuild build, Instance instance) {
         buildIdToInstanceMap.put(build.getId(), instance);
 
         for (Iterator<String> iter = buildIdToInstanceMap.keySet().iterator(); iter.hasNext();) {

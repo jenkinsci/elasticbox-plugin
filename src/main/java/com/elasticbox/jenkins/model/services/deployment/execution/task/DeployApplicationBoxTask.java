@@ -81,7 +81,7 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
     }
 
     @Override
-    protected boolean prepareDependingOnTasks(List<Instance> mainTaskResult, List<Task<?>> dependingOnTasks) {
+    protected boolean beforeDependingOnTasksExecution(List<Instance> mainTaskResult, List<Task<?>> dependingOnTasks) {
         for (Task<?> dependingOnTask : dependingOnTasks) {
             if (dependingOnTask instanceof CheckInstancesDeployedTask) {
                 CheckInstancesDeployedTask onTask = (CheckInstancesDeployedTask) dependingOnTask;
@@ -99,6 +99,19 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
         return false;
     }
 
+
+    @Override
+    protected boolean afterDependingOnTasksExecution(List<Instance> mainTaskResult, List<Task<?>> dependingOnTasks) {
+        context.getLogger().info("ApplicationBox: {0} successfully deployed", context.getOrder().getName());
+        return true;
+    }
+
+    @Override
+    protected boolean onExecutionError(List<Instance> mainTaskResult, List<Task<?>> dependingOnTasks, Throwable error) {
+        context.getLogger().info("Error deploying ApplicationBox: {0}", context.getOrder().getName());
+        context.getLogger().info("Cause: {0}", error.getMessage());
+        return true;
+    }
 
     public static class Builder extends AbstractBuilder<Builder, DeployApplicationBoxTask> {
 

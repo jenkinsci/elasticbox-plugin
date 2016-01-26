@@ -82,8 +82,8 @@ public class CheckInstancesDeployedTask extends ScheduledPoolingTask<List<Instan
                         if(instance.getState() != Instance.State.DONE){
                             allInstancesDone = false;
                         }
-                        logger.log(Level.INFO, "CheckInstancesDeployedTask executed ["+counter+"], Instance: "+instance.getInstancePageURL(instance.getInstancePageURL(endpointUrl))+", state: "+instance.getState());
-                        deploymentContext.getLogger().info("CheckInstancesDeployedTask executed ["+counter+"], Instance: "+instance.getInstancePageURL(instance.getInstancePageURL(endpointUrl))+", state: "+instance.getState());
+                        logger.log(Level.INFO, "CheckInstancesDeployedTask execution: "+counter+", Instance: "+instance.getInstancePageURL(endpointUrl)+", state: "+instance.getState());
+                        deploymentContext.getLogger().info("CheckInstancesDeployedTask execution: "+counter+", Instance: "+instance.getInstancePageURL(endpointUrl)+", state: "+instance.getState());
                     }
                     if (allInstancesDone){
                         okCounter++;
@@ -95,9 +95,6 @@ public class CheckInstancesDeployedTask extends ScheduledPoolingTask<List<Instan
                 throw new TaskException("Error executing task: CheckInstancesDeployedTask",e);
             }
         }
-        logger.log(Level.WARNING, "CheckInstancesDeployedTask executed ["+counter+"], but it's already done");
-        deploymentContext.getLogger().info("CheckInstancesDeployedTask executed ["+counter+"], but it's already done");
-
     }
 
     @Override

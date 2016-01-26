@@ -51,7 +51,7 @@ public class DeploymentOrderRepositoryAPIImpl implements DeploymentOrderReposito
             final JSONObject request = new ApplicationBoxDeploymentSerializer().createRequest(deploymentContext);
             List<Instance> instances = new ArrayList<>();
             final InstanceFactoryImpl instanceFactory = new InstanceFactoryImpl();
-            final JSONArray instancesJSONArray = client.<JSONArray>doPost(Constants.INSTANCES_API_RESOURCE, request);
+            final JSONArray instancesJSONArray = client.<JSONArray>doPost(Constants.INSTANCES_API_RESOURCE, request, true);
             for (Object jsonElement : instancesJSONArray) {
                 JSONObject jsonInstance = (JSONObject) jsonElement;
                 final Instance instance = instanceFactory.create(jsonInstance);

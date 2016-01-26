@@ -62,7 +62,7 @@ public class TestDeployBoxOrderServiceDeploymentTypes {
 
         final BoxRepository boxRepository = new BoxRepositoryAPIImpl(api);
 
-        final DeployBoxOrderServiceImpl deployBoxOrderService = new DeployBoxOrderServiceImpl(boxRepository);
+        final DeployBoxOrderServiceImpl deployBoxOrderService = new DeployBoxOrderServiceImpl(api);
 
         final DeploymentType deploymentType = deployBoxOrderService.deploymentType(fakeBox.getString("id"));
 
