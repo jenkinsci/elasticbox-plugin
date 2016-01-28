@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.elasticbox.jenkins.model.instance.Instance.State.PROCESSING;
+
 /**
  * Created by serna on 1/20/16.
  */
@@ -79,16 +81,35 @@ public class CheckInstancesDeployedTask extends ScheduledPoolingTask<List<Instan
                     final String endpointUrl = deploymentContext.getCloud().getEndpointUrl();
                     boolean allInstancesDone = true;
                     for (Instance instance : getResult()) {
-                        if(instance.getState() != Instance.State.DONE){
-                            allInstancesDone = false;
+                        final Instance.State currentState = instance.getState();
+
+                        logger.log(Level.INFO, "["+counter+"] Checking instance: "+instance.getInstancePageURL(endpointUrl)+", current state: "+instance.getState());
+                        deploymentContext.getLogger().info("["+counter+"] Checking instance: "+instance.getInstancePageURL(endpointUrl)+", current state: "+instance.getState());
+
+                        switch (currentState){
+                            case PROCESSING:
+                                allInstancesDone = false;
+                                break;
+
+                            case DONE:
+                                break;
+
+                            case UNAVAILABLE:
+                                allInstancesDone = false;
+                                logger.log(Level.SEVERE, "["+counter+"] Error checking instance: "+instance.getInstancePageURL(endpointUrl)+", state: "+instance.getState());
+                                deploymentContext.getLogger().info("["+counter+"] Error checking instance: "+instance.getInstancePageURL(endpointUrl)+", state: "+instance.getState());
+                                throw new TaskException("Error checking application box instances, instance: "+instance.getInstancePageURL(endpointUrl)+" unavailable");
                         }
-                        logger.log(Level.INFO, "CheckInstancesDeployedTask execution: "+counter+", Instance: "+instance.getInstancePageURL(endpointUrl)+", state: "+instance.getState());
-                        deploymentContext.getLogger().info("CheckInstancesDeployedTask execution: "+counter+", Instance: "+instance.getInstancePageURL(endpointUrl)+", state: "+instance.getState());
                     }
                     if (allInstancesDone){
                         okCounter++;
                     }
+                }else{
+                    logger.log(Level.INFO, "["+counter+"] Error checking application box instances, there is no result from the API to check");
+                    deploymentContext.getLogger().info("["+counter+"] Error checking application box instances, there is no result from the API to check");
+                    throw new TaskException("Error checking application box instances, there is no result from the API to check");
                 }
+
 
             } catch (RepositoryException e) {
                 logger.log(Level.SEVERE, "Error executing task: CheckInstancesDeployedTask",e);

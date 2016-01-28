@@ -35,6 +35,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.notNull;
@@ -147,8 +148,6 @@ public class DeployBoxTesting {
                 fakeDoneInstancesList.get(1).getId(),
                 fakeDoneInstancesList.get(2).getId()}))
                     .thenReturn(fakeProcessingInstancesList)
-                    .thenReturn(fakeProcessingInstancesList)
-                    .thenReturn(fakeDoneInstancesList)
                     .thenReturn(fakeDoneInstancesList);
 
         applicationBoxDeploymentContext.setInstanceRepository(instanceRepository);
@@ -156,7 +155,9 @@ public class DeployBoxTesting {
 
         final List<Instance> instances = applicationBoxDeployer.deploy(applicationBoxDeploymentContext);
 
-        System.out.println("");
+        for (Instance instance : instances) {
+            assertTrue("All instance should be done", instance.getState() == Instance.State.DONE);
+        }
     }
 //
 //    @Test

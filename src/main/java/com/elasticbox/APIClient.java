@@ -12,17 +12,17 @@ import java.util.List;
  */
 public interface APIClient {
 
+
     public JSONArray getBoxVersions(String boxId) throws IOException;
-
     public JSONArray getAllBoxes(String workspaceId) throws IOException;
-
     public JSONObject getBox(String boxId) throws IOException;
 
 
     public JSONObject getInstance(String instanceId) throws IOException;
-
     public JSONArray getInstances(String workspaceId, List<String> instanceIDs) throws IOException;
-
     public <T extends JSON> T doPost(String url, JSONObject resource, boolean isArray) throws IOException;
+
+
+    public JSONArray getWorkspaces() throws IOException;
 
 }

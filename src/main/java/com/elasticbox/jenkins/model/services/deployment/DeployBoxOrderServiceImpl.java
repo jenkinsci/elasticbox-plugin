@@ -5,9 +5,11 @@ import com.elasticbox.jenkins.model.box.*;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
 import com.elasticbox.jenkins.model.repository.InstanceRepository;
+import com.elasticbox.jenkins.model.repository.WorkspaceRepository;
 import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
 import com.elasticbox.jenkins.model.repository.api.DeploymentOrderRepositoryAPIImpl;
 import com.elasticbox.jenkins.model.repository.api.InstanceRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.repository.api.WorkspacesRepositoryAPIImpl;
 import com.elasticbox.jenkins.model.services.deployment.configuration.policies.AbstractDeploymentDataPoliciesHandler;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.AbstractBoxDeploymentContext;
 import com.elasticbox.jenkins.model.services.deployment.execution.deployers.BoxDeployer;
@@ -17,6 +19,7 @@ import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
+import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -33,12 +36,14 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
     private final InstanceRepository instanceRepository;
     private final DeploymentOrderRepository deploymentOrderRepository;
     private final BoxRepository boxRepository;
+    private final WorkspaceRepository workspacesRepository;
 
     public DeployBoxOrderServiceImpl(APIClient client) {
 
         this.boxRepository = new BoxRepositoryAPIImpl(client);
         this.instanceRepository = new InstanceRepositoryAPIImpl(client);
         this.deploymentOrderRepository =  new DeploymentOrderRepositoryAPIImpl(client);
+        this.workspacesRepository = new WorkspacesRepositoryAPIImpl(client);
     }
 
     @Override
@@ -82,6 +87,19 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
             throw new ServiceException("Impossible to get policies for workspace: "+workspace+", box: "+boxToDeploy);
         }
 
+    }
+
+    @Override
+    public DeployBoxOrderResult<List<AbstractWorkspace>> getWorkspaces() throws ServiceException {
+
+        try {
+            final List<AbstractWorkspace> workspaces = workspacesRepository.getWorkspaces();
+            return new DeployBoxOrderResult<List<AbstractWorkspace>>(workspaces);
+
+        } catch (RepositoryException e) {
+            logger.log(Level.SEVERE, "Impossible retrieve workspaces");
+            throw new ServiceException("Impossible retrieve workspaces");
+        }
     }
 
     public <T extends AbstractBoxDeploymentContext>DeployBoxOrderResult<List<Instance>> deploy(T context) throws ServiceException{

@@ -51,8 +51,8 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
             throw new TaskException("Error executing task DeployApplicationBoxTask", e);
         }
 
-        logger.log(Level.INFO, "Request to deploy ApplicationBox: "+context.getOrder().getName()+" executed, waiting for instances to finish deployment");
-        context.getLogger().info("ApplicationBox: {0} deployment request executed", context.getOrder().getName());
+        logger.log(Level.INFO, "Deployment request executed for application box: "+context.getOrder().getName()+", waiting for instances to finish deployment");
+        context.getLogger().info("Deployment request executed for application box: {0}", context.getOrder().getName());
     }
 
     @Override
@@ -102,14 +102,13 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
 
     @Override
     protected boolean afterDependingOnTasksExecution(List<Instance> mainTaskResult, List<Task<?>> dependingOnTasks) {
-        context.getLogger().info("ApplicationBox: {0} successfully deployed", context.getOrder().getName());
+        context.getLogger().info("{0} successfully deployed", context.getOrder().getName());
         return true;
     }
 
     @Override
     protected boolean onExecutionError(List<Instance> mainTaskResult, List<Task<?>> dependingOnTasks, Throwable error) {
         context.getLogger().info("Error deploying ApplicationBox: {0}", context.getOrder().getName());
-        context.getLogger().info("Cause: {0}", error.getMessage());
         return true;
     }
 

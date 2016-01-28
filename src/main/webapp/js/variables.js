@@ -194,6 +194,12 @@ var ElasticBoxVariables = (function () {
                     });
                 }
 
+                if (variableHolder.boxDeploymentTypeSelect) {
+                    Event.addListener(variableHolder.boxDeploymentTypeSelect, 'change', function () {
+                        toggleDeploymentOptions(variableHolder);
+                    });
+                }
+
                 if (variableHolder.boxSelect) {
                     descriptorElement = ElasticBoxUtils.getDescriptorElement(variableHolder.boxSelect);
                     if (descriptorElement && Dom.getAttribute(descriptorElement, 'descriptorid') === ElasticBoxUtils.DeployBoxDescriptorId) {

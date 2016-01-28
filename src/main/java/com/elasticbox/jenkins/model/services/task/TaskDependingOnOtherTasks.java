@@ -67,7 +67,14 @@ public abstract class TaskDependingOnOtherTasks<R> extends AbstractTask<R> {
 
                 if (!countDownLatch.await(timeout, TimeUnit.SECONDS)){
                     logger.log(Level.SEVERE, "Error, timeout reached executing: "+this.getClass().getSimpleName());
-                    final TaskException taskException = new TaskException("Error, timeout reached executing: " + this.getClass().getSimpleName());
+                    final TaskException taskException = new TaskException("Error executing task, timeout reached");
+                    onExecutionError(result, dependingOnTasks, taskException);
+                    throw taskException;
+                }
+
+                if(!isDone()){
+                    logger.log(Level.SEVERE, "Task: "+this.getClass().getSimpleName()+" finished with error");
+                    final TaskException taskException = new TaskException("Task finished with error");
                     onExecutionError(result, dependingOnTasks, taskException);
                     throw taskException;
                 }

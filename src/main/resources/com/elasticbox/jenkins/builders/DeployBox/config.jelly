@@ -12,21 +12,21 @@ written permission is obtained from ElasticBox.
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-    <f:entry title="${%Cloud}" field="cloud">
-        <f:select clazz="required eb-cloud" />
-    </f:entry>
     <f:invisibleEntry>
         <f:textbox clazz="eb-id help" field="id"/>
     </f:invisibleEntry>
-    <f:invisibleEntry>
-        <f:select field="boxDeploymentType" clazz="eb-boxDeploymentType"/>
-    </f:invisibleEntry>
+    <f:entry title="${%Cloud}" field="cloud">
+        <f:select clazz="required eb-cloud" />
+    </f:entry>
     <f:entry title="${%Workspace}" field="workspace">
         <f:select clazz="required eb-workspace" />
     </f:entry>
     <f:entry title="${%Box}" field="box">
         <f:select clazz="required eb-box" />
     </f:entry>
+    <f:invisibleEntry>
+        <f:select field="boxDeploymentType" clazz="eb-boxDeploymentType"/>
+    </f:invisibleEntry>
     <f:entry title="${%Version}" field="boxVersion">
         <f:select clazz="required eb-boxVersion" />
     </f:entry>
@@ -44,7 +44,6 @@ written permission is obtained from ElasticBox.
     <st:include class="${descriptor.clazz}" page="variables.jelly"/>
 
     <st:include class="${descriptor.clazz}" page="policy.jelly"/>
-
     <f:advanced>
         <f:section title="Advanced" />
         <f:entry title="${%If instance already exists}" field="alternateAction">

@@ -19,6 +19,7 @@ import com.elasticbox.jenkins.model.services.deployment.configuration.policies.D
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
+import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 
 import java.util.List;
 
@@ -32,4 +33,6 @@ public interface DeployBoxOrderService {
     DeploymentType deploymentType(String boxToDeploy) throws ServiceException;
 
     DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy) throws ServiceException;
+
+    DeployBoxOrderResult<List<AbstractWorkspace>> getWorkspaces()throws ServiceException;;
 }
