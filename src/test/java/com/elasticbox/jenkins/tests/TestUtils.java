@@ -281,7 +281,7 @@ public class TestUtils {
         return testBoxData;
     }
 
-    static void createTestBox(TestBoxData testBoxData, TemplateResolver resolver, Client client) throws Exception {
+    static JSONObject createTestBox(TestBoxData testBoxData, TemplateResolver resolver, Client client) throws Exception {
         JSONObject box = JSONObject.fromObject(loadBox(testBoxData.jsonFileName, new TemplateResolverImpl(client, resolver)));
         box.put("name", box.getString("name") + '-' + UUID.randomUUID().toString());
         box.put("owner", TestUtils.TEST_WORKSPACE);
@@ -298,6 +298,7 @@ public class TestUtils {
         box.remove("id");
         box = client.createBox(box);
         testBoxData.setJson(box);
+        return box;
     }
 
     static JSONObject createTestProfile(TestBoxData testBoxData, JSONObject testProvider, TemplateResolver resolver, Client client) throws Exception {

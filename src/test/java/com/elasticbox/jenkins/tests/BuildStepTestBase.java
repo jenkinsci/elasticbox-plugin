@@ -54,9 +54,10 @@ public class BuildStepTestBase extends TestBase {
 
         for (TestBoxData testBoxData : testBoxDataList) {
             testBoxDataLookup.put(testBoxData.getJson().getString("name"), testBoxData);
-            TestUtils.createTestBox(testBoxData, templateResolver, client);
-            TestUtils.createTestProfile(testBoxData, testProvider, templateResolver, client);
+            JSONObject testBox = TestUtils.createTestBox(testBoxData, templateResolver, client);
+            JSONObject testProfile = TestUtils.createTestProfile(testBoxData, testProvider, templateResolver, client);
         }
+
         TestBoxData testBindingBoxData = testBoxDataLookup.get(TestUtils.TEST_BINDING_BOX_NAME);
         JSONArray variables = new JSONArray();
         JSONObject variable = new JSONObject();
