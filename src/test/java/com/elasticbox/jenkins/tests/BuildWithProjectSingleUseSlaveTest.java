@@ -18,6 +18,8 @@ import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SingleUseSlaveBuildOption;
 import com.elasticbox.jenkins.SlaveConfiguration;
 import static com.elasticbox.jenkins.tests.SlaveBuildTestBase.LOGGER;
+
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
@@ -63,7 +65,7 @@ public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
 
         // Create a slave configuration with retention time of 2 minutes.
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
-                profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 2, null, 1, 60);
+                profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 2, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
         jenkins.getInstance().clouds.remove(cloud);
         jenkins.getInstance().clouds.add(newCloud);

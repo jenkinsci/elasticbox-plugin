@@ -140,6 +140,10 @@ var ElasticBoxUtils = (function() {
                 label;
 
             if (boxName) {
+                if(ElasticBoxUtils.startsWith(boxName,'--')){
+                    return;
+                }
+
                 label = ElasticBoxUtils.format('{0} ({1} - {2})', ElasticBoxUtils.DeployBoxBuildStepName, boxName, boxVersionName);
                 if (_.isUndefined(takenLabels)) {
                     takenLabels = [];

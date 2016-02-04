@@ -18,6 +18,7 @@ import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SlaveConfiguration;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
@@ -65,7 +66,7 @@ public class BuildWithSingleUseViaLabelSlaveTest extends SlaveBuildTestBase {
         // Create a slave configuration with 0 retention time. This means, the slave of this configuration will be killed right after use (single-use)
         final PolicyBox policyBox = policies.get(0);
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
-                policyBox.getId(), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60);
+                policyBox.getId(), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
 
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
 

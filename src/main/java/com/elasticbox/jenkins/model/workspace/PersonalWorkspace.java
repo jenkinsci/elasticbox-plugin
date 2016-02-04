@@ -24,6 +24,8 @@ public class PersonalWorkspace extends AbstractWorkspace {
 
     public PersonalWorkspace(PersonalWorkspaceBuilder personalWorkspaceBuilder) {
         super(personalWorkspaceBuilder);
+        this.email = personalWorkspaceBuilder.email;
+        this.organization = personalWorkspaceBuilder.organization;
 
     }
 

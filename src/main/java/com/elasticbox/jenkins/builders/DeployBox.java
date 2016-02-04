@@ -19,25 +19,17 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.instance.Instance;
-import com.elasticbox.jenkins.model.repository.InstanceRepository;
-import com.elasticbox.jenkins.model.repository.api.DeploymentOrderRepositoryAPIImpl;
-import com.elasticbox.jenkins.model.repository.api.InstanceRepositoryAPIImpl;
-import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentDataTypeValidator;
 import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentDataTypeValidatorFactory;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.AbstractBoxDeploymentContext;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.DeploymentContextFactory;
-import com.elasticbox.jenkins.model.services.deployment.execution.deployers.BoxDeployer;
-import com.elasticbox.jenkins.model.services.deployment.execution.deployers.BoxDeployerFactory;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.model.repository.BoxRepository;
-import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
 import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
 import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentValidationResult;
-import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
@@ -54,17 +46,15 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -73,7 +63,6 @@ import org.apache.http.HttpStatus;
 import org.kohsuke.stapler.*;
 
 /**
- *
  * @author Phong Nguyen Le
  */
 public class DeployBox extends Builder implements IInstanceProvider {
@@ -119,9 +108,9 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
     @DataBoundConstructor
     public DeployBox(String id, String cloud, String workspace, String box, String boxVersion, String instanceName, String profile,
-            String claims, String provider, String location, String instanceEnvVariable, String tags,
-            String variables, InstanceExpiration expiration, String autoUpdates, String alternateAction,
-            boolean waitForCompletion, int waitForCompletionTimeout, String boxDeploymentType) {
+                     String claims, String provider, String location, String instanceEnvVariable, String tags,
+                     String variables, InstanceExpiration expiration, String autoUpdates, String alternateAction,
+                     boolean waitForCompletion, int waitForCompletionTimeout, String boxDeploymentType) {
         super();
         assert id != null && id.startsWith(getClass().getName() + '-');
         this.id = id;
@@ -151,7 +140,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
 
     private Result performAlternateAction(JSONArray existingInstances, ElasticBoxCloud ebCloud, Client client,
-            VariableResolver resolver, TaskLogger logger, AbstractBuild<?, ?> build) throws IOException, InterruptedException {
+                                          VariableResolver resolver, TaskLogger logger, AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         JSONObject instance = existingInstances.getJSONObject(0);
         boolean existing = true;
         if (alternateAction.equals(ACTION_SKIP)) {
@@ -176,7 +165,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
                     client.delete(instanceJson.getString("id"));
                 } catch (ClientException ex) {
                     if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
-                        throw  ex;
+                        throw ex;
                     }
                 }
             }
@@ -191,7 +180,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
 
     private String deploy(ElasticBoxCloud ebCloud, Client client, VariableResolver resolver, TaskLogger logger,
-            AbstractBuild<?, ?> build)
+                          AbstractBuild<?, ?> build)
             throws IOException, InterruptedException {
 
         Set<String> resolvedTags = resolver.resolveTags(tags);
@@ -382,7 +371,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
 
     private void notifyDeploying(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud ebxCloud) throws InterruptedException {
-        for (BuilderListener listener: Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
+        for (BuilderListener listener : Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
             try {
                 listener.onDeploying(build, instanceId, ebxCloud);
             } catch (IOException ex) {
@@ -404,7 +393,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
         //TODO
         //Temporary solution just to test that the application box deployment works fine
         final DeploymentType deploymentType = DeploymentType.findBy(getBoxDeploymentType());
-        if(deploymentType == DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE){
+        if (deploymentType == DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE) {
             final AbstractBoxDeploymentContext deploymentContext = DeploymentContextFactory.createDeploymentContext(this, new VariableResolver(getCloud(), workspace, build, listener), ebCloud, build, launcher, listener, logger);
             final DeployBoxOrderResult<List<Instance>> deployResult = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).deploy(deploymentContext);
             final List<Instance> instances = deployResult.getResult();
@@ -550,10 +539,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         private static final Pattern ENV_VARIABLE_PATTERN = Pattern.compile("^[a-zA-Z_]+[a-zA-Z0-9_]*$");
-        private static String boxName;
 
         private static final ListBoxModel alternateActionItems = new ListBoxModel();
         private static final ListBoxModel autoUpdatesItems = new ListBoxModel();
+
         static {
             alternateActionItems.add("still perform deployment", ACTION_NONE);
             alternateActionItems.add("skip deployment", ACTION_SKIP);
@@ -565,6 +554,11 @@ public class DeployBox extends Builder implements IInstanceProvider {
             autoUpdatesItems.add("All Updates", Constants.AUTOMATIC_UPDATES_MAJOR);
             autoUpdatesItems.add("Minor & Patch Updates", Constants.AUTOMATIC_UPDATES_MINOR);
             autoUpdatesItems.add("Patch Updates", Constants.AUTOMATIC_UPDATES_PATCH);
+        }
+
+        public DescriptorImpl() {
+            super(DeployBox.class);
+            load();
         }
 
         @Override
@@ -587,6 +581,10 @@ public class DeployBox extends Builder implements IInstanceProvider {
         @Override
         public Builder newInstance(StaplerRequest req, JSONObject formData) throws FormException {
 
+            if(DescriptorHelper.anyOfThemIsBlank(formData.getString("cloud"), formData.getString("workspace"), formData.getString("box"))){
+                throw new FormException("Required fields should be provided", "instanceEnvVariable");
+            }
+
             DescriptorHelper.fixDeploymentPolicyFormData(formData);
 
             String instanceEnvVariable = formData.getString("instanceEnvVariable").trim();
@@ -601,13 +599,14 @@ public class DeployBox extends Builder implements IInstanceProvider {
             }
 
             fixExpirationFormData(formData);
+
             DeployBox deployBox = (DeployBox) super.newInstance(req, formData);
 
             //Validate the data provided for deployment. Different data should be provided according to the box type to deploy
             final DeploymentType deploymentType = DeploymentType.findBy(deployBox.getBoxDeploymentType());
             final DeploymentDataTypeValidator validator = DeploymentDataTypeValidatorFactory.createValidator(deploymentType);
             final DeploymentValidationResult deploymentValidationResult = validator.validateDeploymentDataType(deployBox);
-            if (!deploymentValidationResult.isOk()){
+            if (!deploymentValidationResult.isOk()) {
                 final List<DeploymentValidationResult.Cause> causes = deploymentValidationResult.causes();
                 throw new FormException(causes.get(0).message(), causes.get(0).field());
             }
@@ -631,32 +630,57 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public ListBoxModel doFillCloudItems() {
 
-            final ListBoxModel clouds = DescriptorHelper.getClouds();
+            ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option("--Please choose your cloud--", ""));
+            for (Cloud cloud : Jenkins.getInstance().clouds) {
+                if (cloud instanceof ElasticBoxCloud) {
+                    clouds.add(cloud.getDisplayName(), cloud.name);
+                }
+            }
+
             return clouds;
         }
 
-         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
+        public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
 
-             if(anyOfThenIsBlank(cloud)){
-                return getEmptyListBoxModel();
-             }
+            final ListBoxModel workspaceOptions = DescriptorHelper.getEmptyListBoxModel("--Please choose the workspace--", "");
+            if (DescriptorHelper.anyOfThemIsBlank(cloud)) {
+                return workspaceOptions;
+            }
 
-             return DescriptorHelper.getWorkspaces(cloud);
+            final DeployBoxOrderResult<List<AbstractWorkspace>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).getWorkspaces();
+            final List<AbstractWorkspace> workspaces = result.getResult();
+            for (AbstractWorkspace workspace : workspaces) {
+                workspaceOptions.add(workspace.getName(), workspace.getId());
+            }
+
+            return workspaceOptions;
         }
 
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
 
-            if(anyOfThenIsBlank(cloud, workspace)){
-                return getEmptyListBoxModel();
+            ListBoxModel boxes = DescriptorHelper.getEmptyListBoxModel("--Please choose the box to deploy--", "");
+            if(DescriptorHelper.anyOfThemIsBlank(cloud, workspace)) {
+                return boxes;
             }
 
-            return DescriptorHelper.getBoxes(cloud, workspace);
+            final DeployBoxOrderResult<List<AbstractBox>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).getBoxesToDeploy(workspace);
+            for(AbstractBox box: result.getResult()){
+                boxes.add(box.getName(),box.getId());
+            }
+            Collections.sort(boxes, new Comparator<ListBoxModel.Option>() {
+                public int compare(ListBoxModel.Option o1, ListBoxModel.Option o2) {
+                    return o1.name.compareTo(o2.name);
+                }
+            });
+
+            return boxes;
+
         }
 
         public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
 
-            if(anyOfThenIsBlank(cloud, workspace, box)){
-                return getEmptyListBoxModel();
+            if (DescriptorHelper.anyOfThemIsBlank(cloud, workspace, box)) {
+                return DescriptorHelper.getEmptyListBoxModel();
             }
 
             return DescriptorHelper.getBoxVersions(cloud, workspace, box);
@@ -664,25 +688,25 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public ListBoxModel doFillBoxDeploymentTypeItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
 
-            if(anyOfThenIsBlank(cloud, workspace, box)){
-                return getEmptyListBoxModel();
+            ListBoxModel boxDeploymentType = DescriptorHelper.getEmptyListBoxModel("--Please choose your deployment type--", "");
+            if (DescriptorHelper.anyOfThemIsBlank(cloud, workspace, box)) {
+                return boxDeploymentType;
             }
 
-            ListBoxModel boxDeploymentType = new ListBoxModel();
             final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).deploymentType(box);
             final String id = deploymentType.getValue();
-            boxDeploymentType.add(id, id);
+            boxDeploymentType.add(new ListBoxModel.Option(id,id,true));
 
             return boxDeploymentType;
         }
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
 
-            if(anyOfThenIsBlank(cloud, workspace, box)){
-                return getEmptyListBoxModel();
+            ListBoxModel profiles = DescriptorHelper.getEmptyListBoxModel("--Please choose policy box--", "");
+            if (DescriptorHelper.anyOfThemIsBlank(cloud, workspace, box)) {
+                return profiles;
             }
 
-            ListBoxModel profiles = new ListBoxModel();
             final Client client = ClientCache.getClient(cloud);
             final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(client).deploymentPolicies(workspace, box);
             final List<PolicyBox> policyBoxList = result.getResult();
@@ -694,22 +718,24 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public ListBoxModel doFillProviderItems(@QueryParameter String cloud, @QueryParameter String workspace) {
 
-            if(anyOfThenIsBlank(cloud, workspace)){
-                return getEmptyListBoxModel();
+            ListBoxModel providers = DescriptorHelper.getEmptyListBoxModel("--Please choose the provider--", "");
+            if (DescriptorHelper.anyOfThemIsBlank(cloud, workspace)) {
+                return providers;
             }
             return DescriptorHelper.getCloudFormationProviders(ClientCache.getClient(cloud), workspace);
         }
 
         public ListBoxModel doFillLocationItems(@QueryParameter String cloud, @QueryParameter String provider) {
 
-            if(anyOfThenIsBlank(cloud, provider)){
-                return getEmptyListBoxModel();
+            ListBoxModel locations = DescriptorHelper.getEmptyListBoxModel("--Please choose the region--", "");
+            if (DescriptorHelper.anyOfThemIsBlank(cloud, provider)) {
+                return locations;
             }
             return DescriptorHelper.getCloudFormationLocations(ClientCache.getClient(cloud), provider);
         }
 
         public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud,
-                @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
+                                                                 @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
             return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace,
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
@@ -723,6 +749,20 @@ public class DeployBox extends Builder implements IInstanceProvider {
         public FormValidation doCheckCloud(@QueryParameter String value) {
             return DescriptorHelper.checkCloud(value);
 
+        }
+
+        public FormValidation doCheckWorkspace(@QueryParameter String workspace) {
+            if (StringUtils.isBlank(workspace)) {
+                return FormValidation.error("Workspace is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckBox(@QueryParameter String box) {
+            if (StringUtils.isBlank(box)) {
+                return FormValidation.error("Box to deploy is required");
+            }
+            return FormValidation.ok();
         }
 
         public ListBoxModel doFillAlternateActionItems() {
@@ -761,20 +801,17 @@ public class DeployBox extends Builder implements IInstanceProvider {
             return UUID.randomUUID().toString();
         }
 
-        private ListBoxModel getEmptyListBoxModel(){
-            return new ListBoxModel(){{
-                add(new ListBoxModel.Option("",""));
-            }};
-        }
 
-        private boolean anyOfThenIsBlank(String... inputParameters){
-            for (String inputParameter : inputParameters) {
-                if(StringUtils.isBlank(inputParameter)){
-                    return true;
+        private static List<ElasticBoxCloud> getElasticBoxClouds() {
+            List<ElasticBoxCloud> elasticBoxClouds = new ArrayList<>();
+            for (Cloud cloud : Jenkins.getInstance().clouds) {
+                if (cloud instanceof ElasticBoxCloud) {
+                    elasticBoxClouds.add((ElasticBoxCloud) cloud);
                 }
             }
-            return false;
+            return elasticBoxClouds;
         }
+
 
         private void fixExpirationFormData(JSONObject formData) {
             JSONObject expiration = formData.getJSONObject("expiration");

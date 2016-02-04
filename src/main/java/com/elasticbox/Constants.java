@@ -12,6 +12,11 @@
 
 package com.elasticbox;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  *
  * @author Phong Nguyen Le
@@ -31,6 +36,19 @@ public interface Constants {
     //---------- Boxes
     String BOX_ANY_BOX = "AnyBox";
     String BOX_LATEST_BOX_VERSION = "LATEST";
+
+    Map<String, String> SERVICES_BOXES_TO_BE_EXCLUDED = new HashMap<String, String>(){{
+        put("MySQL Database Service", "");
+        put("Microsoft SQL Database Service", "");
+        put("Oracle Database Service", "");
+        put("PostgreSQL Database Service", "");
+        put("S3 Bucket", "");
+        put("Dynamo DB Domain","");
+        put("Memcached Service","");
+        put("CloudFormation Service","");
+        put("Container Service","");
+        put("Docker Container", "");
+    }};
 
     //-----------Instances
     String INSTANCE_ACTION_NONE = "none";

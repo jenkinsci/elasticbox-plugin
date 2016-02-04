@@ -425,14 +425,23 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
         @Override
         public Cloud newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+
             if (formData.has(SlaveConfiguration.SLAVE_CONFIGURATIONS)) {
                 Object slaveConfigs = formData.get(SlaveConfiguration.SLAVE_CONFIGURATIONS);
                 if (slaveConfigs instanceof JSONArray) {
                     for (Object slaveConfig : formData.getJSONArray(SlaveConfiguration.SLAVE_CONFIGURATIONS)) {
-                        DescriptorHelper.fixDeploymentPolicyFormData((JSONObject) slaveConfig);
+                        JSONObject config = (JSONObject)slaveConfig;
+                        if(DescriptorHelper.anyOfThemIsBlank(config.getString("workspace"), config.getString("box"))){
+                            throw new FormException("Required fields should be provided", "description");
+                        }
+                        DescriptorHelper.fixDeploymentPolicyFormData(config);
                     }
                 } else {
-                    DescriptorHelper.fixDeploymentPolicyFormData((JSONObject) slaveConfigs);
+                    JSONObject config = (JSONObject)slaveConfigs;
+                    if(DescriptorHelper.anyOfThemIsBlank(config.getString("workspace"), config.getString("box"))){
+                        throw new FormException("Required fields should be provided", "description");
+                    }
+                    DescriptorHelper.fixDeploymentPolicyFormData(config);
                 }
             }
 

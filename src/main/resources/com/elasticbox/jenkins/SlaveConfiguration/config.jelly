@@ -26,6 +26,9 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Box}" field="box" help="/plugin/elasticbox/help/slaveConfig-box.html">
         <f:select clazz="required eb-box" />
     </f:entry>
+    <f:invisibleEntry>
+      <f:select field="boxDeploymentType" clazz="eb-boxDeploymentType"/>
+    </f:invisibleEntry>
     <f:entry title="${%Version}" field="boxVersion" help="/plugin/elasticbox/help/slaveConfig-boxVersion.html">
         <f:select clazz="required eb-boxVersion" />
     </f:entry>

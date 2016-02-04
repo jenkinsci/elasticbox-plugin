@@ -55,7 +55,7 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
             return type;
 
         } catch (RepositoryException e) {
-            logger.log(Level.SEVERE, "\"Impossible to retrieve box: \"+boxToDeploy");
+            logger.log(Level.SEVERE, "Impossible to retrieve box: "+boxToDeploy);
             throw new ServiceException("Impossible to retrieve box: "+boxToDeploy);
         }
     }
@@ -70,6 +70,17 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         } catch (RepositoryException e) {
             logger.log(Level.SEVERE, "Impossible to retrieve updateable boxes (no policies neither application boxes) for workspace: "+workspace);
             throw new ServiceException("Impossible to retrieve updateable boxes (no policies neither application boxes) for workspace: "+workspace);
+        }
+    }
+
+    public DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException{
+        try {
+            final List<AbstractBox> noPolicyBoxes = boxRepository.getNoPolicyBoxes(workspace);
+            return new DeployBoxOrderResult<List<AbstractBox>>(noPolicyBoxes);
+
+        } catch (RepositoryException e) {
+            logger.log(Level.SEVERE, "Impossible to get boxes o deploy for workspace: "+workspace);
+            throw new ServiceException("Impossible to get boxes to deploy for workspace: "+workspace);
         }
     }
 

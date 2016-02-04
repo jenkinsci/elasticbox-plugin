@@ -50,6 +50,13 @@ public class FakeAPIClient implements APIClient{
 
     @Override
     public <T extends JSON> T doPost(String url, JSONObject resource, boolean isArray) throws IOException {
+        //TODO
+        return null;
+    }
+
+    @Override
+    public JSONArray getWorkspaces() throws IOException {
+        //TODO
         return null;
     }
 

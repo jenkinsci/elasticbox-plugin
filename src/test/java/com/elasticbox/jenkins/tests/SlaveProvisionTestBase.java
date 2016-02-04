@@ -18,6 +18,7 @@ import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SlaveConfiguration;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.util.Condition;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import hudson.model.Node;
@@ -60,7 +61,7 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE,
                 testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION,
                 testBoxData.getNewProfileId(), null, null, null, 1, 2, slaveBoxName, variables.toString(),
-                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60);
+                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
     }
 
     protected void provisionSlaves() throws Exception {

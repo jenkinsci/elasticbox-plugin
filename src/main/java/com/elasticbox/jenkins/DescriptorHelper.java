@@ -62,7 +62,7 @@ public class DescriptorHelper {
     public static final String LATEST_BOX_VERSION = "LATEST";
 
     public static ListBoxModel getCloudFormationProviders(Client client, String workspace) {
-        ListBoxModel model = new ListBoxModel();
+        ListBoxModel model = new ListBoxModel(new ListBoxModel.Option("--Please choose your provider--","", true));
         if (client != null && StringUtils.isNotBlank(workspace)) {
             try {
                 for (Object providerObject : client.getProviders(workspace)) {
@@ -80,7 +80,7 @@ public class DescriptorHelper {
     }
 
     public static ListBoxModel getCloudFormationLocations(Client client, String provider) {
-        ListBoxModel model = new ListBoxModel();
+        ListBoxModel model = new ListBoxModel(new ListBoxModel.Option("--Please choose the region--","", true));
         if (client != null && StringUtils.isNotBlank(provider)) {
             try {
                 JSONObject providerJson = client.getProvider(provider);
@@ -610,6 +610,25 @@ public class DescriptorHelper {
         }
 
 
+    }
+
+    public static ListBoxModel getEmptyListBoxModel() {
+        return getEmptyListBoxModel("","");
+    }
+
+    public static ListBoxModel getEmptyListBoxModel(final String emptyName, final String emptyValue) {
+        return new ListBoxModel() {{
+            add(new ListBoxModel.Option(emptyName, emptyValue));
+        }};
+    }
+
+    public static boolean anyOfThemIsBlank(String... inputParameters) {
+        for (String inputParameter : inputParameters) {
+            if (StringUtils.isBlank(inputParameter)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static ListBoxModel sort(ListBoxModel model) {

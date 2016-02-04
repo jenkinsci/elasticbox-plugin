@@ -84,7 +84,7 @@ var ElasticBoxVariables = (function () {
                     Dom.setAttribute(tr, 'style', show ? '' : 'display: none');
                 },
 
-                isCloudFormdation;
+                isCloudFormdation = false;
 
             if(variableHolder.boxDeploymentTypeSelect && ElasticBoxUtils.deploymentOptionsNeeded(variableHolder.boxDeploymentTypeSelect.value)){
                 showRows(variableHolder.profileSelect,  false);
@@ -105,7 +105,9 @@ var ElasticBoxVariables = (function () {
 
                         isCloudFormdation = variableHolder.boxSelect.value && variableHolder.profileSelect.value === variableHolder.boxSelect.value;
 
-                        variableHolder.cloudFormationSelected.value = isCloudFormdation ? 'true' : 'false';
+                        if(variableHolder.boxDeploymentTypeSelect.value === 'CloudformationManaged'){
+                            isCloudFormdation = true;
+                        }
 
                         showRows(variableHolder.profileSelect, !isCloudFormdation);
                         showRows(variableHolder.providerSelect, isCloudFormdation);
@@ -760,6 +762,10 @@ var ElasticBoxVariables = (function () {
                             Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
                                 variableHolder.boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', element));
                                 return !_.isUndefined(variableHolder.boxSelect);
+                            });
+                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                variableHolder.boxDeploymentTypeSelect = _.first(Dom.getElementsByClassName('eb-boxDeploymentType', 'select', element));
+                                return !_.isUndefined(variableHolder.boxDeploymentTypeSelect);
                             });
                             Dom.getNextSiblingBy(variableHolderElement, function (element) {
                                 variableHolder.profileSelect = _.first(Dom.getElementsByClassName('eb-profile', 'select', element));

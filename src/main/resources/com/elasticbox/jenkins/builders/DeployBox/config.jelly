@@ -19,7 +19,7 @@ written permission is obtained from ElasticBox.
         <f:select clazz="required eb-cloud" />
     </f:entry>
     <f:entry title="${%Workspace}" field="workspace">
-        <f:select clazz="required eb-workspace" />
+        <f:select clazz="required eb-workspace"/>
     </f:entry>
     <f:entry title="${%Box}" field="box">
         <f:select clazz="required eb-box" />
@@ -59,4 +59,5 @@ written permission is obtained from ElasticBox.
             <f:textbox />
         </f:entry>
     </f:advanced>
+
 </j:jelly>
