@@ -12,10 +12,15 @@
 
 package com.elasticbox.jenkins;
 
-import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.box.AbstractBox;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.services.DeployBoxOrderServiceImpl;
-import com.elasticbox.jenkins.services.error.ServiceException;
+import com.elasticbox.jenkins.model.repository.BoxRepository;
+import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
+import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.model.BuildableItemWithBuildWrappers;
@@ -51,12 +56,15 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
     @DataBoundConstructor
     public ProjectSlaveConfiguration(String id, String cloud, String workspace, String box, String boxVersion,
             String profile, String claims, String provider, String location, int maxInstances, String tags,
-            String variables, String remoteFS, int retentionTime, String maxBuildsText, int executors, int launchTimeout) {
+            String variables, String remoteFS, int retentionTime, String maxBuildsText, int executors, int launchTimeout,
+                                     String boxDeploymentType) {
+
         super(StringUtils.isBlank(id) ? UUID.randomUUID().toString() : id, workspace, box, boxVersion, profile,
                 claims, provider, location, 0,
                 maxInstances, tags, variables, null, StringUtils.EMPTY, remoteFS, Node.Mode.EXCLUSIVE,
                 retentionTime, StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors,
-                launchTimeout);
+                launchTimeout, boxDeploymentType);
+
         this.cloud = cloud;
     }
 
@@ -116,57 +124,152 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
         public ListBoxModel doFillCloudItems() {
-            return DescriptorHelper.getClouds();
-        }
+            ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option("--Please choose your cloud--", ""));
+            for (Cloud cloud : Jenkins.getInstance().clouds) {
+                if (cloud instanceof ElasticBoxCloud) {
+                    clouds.add(cloud.getDisplayName(), cloud.name);
+                }
+            }
+
+            return clouds;        }
 
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
-            return DescriptorHelper.getWorkspaces(ClientCache.getClient(cloud));
+            final ListBoxModel workspaceOptions = getEmptyListBoxModel("--Please choose the workspace--", "");
+            if (anyOfThemIsBlank(cloud)) {
+                return workspaceOptions;
+            }
+
+            final DeployBoxOrderResult<List<AbstractWorkspace>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).getWorkspaces();
+            final List<AbstractWorkspace> workspaces = result.getResult();
+            for (AbstractWorkspace workspace : workspaces) {
+                workspaceOptions.add(workspace.getName(), workspace.getId());
+            }
+
+            return workspaceOptions;
         }
 
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
-            return DescriptorHelper.getBoxes(ClientCache.getClient(cloud), workspace);
+
+            ListBoxModel boxes = getEmptyListBoxModel("--Please choose the box to deploy--", "");
+            if(anyOfThemIsBlank(cloud, workspace)) {
+                return boxes;
+            }
+
+            final DeployBoxOrderResult<List<AbstractBox>> result =
+                    new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).updateableBoxes(workspace);
+
+            for (AbstractBox box : result.getResult()) {
+                boxes.add(box.getName(), box.getId());
+            }
+            return boxes;
+
+        }
+
+        public ListBoxModel doFillBoxDeploymentTypeItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
+
+            ListBoxModel boxDeploymentType = getEmptyListBoxModel("--Please choose your deployment type--", "");
+            if (anyOfThemIsBlank(cloud, workspace, box)) {
+                return boxDeploymentType;
+            }
+
+            final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).deploymentType(box);
+            final String id = deploymentType.getValue();
+            boxDeploymentType.add(new ListBoxModel.Option(id,id,true));
+
+            return boxDeploymentType;
         }
 
         public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace,
-                @QueryParameter String box) {
-            return DescriptorHelper.getBoxVersions(ClientCache.getClient(cloud), workspace, box);
-        }
+                                                  @QueryParameter String box) {
 
-        public FormValidation doCheckBoxVersion(@QueryParameter String value, @QueryParameter String cloud,
-                @QueryParameter String workspace, @QueryParameter String box) {
-            return checkBoxVersion(value, box, workspace, ClientCache.getClient(cloud));
+            ListBoxModel boxVersions = getEmptyListBoxModel("--Please choose the box version--", "");
+            if (anyOfThemIsBlank(cloud, workspace, box)) {
+                return boxVersions;
+            }
+
+            //TODO Refactoring needed in order to pass the code from the Descriptor helper to a Service
+            final ListBoxModel listBoxModel = DescriptorHelper.getBoxVersions(ClientCache.getClient(cloud), workspace, box);
+            for (ListBoxModel.Option option : listBoxModel) {
+                boxVersions.add(option);
+            }
+            return boxVersions;
         }
 
         public ListBoxModel doFillProfileItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
 
-            LOGGER.log(Level.FINE, "doFill ProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box);
-
-            ListBoxModel profiles = new ListBoxModel();
-            try {
-
-                if (StringUtils.isEmpty(cloud) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(box))
-                    return profiles;
-
-                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl().deploymentOptions(cloud,workspace, box);
-                final List<PolicyBox> policyBoxList = result.getResult();
-                for (PolicyBox policyBox : policyBoxList) {
-                    profiles.add(policyBox.getName(), policyBox.getId());
-                }
-
-            } catch (ServiceException e) {
-                LOGGER.log(Level.SEVERE, "ERROR doFillProfileItems - cloud: "+cloud+", worksapce: "+workspace+", box: "+box+" return an empty list");
-                e.printStackTrace();
+            ListBoxModel profiles = getEmptyListBoxModel("--Please choose policy box--", "");
+            if (anyOfThemIsBlank(cloud, workspace, box)) {
+                return profiles;
             }
+
+            final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).deploymentPolicies(workspace, box);
+            final List<PolicyBox> policyBoxList = result.getResult();
+            for (PolicyBox policyBox : policyBoxList) {
+                profiles.add(policyBox.getName(), policyBox.getId());
+            }
+
             return  profiles;
         }
 
         public ListBoxModel doFillProviderItems(@QueryParameter String cloud, @QueryParameter String workspace) {
+            ListBoxModel providers = getEmptyListBoxModel("--Please choose the provider--", "");
+            if (anyOfThemIsBlank(cloud, workspace)) {
+                return providers;
+            }
+
             return DescriptorHelper.getCloudFormationProviders(ClientCache.getClient(cloud), workspace);
         }
 
         public ListBoxModel doFillLocationItems(@QueryParameter String cloud, @QueryParameter String provider) {
+            ListBoxModel locations = getEmptyListBoxModel("--Please choose the region--", "");
+            if (anyOfThemIsBlank(cloud, provider)) {
+                return locations;
+            }
+
             return DescriptorHelper.getCloudFormationLocations(ClientCache.getClient(cloud), provider);
         }
+
+        public FormValidation doCheckCloud(@QueryParameter String cloud) {
+            if (StringUtils.isBlank(cloud)) {
+                return FormValidation.error("Cloud is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckWorkspace(@QueryParameter String workspace) {
+            if (StringUtils.isBlank(workspace)) {
+                return FormValidation.error("Workspace is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckBox(@QueryParameter String box) {
+            if (StringUtils.isBlank(box)) {
+                return FormValidation.error("Box to deploy is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckBoxVersion(@QueryParameter String value){
+
+            if(DescriptorHelper.anyOfThemIsBlank(value)){
+                return FormValidation.error("Box version should be provided", value);
+            }
+
+            return FormValidation.ok();
+        }
+
+//        public FormValidation doCheckBoxVersion(@QueryParameter String value,
+//                                                @QueryParameter String cloud,
+//                                                @QueryParameter String workspace,
+//                                                @QueryParameter String box) {
+//
+//            if(DescriptorHelper.anyOfThemIsBlank(value)){
+//                return FormValidation.error("Required field should be provided", value);
+//            }
+//
+//            return checkBoxVersion(value, box, workspace, ClientCache.getClient(cloud));
+//        }
 
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(
                 @QueryParameter String cloud,
@@ -211,11 +314,31 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
             }
 
 
-            FormValidation result = doCheckBoxVersion(slaveConfig.getBoxVersion(), slaveConfig.getCloud(),
-                    slaveConfig.getWorkspace(), slaveConfig.getBox());
+            FormValidation result = checkBoxVersion(slaveConfig.getBoxVersion(), slaveConfig.getBox(), slaveConfig.getWorkspace(), ClientCache.getClient(slaveConfig.getCloud()));
+
             if (result.kind == FormValidation.Kind.ERROR) {
                 throw new FormException(result.getMessage(), "boxVersion");
             }
+        }
+
+        private boolean anyOfThemIsBlank(String... inputParameters) {
+            for (String inputParameter : inputParameters) {
+                if (StringUtils.isBlank(inputParameter)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private ListBoxModel getEmptyListBoxModel() {
+            return getEmptyListBoxModel("","");
+        }
+
+        private ListBoxModel getEmptyListBoxModel(final String emptyName, final String emptyValue) {
+            return new ListBoxModel() {{
+                add(new ListBoxModel.Option(emptyName, emptyValue));
+            }};
         }
 
     }

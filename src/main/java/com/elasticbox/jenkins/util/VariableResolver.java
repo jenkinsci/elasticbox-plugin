@@ -17,10 +17,8 @@ import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxComputer;
 import com.elasticbox.jenkins.builders.IInstanceProvider;
 import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.Computer;
-import hudson.model.Project;
-import hudson.model.TaskListener;
+import hudson.model.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -47,8 +45,8 @@ public final class VariableResolver {
 
     private final String cloudName;
     private final String workspace;
-    private final List<IInstanceProvider> instanceProviders;
     private final AbstractBuild build;
+    private final List<IInstanceProvider> instanceProviders;
     private final Map<String, String> variableValueLookup;
 
     public VariableResolver(AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {
@@ -68,7 +66,8 @@ public final class VariableResolver {
         variableValueLookup = new HashMap<String, String>();
         variableValueLookup.putAll(build.getBuildVariables());
         variableValueLookup.putAll(build.getEnvironment(listener));
-        Computer computer = build.getBuiltOn().toComputer();
+        final Node builtOn = build.getBuiltOn();
+        final Computer computer = builtOn.toComputer();
         variableValueLookup.put("SLAVE_HOST_NAME", computer.getHostName());
         if (computer instanceof ElasticBoxComputer) {
             variableValueLookup.put("SLAVE_HOST_ADDRESS", ((ElasticBoxComputer) computer).getHostAddress());

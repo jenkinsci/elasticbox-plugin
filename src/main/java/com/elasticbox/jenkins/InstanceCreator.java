@@ -103,7 +103,7 @@ public class InstanceCreator extends BuildWrapper {
             slaveConfiguration = new ProjectSlaveConfiguration(UUID.randomUUID().toString(), cloud, workspace, box,
                     boxVersion, profile, null, null, null, ebCloud != null ? ebCloud.getMaxInstances() : 1, null, variables,
                     StringUtils.EMPTY, 30, null, 1,
-                    ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
+                    ElasticBoxSlaveHandler.TIMEOUT_MINUTES, null);
         }
 
         return this;
@@ -124,10 +124,17 @@ public class InstanceCreator extends BuildWrapper {
 
         @Override
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+
+
             JSONObject slaveConfigJson = formData.getJSONObject(ProjectSlaveConfiguration.SLAVE_CONFIGURATION);
+            if(DescriptorHelper.anyOfThemIsBlank(slaveConfigJson.getString("cloud"), slaveConfigJson.getString("workspace"), slaveConfigJson.getString("box"))){
+                throw new FormException("Required fields should be provided", ProjectSlaveConfiguration.SLAVE_CONFIGURATION);
+            }
+
             DescriptorHelper.fixDeploymentPolicyFormData(slaveConfigJson);
 
             InstanceCreator instanceCreator = (InstanceCreator) super.newInstance(req, formData);
+
             ProjectSlaveConfiguration.DescriptorImpl descriptor = (ProjectSlaveConfiguration.DescriptorImpl) instanceCreator.getSlaveConfiguration().getDescriptor();
             descriptor.validateSlaveConfiguration(instanceCreator.getSlaveConfiguration());
 

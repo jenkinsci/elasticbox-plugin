@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
+import com.elasticbox.Constants;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.Condition;
@@ -220,7 +221,7 @@ public class TestUtils {
     static JSONObject createTestProvider(Client client) throws IOException, InterruptedException {
         JSONObject testProvider = new JSONObject();
         testProvider.put("name", NAME_PREFIX + UUID.randomUUID().toString());
-        testProvider.put("schema", MessageFormat.format("{0}test/provider", Client.BASE_ELASTICBOX_SCHEMA));
+        testProvider.put("schema", MessageFormat.format("{0}test/provider", Constants.BASE_ELASTICBOX_SCHEMA));
         testProvider.put("type", TEST_PROVIDER_TYPE);
         testProvider.put("icon", "images/platform/provider.png");
         testProvider.put("secret", "secret");

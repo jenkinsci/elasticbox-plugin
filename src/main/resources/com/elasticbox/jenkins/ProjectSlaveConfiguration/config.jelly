@@ -11,6 +11,12 @@ written permission is obtained from ElasticBox.
 -->
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" >
+
+    <style type="text/css">
+        .hide{
+            display: none;
+        }
+    </style>
     <f:invisibleEntry>
         <f:textbox clazz="help" field="id"/>
     </f:invisibleEntry>
@@ -25,6 +31,9 @@ written permission is obtained from ElasticBox.
     <f:entry title="${%Box}" field="box" help="/plugin/elasticbox/help/slaveConfig-box.html">
         <f:select clazz="required eb-box" />
     </f:entry>
+    <f:invisibleEntry>
+        <f:select field="boxDeploymentType" clazz="hide eb-boxDeploymentType"/>
+    </f:invisibleEntry>
     <f:entry title="${%Version}" field="boxVersion" help="/plugin/elasticbox/help/slaveConfig-boxVersion.html">
         <f:select clazz="required eb-boxVersion" />
     </f:entry>

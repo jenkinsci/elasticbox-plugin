@@ -17,6 +17,7 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.Extension;
@@ -108,8 +109,8 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
     }
 
     public String getInstanceId(AbstractBuild build) {
-        JSONObject instance = instanceManager.getInstance(build);
-        return instance != null ? instance.getString("id") : null;
+        final Instance instance = instanceManager.getInstance(build);
+        return instance != null ? instance.getId(): null;
     }
 
     @Override

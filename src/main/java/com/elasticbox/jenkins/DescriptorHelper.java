@@ -16,6 +16,7 @@ import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.Constants;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.JsonUtil;
@@ -61,7 +62,7 @@ public class DescriptorHelper {
     public static final String LATEST_BOX_VERSION = "LATEST";
 
     public static ListBoxModel getCloudFormationProviders(Client client, String workspace) {
-        ListBoxModel model = new ListBoxModel();
+        ListBoxModel model = new ListBoxModel(new ListBoxModel.Option("--Please choose your provider--","", true));
         if (client != null && StringUtils.isNotBlank(workspace)) {
             try {
                 for (Object providerObject : client.getProviders(workspace)) {
@@ -79,7 +80,7 @@ public class DescriptorHelper {
     }
 
     public static ListBoxModel getCloudFormationLocations(Client client, String provider) {
-        ListBoxModel model = new ListBoxModel();
+        ListBoxModel model = new ListBoxModel(new ListBoxModel.Option("--Please choose the region--","", true));
         if (client != null && StringUtils.isNotBlank(provider)) {
             try {
                 JSONObject providerJson = client.getProvider(provider);
@@ -572,26 +573,62 @@ public class DescriptorHelper {
     }
 
     public static void fixDeploymentPolicyFormData(JSONObject formData) {
-        if (formData.getString("cloudFormationSelected").equals("true")) {
-            formData.remove("profile");
-            formData.remove("claims");
-        } else {
-            String policySelection = null;
-            for (Object entry : formData.entrySet()) {
-                Map.Entry mapEntry = (Map.Entry) entry;
-                if (mapEntry.getKey().toString().startsWith("policySelection-")) {
-                    policySelection = mapEntry.getValue().toString();
-                    break;
-                }
-            }
-            if ("claims".equals(policySelection)) {
+
+        final DeploymentType boxDeploymentType = DeploymentType.findBy(formData.getString("boxDeploymentType"));
+
+        switch (boxDeploymentType){
+            case APPLICATIONBOX_DEPLOYMENT_TYPE:
                 formData.remove("profile");
-            } else {
+                formData.remove("provider");
+                formData.remove("location");
+                break;
+
+            case CLOUDFORMATIONMANAGED_DEPLOYMENT_TYPE:
+                formData.remove("profile");
                 formData.remove("claims");
-            }
-            formData.remove("provider");
-            formData.remove("location");
+                break;
+
+            default:
+                String policySelection = null;
+                for (Object entry : formData.entrySet()) {
+                    Map.Entry mapEntry = (Map.Entry) entry;
+                    if (mapEntry.getKey().toString().startsWith("policySelection-")) {
+                        policySelection = mapEntry.getValue().toString();
+                        break;
+                    }
+                }
+                if ("claims".equals(policySelection)) {
+                    formData.remove("profile");
+                } else {
+                    formData.remove("claims");
+                }
+
+                formData.remove("provider");
+                formData.remove("location");
+
+                break;
         }
+
+
+    }
+
+    public static ListBoxModel getEmptyListBoxModel() {
+        return getEmptyListBoxModel("","");
+    }
+
+    public static ListBoxModel getEmptyListBoxModel(final String emptyName, final String emptyValue) {
+        return new ListBoxModel() {{
+            add(new ListBoxModel.Option(emptyName, emptyValue));
+        }};
+    }
+
+    public static boolean anyOfThemIsBlank(String... inputParameters) {
+        for (String inputParameter : inputParameters) {
+            if (StringUtils.isBlank(inputParameter)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static ListBoxModel sort(ListBoxModel model) {

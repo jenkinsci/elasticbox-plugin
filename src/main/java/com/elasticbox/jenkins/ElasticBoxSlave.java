@@ -348,7 +348,7 @@ public class ElasticBoxSlave extends Slave {
                 (slaveConfig.getMaxBuilds() > 0 && builds >= slaveConfig.getMaxBuilds()));
     }
 
-    private void save() {
+    public void save() {
         try {
             Jenkins.getInstance().save();
         } catch (IOException ex) {

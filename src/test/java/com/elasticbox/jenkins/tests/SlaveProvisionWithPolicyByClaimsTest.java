@@ -14,6 +14,7 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.SlaveConfiguration;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import hudson.model.Node;
 import java.io.IOException;
 import java.util.UUID;
@@ -32,7 +33,8 @@ public class SlaveProvisionWithPolicyByClaimsTest extends SlaveProvisionTestBase
         return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE,
                 testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION,
                 null, "linux, test", null, null, 1, 2, slaveBoxName, variables.toString(),
-                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60);
+                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60,
+                DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
     }
 
 

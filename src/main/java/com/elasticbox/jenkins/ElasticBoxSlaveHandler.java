@@ -143,7 +143,7 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
                     deployInstance(request);
                     saveConfig = true;
                     cloudToMaxNewInstancesMap.put(cloud, maxNewInstances--);
-                    log(MessageFormat.format("Deloying a new instance for slave {0}",
+                    log(MessageFormat.format("Deploying a new instance for slave {0}",
                             request.slave.getDisplayName()), listener);
                 } catch (IOException ex) {
                     log(Level.SEVERE, MessageFormat.format("Error deloying a new instance for slave {0}",

@@ -17,56 +17,31 @@ public class ScriptBox extends AbstractBox implements ClaimsVsRequirementsDeploy
 
     private String[] requirements;
 
-    private ScriptBox(String id, String name, String[] requirements) {
-        super(id, name, BoxType.SCRIPT);
-        this.requirements = requirements;
+    private ScriptBox(ScriptBoxBuilder builder) {
+        super(builder);
+        this.requirements = builder.requirements;
     }
 
     public String[] getRequirements() {
         return requirements;
     }
 
-    public static class ComplexBuilder {
+    public static class ScriptBoxBuilder extends ComplexBuilder<ScriptBoxBuilder, ScriptBox> {
 
-        private String newId;
-        private String newName;
-        private String[] newRequirements;
+        private String[] requirements;
 
-        public ComplexBuilder() {
+        public ScriptBoxBuilder() {
+            this.type = BoxType.SCRIPT;
         }
 
-        public NameBuilder withId(String id) {
-            newId = id;
-            return new NameBuilder();
+        public ScriptBoxBuilder withRequirements(String[] requirements) {
+            this.requirements = requirements;
+            return getThis();
         }
 
-        public class NameBuilder {
-            private NameBuilder() {
-            }
-
-            public BoxBuilder withName(String name) {
-                newName = name;
-                return new BoxBuilder();
-            }
-        }
-
-        public class BoxBuilder {
-            private BoxBuilder() {
-            }
-
-            public BoxBuilder withRequirements(String[] requirements) {
-                newRequirements = requirements;
-                return this;
-            }
-
-            public ScriptBox build() throws ElasticBoxModelException {
-                if (StringUtils.isNotEmpty(newId) &&
-                        StringUtils.isNotEmpty(newName)) {
-                    return new ScriptBox(newId, newName, newRequirements);
-                }
-
-                throw new ElasticBoxModelException("Not valid parameters for building Box");
-            }
+        @Override
+        public ScriptBox build() {
+            return new ScriptBox(this);
         }
     }
 }

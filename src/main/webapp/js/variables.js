@@ -61,40 +61,84 @@ var ElasticBoxVariables = (function () {
                         tr = Dom.getNextSibling(tr);
                     }
                 },
-
-                isCloudFormdation;
-
-
-            if (variableHolder.profileSelect) {
-                if (Dom.getStyle(Dom.getAncestorByTagName(variableHolder.boxSelect, 'tr'), 'display') !== 'none') {
-                    isCloudFormdation = variableHolder.boxSelect.value && variableHolder.profileSelect.value === variableHolder.boxSelect.value;
-                    variableHolder.cloudFormationSelected.value = isCloudFormdation ? 'true' : 'false';
-                    showRows(variableHolder.profileSelect, !isCloudFormdation);
-                    showRows(variableHolder.providerSelect, isCloudFormdation);
-                    showRows(variableHolder.locationSelect, isCloudFormdation);
-                    // show/hide radio options for deployment policy
-                    Dom.getPreviousSiblingBy(Dom.getAncestorByTagName(variableHolder.profileSelect, 'tr'), function (sibling) {
-                        var display = Dom.getStyle(sibling, 'display');
-
-                        if (_.isUndefined(_.first(Dom.getElementsByClassName('section-header', 'div', sibling)))) {
-                            // the sibling is not the section header yet, show/hide it depending on whether the selected box is a Cloud Formation box
-                            if (isCloudFormdation) {
-                                display = Dom.getStyle(sibling, 'display');
-                                if (display !== 'none') {
-                                    Dom.setStyle(sibling, 'display', 'none');
-                                    Dom.addClass(sibling, 'ebx-hide');
-                                }
-                            } else if (Dom.hasClass(sibling, 'ebx-hide') && Dom.getStyle(sibling, 'display') === 'none') {
-                                Dom.setAttribute(sibling, 'style', '');
+                showRadio = function (radio, show) {
+                    Dom.setAttribute(radio, 'style', show ? '' : 'display: none');
+                    var tr;
+                    for (var i = 0, tr = Dom.getAncestorByTagName(radio, 'tr'); i < 2; i++) {
+                        if(i == 0){
+                            var display = Dom.getStyle(tr, 'display');
+                            if (!show && display === 'none') {
+                                Dom.setAttribute(tr, 'style', '');
+                                Dom.removeClass(tr, 'ebx-hide');
                             }
-                            return false;
                         }
-                        return true;
-                    });
-                } else  {
-                    showRows(variableHolder.providerSelect, false);
-                    showRows(variableHolder.locationSelect, false);
+                        tr = Dom.getNextSibling(tr);
+                        if(i == 0){
+                            var display = Dom.getStyle(tr, 'display');
+                            if (!show && display === 'none') {
+                                Dom.setAttribute(tr, 'style', '');
+                                Dom.removeClass(tr, 'ebx-hide');
+                            }
+                        }
+                    }
+                    Dom.setAttribute(tr, 'style', show ? '' : 'display: none');
+                },
+
+                isCloudFormdation = false;
+
+            if(variableHolder.boxDeploymentTypeSelect && ElasticBoxUtils.deploymentOptionsNeeded(variableHolder.boxDeploymentTypeSelect.value)){
+                showRows(variableHolder.profileSelect,  false);
+                showRows(variableHolder.policyRadio, false);
+                showRows(variableHolder.providerSelect, false);
+                showRows(variableHolder.locationSelect, false);
+
+                showRadio(variableHolder.claimsRadio, false);
+
+
+            }else{
+                if (variableHolder.profileSelect) {
+
+                    showRows(variableHolder.policyRadio, true);
+                    showRadio(variableHolder.claimsRadio, true);
+
+                    if (Dom.getStyle(Dom.getAncestorByTagName(variableHolder.boxSelect, 'tr'), 'display') !== 'none') {
+
+                        isCloudFormdation = variableHolder.boxSelect.value && variableHolder.profileSelect.value === variableHolder.boxSelect.value;
+
+                        if(variableHolder.boxDeploymentTypeSelect.value === 'CloudformationManaged'){
+                            isCloudFormdation = true;
+                        }
+
+                        showRows(variableHolder.profileSelect, !isCloudFormdation);
+                        showRows(variableHolder.providerSelect, isCloudFormdation);
+                        showRows(variableHolder.locationSelect, isCloudFormdation);
+
+                        // show/hide radio options for deployment policy
+                        Dom.getPreviousSiblingBy(Dom.getAncestorByTagName(variableHolder.profileSelect, 'tr'), function (sibling) {
+                            var display = Dom.getStyle(sibling, 'display');
+
+                            if (_.isUndefined(_.first(Dom.getElementsByClassName('section-header', 'div', sibling)))) {
+                                // the sibling is not the section header yet, show/hide it depending on whether the selected box is a Cloud Formation box
+                                if (isCloudFormdation) {
+                                    display = Dom.getStyle(sibling, 'display');
+                                    if (display !== 'none') {
+                                        Dom.setStyle(sibling, 'display', 'none');
+                                        Dom.addClass(sibling, 'ebx-hide');
+                                    }
+                                } else if (Dom.hasClass(sibling, 'ebx-hide') && Dom.getStyle(sibling, 'display') === 'none') {
+                                    Dom.setAttribute(sibling, 'style', '');
+                                }
+                                return false;
+                            }
+                            return true;
+                        });
+
+                    } else  {
+                        showRows(variableHolder.providerSelect, false);
+                        showRows(variableHolder.locationSelect, false);
+                    }
                 }
+
             }
         },
 
@@ -148,6 +192,12 @@ var ElasticBoxVariables = (function () {
 
                 if (variableHolder.profileSelect) {
                     Event.addListener(variableHolder.profileSelect, 'change', function () {
+                        toggleDeploymentOptions(variableHolder);
+                    });
+                }
+
+                if (variableHolder.boxDeploymentTypeSelect) {
+                    Event.addListener(variableHolder.boxDeploymentTypeSelect, 'change', function () {
                         toggleDeploymentOptions(variableHolder);
                     });
                 }
@@ -578,15 +628,31 @@ var ElasticBoxVariables = (function () {
                 cloudSelect: _.first(Dom.getElementsByClassName('eb-cloud', 'select', buildStepElement)),
                 workspaceSelect: _.first(Dom.getElementsByClassName('eb-workspace', 'select', buildStepElement)),
                 boxSelect: _.first(Dom.getElementsByClassName('eb-box', 'select', descriptorElement)),
+                boxDeploymentTypeSelect: _.first(Dom.getElementsByClassName('eb-boxDeploymentType', 'select', descriptorElement)),
+                claimsInput: _.first(Dom.getElementsByClassName('eb-claims', 'input', descriptorElement)),
                 profileSelect: _.first(Dom.getElementsByClassName('eb-profile', 'select', descriptorElement)),
                 cloudFormationSelected: _.first(Dom.getElementsByClassName('eb-cloud-formation-selected', 'input', descriptorElement)),
                 providerSelect: _.first(Dom.getElementsByClassName('eb-provider', 'select', descriptorElement)),
                 locationSelect: _.first(Dom.getElementsByClassName('eb-location', 'select', descriptorElement)),
+                policyRadio : _.first(Dom.getElementsBy(function(element) {
+                    if(Dom.getAttribute(element, 'type') === 'radio'){
+                        if(Dom.getAttribute(element, 'value') === 'specific'){
+                            return true;
+                        }
+                    }
+                    return false}, 'input', buildStepElement)),
+                claimsRadio : _.first(Dom.getElementsBy(function(element) {
+                    if(Dom.getAttribute(element, 'type') === 'radio'){
+                        if(Dom.getAttribute(element, 'value') === 'claims'){
+                            return true;
+                        }
+                    }
+                    return false}, 'input', buildStepElement)),
                 getPriorDeployBoxSteps: function () {
-                    var cloudName = this.cloudSelect ? this.cloudSelect.value : undefined;
-                    return ElasticBoxUtils.getPriorDeployBoxSteps(buildStepElement, cloudName);
-                }
-            };
+                        var cloudName = this.cloudSelect ? this.cloudSelect.value : undefined;
+                        return ElasticBoxUtils.getPriorDeployBoxSteps(buildStepElement, cloudName);
+                    }
+                };
         },
 
         getBuildStepVariableHolders = function (buildStepElement, varTBody) {
@@ -696,6 +762,10 @@ var ElasticBoxVariables = (function () {
                             Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
                                 variableHolder.boxSelect = _.first(Dom.getElementsByClassName('eb-box', 'select', element));
                                 return !_.isUndefined(variableHolder.boxSelect);
+                            });
+                            Dom.getPreviousSiblingBy(variableHolderElement, function (element) {
+                                variableHolder.boxDeploymentTypeSelect = _.first(Dom.getElementsByClassName('eb-boxDeploymentType', 'select', element));
+                                return !_.isUndefined(variableHolder.boxDeploymentTypeSelect);
                             });
                             Dom.getNextSiblingBy(variableHolderElement, function (element) {
                                 variableHolder.profileSelect = _.first(Dom.getElementsByClassName('eb-profile', 'select', element));

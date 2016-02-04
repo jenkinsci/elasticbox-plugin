@@ -41,6 +41,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
 
     private String id;
     private final String workspace;
+    private String boxDeploymentType;
     private final String box;
     private String profile;
     private final String claims;
@@ -67,7 +68,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile,
             String claims, String provider, String location, int minInstances,
             int maxInstances, String tags, String variables, String labels, String description, String remoteFS,
-            Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout) {
+            Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout, String boxDeploymentType) {
         super();
         this.id = id;
         this.workspace = workspace;
@@ -89,7 +90,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.maxBuilds = maxBuilds;
         this.executors = executors;
         this.launchTimeout = launchTimeout;
-
+        this.boxDeploymentType =  boxDeploymentType;
         this.labelSet = getLabelSet();
     }
 
@@ -104,6 +105,10 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     @Override
     public Descriptor<AbstractSlaveConfiguration> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
+    }
+
+    public String getBoxDeploymentType() {
+        return boxDeploymentType;
     }
 
     public String getId() {

@@ -19,15 +19,11 @@ public class PolicyBox extends AbstractBox {
 
     private Provider provider;
 
-    private PolicyBox(String id, String name, ProfileType type, String[] claims) {
-        super(id, name, BoxType.POLICY);
-        this.claims = claims;
-        this.profileType = type;
-    }
-
-    protected PolicyBox(String id, String name, BoxType boxType, ProfileType type) {
-        super(id, name, boxType);
-        this.profileType = type;
+    public PolicyBox(PolicyBoxBuilder builder) {
+        super(builder);
+        this.claims = builder.getClaims();
+        this.profileType = builder.getProfileType();
+        this.provider = builder.getProvider();
     }
 
     public ProfileType getProfileType() {
@@ -43,56 +39,18 @@ public class PolicyBox extends AbstractBox {
     }
 
 
-    public static class ComplexBuilder {
+    public static class SimplePolicyBoxBuilder extends PolicyBoxBuilder<SimplePolicyBoxBuilder,PolicyBox> {
 
-        private PolicyProfileType newPolicyProfileType;
-        private String newId;
-        private String newName;
-        private String [] newClaims;
-
-        public ComplexBuilder() {}
-
-        public IdBuilder withProfileType( String schema ){
-            newPolicyProfileType = PolicyProfileType.getType(schema);
-            return new IdBuilder();
+        @Override
+        public SimplePolicyBoxBuilder withProfileType(String schema) {
+            this.profileType = PolicyProfileType.getType(schema);;
+            return getThis();
         }
 
-        public class IdBuilder {
-            private IdBuilder() {}
-            public NameBuilder withId( String id ) {
-                newId = id;
-                return new NameBuilder();
-            }
-        }
-
-        public class NameBuilder {
-            private NameBuilder() {}
-            public PolicyBoxBuilder withName( String name ) {
-                newName = name;
-                return new PolicyBoxBuilder();
-            }
-        }
-
-        public class PolicyBoxBuilder {
-            private PolicyBoxBuilder() {}
-
-            public PolicyBoxBuilder withClaims(String [] claims){
-                newClaims = claims;
-                return  this;
-            }
-
-            public PolicyBox build() throws ElasticBoxModelException {
-                if (newPolicyProfileType !=null &&
-                        StringUtils.isNotEmpty(newId) &&
-                            StringUtils.isNotEmpty(newName)){
-                                return new PolicyBox(newId, newName, newPolicyProfileType, newClaims);
-                }
-
-                throw new ElasticBoxModelException("Not valid parameters for building PolicyBox");
-            }
+        @Override
+        public PolicyBox build() {
+            return new PolicyBox(this);
         }
     }
-
-
 
 }

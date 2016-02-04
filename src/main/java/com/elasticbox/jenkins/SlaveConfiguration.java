@@ -13,10 +13,15 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
-import com.elasticbox.jenkins.model.box.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.box.AbstractBox;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.services.DeployBoxOrderServiceImpl;
-import com.elasticbox.jenkins.services.error.ServiceException;
+import com.elasticbox.jenkins.model.repository.BoxRepository;
+import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
+import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.RelativePath;
@@ -47,10 +52,12 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
     public SlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile,
             String claims, String provider, String location, int minInstances, int maxInstances, String tags,
             String variables, String labels,String description, String remoteFS, Node.Mode mode, int retentionTime,
-            String maxBuildsText, int executors, int launchTimeout) {
+            String maxBuildsText, int executors, int launchTimeout, String boxDeploymentType) {
+
         super(id, workspace, box, boxVersion, profile, claims, provider, location, minInstances, maxInstances,
                 tags, variables, labels, description, remoteFS, mode, retentionTime,
-                StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors, launchTimeout);
+                StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors, launchTimeout,
+                boxDeploymentType);
     }
 
     @Extension
@@ -133,73 +140,141 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return client;
         }
 
-        public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token) {
-            return DescriptorHelper.getWorkspaces(createClient(endpointUrl, token));
+        public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,@RelativePath("..") @QueryParameter String token) {
+            final ListBoxModel workspaceOptions = getEmptyListBoxModel("--Please choose the workspace--", "");
+            if (anyOfThemIsBlank(endpointUrl, token)) {
+                return workspaceOptions;
+            }
+
+            final DeployBoxOrderResult<List<AbstractWorkspace>> result = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).getWorkspaces();
+            final List<AbstractWorkspace> workspaces = result.getResult();
+            for (AbstractWorkspace workspace : workspaces) {
+                workspaceOptions.add(workspace.getName(), workspace.getId());
+            }
+
+            return workspaceOptions;
         }
 
         public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String workspace) {
-            return DescriptorHelper.getBoxes(createClient(endpointUrl, token), workspace);
+                                           @RelativePath("..") @QueryParameter String token,
+                                           @QueryParameter String workspace) {
+
+            ListBoxModel boxes = getEmptyListBoxModel("--Please choose the box to deploy--", "");
+            if(anyOfThemIsBlank(token, workspace)) {
+                return boxes;
+            }
+
+            final DeployBoxOrderResult<List<AbstractBox>> result =
+                    new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).updateableBoxes(workspace);
+
+            for (AbstractBox box : result.getResult()) {
+                boxes.add(box.getName(), box.getId());
+            }
+            return boxes;
+        }
+
+        public ListBoxModel doFillBoxDeploymentTypeItems(@RelativePath("..") @QueryParameter String endpointUrl,
+                                                         @RelativePath("..") @QueryParameter String token,
+                                                         @QueryParameter String workspace,
+                                                         @QueryParameter String box) {
+
+            ListBoxModel boxDeploymentType = getEmptyListBoxModel("--Please choose your deployment type--", "");
+            if (anyOfThemIsBlank(endpointUrl, token, workspace, box)) {
+                return boxDeploymentType;
+            }
+
+            final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).deploymentType(box);
+            final String id = deploymentType.getValue();
+            boxDeploymentType.add(new ListBoxModel.Option(id,id,true));
+
+            return boxDeploymentType;
         }
 
         public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String workspace, @QueryParameter String box) {
+                                                  @RelativePath("..") @QueryParameter String token,
+                                                  @QueryParameter String workspace,
+                                                  @QueryParameter String box) {
+            if (anyOfThemIsBlank(endpointUrl, workspace, box, token)) {
+                return getEmptyListBoxModel();
+            }
+
             return DescriptorHelper.getBoxVersions(createClient(endpointUrl, token), workspace, box);
         }
 
-        public FormValidation doCheckBoxVersion(@QueryParameter String value,
-                @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String workspace,
-                @QueryParameter String box) {
-            Client client = createClient(endpointUrl, token);
-            return checkBoxVersion(value, box, workspace, client);
-        }
+        public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl,
+                                                @RelativePath("..") @QueryParameter String token,
+                                                @QueryParameter String workspace,
+                                                @QueryParameter String box) {
 
-        public ListBoxModel doFillProfileItems(
-                @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String workspace, @QueryParameter String box) {
-
-            LOGGER.log(Level.FINE, "doFill ProfileItems - cloud: "+endpointUrl+", workspace: "+workspace+", box: "+box);
-
-            ListBoxModel profiles = new ListBoxModel();
-            try {
-
-                if (StringUtils.isEmpty(endpointUrl) || StringUtils.isEmpty(workspace) || StringUtils.isEmpty(box))
-                    return profiles;
-
-                final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl().deploymentOptions(endpointUrl, token, workspace, box);
-                final List<PolicyBox> policyBoxList = result.getResult();
-                for (PolicyBox policyBox : policyBoxList) {
-                    profiles.add(policyBox.getName(), policyBox.getId());
-                }
-
-            } catch (ServiceException e) {
-                LOGGER.log(Level.SEVERE, "ERROR doFillProfileItems - cloud: "+endpointUrl+", workspace: "+workspace+", box: "+box+" return an empty list", e);
+            ListBoxModel profiles = getEmptyListBoxModel("--Please choose policy box--", "");
+            if (anyOfThemIsBlank(endpointUrl, workspace, box, token)) {
+                return getEmptyListBoxModel();
             }
 
-            return profiles;
+            final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(endpointUrl, token)).deploymentPolicies(workspace, box);
+            final List<PolicyBox> policyBoxList = result.getResult();
+            for (PolicyBox policyBox : policyBoxList) {
+                profiles.add(policyBox.getName(), policyBox.getId());
+            }
 
-
+            return  profiles;
         }
 
-        public ListBoxModel doFillProviderItems(
-                @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String workspace) {
+        public ListBoxModel doFillProviderItems(@RelativePath("..") @QueryParameter String endpointUrl,
+                                                @RelativePath("..") @QueryParameter String token,
+                                                @QueryParameter String workspace) {
+
+            ListBoxModel providers = getEmptyListBoxModel("--Please choose the provider--", "");
+            if (anyOfThemIsBlank(endpointUrl, token, workspace)) {
+                return providers;
+            }
+
             return DescriptorHelper.getCloudFormationProviders(createClient(endpointUrl, token), workspace);
         }
 
         public ListBoxModel doFillLocationItems(
-                @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String provider) {
+                                                @RelativePath("..") @QueryParameter String endpointUrl,
+                                                @RelativePath("..") @QueryParameter String token,
+                                                @QueryParameter String provider) {
+
+            ListBoxModel locations = getEmptyListBoxModel("--Please choose the region--", "");
+            if (anyOfThemIsBlank(endpointUrl, token, provider)) {
+                return locations;
+            }
             return DescriptorHelper.getCloudFormationLocations(createClient(endpointUrl, token), provider);
         }
+
+
+        public FormValidation doCheckWorkspace(@QueryParameter String workspace) {
+            if (StringUtils.isBlank(workspace)) {
+                return FormValidation.error("Workspace is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckBox(@QueryParameter String box) {
+            if (StringUtils.isBlank(box)) {
+                return FormValidation.error("Box to deploy is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckBoxVersion(@QueryParameter String value,
+                                                @RelativePath("..") @QueryParameter String endpointUrl,
+                                                @RelativePath("..") @QueryParameter String token,
+                                                @QueryParameter String workspace,
+                                                @QueryParameter String box) {
+            if (StringUtils.isBlank(workspace)) {
+                return FormValidation.error("Workspace is required");
+            }
+            if (StringUtils.isBlank(box)) {
+                return FormValidation.error("Box is required");
+            }
+
+            Client client = createClient(endpointUrl, token);
+            return checkBoxVersion(value, box, workspace, client);
+        }
+
 
         public DescriptorHelper.JSONArrayResponse doGetBoxStack(
                 @RelativePath("..") @QueryParameter String endpointUrl,
@@ -220,6 +295,27 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return DescriptorHelper.getInstancesAsJSONArrayResponse(createClient(endpointUrl, token),
                     workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
+
+        private boolean anyOfThemIsBlank(String... inputParameters) {
+            for (String inputParameter : inputParameters) {
+                if (StringUtils.isBlank(inputParameter)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private ListBoxModel getEmptyListBoxModel() {
+            return getEmptyListBoxModel("","");
+        }
+
+        private ListBoxModel getEmptyListBoxModel(final String emptyName, final String emptyValue) {
+            return new ListBoxModel() {{
+                add(new ListBoxModel.Option(emptyName, emptyValue));
+            }};
+        }
+
 
     }
 
