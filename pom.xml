@@ -7,7 +7,7 @@
     </parent>
 
     <artifactId>elasticbox</artifactId>
-    <version>4.0.4-SNAPSHOT</version>
+    <version>4.0.4</version>
     <packaging>hpi</packaging>
     <name>ElasticBox CI Plug-in</name>
     <description>
@@ -42,7 +42,7 @@
         <connection>scm:git:https://github.com/jenkinsci/elasticbox-plugin.git</connection>
         <developerConnection>scm:git:https://github.com/jenkinsci/elasticbox-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/elasticbox-plugin</url>
-        <tag>HEAD</tag>
+        <tag>4.0.4</tag>
     </scm>
 
     <dependencies>
