@@ -18,6 +18,7 @@ package com.elasticbox.jenkins.migration;
  */
 public class Version implements Comparable<Version> {
     public static final Version _0_9_3 = new Version(0, 9, 3);
+    public static final Version _4_0_3 = new Version(4, 0, 3);
 
     public final int major, minor, micro;
 

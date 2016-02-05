@@ -83,4 +83,12 @@ public interface Constants {
 
     //-----------Log
     String LOG_PREFIX = "[ElasticBox] - ";
+
+
+    //------------Messages
+    String CHOOSE_CLOUD_MESSAGE =               "--Please choose your cloud--";
+    String CHOOSE_WORKSPACE_MESSAGE =           "--Please choose the workspace--";
+    String CHOOSE_BOX_MESSAGE =                 "--Please choose the box to deploy--";
+    String CHOOSE_BOX_VERSION_MESSAGE =         "--Please choose the box version--";
+    String CHOOSE_DEPLOYMENT_TYPE_MESSAGE =     "--Please choose your deployment type--";
 }

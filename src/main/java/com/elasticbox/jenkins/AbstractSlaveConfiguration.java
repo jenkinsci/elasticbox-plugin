@@ -13,6 +13,12 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.migration.AbstractConverter;
+import com.elasticbox.jenkins.migration.Version;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
+import com.elasticbox.jenkins.util.ClientCache;
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import hudson.model.Describable;
@@ -24,6 +30,7 @@ import hudson.util.FormValidation;
 import hudson.util.XStream2;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -41,7 +48,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
 
     private String id;
     private final String workspace;
-    private String boxDeploymentType;
+    protected String boxDeploymentType;
     private final String box;
     private String profile;
     private final String claims;

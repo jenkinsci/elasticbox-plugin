@@ -45,7 +45,13 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
     protected void performExecute() throws TaskException {
 
         try {
-            this.result = context.getDeploymentOrderRepository().deploy(context);
+            final List<Instance> instancesToDeploy = context.getDeploymentOrderRepository().deploy(context);
+            if (instancesToDeploy.isEmpty()){
+                logger.log(Level.SEVERE, "There is no instances to deploy for this Application Box: "+context.getOrder().getName());
+                throw new TaskException("There is no instances to deploy for this Application Box: "+context.getOrder().getName());
+            }
+            this.result = instancesToDeploy;
+
         } catch (RepositoryException e) {
             logger.log(Level.SEVERE, "Error executing task DeployApplicationBoxTask", e);
             throw new TaskException("Error executing task DeployApplicationBoxTask", e);

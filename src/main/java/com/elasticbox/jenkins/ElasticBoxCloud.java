@@ -17,6 +17,9 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.migration.AbstractConverter;
 import com.elasticbox.jenkins.migration.Version;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import hudson.Extension;
@@ -663,8 +666,52 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
         public ConverterImpl(XStream2 xstream) {
             super(xstream, Arrays.asList(
-                    new RetentionTimeMigrator()
+                    new RetentionTimeMigrator(),
+                    new DeploymentTypeMigrator()
             ));
+        }
+
+    }
+
+    private static class DeploymentTypeMigrator extends AbstractConverter.Migrator<ElasticBoxCloud> {
+
+        public DeploymentTypeMigrator() {
+            super(Version._4_0_3);
+        }
+
+        @Override
+        protected void migrate(ElasticBoxCloud cloud, Version olderVersion) {
+            final List<? extends SlaveConfiguration> slaveConfigurations = cloud.getSlaveConfigurations();
+            for (SlaveConfiguration slaveConfiguration : slaveConfigurations) {
+                if(StringUtils.isBlank(slaveConfiguration.getBoxDeploymentType())){
+                    final Client client = createClient(cloud.endpointUrl, cloud.token);
+                    final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
+                    slaveConfiguration.boxDeploymentType = deploymentType.getValue();
+                }
+            }
+        }
+
+        private Client createClient(String endpointUrl, String token) {
+            if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(token)) {
+                return null;
+            }
+
+            Client client = ClientCache.getClient(endpointUrl, token);
+            if (client == null) {
+                if (StringUtils.isNotBlank(token)) {
+                    client = new Client(endpointUrl, token);
+                } else {
+                    LOGGER.log(Level.SEVERE, "You need an ElasticBox token to be able to connect");
+                }
+                try {
+                    client.connect();
+                } catch (IOException ex) {
+                    client = null;
+                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
+                }
+            }
+
+            return client;
         }
 
     }

@@ -13,6 +13,9 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+import com.elasticbox.Constants;
+import com.elasticbox.jenkins.migration.AbstractConverter;
+import com.elasticbox.jenkins.migration.Version;
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
@@ -30,10 +33,13 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -44,6 +50,9 @@ import org.kohsuke.stapler.QueryParameter;
  * @author Phong Nguyen Le
  */
 public class SlaveConfiguration extends AbstractSlaveConfiguration {
+
+    private static final Logger logger = Logger.getLogger(SlaveConfiguration.class.getName());
+
     public static final String SLAVE_CONFIGURATIONS = "slaveConfigurations";
 
     private static final Logger LOGGER = Logger.getLogger(SlaveConfiguration.class.getName());
@@ -141,7 +150,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
         public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,@RelativePath("..") @QueryParameter String token) {
-            final ListBoxModel workspaceOptions = getEmptyListBoxModel("--Please choose the workspace--", "");
+            final ListBoxModel workspaceOptions = getEmptyListBoxModel(Constants.CHOOSE_WORKSPACE_MESSAGE, "");
             if (anyOfThemIsBlank(endpointUrl, token)) {
                 return workspaceOptions;
             }
@@ -159,7 +168,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                                            @RelativePath("..") @QueryParameter String token,
                                            @QueryParameter String workspace) {
 
-            ListBoxModel boxes = getEmptyListBoxModel("--Please choose the box to deploy--", "");
+            ListBoxModel boxes = getEmptyListBoxModel(Constants.CHOOSE_BOX_MESSAGE, "");
             if(anyOfThemIsBlank(token, workspace)) {
                 return boxes;
             }
@@ -178,7 +187,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                                                          @QueryParameter String workspace,
                                                          @QueryParameter String box) {
 
-            ListBoxModel boxDeploymentType = getEmptyListBoxModel("--Please choose your deployment type--", "");
+            ListBoxModel boxDeploymentType = getEmptyListBoxModel(Constants.CHOOSE_DEPLOYMENT_TYPE_MESSAGE, "");
             if (anyOfThemIsBlank(endpointUrl, token, workspace, box)) {
                 return boxDeploymentType;
             }
