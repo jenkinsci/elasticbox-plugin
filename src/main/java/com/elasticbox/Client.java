@@ -1046,6 +1046,7 @@ public class Client implements APIClient{
                         return true;
                     }
                 }).build();
+
                 httpClientBuilder.setSslcontext(sslContext);
 
                 SSLConnectionSocketFactory sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier());

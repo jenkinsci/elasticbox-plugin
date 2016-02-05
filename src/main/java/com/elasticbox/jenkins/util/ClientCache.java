@@ -34,7 +34,9 @@ import org.apache.http.client.methods.HttpRequestBase;
  * @author Phong Nguyen Le
  */
 public class ClientCache {
+
     private static final Logger LOGGER = Logger.getLogger(ClientCache.class.getName());
+
     private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<String, Client>();
 
     public static final Client findOrCreateClient(String cloudName) throws IOException {

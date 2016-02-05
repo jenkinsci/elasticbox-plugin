@@ -19,6 +19,9 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
+import com.elasticbox.jenkins.SlaveConfiguration;
+import com.elasticbox.jenkins.migration.AbstractConverter;
+import com.elasticbox.jenkins.migration.Version;
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
@@ -30,6 +33,7 @@ import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBo
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
 import com.elasticbox.jenkins.model.services.deployment.configuration.validation.DeploymentValidationResult;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.CompositeObjectFilter;
@@ -48,6 +52,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.*;
@@ -55,6 +60,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -65,7 +71,7 @@ import org.kohsuke.stapler.*;
 /**
  * @author Phong Nguyen Le
  */
-public class DeployBox extends Builder implements IInstanceProvider {
+public class DeployBox extends Builder implements IInstanceProvider, Serializable {
 
     private static final Logger logger = Logger.getLogger(DeployBox.class.getName());
 
@@ -535,6 +541,39 @@ public class DeployBox extends Builder implements IInstanceProvider {
     }
 
 
+    public static class ConverterImpl extends AbstractConverter<DeployBox> {
+
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream, Arrays.asList(
+                    new DeploymentTypeMigrator()
+            ));
+        }
+
+    }
+
+    private static class DeploymentTypeMigrator extends AbstractConverter.Migrator<DeployBox> {
+
+        public DeploymentTypeMigrator() {
+            super(Version._4_0_3);
+        }
+
+        @Override
+        protected void migrate(DeployBox deployBox, Version olderVersion) {
+            if(StringUtils.isBlank(deployBox.getBoxDeploymentType())){
+                if(StringUtils.isNotBlank(deployBox.cloud)){
+                    final Client client = ClientCache.getClient(deployBox.cloud);
+                    final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(client).deploymentType(deployBox.box);
+                    deployBox.boxDeploymentType = deploymentType.getValue();
+                }else{
+                    logger.log(Level.SEVERE,"DeployBox migration failed, there is no cloud configured to deploy: \"+slaveConfiguration.getBox()");
+                    throw new ServiceException("DeployBox migration failed, there is no cloud configured to deploy: "+deployBox.getBox());
+                }
+            }
+        }
+
+    }
+
+
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
@@ -630,7 +669,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public ListBoxModel doFillCloudItems() {
 
-            ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option("--Please choose your cloud--", ""));
+            ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option(Constants.CHOOSE_CLOUD_MESSAGE, ""));
             for (Cloud cloud : Jenkins.getInstance().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     clouds.add(cloud.getDisplayName(), cloud.name);
@@ -642,7 +681,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
 
-            final ListBoxModel workspaceOptions = DescriptorHelper.getEmptyListBoxModel("--Please choose the workspace--", "");
+            final ListBoxModel workspaceOptions = DescriptorHelper.getEmptyListBoxModel(Constants.CHOOSE_WORKSPACE_MESSAGE, "");
             if (DescriptorHelper.anyOfThemIsBlank(cloud)) {
                 return workspaceOptions;
             }
@@ -658,7 +697,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
 
-            ListBoxModel boxes = DescriptorHelper.getEmptyListBoxModel("--Please choose the box to deploy--", "");
+            ListBoxModel boxes = DescriptorHelper.getEmptyListBoxModel(Constants.CHOOSE_BOX_MESSAGE, "");
             if(DescriptorHelper.anyOfThemIsBlank(cloud, workspace)) {
                 return boxes;
             }
@@ -688,7 +727,7 @@ public class DeployBox extends Builder implements IInstanceProvider {
 
         public ListBoxModel doFillBoxDeploymentTypeItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
 
-            ListBoxModel boxDeploymentType = DescriptorHelper.getEmptyListBoxModel("--Please choose your deployment type--", "");
+            ListBoxModel boxDeploymentType = DescriptorHelper.getEmptyListBoxModel(Constants.CHOOSE_DEPLOYMENT_TYPE_MESSAGE, "");
             if (DescriptorHelper.anyOfThemIsBlank(cloud, workspace, box)) {
                 return boxDeploymentType;
             }

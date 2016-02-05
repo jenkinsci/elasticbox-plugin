@@ -12,6 +12,10 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.Client;
+import com.elasticbox.Constants;
+import com.elasticbox.jenkins.migration.AbstractConverter;
+import com.elasticbox.jenkins.migration.Version;
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
@@ -31,11 +35,13 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -124,7 +130,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
         public ListBoxModel doFillCloudItems() {
-            ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option("--Please choose your cloud--", ""));
+            ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option(Constants.CHOOSE_CLOUD_MESSAGE, ""));
             for (Cloud cloud : Jenkins.getInstance().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     clouds.add(cloud.getDisplayName(), cloud.name);
@@ -134,7 +140,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
             return clouds;        }
 
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
-            final ListBoxModel workspaceOptions = getEmptyListBoxModel("--Please choose the workspace--", "");
+            final ListBoxModel workspaceOptions = getEmptyListBoxModel(Constants.CHOOSE_WORKSPACE_MESSAGE, "");
             if (anyOfThemIsBlank(cloud)) {
                 return workspaceOptions;
             }
@@ -150,7 +156,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
 
         public ListBoxModel doFillBoxItems(@QueryParameter String cloud, @QueryParameter String workspace) {
 
-            ListBoxModel boxes = getEmptyListBoxModel("--Please choose the box to deploy--", "");
+            ListBoxModel boxes = getEmptyListBoxModel(Constants.CHOOSE_BOX_MESSAGE, "");
             if(anyOfThemIsBlank(cloud, workspace)) {
                 return boxes;
             }
@@ -167,7 +173,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
 
         public ListBoxModel doFillBoxDeploymentTypeItems(@QueryParameter String cloud, @QueryParameter String workspace, @QueryParameter String box) {
 
-            ListBoxModel boxDeploymentType = getEmptyListBoxModel("--Please choose your deployment type--", "");
+            ListBoxModel boxDeploymentType = getEmptyListBoxModel(Constants.CHOOSE_DEPLOYMENT_TYPE_MESSAGE, "");
             if (anyOfThemIsBlank(cloud, workspace, box)) {
                 return boxDeploymentType;
             }
@@ -182,7 +188,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
         public ListBoxModel doFillBoxVersionItems(@QueryParameter String cloud, @QueryParameter String workspace,
                                                   @QueryParameter String box) {
 
-            ListBoxModel boxVersions = getEmptyListBoxModel("--Please choose the box version--", "");
+            ListBoxModel boxVersions = getEmptyListBoxModel(Constants.CHOOSE_BOX_VERSION_MESSAGE, "");
             if (anyOfThemIsBlank(cloud, workspace, box)) {
                 return boxVersions;
             }

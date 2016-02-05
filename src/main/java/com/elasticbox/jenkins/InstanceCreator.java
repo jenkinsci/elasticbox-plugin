@@ -12,7 +12,14 @@
 
 package com.elasticbox.jenkins;
 
+import com.elasticbox.Client;
+import com.elasticbox.jenkins.migration.AbstractConverter;
 import com.elasticbox.jenkins.migration.RetentionTimeConverter;
+import com.elasticbox.jenkins.migration.Version;
+import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
+import com.elasticbox.jenkins.util.ClientCache;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -23,7 +30,12 @@ import hudson.slaves.Cloud;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import hudson.util.XStream2;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -35,6 +47,9 @@ import org.kohsuke.stapler.StaplerRequest;
  * @author Phong Nguyen Le
  */
 public class InstanceCreator extends BuildWrapper {
+
+    private static final Logger logger = Logger.getLogger(InstanceCreator.class.getName());
+
     @Deprecated
     private String cloud;
     @Deprecated
@@ -143,15 +158,43 @@ public class InstanceCreator extends BuildWrapper {
 
     }
 
-    public static class ConverterImpl extends RetentionTimeConverter<InstanceCreator> {
+    public static class ConverterImpl extends AbstractConverter<InstanceCreator> {
+
+        public ConverterImpl(XStream2 xstream) {
+            super(xstream, Arrays.asList(new DeploymentTypeMigrator(), new RetentionTimeMigrator()));
+        }
+    }
+
+    private static class DeploymentTypeMigrator extends AbstractConverter.Migrator<InstanceCreator> {
+
+        public DeploymentTypeMigrator() {super(Version._4_0_3);}
 
         @Override
-        protected void fixZeroRetentionTime(InstanceCreator obj) {
+        protected void migrate(InstanceCreator instanceCreator, Version olderVersion) {
+            final ProjectSlaveConfiguration slaveConfiguration = instanceCreator.getSlaveConfiguration();
+            if(StringUtils.isBlank(slaveConfiguration.getBoxDeploymentType())){
+                if(StringUtils.isNotBlank(slaveConfiguration.getCloud())){
+                    final Client client = ClientCache.getClient(slaveConfiguration.getCloud());
+                    final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
+                    slaveConfiguration.boxDeploymentType = deploymentType.getValue();
+                }else{
+                    logger.log(Level.SEVERE,"InstanceCreator migration failed, there is no cloud configured to deploy: "+slaveConfiguration.getBox());
+                    throw new ServiceException("InstanceCreator migration failed, there is no cloud configured to deploy: "+slaveConfiguration.getBox());
+                }
+            }
+        }
+    }
+
+    private static class RetentionTimeMigrator extends AbstractConverter.Migrator<InstanceCreator> {
+
+        public RetentionTimeMigrator() {super(Version._0_9_3);}
+
+        @Override
+        protected void migrate(InstanceCreator obj, Version olderVersion) {
             ProjectSlaveConfiguration slaveConfig = obj.getSlaveConfiguration();
             if (slaveConfig != null && slaveConfig.getRetentionTime() == 0) {
                 slaveConfig.retentionTime = Integer.MAX_VALUE;
             }
         }
-
     }
 }

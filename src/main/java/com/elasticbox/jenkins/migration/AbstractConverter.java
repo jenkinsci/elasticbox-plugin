@@ -23,6 +23,7 @@ import java.util.List;
  * @param <T>
  */
 public abstract class AbstractConverter<T> extends XStream2.PassthruConverter<T> {
+
     public static abstract class Migrator<T> {
         private final Version version;
 
