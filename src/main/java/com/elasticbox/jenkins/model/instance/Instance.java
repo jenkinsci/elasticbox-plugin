@@ -277,18 +277,8 @@ public class Instance extends AbstractModel {
 
         public class BoxesBuilder {
             private BoxesBuilder() {}
-            public DeletedBuilder withBoxes(AbstractBox [] newBoxes) {
+            public NameBuilder withBoxes(AbstractBox [] newBoxes) {
                 boxes = newBoxes;
-                return new DeletedBuilder();
-            }
-        }
-
-        public class DeletedBuilder {
-            private DeletedBuilder() {}
-            public NameBuilder withDeleted(String newDeleted) {
-                if(StringUtils.isNotBlank(newDeleted) && !newDeleted.equals("null")){
-                    deleted = newDeleted;
-                }
                 return new NameBuilder();
             }
         }

@@ -25,6 +25,7 @@ import com.elasticbox.jenkins.model.repository.api.factory.JSONFactoryUtils;
 import com.elasticbox.jenkins.model.repository.api.factory.ModelFactory;
 import com.elasticbox.jenkins.model.repository.api.factory.box.AbstractBoxFactory;
 import com.elasticbox.jenkins.model.repository.api.factory.box.GenericBoxFactory;
+import com.elasticbox.jenkins.util.JsonUtil;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -45,7 +46,6 @@ public class InstanceFactoryImpl implements InstanceFactory<Instance> {
                 .withBox(jsonObject.getString("box"))
                 .withAutomaticUpdates(Instance.AutomaticUpdates.findByValue(jsonObject.getString("automatic_updates")))
                 .withBoxes(getBoxes(jsonObject.getJSONArray("boxes")))
-                .withDeleted(jsonObject.getString("deleted"))
                 .withName(jsonObject.getString("name"))
                 .withOperation(getOperation(jsonObject.getJSONObject("operation")))
                 .withService(getService(jsonObject.getJSONObject("service")))
