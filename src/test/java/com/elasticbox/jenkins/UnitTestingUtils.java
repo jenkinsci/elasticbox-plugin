@@ -758,7 +758,7 @@ public class UnitTestingUtils {
     }
 
     public static JSONObject getFakeProcessingInstance(){
-        return (JSONObject) JSONSerializer.toJSON(processingInstance1);
+        return (JSONObject)  JSONObject.fromObject(processingInstance1);
     }
 
     public static JSONObject getFakeEmptyApplicationBox(){
