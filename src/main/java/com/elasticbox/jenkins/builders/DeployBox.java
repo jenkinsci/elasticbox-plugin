@@ -396,7 +396,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
             throw new IOException(MessageFormat.format("Cannod find ElasticBox cloud ''{0}''.", getCloud()));
         }
 
-        //TODO
+        //TODO Refactor in order to handle all deployment types in the same way, not using if else controls
         //Temporary solution just to test that the application box deployment works fine
         final DeploymentType deploymentType = DeploymentType.findBy(getBoxDeploymentType());
         if (deploymentType == DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE) {

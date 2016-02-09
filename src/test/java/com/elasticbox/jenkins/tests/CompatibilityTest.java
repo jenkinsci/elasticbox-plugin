@@ -53,30 +53,4 @@ public class CompatibilityTest extends BuildStepTestBase {
         assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
     }
 
-    @Test
-    public void testBuildPrevious() throws Exception {
-        String testParameter = UUID.randomUUID().toString();
-        String projectXml = createTestDataFromTemplate("jobs/testJobPreviousDeployType.xml");
-        FreeStyleBuild build = TestUtils.runJob("test-previous", projectXml,
-                Collections.singletonMap("eb_test_build_parameter", testParameter), jenkins.getInstance());
-        TestUtils.assertBuildSuccess(build);
-
-        Client client = cloud.getClient();
-        JSONObject instance = client.getInstance(newTestBindingBoxInstanceId);
-        JSONObject connectionVar = null;
-        JSONObject httpsVar = null;
-        for (Object json : instance.getJSONArray("variables")) {
-            JSONObject variable = (JSONObject) json;
-            String name = variable.getString("name");
-            if (name.equals("CONNECTION")) {
-                connectionVar = variable;
-            } else if (name.equals("HTTPS")) {
-                httpsVar = variable;
-            }
-        }
-
-        assertEquals(connectionVar.toString(), testParameter, connectionVar.getString("value"));
-        assertFalse(httpsVar.toString(), httpsVar.getString("value").equals("${BUILD_ID}"));
-    }
-
 }

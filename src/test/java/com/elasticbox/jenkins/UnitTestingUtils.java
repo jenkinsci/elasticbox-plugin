@@ -17,6 +17,54 @@ import java.util.List;
  */
 public class UnitTestingUtils {
 
+    private static String twoBindingVariables = "[\n" +
+            "  {\n" +
+            "    \"name\": \"BINDING\",\n" +
+            "    \"value\": \"com.elasticbox.jenkins.builders.DeployBox-8e11b523-9abe-4902-84d3-1309da145f65\",\n" +
+            "    \"scope\": \"nested\",\n" +
+            "    \"type\": \"Binding\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"name\": \"ANY_BINDING\",\n" +
+            "    \"value\": \"com.elasticbox.jenkins.builders.DeployBox-adf45857-30fe-4c91-af89-98cfeaff9317\",\n" +
+            "    \"scope\": \"nested.nested\",\n" +
+            "    \"type\": \"Binding\"\n" +
+            "  }\n" +
+            "]";
+
+    private static String oneVariableForEachType = "[\n" +
+            "  {\n" +
+            "    \"name\": \"ANY_BINDING\",\n" +
+            "    \"value\": \"com.elasticbox.jenkins.builders.DeployBox-8e11b523-9abe-4902-84d3-1309da145f65\",\n" +
+            "    \"scope\": \"\",\n" +
+            "    \"type\": \"Binding\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"name\": \"HTTP\",\n" +
+            "    \"value\": \"8080\",\n" +
+            "    \"scope\": \"\",\n" +
+            "    \"type\": \"Port\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"name\": \"VAR_WHOLE\",\n" +
+            "    \"value\": \"${TEST_TAG}\",\n" +
+            "    \"scope\": \"\",\n" +
+            "    \"type\": \"Text\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"name\": \"VAR_INSIDE\",\n" +
+            "    \"value\": \"${TEST_TAG}\",\n" +
+            "    \"scope\": \"\",\n" +
+            "    \"type\": \"Text\"\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"name\": \"INSTALL_EXIT_CODE\",\n" +
+            "    \"value\": \"1\",\n" +
+            "    \"scope\": \"\",\n" +
+            "    \"type\": \"Number\"\n" +
+            "  }\n" +
+            "]";
+
     private static String processingInstance3 = "{\n" +
             "    \"box\": \"3fbca6e6-7371-4628-861e-677c28954d2d\",\n" +
             "    \"policy_box\": {\n" +
@@ -757,8 +805,23 @@ public class UnitTestingUtils {
         return instances;
     }
 
+    public static JSONObject getFakeDoneInstance(){
+
+        final JSONObject fromObject = JSONObject.fromObject(processingInstance1);
+        fromObject.put("state", "done");
+        return  fromObject;
+    }
+
+    public static JSONArray getTwoBindingVariables(){
+        return (JSONArray)  JSONArray.fromObject(twoBindingVariables);
+    }
+
+    public static JSONArray getOneVariableForEachType(){
+        return (JSONArray)  JSONArray.fromObject(oneVariableForEachType);
+    }
+
     public static JSONObject getFakeProcessingInstance(){
-        return (JSONObject) JSONSerializer.toJSON(processingInstance1);
+        return (JSONObject)  JSONObject.fromObject(processingInstance1);
     }
 
     public static JSONObject getFakeEmptyApplicationBox(){
