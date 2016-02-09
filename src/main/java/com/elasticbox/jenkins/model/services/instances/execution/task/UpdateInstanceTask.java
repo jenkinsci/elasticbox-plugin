@@ -151,12 +151,13 @@ public class UpdateInstanceTask implements Task<JSONObject> {
 
             updateInstanceWhenIsReady =  new WaitForInstanceToBeReady(DELAY, INITIAL_DELAY, TIMEOUT);
             updateInstanceWhenIsReady.execute();
+
+            return updateInstanceWhenIsReady.getTotalRoundtrips();
         }
 
         taskLogger.info("Instance {0} ready to be updated", instanceId);
 
-        return updateInstanceWhenIsReady.getTotalRoundtrips();
-
+        return 0;
     }
 
     @Override
