@@ -36,6 +36,6 @@ public interface DeployBoxOrderService {
 
     DeployBoxOrderResult<List<AbstractWorkspace>> getWorkspaces()throws ServiceException;;
 
-    public DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException;
+    DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException;
 
 }
