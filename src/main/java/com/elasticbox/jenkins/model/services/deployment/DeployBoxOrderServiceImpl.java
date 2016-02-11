@@ -73,6 +73,8 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
     }
 
+
+    @Override
     public DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException{
         try {
             final List<AbstractBox> noPolicyBoxes = boxRepository.getNoPolicyBoxes(workspace);
