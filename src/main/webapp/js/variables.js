@@ -327,7 +327,7 @@ var ElasticBoxVariables = (function () {
         },
 
         createVariableRow = function (variable, savedVariable, variableHolder) {
-            var saveVariable = function (name, value, scope, type, varTextBox, variableInput) {
+            var saveVariable = function (name, value, scope, type, visibility, required, varTextBox, variableInput) {
                     var savedVariables = Dom.getAttribute(varTextBox, 'value').evalJSON(),
                         modified = type === 'Binding' ? value !== '' && value !== '()' :
                             value !== Dom.getAttribute(variableInput, 'data-original-value'),
@@ -338,7 +338,7 @@ var ElasticBoxVariables = (function () {
                         if (modifiedVariable) {
                             modifiedVariable.value = value;
                         } else {
-                            savedVariables.push({ name: name, value: value, scope: scope, type: type });
+                            savedVariables.push({ name: name, value: value, scope: scope, type: type, visibility: visibility, required: required});
                         }
                     } else {
                         savedVariables = _.reject(savedVariables, function (savedVar) {
@@ -417,8 +417,13 @@ var ElasticBoxVariables = (function () {
                     }, 'option', bindingSelect);
                     if (!selectedOption) {
                         selectedOption = _.first(Dom.getChildren(bindingSelect));
-                        saveVariable(variable.name, Dom.getAttribute(selectedOption, 'value'), scope, variable.type,
-                            variableHolder.varTextBox, bindingSelect);
+                        saveVariable(variable.name,
+                                        Dom.getAttribute(selectedOption, 'value'),
+                                            scope,
+                                                variable.type,
+                                                    variable.visibility,
+                                                        variable.required,
+                                                            variableHolder.varTextBox, bindingSelect);
                     }
                     bindingSelect.selectedIndex = selectedOption ? Dom.getChildren(bindingSelect).indexOf(selectedOption) : 0;
                 },
@@ -457,9 +462,17 @@ var ElasticBoxVariables = (function () {
                     instancesUrl, savedValue;
 
                 Event.addListener(variableInput, 'change', function () {
-                    saveVariable(variable.name, this.value, Dom.getAttribute(this, 'data-scope'), variable.type,
-                        variableHolder.varTextBox, this);
+
+                    saveVariable(variable.name,
+                                    this.value,
+                                        Dom.getAttribute(this, 'data-scope'),
+                                            variable.type,
+                                                variable.visibility,
+                                                    variable.required,
+                                                        variableHolder.varTextBox, this);
+
                     toggleVariableDecorators(Dom.getAncestorByTagName(variableInput, 'tr'), variable);
+
                     if (variable.type === 'Binding') {
                         toggleBindingTagsInput(this);
                     }
@@ -473,9 +486,13 @@ var ElasticBoxVariables = (function () {
 
                     Event.addListener(Dom.getNextSibling(variableInput), 'change', function () {
                         if (variableInput.value === '()') {
-                            saveVariable(variable.name, ElasticBoxUtils.format('({0})', this.value),
-                                Dom.getAttribute(variableInput, 'data-scope'), variable.type,
-                                variableHolder.varTextBox, this);
+                            saveVariable(variable.name,
+                                            ElasticBoxUtils.format('({0})', this.value),
+                                                Dom.getAttribute(variableInput, 'data-scope'),
+                                                    variable.type,
+                                                        variable.visibility,
+                                                            variable.required,
+                                                                variableHolder.varTextBox, this);
                         }
                     });
 
