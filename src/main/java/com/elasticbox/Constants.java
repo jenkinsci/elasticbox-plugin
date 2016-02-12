@@ -29,9 +29,9 @@ public interface Constants {
 
 
     //---------- Validation deployment data
-    String AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS = "Policy box or requirements to find one are mandatory";
-    String PROVIDER_SHOULD_BE_PROVIDED = "Provider are mandatory";
-    String LOCATION_SHOULD_BE_PROVIDED = "Location are mandatory";
+    String AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS = "Deployment option is mandatory";
+    String PROVIDER_SHOULD_BE_PROVIDED = "Provider is mandatory";
+    String LOCATION_SHOULD_BE_PROVIDED = "Location is mandatory";
 
     //---------- Boxes
     String BOX_ANY_BOX = "AnyBox";
