@@ -539,12 +539,14 @@ var ElasticBoxVariables = (function () {
                     });
                     varTableBody = Dom.getElementBy(function() { return true; }, 'tbody', varTableRow);
                     _.each(variables, function (variable) {
-                        var savedVariable = savedVariables && _.findWhere(savedVariables, { name: variable.name,  scope: variable.scope }) || null,
-                            row = createVariableRow(variable, savedVariable, variableHolder);
+                        if(variable.visibility !== 'internal'){
+                            var savedVariable = savedVariables && _.findWhere(savedVariables, { name: variable.name,  scope: variable.scope }) || null,
+                                row = createVariableRow(variable, savedVariable, variableHolder);
 
-                        if (row) {
-                            varTableBody.appendChild(row);
-                            toggleVariableDecorators(row, variable);
+                            if (row) {
+                                varTableBody.appendChild(row);
+                                toggleVariableDecorators(row, variable);
+                            }
                         }
                     });
                     varTableRows.push(varTableRow);
