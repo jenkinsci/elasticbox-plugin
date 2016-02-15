@@ -29,9 +29,9 @@ public interface Constants {
 
 
     //---------- Validation deployment data
-    String AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS = "Policy box or requirements to find one are mandatory";
-    String PROVIDER_SHOULD_BE_PROVIDED = "Provider are mandatory";
-    String LOCATION_SHOULD_BE_PROVIDED = "Location are mandatory";
+    String AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS = "Deployment option is mandatory";
+    String PROVIDER_SHOULD_BE_PROVIDED = "Provider is mandatory";
+    String LOCATION_SHOULD_BE_PROVIDED = "Location is mandatory";
 
     //---------- Boxes
     String BOX_ANY_BOX = "AnyBox";
@@ -91,4 +91,8 @@ public interface Constants {
     String CHOOSE_BOX_MESSAGE =                 "--Please choose the box to deploy--";
     String CHOOSE_BOX_VERSION_MESSAGE =         "--Please choose the box version--";
     String CHOOSE_DEPLOYMENT_TYPE_MESSAGE =     "--Please choose your deployment type--";
+    String CHOOSE_POLICY_MESSAGE =              "--Please choose policy box--";
+    String CHOOSE_PROVIDER_MESSAGE =            "--Please choose the provider--";
+    String CHOOSE_REGION_MESSAGE =              "--Please choose the region--";
+
 }

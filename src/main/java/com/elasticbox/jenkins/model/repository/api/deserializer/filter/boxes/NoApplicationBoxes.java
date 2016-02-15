@@ -12,19 +12,26 @@
  *
  */
 
-package com.elasticbox.jenkins.model.repository;
+package com.elasticbox.jenkins.model.repository.api.deserializer.filter.boxes;
 
-import com.elasticbox.jenkins.model.repository.error.RepositoryException;
-import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
-
-import java.util.List;
+import com.elasticbox.jenkins.model.box.BoxType;
+import net.sf.json.JSONObject;
 
 /**
- * Created by serna on 1/28/16.
+ * Created by serna on 12/3/15.
  */
-public interface WorkspaceRepository {
+public class NoApplicationBoxes extends NoPolicyBoxesFilter {
 
-    List<AbstractWorkspace> getWorkspaces() throws RepositoryException;
+    @Override
+    public boolean apply(JSONObject jsonObject) {
 
-    AbstractWorkspace findWorkspaceOrFirstByDefault(String workspace) throws RepositoryException;
+        String schema = jsonObject.getString("schema");
+
+        if(BoxType.APPLICATION.isType(schema)){
+            return false;
+        }
+
+        return true;
+    }
+
 }

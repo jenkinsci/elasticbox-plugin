@@ -34,6 +34,8 @@ public interface DeployBoxOrderService {
 
     DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy) throws ServiceException;
 
+    DeployBoxOrderResult<AbstractWorkspace> findWorkspaceOrFirstByDefault(String workspace) throws ServiceException;
+
     DeployBoxOrderResult<List<AbstractWorkspace>> getWorkspaces()throws ServiceException;;
 
     DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException;

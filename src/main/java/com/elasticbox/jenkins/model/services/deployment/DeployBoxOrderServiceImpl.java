@@ -73,6 +73,8 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
     }
 
+
+    @Override
     public DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException{
         try {
             final List<AbstractBox> noPolicyBoxes = boxRepository.getNoPolicyBoxes(workspace);
@@ -99,6 +101,18 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
 
     }
+
+    @Override
+    public DeployBoxOrderResult<AbstractWorkspace> findWorkspaceOrFirstByDefault(String workspace) throws ServiceException {
+        try {
+            final AbstractWorkspace workspaceOrFirstByDefault = workspacesRepository.findWorkspaceOrFirstByDefault(workspace);
+            return new DeployBoxOrderResult<AbstractWorkspace>(workspaceOrFirstByDefault);
+        } catch (RepositoryException e) {
+            logger.log(Level.SEVERE, "Impossible retrieve workspaces", e);
+            throw new ServiceException("Impossible retrieve workspaces",e);
+        }
+    }
+
 
     @Override
     public DeployBoxOrderResult<List<AbstractWorkspace>> getWorkspaces() throws ServiceException {
@@ -132,4 +146,15 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
     }
 
+    public DeployBoxOrderResult<AbstractBox> findBoxOrFirstByDefault(String workspace, String box) {
+
+        try {
+            final AbstractBox boxOrFirstByDefault = boxRepository.findBoxOrFirstByDefault(workspace, box);
+            return new DeployBoxOrderResult<AbstractBox>(boxOrFirstByDefault);
+
+        } catch (RepositoryException e) {
+            logger.log(Level.SEVERE, "Error getting box: " + box+ " for workspace: "+workspace, e);
+            throw new ServiceException("Error getting box: " + box+ " for workspace: "+workspace, e);
+        }
+    }
 }

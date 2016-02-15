@@ -12,19 +12,12 @@
  *
  */
 
-package com.elasticbox.jenkins.model.repository;
-
-import com.elasticbox.jenkins.model.repository.error.RepositoryException;
-import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
-
-import java.util.List;
+package com.elasticbox.jenkins.model.repository.api.deserializer.transformer;
 
 /**
- * Created by serna on 1/28/16.
+ * Created by serna on 2/12/16.
  */
-public interface WorkspaceRepository {
+public interface Transformer<T, R> {
 
-    List<AbstractWorkspace> getWorkspaces() throws RepositoryException;
-
-    AbstractWorkspace findWorkspaceOrFirstByDefault(String workspace) throws RepositoryException;
+        public R apply(T object);
 }

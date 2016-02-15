@@ -16,7 +16,9 @@ package com.elasticbox.jenkins.model.repository.api;
 
 import com.elasticbox.APIClient;
 import com.elasticbox.jenkins.model.repository.WorkspaceRepository;
-import com.elasticbox.jenkins.model.repository.api.factory.workspace.WorkspaceFactoryImpl;
+import com.elasticbox.jenkins.model.repository.api.deserializer.Utils;
+import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.workspaces.WorkspaceTransformer;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 import net.sf.json.JSONArray;
@@ -24,10 +26,12 @@ import net.sf.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.filter;
+import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.transform;
 
 /**
  * Created by serna on 1/28/16.
@@ -45,19 +49,35 @@ public class WorkspacesRepositoryAPIImpl implements WorkspaceRepository {
     @Override
     public List<AbstractWorkspace> getWorkspaces() throws RepositoryException{
         try {
-            List<AbstractWorkspace> workspaces =  new ArrayList<>();
-            final JSONArray workspacesArray = client.getWorkspaces();
-            if(!workspacesArray.isEmpty()){
-                for (Object workspaceJsonObject : workspacesArray) {
-                    JSONObject workspaceJson = (JSONObject) workspaceJsonObject;
-                    final AbstractWorkspace abstractWorkspace = new WorkspaceFactoryImpl().create(workspaceJson);
-                    workspaces.add(abstractWorkspace);
-                }
-            }
-            return workspaces;
-        } catch (IOException e) {
+            return transform(client.getWorkspaces(), new WorkspaceTransformer());
+      } catch (IOException e) {
             logger.log(Level.SEVERE, "There is an error retrieving workspaces");
             throw new RepositoryException("There is an error retrieving workspaces");
         }
+    }
+
+    @Override
+    public AbstractWorkspace findWorkspaceOrFirstByDefault(final String workspace) throws RepositoryException {
+
+        final List<AbstractWorkspace> workspaces;
+        try {
+            workspaces = transform(client.getWorkspaces(), new WorkspaceTransformer());
+            final List<AbstractWorkspace> filtered = filter(workspaces, new Filter<AbstractWorkspace>() {
+                        @Override
+                        public boolean apply(AbstractWorkspace it) {
+                            return it.getId().equals(workspace);
+                        }}
+            );
+
+            if(!filtered.isEmpty()){
+                return filtered.get(0);
+            }
+
+            return workspaces.get(0);
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "There is no workspaces");
+            throw new RepositoryException("There is no workspaces");
+        }
+
     }
 }

@@ -12,19 +12,18 @@
  *
  */
 
-package com.elasticbox.jenkins.model.repository;
+package com.elasticbox.jenkins.model.repository.api.deserializer.filter.instances;
 
-import com.elasticbox.jenkins.model.repository.error.RepositoryException;
-import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
-
-import java.util.List;
+import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
+import net.sf.json.JSONObject;
 
 /**
- * Created by serna on 1/28/16.
+ * Created by serna on 11/27/15.
  */
-public interface WorkspaceRepository {
+public class InstanceFilter implements Filter<JSONObject> {
 
-    List<AbstractWorkspace> getWorkspaces() throws RepositoryException;
-
-    AbstractWorkspace findWorkspaceOrFirstByDefault(String workspace) throws RepositoryException;
+    @Override
+    public boolean apply(JSONObject jsonObject) {
+        return jsonObject.getString("schema").equals("http://elasticbox.net/schemas/instance");
+    }
 }

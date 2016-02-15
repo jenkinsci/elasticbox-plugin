@@ -15,18 +15,10 @@
 package com.elasticbox.jenkins.model.repository.api;
 
 import com.elasticbox.APIClient;
-import com.elasticbox.jenkins.model.box.AbstractBox;
-import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.instance.Instance;
-import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.InstanceRepository;
-import com.elasticbox.jenkins.model.repository.api.criteria.box.CloudFormationPolicyBoxesJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.criteria.box.NoCloudFormationPolicyBoxesJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.criteria.box.NoPolicyAndNoApplicationBoxes;
-import com.elasticbox.jenkins.model.repository.api.criteria.box.NoPolicyBoxesJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.factory.box.GenericBoxFactory;
-import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.instances.InstanceTransformer;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -34,10 +26,11 @@ import net.sf.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.*;
+
 
 /**
  * Created by serna on 11/26/15.
@@ -55,8 +48,10 @@ import java.util.logging.Logger;
     @Override
     public Instance getInstance(String instanceId) throws RepositoryException {
         try{
+
+
             JSONObject jsonObject = client.getInstance(instanceId);
-            return new InstanceFactoryImpl().create(jsonObject);
+            return new InstanceTransformer().apply(jsonObject);
         } catch (IOException e) {
             logger.log(Level.SEVERE,"There is an error retrieving instance: "+instanceId+" from the API",e);
             throw new RepositoryException("Error retrieving instance: "+instanceId+" from API");
@@ -71,11 +66,10 @@ import java.util.logging.Logger;
 
         try {
             List<Instance> instances = new ArrayList<>();
-            final InstanceFactoryImpl instanceFactory = new InstanceFactoryImpl();
             final JSONArray instancesJSONArray = client.getInstances(workspace, Arrays.asList(id));
             for (Object jsonElement : instancesJSONArray) {
                 JSONObject jsonInstance = (JSONObject) jsonElement;
-                final Instance instance = instanceFactory.create(jsonInstance);
+                final Instance instance =  new InstanceTransformer().apply(jsonInstance);
                 instances.add(instance);
             }
             return instances;
