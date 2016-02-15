@@ -5,20 +5,20 @@ import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
-import com.elasticbox.jenkins.model.repository.api.criteria.box.CloudFormationPolicyBoxesJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.criteria.box.NoCloudFormationPolicyBoxesJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.criteria.box.NoPolicyAndNoApplicationBoxes;
-import com.elasticbox.jenkins.model.repository.api.criteria.box.NoPolicyBoxesJSONCriteria;
-import com.elasticbox.jenkins.model.repository.api.factory.box.GenericBoxFactory;
+import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
+import com.elasticbox.jenkins.model.repository.api.deserializer.filter.boxes.*;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes.BoxFactory;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes.PolicyBoxTransformer;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.*;
 
 /**
  * Created by serna on 11/26/15.
@@ -35,8 +35,15 @@ import java.util.logging.Logger;
 
     public List<AbstractBox> getNoPolicyAndNoApplicationBoxes(String workspace) throws RepositoryException {
         try {
-            JSONArray boxesFromAPI = client.getAllBoxes(workspace);
-            return  new NoPolicyAndNoApplicationBoxes().filter(boxesFromAPI);
+            return transform(
+                    filter(client.getAllBoxes(workspace),
+                            new CompositeBoxFilter()
+                                    .add(new BoxFilter())
+                                    .add(new NoPolicyBoxesFilter())
+                                    .add(new NoApplicationBoxes())
+                            ),
+                    new BoxFactory());
+
         } catch (IOException e) {
             logger.log(Level.SEVERE, "There is an error retrieving boxes for this workspace: " + workspace + " from the API", e);
             throw new RepositoryException("Error retrieving no policies and no application boxes from API, workspace: "+workspace);
@@ -50,9 +57,15 @@ import java.util.logging.Logger;
      */
     @Override
     public List<AbstractBox> getNoPolicyBoxes(String workspace) throws RepositoryException {
+
         try {
-            JSONArray boxesFromAPI = client.getAllBoxes(workspace);
-            return new NoPolicyBoxesJSONCriteria().filter(boxesFromAPI);
+            return transform(
+                    filter(client.getAllBoxes(workspace),
+                            new CompositeBoxFilter()
+                                    .add(new BoxFilter())
+                                    .add(new NoPolicyBoxesFilter())),
+                    new BoxFactory());
+
         } catch (IOException e) {
             logger.log(Level.SEVERE, "There is an error retrieving boxes for this workspace: " + workspace + " from the API", e);
             throw new RepositoryException("Error retrieving no policies boxes from API, workspace: "+workspace);
@@ -66,9 +79,14 @@ import java.util.logging.Logger;
     @Override
     public List<PolicyBox> getCloudFormationPolicyBoxes(String workspace) throws RepositoryException {
         try{
-            JSONArray boxesFromAPI = client.getAllBoxes(workspace);
-            List<PolicyBox> policyBoxes = new CloudFormationPolicyBoxesJSONCriteria().filter(boxesFromAPI);
-            return policyBoxes;
+
+            return transform(
+                    filter(client.getAllBoxes(workspace),
+                            new CompositeBoxFilter()
+                                    .add(new BoxFilter())
+                                    .add(new CloudFormationPolicyBoxesFilter())),
+                    new PolicyBoxTransformer());
+
         } catch (IOException e) {
             logger.log(Level.SEVERE, "There is an error retrieving boxes for this workspace: " + workspace + " from the API", e);
             throw new RepositoryException("Error retrieving cloudformation policies boxes from API, workspace: "+workspace);
@@ -82,9 +100,14 @@ import java.util.logging.Logger;
     @Override
     public List<PolicyBox> getNoCloudFormationPolicyBoxes(String workspace) throws RepositoryException {
         try{
-            JSONArray boxesFromAPI = client.getAllBoxes(workspace);
-            List<PolicyBox> policyBoxes = new NoCloudFormationPolicyBoxesJSONCriteria().filter(boxesFromAPI);
-            return policyBoxes;
+
+            return transform(
+                    filter(client.getAllBoxes(workspace),
+                            new CompositeBoxFilter()
+                                    .add(new BoxFilter())
+                                    .add(new NoCloudFormationPolicyBoxesFilter())),
+                    new PolicyBoxTransformer());
+
         } catch (IOException e) {
             logger.log(Level.SEVERE, "There is an error retrieving boxes for this workspace: " + workspace + " from the API", e);
             throw new RepositoryException("Error retrieving no cloudformation policies boxes from API, workspace: "+workspace);
@@ -94,9 +117,9 @@ import java.util.logging.Logger;
     @Override
     public AbstractBox getBox(String boxId) throws RepositoryException {
         try{
-            JSONObject json = client.getBox(boxId);
-            final AbstractBox box = new GenericBoxFactory().create(json);
-            return box;
+
+            return new BoxFactory().apply(client.getBox(boxId));
+
         } catch (IOException e) {
             logger.log(Level.SEVERE, "There is an error retrieving box: " + boxId + " from the API", e);
             throw new RepositoryException("Error retrieving box: "+boxId+" from API");
@@ -109,15 +132,11 @@ import java.util.logging.Logger;
     @Override
     public List<AbstractBox> getBoxVersions(String boxId) throws RepositoryException {
         try{
-            JSONArray jsonArray = client.getBoxVersions(boxId);
-            final GenericBoxFactory genericBoxFactory = new GenericBoxFactory();
-            List<AbstractBox> boxVersions =  new ArrayList<>();
-            for (Object jsonElement : jsonArray) {
-                JSONObject jsonBox = (JSONObject)jsonElement;
-                final AbstractBox abstractBox = genericBoxFactory.create(jsonBox);
-                boxVersions.add(abstractBox);
-            }
-            return boxVersions;
+
+            return transform(
+                    client.getBoxVersions(boxId),
+                        new BoxFactory());
+
         } catch (IOException e) {
             logger.log(Level.SEVERE, "There is an error retrieving box versions for box: " + boxId, e);
             throw new RepositoryException("Error retrieving box versions for box: "+boxId);
@@ -126,6 +145,30 @@ import java.util.logging.Logger;
             throw new RepositoryException("Error converting box version to boxes model for: "+boxId);
         }
 
+    }
+
+    @Override
+    public AbstractBox findBoxOrFirstByDefault(String workspace, final String box) throws RepositoryException {
+        try {
+            final JSONArray allBoxes = client.getAllBoxes(workspace);
+            final List<JSONObject> filtered = filter(allBoxes, new CompositeBoxFilter()
+                    .add(new BoxFilter())
+                    .add(new Filter<JSONObject>() {
+                        @Override
+                        public boolean apply(JSONObject it) {
+                            return it.getString("id").equals(box);
+                        }
+                    }));
+            if(!filtered.isEmpty()){
+                return new BoxFactory().apply(filtered.get(0));
+            }
+
+            return new BoxFactory().apply(allBoxes.getJSONObject(0));
+
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "There is an error retrieving box:"+box+" for this workspace: " + workspace, e);
+            throw new RepositoryException("There is an error retrieving box:"+box+" for this workspace: " + workspace);
+        }
     }
 
 

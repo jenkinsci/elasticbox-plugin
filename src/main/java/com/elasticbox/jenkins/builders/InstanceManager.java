@@ -13,7 +13,7 @@
 package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.jenkins.model.instance.Instance;
-import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.instances.InstanceTransformer;
 import hudson.model.AbstractBuild;
 import java.util.Iterator;
 import java.util.Map;
@@ -37,7 +37,7 @@ class InstanceManager {
 
     public void setInstance(AbstractBuild build, JSONObject jsonInstance) {
 
-        final Instance instance = new InstanceFactoryImpl().create(jsonInstance);
+        final Instance instance = new InstanceTransformer().apply(jsonInstance);
         this.setInstance(build, instance);
 
     }

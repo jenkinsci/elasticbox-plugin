@@ -25,4 +25,6 @@ import java.util.List;
 public interface WorkspaceRepository {
 
     List<AbstractWorkspace> getWorkspaces() throws RepositoryException;
+
+    AbstractWorkspace findWorkspaceOrFirstByDefault(String workspace) throws RepositoryException;
 }

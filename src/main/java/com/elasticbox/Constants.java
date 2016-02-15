@@ -91,4 +91,8 @@ public interface Constants {
     String CHOOSE_BOX_MESSAGE =                 "--Please choose the box to deploy--";
     String CHOOSE_BOX_VERSION_MESSAGE =         "--Please choose the box version--";
     String CHOOSE_DEPLOYMENT_TYPE_MESSAGE =     "--Please choose your deployment type--";
+    String CHOOSE_POLICY_MESSAGE =              "--Please choose policy box--";
+    String CHOOSE_PROVIDER_MESSAGE =            "--Please choose the provider--";
+    String CHOOSE_REGION_MESSAGE =              "--Please choose the region--";
+
 }

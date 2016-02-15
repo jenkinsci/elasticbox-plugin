@@ -18,7 +18,7 @@ import com.elasticbox.APIClient;
 import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
-import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.instances.InstanceTransformer;
 import com.elasticbox.jenkins.model.repository.api.serializer.deployment.ApplicationBoxDeploymentSerializer;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.ApplicationBoxDeploymentContext;
@@ -50,11 +50,10 @@ public class DeploymentOrderRepositoryAPIImpl implements DeploymentOrderReposito
         try {
             final JSONObject request = new ApplicationBoxDeploymentSerializer().createRequest(deploymentContext);
             List<Instance> instances = new ArrayList<>();
-            final InstanceFactoryImpl instanceFactory = new InstanceFactoryImpl();
             final JSONArray instancesJSONArray = client.<JSONArray>doPost(Constants.INSTANCES_API_RESOURCE, request, true);
             for (Object jsonElement : instancesJSONArray) {
                 JSONObject jsonInstance = (JSONObject) jsonElement;
-                final Instance instance = instanceFactory.create(jsonInstance);
+                final Instance instance =  new InstanceTransformer().apply(jsonInstance);
                 instances.add(instance);
             }
             return instances;

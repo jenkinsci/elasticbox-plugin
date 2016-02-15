@@ -2,13 +2,11 @@ package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.SlaveConfiguration;
 import com.elasticbox.jenkins.UnitTestingUtils;
 
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
 import com.elasticbox.jenkins.model.repository.InstanceRepository;
-import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.ApplicationBoxDeploymentContext;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.DeploymentContextFactory;
@@ -16,47 +14,25 @@ import com.elasticbox.jenkins.model.services.deployment.execution.deployers.Appl
 import com.elasticbox.jenkins.model.services.deployment.execution.deployers.BoxDeployerFactory;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
-import hudson.EnvVars;
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
 
-import hudson.remoting.Callable;
-import hudson.slaves.NodeDescriptor;
-import hudson.slaves.NodeProperty;
-import hudson.slaves.NodePropertyDescriptor;
-import hudson.util.ClockDifference;
-import hudson.util.DescribableList;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.internal.matchers.Any;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.reflect.Whitebox;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 

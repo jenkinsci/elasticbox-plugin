@@ -23,4 +23,5 @@ public interface BoxRepository {
 
     public List<AbstractBox> getBoxVersions(String boxId) throws RepositoryException;
 
+    public AbstractBox findBoxOrFirstByDefault(String workspace, String box) throws RepositoryException;
 }

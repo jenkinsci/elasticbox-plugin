@@ -1,7 +1,7 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.jenkins.model.instance.Instance;
-import com.elasticbox.jenkins.model.repository.api.factory.instance.InstanceFactoryImpl;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.instances.InstanceTransformer;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
@@ -768,13 +768,13 @@ public class UnitTestingUtils {
 
     public static List<Instance> getFakeProcessingInstancesList(){
         final JSONObject instance1JSON = (JSONObject) JSONSerializer.toJSON(processingInstance1);
-        final Instance instance1 = new InstanceFactoryImpl().create(instance1JSON);
+        final Instance instance1 = new InstanceTransformer().apply(instance1JSON);
 
         final JSONObject instance2JSON = (JSONObject) JSONSerializer.toJSON(processingInstance2);
-        final Instance instance2 = new InstanceFactoryImpl().create(instance2JSON);
+        final Instance instance2 = new InstanceTransformer().apply(instance2JSON);
 
         final JSONObject instance3JSON = (JSONObject) JSONSerializer.toJSON(processingInstance3);
-        final Instance instance3 = new InstanceFactoryImpl().create(instance3JSON);
+        final Instance instance3 = new InstanceTransformer().apply(instance3JSON);
 
         List<Instance> instances = new ArrayList<>();
         instances.add(instance1);
@@ -787,15 +787,15 @@ public class UnitTestingUtils {
     public static List<Instance> getFakeDoneInstancesList(){
         final JSONObject instance1JSON = (JSONObject) JSONSerializer.toJSON(processingInstance1);
         instance1JSON.put("state", "done");
-        final Instance instance1 = new InstanceFactoryImpl().create(instance1JSON);
+        final Instance instance1 = new InstanceTransformer().apply(instance1JSON);
 
         final JSONObject instance2JSON = (JSONObject) JSONSerializer.toJSON(processingInstance2);
         instance2JSON.put("state", "done");
-        final Instance instance2 = new InstanceFactoryImpl().create(instance2JSON);
+        final Instance instance2 = new InstanceTransformer().apply(instance2JSON);
 
         final JSONObject instance3JSON = (JSONObject) JSONSerializer.toJSON(processingInstance3);
         instance3JSON.put("state", "done");
-        final Instance instance3 = new InstanceFactoryImpl().create(instance3JSON);
+        final Instance instance3 = new InstanceTransformer().apply(instance3JSON);
 
         List<Instance> instances = new ArrayList<>();
         instances.add(instance1);
