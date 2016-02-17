@@ -1,6 +1,6 @@
 package com.elasticbox.jenkins.model.repository.api;
 
-import com.elasticbox.APIClient;
+import com.elasticbox.ApiClient;
 import com.elasticbox.jenkins.UnitTestingUtils;
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
@@ -24,7 +24,7 @@ public class TestBoxRepository {
     @Test
     public void testGetAllBoxesButPolicyAndApplication() throws IOException, RepositoryException {
 
-        final APIClient api = mock(APIClient.class);
+        final ApiClient api = mock(ApiClient.class);
 
         String workspace = null;
         JSONArray array = null;
@@ -41,7 +41,7 @@ public class TestBoxRepository {
     @Test
     public void testGetAllBoxesButPolicy() throws IOException, RepositoryException {
 
-        final APIClient api = mock(APIClient.class);
+        final ApiClient api = mock(ApiClient.class);
 
         String workspace = null;
         JSONArray array = null;
@@ -57,7 +57,7 @@ public class TestBoxRepository {
     @Test
     public void testGetNoCloudFormationPolicyBoxes() throws IOException, RepositoryException {
 
-        final APIClient api = mock(APIClient.class);
+        final ApiClient api = mock(ApiClient.class);
 
         String workspace = null;
         JSONArray array = null;
@@ -73,7 +73,7 @@ public class TestBoxRepository {
     @Test
     public void testGetCloudFormationPolicyBoxes() throws IOException, RepositoryException {
 
-        final APIClient api = mock(APIClient.class);
+        final ApiClient api = mock(ApiClient.class);
 
         String workspace = null;
         JSONArray array = null;

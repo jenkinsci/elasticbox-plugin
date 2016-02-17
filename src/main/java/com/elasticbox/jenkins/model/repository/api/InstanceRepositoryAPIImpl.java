@@ -14,7 +14,7 @@
 
 package com.elasticbox.jenkins.model.repository.api;
 
-import com.elasticbox.APIClient;
+import com.elasticbox.ApiClient;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.InstanceRepository;
@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.*;
 
 
 /**
@@ -39,9 +38,9 @@ import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.*;
 
     private static final Logger logger = Logger.getLogger(InstanceRepositoryAPIImpl.class.getName());
 
-    private APIClient client;
+    private ApiClient client;
 
-    public InstanceRepositoryAPIImpl(APIClient client) {
+    public InstanceRepositoryAPIImpl(ApiClient client) {
         this.client = client;
     }
 

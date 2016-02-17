@@ -44,14 +44,16 @@ public class AbstractBox  extends AbstractModel {
         T build();
     }
 
-    public boolean canWrite(String owner){
-        if (getOwner().equals(owner))
+    public boolean canWrite(String owner) {
+        if (getOwner().equals(owner)) {
             return true;
+        }
 
-        for (Member member: getMembers()){
+        for (Member member: getMembers()) {
             if (member.getWorkspace().equals(owner)){
-                if (member.getRole() == Member.Role.COLLABORATOR)
+                if (member.getRole() == Member.Role.COLLABORATOR) {
                     return true;
+                }
             }
         }
         return false;
@@ -66,27 +68,27 @@ public class AbstractBox  extends AbstractModel {
         private String owner;
         private Member[] members;
 
-        public B withId(String id){
+         public B withId(String id) {
             this.id = id;
             return getThis();
         }
 
-        public B withName(String name){
+        public B withName(String name) {
             this.name =  name;
             return getThis();
         }
 
-        public B withOwner(String owner){
+        public B withOwner(String owner) {
             this.owner =  owner;
             return getThis();
         }
 
-        public B withType(BoxType type){
+        public B withType(BoxType type) {
             this.type =  type;
             return getThis();
         }
 
-        public B withMembers(Member[] members){
+        public B withMembers(Member[] members) {
             this.members =  members;
             return getThis();
         }

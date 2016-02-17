@@ -15,7 +15,6 @@
 package com.elasticbox.jenkins.model.member;
 
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
-import org.apache.commons.lang.enums.*;
 
 /**
  * Created by serna on 1/21/16.

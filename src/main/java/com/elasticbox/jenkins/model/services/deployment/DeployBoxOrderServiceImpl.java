@@ -1,7 +1,7 @@
 package com.elasticbox.jenkins.model.services.deployment;
 
-import com.elasticbox.APIClient;
-import com.elasticbox.jenkins.model.box.*;
+import com.elasticbox.ApiClient;
+import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
 import com.elasticbox.jenkins.model.repository.InstanceRepository;
@@ -20,8 +20,7 @@ import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
-
-import java.util.*;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,7 +37,7 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
     private final BoxRepository boxRepository;
     private final WorkspaceRepository workspacesRepository;
 
-    public DeployBoxOrderServiceImpl(APIClient client) {
+    public DeployBoxOrderServiceImpl(ApiClient client) {
 
         this.boxRepository = new BoxRepositoryAPIImpl(client);
         this.instanceRepository = new InstanceRepositoryAPIImpl(client);

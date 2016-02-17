@@ -14,18 +14,14 @@
 
 package com.elasticbox.jenkins.model.repository.api;
 
-import com.elasticbox.APIClient;
+import com.elasticbox.ApiClient;
 import com.elasticbox.jenkins.model.repository.WorkspaceRepository;
-import com.elasticbox.jenkins.model.repository.api.deserializer.Utils;
 import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
 import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.workspaces.WorkspaceTransformer;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,9 +36,9 @@ public class WorkspacesRepositoryAPIImpl implements WorkspaceRepository {
 
     private static final Logger logger = Logger.getLogger(WorkspacesRepositoryAPIImpl.class.getName());
 
-    private APIClient client;
+    private ApiClient client;
 
-    public WorkspacesRepositoryAPIImpl(APIClient client) {
+    public WorkspacesRepositoryAPIImpl(ApiClient client) {
         this.client = client;
     }
 

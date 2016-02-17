@@ -14,7 +14,7 @@
 
 package com.elasticbox.jenkins.model.repository.api;
 
-import com.elasticbox.APIClient;
+import com.elasticbox.ApiClient;
 import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
@@ -38,9 +38,9 @@ public class DeploymentOrderRepositoryAPIImpl implements DeploymentOrderReposito
 
     private static final Logger logger = Logger.getLogger(DeploymentOrderRepositoryAPIImpl.class.getName());
 
-    private APIClient client;
+    private ApiClient client;
 
-    public DeploymentOrderRepositoryAPIImpl(APIClient client) {
+    public DeploymentOrderRepositoryAPIImpl(ApiClient client) {
         this.client = client;
     }
 

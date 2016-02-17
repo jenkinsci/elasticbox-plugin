@@ -1,6 +1,6 @@
 package com.elasticbox.jenkins.model.repository.api;
 
-import com.elasticbox.APIClient;
+import com.elasticbox.ApiClient;
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
@@ -12,13 +12,13 @@ import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxe
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.*;
+import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.filter;
+import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.transform;
 
 /**
  * Created by serna on 11/26/15.
@@ -27,9 +27,9 @@ import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.*;
 
     private static final Logger logger = Logger.getLogger(BoxRepositoryAPIImpl.class.getName());
 
-    private APIClient client;
+    private ApiClient client;
 
-    public BoxRepositoryAPIImpl(APIClient client) {
+    public BoxRepositoryAPIImpl(ApiClient client) {
         this.client = client;
     }
 

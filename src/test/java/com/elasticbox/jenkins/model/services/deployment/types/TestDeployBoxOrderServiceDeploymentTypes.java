@@ -14,7 +14,7 @@
 
 package com.elasticbox.jenkins.model.services.deployment.types;
 
-import com.elasticbox.APIClient;
+import com.elasticbox.ApiClient;
 import com.elasticbox.jenkins.UnitTestingUtils;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
@@ -57,7 +57,7 @@ public class TestDeployBoxOrderServiceDeploymentTypes {
 
     private void testDeploymentType(JSONObject fakeBox, DeploymentType targetDeploymentType) throws IOException, ServiceException {
 
-        final APIClient api = mock(APIClient.class);
+        final ApiClient api = mock(ApiClient.class);
         when(api.getBox(fakeBox.getString("id"))).thenReturn(fakeBox);
 
         final BoxRepository boxRepository = new BoxRepositoryAPIImpl(api);
