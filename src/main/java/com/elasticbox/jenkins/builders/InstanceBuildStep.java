@@ -14,6 +14,7 @@ package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.DescriptorHelper;
+
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Project;
@@ -21,17 +22,15 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+
 import jenkins.model.Jenkins;
+
 import net.sf.json.JSONObject;
+
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 
-/**
- *
- * @author Phong Nguyen Le
- * @deprecated
- */
 public abstract class InstanceBuildStep extends Builder {
     private String cloud;
     private final String workspace;
@@ -109,14 +108,17 @@ public abstract class InstanceBuildStep extends Builder {
         return null;
     }
 
-    public static abstract class Descriptor extends BuildStepDescriptor<Builder> {
+    public abstract static class Descriptor extends BuildStepDescriptor<Builder> {
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
         }
 
         protected boolean isPreviousBuildStepSelected(JSONObject formData) {
-            return formData.containsKey("instanceType") && "eb-instance-from-prior-buildstep".equals(formData.getString("instanceType"));
+
+            return formData.containsKey(
+                "instanceType") && "eb-instance-from-prior-buildstep".equals(formData.getString("instanceType"));
+
         }
 
         @Override

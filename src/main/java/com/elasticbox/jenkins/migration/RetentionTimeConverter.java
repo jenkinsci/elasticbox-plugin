@@ -24,7 +24,7 @@ import jenkins.model.Jenkins;
  * with Integer.MAX_VALUE for any ElasticBox cloud, slave and slave configuration.
  *
  * @author Phong Nguyen Le
- * @param <T>
+ * @param <T> the type to be updated with the new data
  */
 public abstract class RetentionTimeConverter<T> extends XStream2.PassthruConverter<T> {
     static final String FIX_ZERO_RETENTION_TIME = "elasticbox.fixZeroRetentionTime";
@@ -45,7 +45,9 @@ public abstract class RetentionTimeConverter<T> extends XStream2.PassthruConvert
             int end = plugin.endsWith("-SNAPSHOT") ? plugin.length() - "-SNAPSHOT".length() : plugin.length();
             String pluginVersion = plugin.substring("elasticbox@".length(), end);
             String[] versionParts = pluginVersion.split("\\.");
-            int major = 0, minor = 0, micro = 0;
+            int major = 0;
+            int minor = 0;
+            int micro = 0;
             if (versionParts.length > 0) {
                 major = Integer.parseInt(versionParts[0]);
             }

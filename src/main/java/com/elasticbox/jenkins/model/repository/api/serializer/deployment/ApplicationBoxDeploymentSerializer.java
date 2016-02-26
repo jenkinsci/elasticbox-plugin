@@ -20,10 +20,8 @@ import com.elasticbox.jenkins.model.services.deployment.execution.order.Applicat
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 
-/**
- * Created by serna on 1/22/16.
- */
-public class ApplicationBoxDeploymentSerializer implements BoxDeploymentRequestSerializer<ApplicationBoxDeploymentOrder, ApplicationBoxDeploymentContext> {
+public class ApplicationBoxDeploymentSerializer
+        implements BoxDeploymentRequestSerializer<ApplicationBoxDeploymentOrder, ApplicationBoxDeploymentContext> {
 
     @Override
     public JSONObject createRequest(ApplicationBoxDeploymentContext context) {
@@ -32,37 +30,48 @@ public class ApplicationBoxDeploymentSerializer implements BoxDeploymentRequestS
 
         Box box = new Box(context.getBoxToDeployId());
         Lease lease = null;
-        if(StringUtils.isNotEmpty(order.getExpirationTime()) && StringUtils.isNotEmpty(order.getExpirationOperation())){
+        if (StringUtils.isNotEmpty(order.getExpirationTime())
+                && StringUtils.isNotEmpty(order.getExpirationOperation())) {
+
             lease = new Lease(order.getExpirationTime(), order.getExpirationOperation());
         }
 
-        final ApplicationBoxDeploymentRequestObject applicationBoxDeploymentRequestObject = new ApplicationBoxDeploymentRequestObject(
-                order.getName(),
-                order.getOwner(),
-                Constants.BASE_ELASTICBOX_SCHEMA + Constants.DEPLOYMENT_APPLICATION_REQUEST_SCHEMA_NAME,
-                order.getTags(),
-                order.getRequirements(),
-                box,
-                lease);
+        final ApplicationBoxDeploymentRequestObject applicationBoxDeploymentRequestObject =
+                new ApplicationBoxDeploymentRequestObject(
+                        order.getName(),
+                        order.getOwner(),
+                        Constants.BASE_ELASTICBOX_SCHEMA + Constants.DEPLOYMENT_APPLICATION_REQUEST_SCHEMA_NAME,
+                        order.getTags(),
+                        order.getRequirements(),
+                        box,
+                        lease);
 
         return JSONObject.fromObject(applicationBoxDeploymentRequestObject);
     }
 
 
-    public static class ApplicationBoxDeploymentRequestObject{
+    public static class ApplicationBoxDeploymentRequestObject {
         private String name;
         private String owner;
         private String schema;
-        private String [] instance_tags;
+        private String [] instanceTags;
         private String [] requirements;
         private Box box;
         private Lease lease;
 
-        public ApplicationBoxDeploymentRequestObject(String name, String owner, String schema, String[] instance_tags, String[] requirements, Box box, Lease lease) {
+        public ApplicationBoxDeploymentRequestObject(
+                String name,
+                String owner,
+                String schema,
+                String[] instanceTags,
+                String[] requirements,
+                Box box,
+                Lease lease) {
+
             this.name = name;
             this.owner = owner;
             this.schema = schema;
-            this.instance_tags = instance_tags;
+            this.instanceTags = instanceTags;
             this.requirements = requirements;
             this.box = box;
             this.lease = lease;
@@ -92,12 +101,12 @@ public class ApplicationBoxDeploymentSerializer implements BoxDeploymentRequestS
             this.schema = schema;
         }
 
-        public String[] getInstance_tags() {
-            return instance_tags;
+        public String[] getInstanceTags() {
+            return instanceTags;
         }
 
-        public void setInstance_tags(String[] instance_tags) {
-            this.instance_tags = instance_tags;
+        public void setInstanceTags(String[] instanceTags) {
+            this.instanceTags = instanceTags;
         }
 
         public String[] getRequirements() {
@@ -125,7 +134,7 @@ public class ApplicationBoxDeploymentSerializer implements BoxDeploymentRequestS
         }
     }
 
-    public static class Box{
+    public static class Box {
         private String id;
 
         public Box(String id) {
@@ -140,7 +149,9 @@ public class ApplicationBoxDeploymentSerializer implements BoxDeploymentRequestS
             this.id = id;
         }
     }
-    public static class Lease{
+
+    public static class Lease {
+
         private String expire;
         private String operation;
 

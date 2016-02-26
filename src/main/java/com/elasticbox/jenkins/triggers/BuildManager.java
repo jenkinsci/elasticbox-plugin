@@ -14,12 +14,9 @@ package com.elasticbox.jenkins.triggers;
 
 import hudson.ExtensionPoint;
 import hudson.model.AbstractProject;
+
 import java.io.IOException;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public abstract class BuildManager<T extends IBuildHandler> implements ExtensionPoint {
     public abstract T createBuildHandler(AbstractProject<?, ?> project, boolean newTrigger) throws IOException;
 }

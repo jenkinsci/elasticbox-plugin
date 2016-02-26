@@ -21,17 +21,18 @@ import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
 import com.elasticbox.jenkins.model.repository.InstanceRepository;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.util.TaskLogger;
+
+import com.elasticbox.jenkins.model.services.deployment.execution.order.AbstractDeployBoxOrder;
+
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import com.elasticbox.jenkins.model.services.deployment.execution.order.AbstractDeployBoxOrder;
+
 import org.apache.commons.lang.StringUtils;
+
 
 import java.util.Set;
 
-/**
- * Created by serna on 1/19/16.
- */
 public abstract class AbstractBoxDeploymentContext<T extends AbstractDeployBoxOrder> {
 
     private ElasticBoxCloud cloud;
@@ -123,7 +124,8 @@ public abstract class AbstractBoxDeploymentContext<T extends AbstractDeployBoxOr
         this.boxToDeployId = boxToDeployId;
     }
 
-    public static abstract class AbstractBoxDeploymentContextBuilder<B extends AbstractBoxDeploymentContextBuilder, T extends AbstractBoxDeploymentContext>{
+    public abstract static class AbstractBoxDeploymentContextBuilder
+            <B extends AbstractBoxDeploymentContextBuilder, T extends AbstractBoxDeploymentContext> {
 
         private ElasticBoxCloud cloud;
         private AbstractBuild<?, ?> build;
@@ -143,78 +145,80 @@ public abstract class AbstractBoxDeploymentContext<T extends AbstractDeployBoxOr
 
         abstract T build();
 
-        protected B getThis() { return (B) this; }
-
-        public B cloud(ElasticBoxCloud cloud){
-            this.cloud = cloud;
-            return getThis();
-        }
-
-        public B build(AbstractBuild<?, ?> build){
+        public B build(AbstractBuild<?, ?> build) {
             this.build = build;
             return getThis();
         }
 
-        public B launcher(Launcher launcher){
+        protected B getThis() {
+            return (B) this;
+        }
+
+        public B cloud(ElasticBoxCloud cloud) {
+            this.cloud = cloud;
+            return getThis();
+        }
+
+        public B launcher(Launcher launcher) {
             this.launcher = launcher;
             return getThis();
         }
 
-        public B listener(BuildListener listener){
+        public B listener(BuildListener listener) {
             this.listener = listener;
             return getThis();
         }
 
-        public B box(String box){
+        public B box(String box) {
             this.box = box;
             return getThis();
         }
 
-        public B boxVersion(String boxVersion){
+        public B boxVersion(String boxVersion) {
             this.boxVersion = boxVersion;
             return getThis();
         }
 
-        public B tags(Set<String> tags){
+        public B tags(Set<String> tags) {
             this.tags = tags.toArray(new String[tags.size()]);
             return getThis();
         }
 
-        public B name(String name){
+        public B name(String name) {
             this.name = name;
             return getThis();
         }
 
-        public B owner(String owner){
+        public B owner(String owner) {
             this.owner = owner;
             return getThis();
         }
 
-        public B expirationTime(String expirationTime){
-            if(StringUtils.isNotEmpty(expirationTime)){
+        public B expirationTime(String expirationTime) {
+            if (StringUtils.isNotEmpty(expirationTime)) {
                 this.expirationTime = expirationTime;
             }
             return getThis();
         }
 
-        public B expirationOperation(String expirationOperation){
-            if(StringUtils.isNotEmpty(expirationTime)) {
+        public B expirationOperation(String expirationOperation) {
+            if (StringUtils.isNotEmpty(expirationTime)) {
                 this.expirationOperation = expirationOperation;
             }
             return getThis();
         }
 
-        public B waitForDone(boolean waitForDone){
+        public B waitForDone(boolean waitForDone) {
             this.waitForDone = waitForDone;
             return getThis();
         }
 
-        public B logger(TaskLogger logger){
+        public B logger(TaskLogger logger) {
             this.logger = logger;
             return getThis();
         }
 
-        public B deploymentType(String deploymentTypeValue){
+        public B deploymentType(String deploymentTypeValue) {
             this.deploymentType = DeploymentType.findBy(deploymentTypeValue);;
             return getThis();
         }

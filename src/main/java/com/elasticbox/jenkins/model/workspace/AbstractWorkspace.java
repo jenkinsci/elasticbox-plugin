@@ -17,18 +17,15 @@ package com.elasticbox.jenkins.model.workspace;
 import com.elasticbox.jenkins.model.AbstractModel;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 
-/**
- * Created by serna on 1/28/16.
- */
 public class AbstractWorkspace extends AbstractModel {
 
 
-    public enum WorkspaceType{
+    public enum WorkspaceType {
         PERSONAL("/workspaces/personal"),
         TEAM("/workspaces/team");
 
         private String schema;
-        WorkspaceType(String schema){
+        WorkspaceType(String schema) {
             this.schema = schema;
         }
 
@@ -36,13 +33,14 @@ public class AbstractWorkspace extends AbstractModel {
             return schema;
         }
 
-        public static WorkspaceType findBy(String schema){
+        public static WorkspaceType findBy(String schema) {
             WorkspaceType[] values = WorkspaceType.values();
             for (WorkspaceType workspace : values) {
-                if(schema.endsWith(workspace.getSchema()))
+                if (schema.endsWith(workspace.getSchema())) {
                     return workspace;
+                }
             }
-            throw new ElasticBoxModelException("There is no workspace type whose schema ends with: "+schema);
+            throw new ElasticBoxModelException("There is no workspace type whose schema ends with: " + schema);
         }
     }
 
@@ -79,7 +77,7 @@ public class AbstractWorkspace extends AbstractModel {
         T build();
     }
 
-    public static abstract class ComplexBuilder<B extends ComplexBuilder<B,T>,T> implements Builder<T> {
+    public abstract static class ComplexBuilder<B extends ComplexBuilder<B,T>,T> implements Builder<T> {
 
         protected WorkspaceType type;
         private String name;
@@ -87,27 +85,27 @@ public class AbstractWorkspace extends AbstractModel {
         private String uri;
         private String id;
 
-        public B withId(String id){
+        public B withId(String id) {
             this.id = id;
             return getThis();
         }
 
-        public B withName(String name){
+        public B withName(String name) {
             this.name = name;
             return getThis();
         }
 
-        public B withType(WorkspaceType type){
+        public B withType(WorkspaceType type) {
             this.type =  type;
             return getThis();
         }
 
-        public B withSchema(String schema){
+        public B withSchema(String schema) {
             this.schema =  schema;
             return getThis();
         }
 
-        public B withUri(String uri){
+        public B withUri(String uri) {
             this.uri =  uri;
             return getThis();
         }

@@ -19,9 +19,6 @@ import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 
 import java.util.List;
 
-/**
- * Created by serna on 1/28/16.
- */
 public interface WorkspaceRepository {
 
     List<AbstractWorkspace> getWorkspaces() throws RepositoryException;

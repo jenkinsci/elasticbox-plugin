@@ -6,9 +6,6 @@ import com.elasticbox.jenkins.model.member.Member;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by serna on 11/27/15.
- */
 public class AbstractBox  extends AbstractModel {
 
     private String name;
@@ -50,7 +47,7 @@ public class AbstractBox  extends AbstractModel {
         }
 
         for (Member member: getMembers()) {
-            if (member.getWorkspace().equals(owner)){
+            if (member.getWorkspace().equals(owner)) {
                 if (member.getRole() == Member.Role.COLLABORATOR) {
                     return true;
                 }
@@ -59,7 +56,7 @@ public class AbstractBox  extends AbstractModel {
         return false;
     }
 
-    public static abstract class ComplexBuilder<B extends ComplexBuilder<B,T>,T> implements Builder<T> {
+    public  abstract static class ComplexBuilder<B extends ComplexBuilder<B,T>,T> implements Builder<T> {
 
         protected BoxType type;
 
@@ -68,7 +65,7 @@ public class AbstractBox  extends AbstractModel {
         private String owner;
         private Member[] members;
 
-         public B withId(String id) {
+        public B withId(String id) {
             this.id = id;
             return getThis();
         }
@@ -99,4 +96,6 @@ public class AbstractBox  extends AbstractModel {
         }
 
     }
+
+
 }

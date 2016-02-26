@@ -23,20 +23,18 @@ import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 
 import java.util.List;
 
-/**
- * Created by serna on 1/13/16.
- */
 public interface DeployBoxOrderService {
 
     DeployBoxOrderResult<List<AbstractBox>> updateableBoxes(String workspace) throws ServiceException;
 
     DeploymentType deploymentType(String boxToDeploy) throws ServiceException;
 
-    DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy) throws ServiceException;
+    DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy)
+            throws ServiceException;
 
     DeployBoxOrderResult<AbstractWorkspace> findWorkspaceOrFirstByDefault(String workspace) throws ServiceException;
 
-    DeployBoxOrderResult<List<AbstractWorkspace>> getWorkspaces()throws ServiceException;;
+    DeployBoxOrderResult<List<AbstractWorkspace>> getWorkspaces()throws ServiceException;
 
     DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException;
 

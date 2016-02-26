@@ -31,10 +31,6 @@ import org.kohsuke.stapler.QueryParameter;
 
 import java.util.List;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public abstract class AbstractBuilder extends Builder {
     private final String cloud;
     private final String workspace;
@@ -52,7 +48,7 @@ public abstract class AbstractBuilder extends Builder {
         return workspace;
     }
 
-    public static abstract class AbstractBuilderDescriptor extends BuildStepDescriptor<Builder> {
+    public  abstract static class AbstractBuilderDescriptor extends BuildStepDescriptor<Builder> {
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
@@ -71,12 +67,16 @@ public abstract class AbstractBuilder extends Builder {
         }
 
         public ListBoxModel doFillWorkspaceItems(@QueryParameter String cloud) {
-            final ListBoxModel workspaceOptions = DescriptorHelper.getEmptyListBoxModel(Constants.CHOOSE_WORKSPACE_MESSAGE, "");
+            final ListBoxModel workspaceOptions = DescriptorHelper.getEmptyListBoxModel(
+                    Constants.CHOOSE_WORKSPACE_MESSAGE, "");
+
             if (DescriptorHelper.anyOfThemIsBlank(cloud)) {
                 return workspaceOptions;
             }
 
-            final DeployBoxOrderResult<List<AbstractWorkspace>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).getWorkspaces();
+            final DeployBoxOrderResult<List<AbstractWorkspace>> result = new DeployBoxOrderServiceImpl(
+                    ClientCache.getClient(cloud)).getWorkspaces();
+
             final List<AbstractWorkspace> workspaces = result.getResult();
             for (AbstractWorkspace workspace : workspaces) {
                 workspaceOptions.add(workspace.getName(), workspace.getId());

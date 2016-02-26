@@ -20,11 +20,9 @@ import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by serna on 11/30/15.
- */
 public class CloudFormationManagedAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
 
     @Override
@@ -40,27 +38,29 @@ public class CloudFormationManagedAbstractDeploymentDataValidator implements Dep
 
         if (StringUtils.isEmpty(provider) || StringUtils.isEmpty(location)) {
 
-            final DeploymentValidationResult.Cause cause = StringUtils.isEmpty(provider) ? new DeploymentValidationResult.Cause() {
-                @Override
-                public String message() {
-                    return Constants.PROVIDER_SHOULD_BE_PROVIDED;
-                }
+            final DeploymentValidationResult.Cause cause =
+                    StringUtils.isEmpty(provider) ? new DeploymentValidationResult.Cause() {
 
-                @Override
-                public String field() {
-                    return "provider";
-                }
-            }: new DeploymentValidationResult.Cause() {
-                @Override
-                public String message() {
-                    return Constants.LOCATION_SHOULD_BE_PROVIDED;
-                }
+                        @Override
+                        public String message() {
+                            return Constants.PROVIDER_SHOULD_BE_PROVIDED;
+                        }
 
-                @Override
-                public String field() {
-                    return "location";
-                }
-            };
+                        @Override
+                        public String field() {
+                            return "provider";
+                        }
+                    } : new DeploymentValidationResult.Cause() {
+                        @Override
+                        public String message() {
+                            return Constants.LOCATION_SHOULD_BE_PROVIDED;
+                        }
+
+                        @Override
+                        public String field() {
+                            return "location";
+                        }
+                    };
 
             //error case, there is no provider or location
             return new DeploymentValidationResult() {
@@ -71,7 +71,7 @@ public class CloudFormationManagedAbstractDeploymentDataValidator implements Dep
 
                 @Override
                 public List<Cause> causes() {
-                    return new ArrayList<Cause>(){{add(cause);}};
+                    return Arrays.asList(cause);
                 }
 
                 @Override
@@ -108,8 +108,8 @@ public class CloudFormationManagedAbstractDeploymentDataValidator implements Dep
         private String location;
 
         public CloudformationManagedDeploymentData(String provider, String location) {
-            this.location=location;
-            this.provider=provider;
+            this.location = location;
+            this.provider = provider;
         }
 
         public DeploymentType getDeploymentType() {

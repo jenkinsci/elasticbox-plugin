@@ -14,23 +14,27 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.Constants;
-import com.elasticbox.jenkins.migration.AbstractConverter;
-import com.elasticbox.jenkins.migration.Version;
 import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.model.repository.BoxRepository;
-import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
 import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
-import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 import com.elasticbox.jenkins.util.ClientCache;
+
 import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Node;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+
+import jenkins.model.Jenkins;
+
+import org.apache.commons.lang.StringUtils;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -39,16 +43,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import hudson.util.XStream2;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-
-/**
- *
- * @author Phong Nguyen Le
- */
 public class SlaveConfiguration extends AbstractSlaveConfiguration {
 
     private static final Logger logger = Logger.getLogger(SlaveConfiguration.class.getName());
@@ -60,11 +54,11 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
     @DataBoundConstructor
     public SlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile,
             String claims, String provider, String location, int minInstances, int maxInstances, String tags,
-            String variables, String labels,String description, String remoteFS, Node.Mode mode, int retentionTime,
+            String variables, String labels,String description, String remoteFs, Node.Mode mode, int retentionTime,
             String maxBuildsText, int executors, int launchTimeout, String boxDeploymentType) {
 
         super(id, workspace, box, boxVersion, profile, claims, provider, location, minInstances, maxInstances,
-                tags, variables, labels, description, remoteFS, mode, retentionTime,
+                tags, variables, labels, description, remoteFs, mode, retentionTime,
                 StringUtils.isBlank(maxBuildsText) ? 0 : Integer.parseInt(maxBuildsText), executors, launchTimeout,
                 boxDeploymentType);
     }
@@ -77,37 +71,83 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return "Slave Configuration";
         }
 
-        public void validateSlaveConfiguration(SlaveConfiguration slaveConfig, ElasticBoxCloud newCloud) throws FormException {
-            String slaveConfigText = slaveConfig.getDescription() != null ? MessageFormat.format("slave configuration ''{0}''", slaveConfig.getDescription()) : "a slave configuration";
+        public void validateSlaveConfiguration(SlaveConfiguration slaveConfig, ElasticBoxCloud newCloud)
+            throws FormException {
+
+            String slaveConfigText = slaveConfig.getDescription() != null
+                ? MessageFormat.format("slave configuration ''{0}''", slaveConfig.getDescription())
+                : "a slave configuration";
+
             if (StringUtils.isBlank(slaveConfig.getWorkspace())) {
-                throw new FormException(MessageFormat.format("No Workspace is selected for {0} of ElasticBox cloud ''{1}''.", slaveConfigText, newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                throw new FormException(
+                    MessageFormat.format(
+                        "No Workspace is selected for {0} of ElasticBox cloud ''{1}''.",
+                        slaveConfigText,
+                        newCloud.getDisplayName()),
+                    SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             if (StringUtils.isBlank(slaveConfig.getBox())) {
-                throw new FormException(MessageFormat.format("No Box is selected for {0} of ElasticBox cloud ''{1}''.", slaveConfigText, newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                throw new FormException(
+                    MessageFormat.format(
+                        "No Box is selected for {0} of ElasticBox cloud ''{1}''.",
+                        slaveConfigText,
+                        newCloud.getDisplayName()),
+                    SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             if (StringUtils.isBlank(slaveConfig.getBoxVersion())) {
-                throw new FormException(MessageFormat.format("No Version is selected for the selected box in {0} of ElasticBox cloud ''{1}''.", slaveConfigText, newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                throw new FormException(
+                    MessageFormat.format(
+                        "No Version is selected for the selected box in {0} of ElasticBox cloud ''{1}''.",
+                        slaveConfigText,
+                        newCloud.getDisplayName()),
+                    SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             if (slaveConfig.getProfile() != null) {
                 if (StringUtils.isBlank(slaveConfig.getProfile())) {
-                    throw new FormException(MessageFormat.format("No Deployment Policy is selected for {0} of ElasticBox cloud ''{1}''.", slaveConfigText, newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                    throw new FormException(
+                        MessageFormat.format(
+                            "No Deployment Policy is selected for {0} of ElasticBox cloud ''{1}''.",
+                            slaveConfigText,
+                            newCloud.getDisplayName()),
+                        SlaveConfiguration.SLAVE_CONFIGURATIONS);
                 }
             } else if (slaveConfig.getClaims() != null) {
                 if (StringUtils.isBlank(slaveConfig.getClaims())) {
-                    throw new FormException(MessageFormat.format("Claims must be specified to select a Deployment Policy for {0} of ElasticBox cloud ''{1}''.", slaveConfigText, newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                    throw new FormException(
+                        MessageFormat.format(
+                            "Claims must be specified to select a Deployment Policy for {0} "
+                                + "of ElasticBox cloud ''{1}''.",
+                            slaveConfigText,
+                            newCloud.getDisplayName()),
+                        SlaveConfiguration.SLAVE_CONFIGURATIONS);
                 }
             } else if (slaveConfig.getProvider() != null) {
                 if (StringUtils.isBlank(slaveConfig.getProvider())) {
-                    throw new FormException(MessageFormat.format("No Provider is selected for {0} of ElasticBox cloud ''{1}''.", slaveConfigText, newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                    throw new FormException(
+                        MessageFormat.format(
+                            "No Provider is selected for {0} of ElasticBox cloud ''{1}''.",
+                            slaveConfigText,
+                            newCloud.getDisplayName()),
+                        SlaveConfiguration.SLAVE_CONFIGURATIONS);
                 }
                 if (StringUtils.isBlank(slaveConfig.getLocation())) {
-                    throw new FormException(MessageFormat.format("No Region is selected for {0} of ElasticBox cloud ''{1}''.", slaveConfigText, newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                    throw new FormException(
+                        MessageFormat.format(
+                            "No Region is selected for {0} of ElasticBox cloud ''{1}''.",
+                            slaveConfigText,
+                            newCloud.getDisplayName()),
+                        SlaveConfiguration.SLAVE_CONFIGURATIONS);
                 }
             } else {
-                throw new FormException(MessageFormat.format("No deployment option is selected for {0} of ElasticBox cloud ''{1}''.", slaveConfigText, newCloud.getDisplayName()), SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                throw new FormException(
+                    MessageFormat.format(
+                        "No deployment option is selected for {0} of ElasticBox cloud ''{1}''.",
+                        slaveConfigText,
+                        newCloud.getDisplayName()),
+                    SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
 
             if (slaveConfig.getExecutors() < 1) {
@@ -118,9 +158,14 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 slaveConfig.setId(UUID.randomUUID().toString());
             }
 
-            FormValidation result = ((SlaveConfiguration.DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(SlaveConfiguration.class)).doCheckBoxVersion(slaveConfig.getBoxVersion(),
-                    newCloud.getEndpointUrl(), newCloud.getToken(),
-                    slaveConfig.getWorkspace(), slaveConfig.getBox());
+            FormValidation result = ((SlaveConfiguration.DescriptorImpl)Jenkins.getInstance()
+                .getDescriptorOrDie(SlaveConfiguration.class))
+                .doCheckBoxVersion(slaveConfig.getBoxVersion(),
+                    newCloud.getEndpointUrl(),
+                    newCloud.getToken(),
+                    slaveConfig.getWorkspace(),
+                    slaveConfig.getBox());
+
             if (result.kind == FormValidation.Kind.ERROR) {
                 throw new FormException(result.getMessage(), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
@@ -149,13 +194,18 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return client;
         }
 
-        public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String endpointUrl,@RelativePath("..") @QueryParameter String token) {
+        public ListBoxModel doFillWorkspaceItems(
+            @RelativePath("..") @QueryParameter String endpointUrl,
+            @RelativePath("..") @QueryParameter String token) {
+
             final ListBoxModel workspaceOptions = getEmptyListBoxModel(Constants.CHOOSE_WORKSPACE_MESSAGE, "");
             if (anyOfThemIsBlank(endpointUrl, token)) {
                 return workspaceOptions;
             }
 
-            final DeployBoxOrderResult<List<AbstractWorkspace>> result = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).getWorkspaces();
+            final DeployBoxOrderResult<List<AbstractWorkspace>> result
+                = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).getWorkspaces();
+
             final List<AbstractWorkspace> workspaces = result.getResult();
             for (AbstractWorkspace workspace : workspaces) {
                 workspaceOptions.add(workspace.getName(), workspace.getId());
@@ -169,7 +219,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                                            @QueryParameter String workspace) {
 
             ListBoxModel boxes = getEmptyListBoxModel(Constants.CHOOSE_BOX_MESSAGE, "");
-            if(anyOfThemIsBlank(token, workspace)) {
+            if (anyOfThemIsBlank(token, workspace)) {
                 return boxes;
             }
 
@@ -192,7 +242,9 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 return boxDeploymentType;
             }
 
-            final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).deploymentType(box);
+            final DeploymentType deploymentType
+                = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).deploymentType(box);
+
             final String id = deploymentType.getValue();
             boxDeploymentType.add(new ListBoxModel.Option(id,id,true));
 
@@ -203,6 +255,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                                                   @RelativePath("..") @QueryParameter String token,
                                                   @QueryParameter String workspace,
                                                   @QueryParameter String box) {
+
             if (anyOfThemIsBlank(endpointUrl, workspace, box, token)) {
                 return getEmptyListBoxModel();
             }
@@ -220,7 +273,10 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 return getEmptyListBoxModel();
             }
 
-            final DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(endpointUrl, token)).deploymentPolicies(workspace, box);
+            final DeployBoxOrderResult<List<PolicyBox>> result
+                = new DeployBoxOrderServiceImpl(
+                                        ClientCache.getClient(endpointUrl,token)).deploymentPolicies(workspace, box);
+
             final List<PolicyBox> policyBoxList = result.getResult();
             for (PolicyBox policyBox : policyBoxList) {
                 profiles.add(policyBox.getName(), policyBox.getId());
@@ -233,7 +289,8 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                                                 @RelativePath("..") @QueryParameter String token,
                                                 @QueryParameter String workspace) {
 
-            ListBoxModel providers = getEmptyListBoxModel("--Please choose the provider--", "");
+            ListBoxModel providers = getEmptyListBoxModel(Constants.CHOOSE_PROVIDER_MESSAGE, "");
+
             if (anyOfThemIsBlank(endpointUrl, token, workspace)) {
                 return providers;
             }
@@ -246,7 +303,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                                                 @RelativePath("..") @QueryParameter String token,
                                                 @QueryParameter String provider) {
 
-            ListBoxModel locations = getEmptyListBoxModel("--Please choose the region--", "");
+            ListBoxModel locations = getEmptyListBoxModel(Constants.CHOOSE_REGION_MESSAGE, "");
             if (anyOfThemIsBlank(endpointUrl, token, provider)) {
                 return locations;
             }
@@ -285,7 +342,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
 
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(
+        public DescriptorHelper.JsonArrayResponse doGetBoxStack(
                 @RelativePath("..") @QueryParameter String endpointUrl,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace,
@@ -295,13 +352,13 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetInstances(
+        public DescriptorHelper.JsonArrayResponse doGetInstances(
                 @RelativePath("..") @QueryParameter String endpointUrl,
                 @RelativePath("..") @QueryParameter String token,
                 @QueryParameter String workspace,
                 @QueryParameter String box,
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getInstancesAsJSONArrayResponse(createClient(endpointUrl, token),
+            return DescriptorHelper.getInstancesAsJsonArrayResponse(createClient(endpointUrl, token),
                     workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
@@ -320,9 +377,9 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
         private ListBoxModel getEmptyListBoxModel(final String emptyName, final String emptyValue) {
-            return new ListBoxModel() {{
-                add(new ListBoxModel.Option(emptyName, emptyValue));
-            }};
+
+            final List<ListBoxModel.Option> options = Arrays.asList(new ListBoxModel.Option(emptyName, emptyValue));
+            return new ListBoxModel(options);
         }
 
 

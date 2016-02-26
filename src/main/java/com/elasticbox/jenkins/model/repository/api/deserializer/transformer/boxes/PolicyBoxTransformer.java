@@ -21,9 +21,6 @@ import com.elasticbox.jenkins.model.provider.Provider;
 import com.elasticbox.jenkins.model.repository.api.deserializer.Utils;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/29/15.
- */
 public class PolicyBoxTransformer extends AbstractBoxTransformer<PolicyBox> {
 
     @Override

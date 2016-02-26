@@ -11,9 +11,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 12/7/15.
- */
 public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
 
     private static final Logger logger = Logger.getLogger(ScheduledPoolingTask.class.getName());
@@ -30,7 +27,7 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
     public ScheduledPoolingTask(long delay, long initialDelay, long timeout) {
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("ScheduledPoolingTask["+this.getClass().getSimpleName()+"]-%d")
+                .setNameFormat("ScheduledPoolingTask[" + this.getClass().getSimpleName() + "]-%d")
                 .build();
 
         this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(threadFactory);
@@ -47,47 +44,63 @@ public abstract class ScheduledPoolingTask<R> extends AbstractTask<R> {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
 
         scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            performExecute();
+            @Override
+            public void run() {
+                try {
+                    performExecute();
 
-                            counter++;
+                    counter++;
 
-                            if (isDone()) {
-                                scheduledFuture.cancel(true);
-                                countDownLatch.countDown();
-                            } else {
-                                result = null;
-                            }
-
-                        } catch (TaskException e) {
-                            logger.log(Level.SEVERE, "Error executing task: "+this.getClass().getSimpleName(),e);
-                            scheduledFuture.cancel(true);
-                            countDownLatch.countDown();
-                        }
+                    if (isDone()) {
+                        scheduledFuture.cancel(true);
+                        countDownLatch.countDown();
+                    } else {
+                        result = null;
                     }
-                }, initialDelay, delay, TimeUnit.SECONDS);
+
+                } catch (TaskException e) {
+                    logger.log(Level.SEVERE, "Error executing task: " + this.getClass().getSimpleName(),e);
+                    scheduledFuture.cancel(true);
+                    countDownLatch.countDown();
+                }
+            }
+        }, initialDelay, delay, TimeUnit.SECONDS);
 
         try {
             final boolean await = countDownLatch.await(timeout, TimeUnit.SECONDS);
-            if (!await){
-                logger.log(Level.SEVERE, "Timeout reached("+timeout+" secs) executing task: "+this.getClass().getSimpleName());
-                throw new TaskException("Timeout reached("+timeout+" secs) executing task: "+this.getClass().getSimpleName());
+            if (!await) {
+
+                logger.log(
+                    Level.SEVERE,
+                    "Timeout reached(" + timeout + " secs) executing task: " + this.getClass().getSimpleName()
+                );
+
+                throw new TaskException(
+                    "Timeout reached(" + timeout + " secs) executing task: " + this.getClass().getSimpleName());
             }
 
-            if(!isDone()){
-                logger.log(Level.SEVERE, "Pooling task: "+this.getClass().getSimpleName()+" finished with error");
-                throw new TaskException("Pooling task: "+this.getClass().getSimpleName()+" finished with error");
+            if (!isDone()) {
+
+                logger.log(
+                    Level.SEVERE,
+                    "Pooling task: " + this.getClass().getSimpleName() + " finished with error"
+                );
+
+                throw new TaskException("Pooling task: " + this.getClass().getSimpleName() + " finished with error");
             }
 
-            logger.log(Level.INFO, "Pooling task: "+this.getClass().getSimpleName()+" finished sucessfully");
+            logger.log(Level.INFO, "Pooling task: " + this.getClass().getSimpleName() + " finished sucessfully");
 
 
         } catch (InterruptedException e) {
-            logger.log(Level.SEVERE, "Thread interrupted before completion executing task: "+this.getClass().getSimpleName(),e);
-            throw new TaskException("Thread interrupted before completion executing task: "+this.getClass().getSimpleName());
-        }finally {
+            logger.log(
+                Level.SEVERE,
+                "Thread interrupted before completion executing task: " + this.getClass().getSimpleName(),e);
+
+            throw new TaskException(
+                "Thread interrupted before completion executing task: " + this.getClass().getSimpleName());
+
+        } finally {
             scheduledExecutorService.shutdownNow();
         }
 

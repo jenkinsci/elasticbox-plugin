@@ -19,10 +19,21 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+
+import jenkins.model.Jenkins;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -30,16 +41,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class TerminateOperation extends LongOperation implements IOperation.InstanceOperation {
 
     private static void notifyTerminating(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud)
@@ -57,7 +59,13 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
     private final boolean force;
 
     @DataBoundConstructor
-    public TerminateOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout, boolean force, boolean delete) {
+    public TerminateOperation(
+        String tags,
+        boolean waitForCompletion,
+        int waitForCompletionTimeout,
+        boolean force,
+        boolean delete) {
+
         super(tags, waitForCompletion, waitForCompletionTimeout);
         this.delete = delete;
         this.force = force;
@@ -109,22 +117,37 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             JSONObject instanceJson = (JSONObject) instance;
             String instanceId = instanceJson.getString("id");
             instanceIDs.add(instanceId);
+
             String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instanceJson);
-            if (Client.TERMINATE_OPERATIONS.contains(instanceJson.getJSONObject("operation").getString("event")) &&
-                Client.InstanceState.DONE.equals(instanceJson.getString("state"))) {
+            if (Client.TERMINATE_OPERATIONS.contains(instanceJson.getJSONObject("operation").getString("event"))
+                && Client.InstanceState.DONE.equals(instanceJson.getString("state"))) {
+
                 logger.info(MessageFormat.format("Instance {0} is already terminated", instancePageUrl));
                 continue;
             }
             IProgressMonitor monitor = force ? client.forceTerminate(instanceId) : client.terminate(instanceId);
             monitors.add(monitor);
-            logger.info(MessageFormat.format(force ? "Force-terminating instance {0}" : "Terminating instance {0}", instancePageUrl));
+
+            logger.info(
+                MessageFormat.format(
+                    force
+                        ? "Force-terminating instance {0}"
+                        : "Terminating instance {0}",
+                    instancePageUrl));
+
             notifyTerminating(build, instanceId, cloud);
         }
 
         if (!monitors.isEmpty() && waitForCompletionTimeout > 0) {
             logger.info(MessageFormat.format("Waiting for {0} to complete terminating",
                     instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
+
+            LongOperation.waitForCompletion(
+                DescriptorImpl.DISPLAY_NAME,
+                monitors,
+                client,
+                logger,
+                waitForCompletionTimeout);
         }
 
         return instanceIDs;
@@ -142,14 +165,25 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
             logger.info(MessageFormat.format("The box instance {0} has been terminated successfully ",
                     instancePageUrl));
         } catch (IProgressMonitor.IncompleteException ex) {
+
             logger.info(ex.getMessage());
+
             monitor = client.forceTerminate(instanceId);
+
             logger.info(MessageFormat.format("Force-terminating instance {0}", instancePageUrl));
+
             try {
-                logger.info(MessageFormat.format("Waiting for the box instance {0} to be force-terminated", instancePageUrl));
+                logger.info(
+                    MessageFormat.format(
+                        "Waiting for the box instance {0} to be force-terminated", instancePageUrl));
+
                 monitor.waitForDone(ElasticBoxSlaveHandler.TIMEOUT_MINUTES);
-                logger.info(MessageFormat.format("The box instance {0} has been force-terminated successfully ",
+
+                logger.info(
+                    MessageFormat.format(
+                        "The box instance {0} has been force-terminated successfully ",
                         instancePageUrl));
+
             } catch (IProgressMonitor.IncompleteException e) {
                 Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, null, e);
                 logger.error("Failed to terminate box instance {0}: {1}", instancePageUrl, ex.getMessage());

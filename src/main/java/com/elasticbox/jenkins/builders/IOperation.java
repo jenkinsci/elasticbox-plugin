@@ -14,17 +14,22 @@ package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.TaskLogger;
+
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+
 import java.io.IOException;
 
 /**
- *
- * @author Phong Nguyen Le
+ * @author Phong Nguyen Le.
  */
 public interface IOperation {
 
-    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException;
+    public void perform(
+        ElasticBoxCloud cloud,
+        String workspace, AbstractBuild<?, ?> build,
+        Launcher launcher,
+        TaskLogger logger) throws InterruptedException, IOException;
 
     public interface InstanceOperation extends IOperation {
 

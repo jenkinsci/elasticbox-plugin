@@ -13,26 +13,29 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import hudson.model.Cause;
-import java.io.IOException;
-import java.text.MessageFormat;
+
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHUser;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.io.IOException;
+import java.text.MessageFormat;
+
 public class TriggerCause extends Cause {
+
     private final String shortDescription;
 
     private final transient GHPullRequest pullRequest;
 
     public TriggerCause(GHEventPayload.PullRequest prEventPayload) throws IOException {
-        this(prEventPayload.getPullRequest(), MessageFormat.format("GitHub pull request {0} is {1} by {2}",
+        this
+            (prEventPayload.getPullRequest(),
+            MessageFormat.format("GitHub pull request {0} is {1} by {2}",
                 prEventPayload.getPullRequest().getHtmlUrl(),
-                PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction()) ? "updated" : prEventPayload.getAction(),
+                PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction())
+                    ? "updated"
+                    : prEventPayload.getAction(),
                 getUserInfo(prEventPayload.getPullRequest().getUser())));
     }
 

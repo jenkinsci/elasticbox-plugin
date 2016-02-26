@@ -9,6 +9,7 @@
  * information or reproduction of this material is strictly forbidden unless prior
  * written permission is obtained from ElasticBox.
  */
+
 package com.elasticbox.jenkins.builders;
 
 import hudson.Extension;
@@ -17,16 +18,13 @@ import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- * Created by Phong Nguyen Le (ple@elasticbox.com) on 11/21/14.
- */
 public abstract class InstanceExpiration implements Describable<InstanceExpiration> {
 
     public Descriptor<InstanceExpiration> getDescriptor() {
         return Jenkins.getInstance().getDescriptor(getClass());
     }
 
-    public static abstract class InstanceExpirationDescriptor extends Descriptor<InstanceExpiration> {
+    public abstract static class InstanceExpirationDescriptor extends Descriptor<InstanceExpiration> {
     }
 
     public static final class AlwaysOn extends InstanceExpiration {

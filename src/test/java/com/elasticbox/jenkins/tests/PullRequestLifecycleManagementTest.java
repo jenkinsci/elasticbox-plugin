@@ -55,6 +55,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
             }
 
         }.waitUntilSatisfied(60);
+
         Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild());
 
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15));

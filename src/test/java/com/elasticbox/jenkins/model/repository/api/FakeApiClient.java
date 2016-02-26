@@ -9,9 +9,6 @@ import net.sf.json.JSONObject;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Created by serna on 12/3/15.
- */
 public class FakeApiClient implements ApiClient {
 
     @Override

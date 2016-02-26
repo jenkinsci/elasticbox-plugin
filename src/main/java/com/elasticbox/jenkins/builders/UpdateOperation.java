@@ -25,10 +25,21 @@ import com.elasticbox.jenkins.model.services.task.TaskException;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.RelativePath;
 import hudson.model.AbstractBuild;
+import hudson.util.ListBoxModel;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -38,17 +49,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import hudson.util.ListBoxModel;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class UpdateOperation extends BoxRequiredOperation implements IOperation.InstanceOperation {
 
     private static final Logger logger = Logger.getLogger(UpdateOperation.class.getName());
@@ -60,7 +61,13 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
     }
 
     @Override
-    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger taskLogger) throws InterruptedException, IOException {
+    public void perform(
+        ElasticBoxCloud cloud,
+        String workspace,
+        AbstractBuild<?, ?> build,
+        Launcher launcher,
+        TaskLogger taskLogger) throws InterruptedException, IOException {
+
         taskLogger.info(MessageFormat.format("Executing {0}", getDescriptor().getDisplayName()));
 
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, taskLogger.getTaskListener());
@@ -72,8 +79,10 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
 
         Set<String> resolvedTags = resolver.resolveTags(getTags());
 
-        taskLogger.info(MessageFormat.format("Looking for instances with box version {0} and the following tags: {1}",
-                boxVersion, StringUtils.join(resolvedTags, ", ")));
+        taskLogger.info(
+            MessageFormat.format("Looking for instances with box version {0} and the following tags: {1}",
+                boxVersion,
+                StringUtils.join(resolvedTags, ", ")));
 
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, boxVersion);
         if (!canPerform(instances, taskLogger)) {
@@ -103,7 +112,9 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
             JSONObject instanceJson = (JSONObject) instance;
             String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
 
-            UpdateInstanceTask updateInstanceTask = new UpdateInstanceTask(client, taskLogger, instanceJson, resolvedVariables, boxVersion);
+            UpdateInstanceTask updateInstanceTask
+                = new UpdateInstanceTask(client, taskLogger, instanceJson, resolvedVariables, boxVersion);
+
             try {
                 updateInstanceTask.execute();
             } catch (TaskException e) {
@@ -118,9 +129,11 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
     @Extension
     public static final class DescriptorImpl extends Descriptor {
 
-        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud, @RelativePath("..") @QueryParameter String workspace) {
+        public ListBoxModel doFillBoxItems(
+            @RelativePath("..") @QueryParameter String cloud,
+            @RelativePath("..") @QueryParameter String workspace) {
 
-            logger.log(Level.FINE, "doFillBoxItems - cloud: "+cloud+", workspace: "+workspace);
+            logger.log(Level.FINE, "doFillBoxItems - cloud: " + cloud + ", workspace: " + workspace);
 
             ListBoxModel updateableBoxes = new ListBoxModel();
 
@@ -129,7 +142,9 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
             }
 
             try {
-                final DeployBoxOrderResult<List<AbstractBox>> result = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).updateableBoxes(workspace);
+                final DeployBoxOrderResult<List<AbstractBox>> result
+                    = new DeployBoxOrderServiceImpl(ClientCache.getClient(cloud)).updateableBoxes(workspace);
+
                 final List<AbstractBox> boxes = result.getResult();
                 for (AbstractBox box : boxes) {
                     updateableBoxes.add(box.getName(), box.getId());
@@ -137,7 +152,7 @@ public class UpdateOperation extends BoxRequiredOperation implements IOperation.
 
 
             } catch (ServiceException e) {
-                logger.log(Level.SEVERE, "error in doFillBoxItems - cloud: "+cloud+", workspace: "+workspace, e);
+                logger.log(Level.SEVERE, "error in doFillBoxItems - cloud: " + cloud + ", workspace: " + workspace, e);
                 return updateableBoxes;
             }
 

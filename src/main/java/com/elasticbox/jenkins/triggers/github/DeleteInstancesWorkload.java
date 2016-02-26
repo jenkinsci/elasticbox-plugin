@@ -16,21 +16,21 @@ import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.jenkins.ElasticBoxExecutor;
 import com.elasticbox.jenkins.util.ClientCache;
+
 import hudson.Extension;
 import hudson.model.TaskListener;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.httpclient.HttpStatus;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
-import net.sf.json.JSONObject;
-import org.apache.commons.httpclient.HttpStatus;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 @Extension
 public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
     private final Queue<PullRequestInstance> terminatingInstances = new ConcurrentLinkedQueue<PullRequestInstance>();
@@ -65,7 +65,9 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
             if (ex instanceof ClientException && ((ClientException) ex).getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return true;
             }
-            log(Level.SEVERE, MessageFormat.format("Error fetching instance {0}", client.getInstanceUrl(instance.id)), ex, listener);
+            log(Level.SEVERE, MessageFormat.format(
+                    "Error fetching instance {0}", client.getInstanceUrl(instance.id)), ex, listener);
+
             return false;
         }
 
@@ -74,7 +76,11 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
             try {
                 client.forceTerminate(instance.id);
             } catch (IOException ex) {
-                log(Level.SEVERE, MessageFormat.format("Error force-terminating instance {0}", client.getInstanceUrl(instance.id)), ex, listener);
+                log(Level.SEVERE,
+                        MessageFormat.format(
+                                "Error force-terminating instance {0}", client.getInstanceUrl(instance.id)),
+                                ex,
+                                listener);
             }
             return false;
         }
@@ -94,7 +100,9 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
             }
             return true;
         } catch (IOException ex) {
-            log(Level.SEVERE, MessageFormat.format("Error deleting instance {0}", client.getInstanceUrl(instance.id)), ex, listener);
+            log(Level.SEVERE,
+                    MessageFormat.format(
+                            "Error deleting instance {0}", client.getInstanceUrl(instance.id)), ex, listener);
             return false;
         }
     }

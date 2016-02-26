@@ -19,8 +19,17 @@ import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.JsonUtil;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
-import hudson.AbortException;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+
 import hudson.Extension;
+import hudson.AbortException;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -28,6 +37,7 @@ import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.ListBoxModel;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
@@ -41,17 +51,8 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+
 public class CreateTemplate extends Builder {
     private static final Logger LOGGER = Logger.getLogger(CreateTemplate.class.getName());
 
@@ -129,7 +130,9 @@ public class CreateTemplate extends Builder {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
+            throws InterruptedException, IOException {
+
         TaskLogger logger = new TaskLogger(listener);
         logger.info(MessageFormat.format("Executing ''{0}'' build step", getDescriptor().getDisplayName()));
 
@@ -152,10 +155,14 @@ public class CreateTemplate extends Builder {
             }
         }
         if (instances.isEmpty()) {
-            throw new AbortException(MessageFormat.format("No instance is found in provider {0} with the following tags: {1}",
+            throw new AbortException(
+                    MessageFormat.format("No instance is found in provider {0} with the following tags: {1}",
                     provider, StringUtils.join(tags, ", ")));
+
         } else if (instances.size() > 1) {
-            throw new AbortException(MessageFormat.format("{0} instances are found in provider {1} with the following tags: {2}. Specify tags that are unique for the instance.",
+            throw new AbortException(
+                    MessageFormat.format("{0} instances are found in provider {1} with the following tags: {2}. "
+                                    +  "Specify tags that are unique for the instance.",
                     instances.size(), provider, StringUtils.join(tags, ", ")));
         }
 
@@ -163,9 +170,13 @@ public class CreateTemplate extends Builder {
         String instancePageUrl = client.getPageUrl(instance);
         String resolvedTempateName = resolver.resolve(templateName);
 
-        logger.info("Creating vSphere template ''{0}'' from instance {1} with the following parameters: datacenter = {2}, folder = {3}, datastore = {4}",
+        logger.info("Creating vSphere template ''{0}'' from instance {1} "
+                        + "with the following parameters: datacenter = {2}, folder = {3}, datastore = {4}",
                 resolvedTempateName, instancePageUrl, datacenter, folder, datastore);
-        IProgressMonitor taskMonitor = client.createTemplate(resolvedTempateName, instance, datacenter, folder, datastore);
+
+        IProgressMonitor taskMonitor = client.createTemplate(
+                resolvedTempateName, instance, datacenter, folder, datastore);
+
         taskMonitor.waitForDone(-1);
         logger.info("Template ''{0}'' is created successfully", resolvedTempateName);
 
@@ -184,15 +195,22 @@ public class CreateTemplate extends Builder {
                 }
             }
             if (policies.isEmpty()) {
-                throw new AbortException(MessageFormat.format("No deployment policy for provider {0} is found with the following claims: {1}",
-                        client.getProviderPageUrl(provider), StringUtils.join(claimSet, ", ")));
+                throw new AbortException(
+                        MessageFormat.format("No deployment policy for provider {0} "
+                                        + "is found with the following claims: {1}",
+                            client.getProviderPageUrl(provider),
+                                StringUtils.join(claimSet, ", ")));
             }
             for (JSONObject policy : policies) {
                 String policyPageUrl = client.getPageUrl(policy);
                 logger.info("Updating deployment policy {0}", policyPageUrl);
                 policy.getJSONObject("profile").put("template", resolvedTempateName);
                 client.doUpdate(policy.getString("uri"), policy);
-                logger.info("Deployment policy {0} is updated with vSphere template ''{1}''", policyPageUrl, resolvedTempateName);
+
+                logger.info(
+                        "Deployment policy {0} is updated with vSphere template ''{1}''",
+                        policyPageUrl,
+                        resolvedTempateName);
             }
         } else {
             logger.info("Creating a new deployment policy with vSphere template ''{0}''", resolvedTempateName);
@@ -216,7 +234,9 @@ public class CreateTemplate extends Builder {
             } catch (URISyntaxException ex) {
                 throw new IOException(ex);
             }
-            logger.info("Deployment policy {0} is created with vSphere template ''{1}''", client.getPageUrl(policy), resolvedTempateName);
+            logger.info("Deployment policy {0} is created with vSphere template ''{1}''",
+                        client.getPageUrl(policy),
+                        resolvedTempateName);
         }
 
         return true;
@@ -240,7 +260,8 @@ public class CreateTemplate extends Builder {
             if (formData.containsKey("policyAction")) {
                 if ("update".equals(formData.getString("policyAction"))) {
                     if (StringUtils.isBlank(formData.getString("claimFilter"))) {
-                        throw new FormException("Claims are required to find deployment policies to update", "claimFilter");
+                        throw new FormException(
+                                "Claims are required to find deployment policies to update", "claimFilter");
                     }
                     formData.remove("policyName");
                     formData.remove("claims");
@@ -350,8 +371,13 @@ public class CreateTemplate extends Builder {
                         }
                         while (!stack.isEmpty()) {
                             JSONObject folder = stack.pop();
+
                             String indent = folder.getString("indent");
-                            items.add(MessageFormat.format("{0} {1}", indent, folder.getString("name")), folder.getString("mor"));
+
+                            items.add(
+                                    MessageFormat.format("{0} {1}", indent, folder.getString("name")),
+                                    folder.getString("mor"));
+
                             JSONArray children = folder.getJSONArray("children");
                             for (int i = 0; i < children.size(); i++) {
                                 JSONObject subFolder = morToFolderMap.get(children.getString(i));

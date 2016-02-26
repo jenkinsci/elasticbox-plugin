@@ -17,7 +17,7 @@ package com.elasticbox.jenkins.model.services.deployment.types;
 import com.elasticbox.ApiClient;
 import com.elasticbox.jenkins.UnitTestingUtils;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
-import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.repository.api.BoxRepositoryApiImpl;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
@@ -29,9 +29,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Created by serna on 1/13/16.
- */
 public class TestDeployBoxOrderServiceDeploymentTypes {
 
     @Test
@@ -60,7 +57,7 @@ public class TestDeployBoxOrderServiceDeploymentTypes {
         final ApiClient api = mock(ApiClient.class);
         when(api.getBox(fakeBox.getString("id"))).thenReturn(fakeBox);
 
-        final BoxRepository boxRepository = new BoxRepositoryAPIImpl(api);
+        final BoxRepository boxRepository = new BoxRepositoryApiImpl(api);
 
         final DeployBoxOrderServiceImpl deployBoxOrderService = new DeployBoxOrderServiceImpl(api);
 

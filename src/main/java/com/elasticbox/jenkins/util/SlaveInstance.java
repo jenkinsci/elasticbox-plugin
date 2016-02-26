@@ -16,7 +16,16 @@ import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.AbstractSlaveConfiguration;
 import com.elasticbox.jenkins.ElasticBoxSlave;
+
 import hudson.model.Node;
+
+import jenkins.model.Jenkins;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -27,43 +36,47 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class SlaveInstance {
     public static final String JNLP_SLAVE_OPTIONS_VARIABLE = "JNLP_SLAVE_OPTIONS";
     public static final String JENKINS_URL_VARIABLE = "JENKINS_URL";
-    public static final Set<String> REQUIRED_VARIABLES = new HashSet<String>(Arrays.asList(new String[]{JENKINS_URL_VARIABLE, JNLP_SLAVE_OPTIONS_VARIABLE}));
-
-    public static JSONArray createJenkinsVariables(String jenkinsUrl, String slaveName) {
-        JSONArray variables = new JSONArray();
-        JSONObject variable = new JSONObject();
-        variable.put("name", SlaveInstance.JENKINS_URL_VARIABLE);
-        variable.put("type", "Text");
-        variable.put("value", jenkinsUrl);
-        variables.add(variable);
-        variable = new JSONObject();
-        variable.put("name", "SLAVE_NAME");
-        variable.put("type", "Text");
-        variable.put("value", slaveName);
-        variables.add(variable);
-        return variables;
-    }
+    public static final Set<String> REQUIRED_VARIABLES
+        = new HashSet<String>(Arrays.asList(new String[]{JENKINS_URL_VARIABLE, JNLP_SLAVE_OPTIONS_VARIABLE}));
 
     public static String createJnlpSlaveOptions(ElasticBoxSlave slave) {
         return MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp -secret {2}",
                 Jenkins.getInstance().getRootUrl(), slave.getNodeName(), slave.getComputer().getJnlpMac());
     }
 
+    public static JSONArray createJenkinsVariables(String jenkinsUrl, String slaveName) {
+
+        JSONObject variable = new JSONObject();
+        variable.put("name", SlaveInstance.JENKINS_URL_VARIABLE);
+        variable.put("type", "Text");
+        variable.put("value", jenkinsUrl);
+
+        JSONArray variables = new JSONArray();
+        variables.add(variable);
+
+        variable = new JSONObject();
+        variable.put("name", "SLAVE_NAME");
+        variable.put("type", "Text");
+        variable.put("value", slaveName);
+
+        variables.add(variable);
+
+        return variables;
+    }
+
     public static JSONArray createJenkinsVariables(Client client, ElasticBoxSlave slave) throws IOException {
         Map<String, JSONObject> requiredVariables = Collections.EMPTY_MAP;
-        JSONArray boxStack = new BoxStack(slave.getBoxVersion(), client.getBoxStack(slave.getBoxVersion()), client).toJSONArray();
+
+        JSONArray boxStack = new BoxStack(
+                            slave.getBoxVersion(),
+                            client.getBoxStack(slave.getBoxVersion()),
+                            client
+        ).toJsonArray();
+
         for (int i = 0; i < boxStack.size(); i++) {
             requiredVariables = getRequiredVariables(boxStack.getJSONObject(i));
             if (requiredVariables.size() == REQUIRED_VARIABLES.size()) {
@@ -72,21 +85,28 @@ public class SlaveInstance {
         }
 
         if (requiredVariables.size() < REQUIRED_VARIABLES.size()) {
-            throw new IOException(MessageFormat.format("No box in the runtime stack of the box version {0} has the required variables {1}.",
-                    slave.getBoxVersion(), StringUtils.join(REQUIRED_VARIABLES, ", ")));
+            throw new IOException(
+                MessageFormat.format(
+                    "No box in the runtime stack of the box version {0} has the required variables {1}.",
+                    slave.getBoxVersion(),
+                    StringUtils.join(REQUIRED_VARIABLES, ", ")));
         }
 
         JSONObject jenkinsUrlVariable = requiredVariables.get(JENKINS_URL_VARIABLE);
-        String scope = jenkinsUrlVariable.containsKey("scope") ? jenkinsUrlVariable.getString("scope") : null;
         String jenkinsUrl = Jenkins.getInstance().getRootUrl();
-        JSONArray variables = new JSONArray();
+
+
         JSONObject variable = new JSONObject();
         variable.put("name", JENKINS_URL_VARIABLE);
         variable.put("type", "Text");
         variable.put("value", jenkinsUrl);
+
+        String scope = jenkinsUrlVariable.containsKey("scope") ? jenkinsUrlVariable.getString("scope") : null;
         if (scope != null) {
             variable.put("scope", scope);
         }
+
+        JSONArray variables = new JSONArray();
         variables.add(variable);
 
         variable = new JSONObject();
@@ -148,7 +168,9 @@ public class SlaveInstance {
         private final Map<String, Integer> slaveConfigIdToInstanceCountMap;
 
         public InstanceCounter(List<JSONObject> activeInstances) {
-            Map<String, AbstractSlaveConfiguration> instanceIdToSlaveConfigMap = new HashMap<String, AbstractSlaveConfiguration>();
+            Map<String, AbstractSlaveConfiguration> instanceIdToSlaveConfigMap
+                = new HashMap<String, AbstractSlaveConfiguration>();
+
             for (Node node : Jenkins.getInstance().getNodes()) {
                 if (node instanceof ElasticBoxSlave) {
                     ElasticBoxSlave slave = (ElasticBoxSlave) node;
@@ -163,7 +185,11 @@ public class SlaveInstance {
                 AbstractSlaveConfiguration slaveConfig = instanceIdToSlaveConfigMap.get(instance.getString("id"));
                 if (slaveConfig != null) {
                     Integer instanceCount = slaveConfigIdToInstanceCountMap.get(slaveConfig.getId());
-                    slaveConfigIdToInstanceCountMap.put(slaveConfig.getId(), instanceCount == null ? 1 : ++instanceCount);
+                    slaveConfigIdToInstanceCountMap.put(
+                        slaveConfig.getId(),
+                        instanceCount == null
+                            ? 1
+                            : ++instanceCount);
                 }
             }
         }

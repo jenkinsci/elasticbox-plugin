@@ -13,7 +13,13 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
+
 import hudson.model.Node;
+
+import jenkins.model.Jenkins;
+
+import net.sf.json.JSONObject;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,13 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class SlaveInstanceManager {
     private final Map<String, ElasticBoxSlave> instanceIdToSlaveMap;
     private Map<ElasticBoxSlave, JSONObject> slaveToInstanceMap;
@@ -82,7 +82,9 @@ public class SlaveInstanceManager {
                     validInstanceIDs.add(instance.getString("id"));
                 }
             }
-            Map<String, ElasticBoxSlave> invalidInstanceIdToSlaveMap = new HashMap<String, ElasticBoxSlave>(instanceIdToSlaveMap);
+            Map<String, ElasticBoxSlave> invalidInstanceIdToSlaveMap
+                = new HashMap<String, ElasticBoxSlave>(instanceIdToSlaveMap);
+
             invalidInstanceIdToSlaveMap.keySet().removeAll(validInstanceIDs);
             slavesWithoutInstance = new ArrayList<ElasticBoxSlave>(invalidInstanceIdToSlaveMap.values());
         }

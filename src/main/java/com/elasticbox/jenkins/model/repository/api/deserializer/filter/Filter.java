@@ -14,9 +14,6 @@
 
 package com.elasticbox.jenkins.model.repository.api.deserializer.filter;
 
-/**
- * Created by serna on 2/12/16.
- */
 public interface Filter<T> {
     public boolean apply(T it);
 }

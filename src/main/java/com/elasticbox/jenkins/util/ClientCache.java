@@ -15,24 +15,24 @@ package com.elasticbox.jenkins.util;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.jenkins.ElasticBoxCloud;
+
+import jenkins.model.Jenkins;
+
 import hudson.slaves.Cloud;
+
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpRequestBase;
+
+import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.CheckForNull;
-import jenkins.model.Jenkins;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpRequestBase;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class ClientCache {
 
     private static final Logger LOGGER = Logger.getLogger(ClientCache.class.getName());
@@ -72,7 +72,9 @@ public class ClientCache {
         try {
             return findOrCreateClient(cloudName);
         } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, MessageFormat.format("Error creating client for ElasticBox cloud {0}", cloudName), ex);
+            LOGGER.log(
+                    Level.SEVERE,
+                    MessageFormat.format("Error creating client for ElasticBox cloud {0}", cloudName), ex);
         }
 
         return null;

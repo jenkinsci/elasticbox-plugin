@@ -17,9 +17,6 @@ package com.elasticbox.jenkins.model.services.instances.execution.context;
 import com.elasticbox.jenkins.model.services.instances.execution.order.UpdateInstancesOrder;
 
 
-/**
- * Created by serna on 1/20/16.
- */
 public class UpdateInstancesContext extends AbstractManageInstancesContext<UpdateInstancesOrder> {
 
     private UpdateInstancesContext(UpdateInstancesContextBuilder builder) {
@@ -27,7 +24,8 @@ public class UpdateInstancesContext extends AbstractManageInstancesContext<Updat
     }
 
 
-    public static class UpdateInstancesContextBuilder extends ManageInstancesContextBuilder<UpdateInstancesContextBuilder, UpdateInstancesContext> {
+    public static class UpdateInstancesContextBuilder
+        extends ManageInstancesContextBuilder<UpdateInstancesContextBuilder, UpdateInstancesContext> {
 
         @Override
         public UpdateInstancesContext build() {

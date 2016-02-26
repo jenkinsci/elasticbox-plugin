@@ -17,7 +17,7 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SlaveConfiguration;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
-import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.repository.api.BoxRepositoryApiImpl;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
@@ -57,7 +57,7 @@ public class BuildWithSingleUseViaLabelSlaveTest extends SlaveBuildTestBase {
         Assert.assertNotNull(MessageFormat.format("Cannot find slave box {0} in workspace {1}", slaveBoxName, workspace), slaveBox);
         String boxId = slaveBox.getString("id");
 
-        final List<PolicyBox> policies = new BoxRepositoryAPIImpl(client).getNoCloudFormationPolicyBoxes(workspace);
+        final List<PolicyBox> policies = new BoxRepositoryApiImpl(client).getNoCloudFormationPolicyBoxes(workspace);
 
         TestCase.assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", slaveBoxName, cloud.getDisplayName()), policies.size() > 0);
 

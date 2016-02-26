@@ -22,19 +22,17 @@ import org.apache.commons.lang.StringUtils;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by serna on 11/30/15.
- */
 public abstract class DeploymentDataTypeValidatorFactory {
 
     private static DeploymentDataTypeValidator[] deploymentDataTypesValidators = new DeploymentDataTypeValidator[]{
-                new CloudFormationManagedAbstractDeploymentDataValidator(),
-                new CloudFormationTemplateAbstractDeploymentDataValidator(),
-                new ApplicationBoxAbstractDeploymentDataValidator(),
-                new PolicyBasedAbstractDeploymentDataValidator()
+        new CloudFormationManagedAbstractDeploymentDataValidator(),
+        new CloudFormationTemplateAbstractDeploymentDataValidator(),
+        new ApplicationBoxAbstractDeploymentDataValidator(),
+        new PolicyBasedAbstractDeploymentDataValidator()
     };
 
-    public static DeploymentDataTypeValidator createValidator(final DeploymentType deploymentType) throws ServiceException {
+    public static DeploymentDataTypeValidator createValidator(final DeploymentType deploymentType)
+            throws ServiceException {
 
         final DeploymentDataTypeValidator validator = firstMatch(new DeploymentTypeCondition() {
             @Override
@@ -48,7 +46,7 @@ public abstract class DeploymentDataTypeValidatorFactory {
 
     private static DeploymentDataTypeValidator firstMatch(DeploymentTypeCondition condition) throws ServiceException {
         for (DeploymentDataTypeValidator validator : deploymentDataTypesValidators) {
-            if (condition.comply(validator)){
+            if (condition.comply(validator)) {
                 return validator;
             }
         }
@@ -57,7 +55,8 @@ public abstract class DeploymentDataTypeValidatorFactory {
     }
 
 
-    interface DeploymentTypeCondition{
-            boolean comply(DeploymentDataTypeValidator validator);
+    interface DeploymentTypeCondition {
+        boolean comply(DeploymentDataTypeValidator validator);
     }
+
 }

@@ -10,9 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by serna on 11/26/15.
- */
 public class ScriptBox extends AbstractBox implements ClaimsVsRequirementsDeployable {
 
     private String[] requirements;

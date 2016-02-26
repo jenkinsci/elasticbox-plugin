@@ -12,9 +12,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by serna on 12/3/15.
- */
 public class UnitTestingUtils {
 
     private static String twoBindingVariables = "[\n" +

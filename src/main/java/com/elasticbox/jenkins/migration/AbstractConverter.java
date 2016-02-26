@@ -14,17 +14,14 @@ package com.elasticbox.jenkins.migration;
 
 import com.thoughtworks.xstream.converters.UnmarshallingContext;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+
 import hudson.util.XStream2;
+
 import java.util.List;
 
-/**
- *
- * @author Phong Nguyen Le
- * @param <T>
- */
 public abstract class AbstractConverter<T> extends XStream2.PassthruConverter<T> {
 
-    public static abstract class Migrator<T> {
+    public abstract static class Migrator<T> {
         private final Version version;
 
         public Migrator(Version version) {
@@ -66,8 +63,11 @@ public abstract class AbstractConverter<T> extends XStream2.PassthruConverter<T>
         String plugin = reader.getAttribute("plugin");
         int end = plugin.endsWith("-SNAPSHOT") ? plugin.length() - "-SNAPSHOT".length() : plugin.length();
         String pluginVersion = plugin.substring("elasticbox@".length(), end);
+
         String[] versionParts = pluginVersion.split("\\.");
-        int major = 0, minor = 0, micro = 0;
+        int major = 0;
+        int minor = 0;
+        int micro = 0;
         if (versionParts.length > 0) {
             major = Integer.parseInt(versionParts[0]);
         }
@@ -77,6 +77,7 @@ public abstract class AbstractConverter<T> extends XStream2.PassthruConverter<T>
         if (versionParts.length > 2) {
             micro = Integer.parseInt(versionParts[2]);
         }
+
         return new Version(major, minor, micro);
     }
 

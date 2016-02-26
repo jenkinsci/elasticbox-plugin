@@ -17,9 +17,6 @@ package com.elasticbox.jenkins.model.repository.api.deserializer.transformer.box
 import com.elasticbox.jenkins.model.repository.api.deserializer.action.Action;
 import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.Transformer;
 
-/**
- * Created by serna on 11/29/15.
- */
 public interface BoxTransformer<T, R> extends Transformer<T, R> {
 
     public boolean shouldApply(T object);

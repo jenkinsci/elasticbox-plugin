@@ -14,6 +14,9 @@
 
 package com.elasticbox.jenkins.model.repository.api;
 
+import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.filter;
+import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.transform;
+
 import com.elasticbox.ApiClient;
 import com.elasticbox.jenkins.model.repository.WorkspaceRepository;
 import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
@@ -26,27 +29,22 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.filter;
-import static com.elasticbox.jenkins.model.repository.api.deserializer.Utils.transform;
 
-/**
- * Created by serna on 1/28/16.
- */
-public class WorkspacesRepositoryAPIImpl implements WorkspaceRepository {
+public class WorkspacesRepositoryApiImpl implements WorkspaceRepository {
 
-    private static final Logger logger = Logger.getLogger(WorkspacesRepositoryAPIImpl.class.getName());
+    private static final Logger logger = Logger.getLogger(WorkspacesRepositoryApiImpl.class.getName());
 
     private ApiClient client;
 
-    public WorkspacesRepositoryAPIImpl(ApiClient client) {
+    public WorkspacesRepositoryApiImpl(ApiClient client) {
         this.client = client;
     }
 
     @Override
-    public List<AbstractWorkspace> getWorkspaces() throws RepositoryException{
+    public List<AbstractWorkspace> getWorkspaces() throws RepositoryException {
         try {
             return transform(client.getWorkspaces(), new WorkspaceTransformer());
-      } catch (IOException e) {
+        } catch (IOException e) {
             logger.log(Level.SEVERE, "There is an error retrieving workspaces");
             throw new RepositoryException("There is an error retrieving workspaces");
         }
@@ -59,13 +57,14 @@ public class WorkspacesRepositoryAPIImpl implements WorkspaceRepository {
         try {
             workspaces = transform(client.getWorkspaces(), new WorkspaceTransformer());
             final List<AbstractWorkspace> filtered = filter(workspaces, new Filter<AbstractWorkspace>() {
-                        @Override
-                        public boolean apply(AbstractWorkspace it) {
-                            return it.getId().equals(workspace);
-                        }}
+                    @Override
+                    public boolean apply(AbstractWorkspace it) {
+                        return it.getId().equals(workspace);
+                    }
+                }
             );
 
-            if(!filtered.isEmpty()){
+            if (!filtered.isEmpty()) {
                 return filtered.get(0);
             }
 

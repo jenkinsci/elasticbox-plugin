@@ -14,10 +14,7 @@
 
 package com.elasticbox.jenkins.model.services.instances.execution.order;
 
-/**
- * Created by serna on 2/8/16.
- */
-public class UpdateInstancesOrder implements ManageInstanceOrder{
+public class UpdateInstancesOrder implements ManageInstanceOrder {
 
     private boolean waitForCompletion;
     private int waitForCompletionTimeout;
@@ -28,7 +25,15 @@ public class UpdateInstancesOrder implements ManageInstanceOrder{
     private String workspace;
 
 
-    public UpdateInstancesOrder(boolean waitForCompletion, String box, String boxVersion, String[] tags, String[] variables, String workspace, int waitForCompletionTimeout) {
+    public UpdateInstancesOrder(
+        boolean waitForCompletion,
+        String box,
+        String boxVersion,
+        String[] tags,
+        String[] variables,
+        String workspace,
+        int waitForCompletionTimeout) {
+
         this.waitForCompletionTimeout = waitForCompletionTimeout;
         this.waitForCompletion = waitForCompletion;
         this.box = box;

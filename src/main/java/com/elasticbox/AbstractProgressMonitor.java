@@ -12,14 +12,11 @@
 
 package com.elasticbox;
 
-import java.io.IOException;
-import java.text.MessageFormat;
 import net.sf.json.JSONObject;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.io.IOException;
+import java.text.MessageFormat;
+
 public abstract class AbstractProgressMonitor implements IProgressMonitor {
     private final String resourceUrl;
     private final long creationTime;
@@ -48,7 +45,9 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
         return isDone(getResource());
     }
 
-    public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException, InterruptedException {
+    public void waitForDone(int timeout)
+            throws IProgressMonitor.IncompleteException, IOException, InterruptedException {
+
         long startTime = System.currentTimeMillis();
         long remainingTime = timeout * 60000;
         do {
@@ -56,7 +55,7 @@ public abstract class AbstractProgressMonitor implements IProgressMonitor {
                 return;
             }
 
-            synchronized(this) {
+            synchronized (this) {
                 wait(1000);
             }
 

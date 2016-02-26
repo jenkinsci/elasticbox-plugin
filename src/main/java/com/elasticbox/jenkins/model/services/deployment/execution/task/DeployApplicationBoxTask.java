@@ -27,9 +27,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 12/9/15.
- */
 public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Instance>> {
 
     private static final Logger logger = Logger.getLogger(DeployApplicationBoxTask.class.getName());
@@ -46,9 +43,12 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
 
         try {
             final List<Instance> instancesToDeploy = context.getDeploymentOrderRepository().deploy(context);
-            if (instancesToDeploy.isEmpty()){
-                logger.log(Level.SEVERE, "There is no instances to deploy for this Application Box: "+context.getOrder().getName());
-                throw new TaskException("There is no instances to deploy for this Application Box: "+context.getOrder().getName());
+            if (instancesToDeploy.isEmpty()) {
+                logger.log(Level.SEVERE,
+                        "There is no instances to deploy for this Application Box: " + context.getOrder().getName());
+
+                throw new TaskException(
+                        "There is no instances to deploy for this Application Box: " + context.getOrder().getName());
             }
             this.result = instancesToDeploy;
 
@@ -57,7 +57,11 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
             throw new TaskException("Error executing task DeployApplicationBoxTask", e);
         }
 
-        logger.log(Level.INFO, "Deployment request executed for application box: "+context.getOrder().getName()+", waiting for instances to finish deployment");
+        logger.log(Level.INFO,
+                "Deployment request executed for application box: "
+                        + context.getOrder().getName()
+                        + ", waiting for instances to finish deployment");
+
         context.getLogger().info("Deployment request executed for application box: {0}", context.getOrder().getName());
     }
 
@@ -65,8 +69,8 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
     public boolean isDone() {
 
         final List<Instance> result = getResult();
-        if (result != null && !result.isEmpty()){
-            if(allDependingOnTasksDone()){
+        if (result != null && !result.isEmpty()) {
+            if (allDependingOnTasksDone()) {
                 return true;
             }
         }
@@ -74,8 +78,8 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
         return false;
     }
 
-    public List<Instance> succesfullyDeployedInstances(){
-        if (isDone()){
+    public List<Instance> succesfullyDeployedInstances() {
+        if (isDone()) {
             for (Task<?> task: getDependingOnTasks()) {
                 if (task instanceof CheckInstancesDeployedTask) {
                     CheckInstancesDeployedTask instancesDeployedTask = (CheckInstancesDeployedTask) task;
@@ -94,9 +98,13 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
                 onTask.setInstances(mainTaskResult);
 
                 for (Instance instance: mainTaskResult) {
-                    final String instancePageURL = instance.getInstancePageURL(context.getCloud().getEndpointUrl());
-                    context.getLogger().info("Waiting for the deployment of the instance {0} to finish", instancePageURL);
-                    logger.log(Level.INFO, "Waiting for the deployment of the instance "+instancePageURL+" to finish");
+                    final String instancePageUrl = instance.getInstancePageUrl(context.getCloud().getEndpointUrl());
+
+                    context.getLogger().info(
+                            "Waiting for the deployment of the instance {0} to finish", instancePageUrl);
+
+                    logger.log(Level.INFO,
+                            "Waiting for the deployment of the instance " + instancePageUrl + " to finish");
                 }
 
                 return true;
@@ -122,7 +130,7 @@ public class DeployApplicationBoxTask extends TaskDependingOnOtherTasks<List<Ins
 
         private ApplicationBoxDeploymentContext context;
 
-        public Builder withApplicationBoxDeploymentContext(ApplicationBoxDeploymentContext context){
+        public Builder withApplicationBoxDeploymentContext(ApplicationBoxDeploymentContext context) {
             this.context = context;
             this.timeout = new Long(Constants.DEFAULT_DEPLOYMENT_APPLICATION_BOX_TIMEOUT);
             return this;

@@ -15,16 +15,17 @@ package com.elasticbox.jenkins.util;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class JsonUtil {
 
     public static JSONObject find(JSONObject source, String arrayName, String key, Object value) {
+
         for (Object object : source.getJSONArray(arrayName)) {
+
             JSONObject json = (JSONObject) object;
-            if (json.containsKey(key) && ((value == null && json.getString(key) == null) || json.getString(key).equals(value))) {
+
+            if (json.containsKey(key) && ((value == null && json.getString(key) == null)
+                || json.getString(key).equals(value))) {
+
                 return json;
             }
         }
@@ -32,16 +33,22 @@ public class JsonUtil {
     }
 
     public static JSONArray createCloudFormationDeployVariables(String providerId, String location) {
-        JSONArray policyVariables = new JSONArray();
+
+
         JSONObject providerVariable = new JSONObject();
         providerVariable.put("type", "Text");
         providerVariable.put("name", "provider_id");
         providerVariable.put("value", providerId);
+
+        JSONArray policyVariables = new JSONArray();
         policyVariables.add(providerVariable);
+
         JSONObject locationVariable = new JSONObject();
+
         locationVariable.put("type", "Text");
         locationVariable.put("name", "location");
         locationVariable.put("value", location);
+
         return policyVariables;
     }
 

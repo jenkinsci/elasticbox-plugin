@@ -1,17 +1,12 @@
 package com.elasticbox.jenkins.model.box.cloudformation;
 
-import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.box.policy.PolicyBoxBuilder;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.profile.ProfileType;
 import com.elasticbox.jenkins.model.provider.ProviderType;
-import org.apache.commons.lang.StringUtils;
 
-/**
- * Created by serna on 11/29/15.
- */
 public class ManagedCloudFormationBox extends PolicyBox implements CloudFormationBox {
 
     private ManagedCloudFormationBox(ManagedCloudFormationPolicyBoxBuilder builder) {
@@ -43,7 +38,7 @@ public class ManagedCloudFormationBox extends PolicyBox implements CloudFormatio
         }
 
         @Override
-        public boolean isType(String schema){
+        public boolean isType(String schema) {
             return schema.endsWith(this.schema);
         }
 
@@ -55,15 +50,17 @@ public class ManagedCloudFormationBox extends PolicyBox implements CloudFormatio
         public static ManagedCloudFormationProfileType getType(String schema) throws ElasticBoxModelException {
             ManagedCloudFormationProfileType[] values = ManagedCloudFormationProfileType.values();
             for (ManagedCloudFormationProfileType type : values) {
-                if(type.isType(schema))
+                if (type.isType(schema)) {
                     return type;
+                }
             }
-            throw new ElasticBoxModelException("There is no profile type acording to this schema: "+schema);
+            throw new ElasticBoxModelException("There is no profile type acording to this schema: " + schema);
         }
 
     }
 
-    public static class ManagedCloudFormationPolicyBoxBuilder extends PolicyBoxBuilder<ManagedCloudFormationPolicyBoxBuilder,ManagedCloudFormationBox> {
+    public static class ManagedCloudFormationPolicyBoxBuilder
+        extends PolicyBoxBuilder<ManagedCloudFormationPolicyBoxBuilder,ManagedCloudFormationBox> {
 
 
         public ManagedCloudFormationPolicyBoxBuilder() {

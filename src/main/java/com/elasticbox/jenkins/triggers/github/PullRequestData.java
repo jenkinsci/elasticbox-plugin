@@ -13,18 +13,17 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import com.elasticbox.jenkins.util.ProjectData;
+
 import hudson.model.AbstractProject;
+
+import org.kohsuke.github.GHPullRequest;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import org.kohsuke.github.GHPullRequest;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class PullRequestData {
 
     public final URL pullRequestUrl;

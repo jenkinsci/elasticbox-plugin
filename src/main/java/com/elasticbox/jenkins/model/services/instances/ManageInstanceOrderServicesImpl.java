@@ -32,12 +32,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Created by serna on 2/8/16.
- */
 public class ManageInstanceOrderServicesImpl {
 
-    public ManageInstancesOrderResult<List<Instance>> update(UpdateInstancesContext updateInstancesContext){
+    public ManageInstancesOrderResult<List<Instance>> update(UpdateInstancesContext updateInstancesContext) {
 
         //TODO Adapt the business logic commented below to the new model(services -> model -> repositories)
 
@@ -96,6 +93,6 @@ public class ManageInstanceOrderServicesImpl {
 //        }
 
         return null;
-    };
+    }
 
 }

@@ -7,15 +7,9 @@ import com.elasticbox.jenkins.model.box.application.ApplicationBox;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.variable.Variable;
-import org.apache.commons.lang.StringUtils;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
 
-/**
- * Created by serna on 11/27/15.
- */
 public class Instance extends AbstractModel {
 
     public Instance(String id, String name, Operation operation, String schema, Service service, State state,
@@ -38,30 +32,37 @@ public class Instance extends AbstractModel {
     }
 
     public enum State {
+
         PROCESSING("processing"), DONE("done"), UNAVAILABLE("unavailable");
+
         private String value;
-        State(String value){
+
+        State(String value) {
             this.value = value;
         }
 
         public String getValue() {
             return value;
         }
+
         public static State findByValue(String state) throws ElasticBoxModelException {
             State[] values = State.values();
             for (State stateValue : values) {
-                if (stateValue.getValue().equals(state)){
+                if (stateValue.getValue().equals(state)) {
                     return stateValue;
                 }
             }
-            throw new ElasticBoxModelException("There is no Instance state for value: "+state);
+            throw new ElasticBoxModelException("There is no Instance state for value: " + state);
         }
 
     }
 
     public enum AutomaticUpdates {
+
         MAJOR("major"), MINOR("minor"), PATCH("patch"), OFF("off");
+
         private String value;
+
         AutomaticUpdates(String value) {
             this.value = value;
         }
@@ -69,14 +70,15 @@ public class Instance extends AbstractModel {
         public String getValue() {
             return value;
         }
+
         public static AutomaticUpdates findByValue(String automaticUpdates) throws ElasticBoxModelException {
             AutomaticUpdates [] values = AutomaticUpdates.values();
             for (AutomaticUpdates automaticUpdatesValue : values) {
-                if (automaticUpdatesValue.getValue().equals(automaticUpdates)){
+                if (automaticUpdatesValue.getValue().equals(automaticUpdates)) {
                     return automaticUpdatesValue;
                 }
             }
-            throw new ElasticBoxModelException("There is no Instance automatic updates for value: "+automaticUpdates);
+            throw new ElasticBoxModelException("There is no Instance automatic updates for value: " + automaticUpdates);
         }
     }
 
@@ -92,21 +94,24 @@ public class Instance extends AbstractModel {
         SNAPSHOT("snapshot");
 
         private String value;
-        OperationType(String value){
+
+        OperationType(String value) {
             this.value = value;
         }
 
         public String getValue() {
             return value;
         }
+
         public static OperationType findByValue(String operationType) throws ElasticBoxModelException {
             OperationType [] values = OperationType.values();
             for (OperationType operationTypeValue : values) {
-                if (operationTypeValue.getValue().equals(operationType)){
+                if (operationTypeValue.getValue().equals(operationType)) {
                     return operationTypeValue;
                 }
             }
-            throw new ElasticBoxModelException("There is no Instance operation type for value: "+operationType);
+
+            throw new ElasticBoxModelException("There is no Instance operation type for value: " + operationType);
         }
     }
 
@@ -127,12 +132,12 @@ public class Instance extends AbstractModel {
     private Operation operation;
     private Service service;
 
-    public String getInstancePageURL(String endpointUrl){
+    public String getInstancePageUrl(String endpointUrl) {
         return MessageFormat.format(Constants.INSTANCES_PAGE_URL_PATTERN, endpointUrl, getId(), getDasherizedName());
     }
 
-    public String getDasherizedName(){
-            return getName().replaceAll("[^a-z0-9-]", "-").toLowerCase();
+    public String getDasherizedName() {
+        return getName().replaceAll("[^a-z0-9-]", "-").toLowerCase();
     }
 
     public Service getService() {
@@ -195,7 +200,7 @@ public class Instance extends AbstractModel {
         return uri;
     }
 
-    public static class Service{
+    public static class Service {
         private String id;
 
         public Service(String id) {
@@ -207,7 +212,8 @@ public class Instance extends AbstractModel {
         }
     }
 
-    public static class Operation{
+    public static class Operation {
+
         private String workspace;
         private String created;
         private OperationType operationType;
@@ -259,8 +265,10 @@ public class Instance extends AbstractModel {
             return new BoxBuilder();
         }
 
-        public class BoxBuilder{
+        public class BoxBuilder {
+
             private BoxBuilder() {}
+
             public AutomaticUpdatesBuilder withBox(String newBox) {
                 box = newBox;
                 return new AutomaticUpdatesBuilder();
@@ -268,7 +276,9 @@ public class Instance extends AbstractModel {
         }
 
         public class AutomaticUpdatesBuilder {
+
             private AutomaticUpdatesBuilder() {}
+
             public BoxesBuilder withAutomaticUpdates(AutomaticUpdates newAutomaticUpdates) {
                 automaticUpdates = newAutomaticUpdates;
                 return new BoxesBuilder();
@@ -276,7 +286,9 @@ public class Instance extends AbstractModel {
         }
 
         public class BoxesBuilder {
+
             private BoxesBuilder() {}
+
             public NameBuilder withBoxes(AbstractBox [] newBoxes) {
                 boxes = newBoxes;
                 return new NameBuilder();
@@ -284,15 +296,19 @@ public class Instance extends AbstractModel {
         }
 
         public class NameBuilder {
+
             private NameBuilder() {}
+
             public OperationBuilder withName(String newName) {
-                 name = newName;
+                name = newName;
                 return new OperationBuilder();
             }
         }
 
         public class OperationBuilder {
+
             private OperationBuilder() {}
+
             public ServiceBuilder withOperation(Operation newOperation) {
                 operation = newOperation;
                 return new ServiceBuilder();
@@ -300,7 +316,9 @@ public class Instance extends AbstractModel {
         }
 
         public class ServiceBuilder {
+
             private ServiceBuilder() {}
+
             public StateBuilder withService(Service newService) {
                 service = newService;
                 return new StateBuilder();
@@ -308,7 +326,9 @@ public class Instance extends AbstractModel {
         }
 
         public class StateBuilder {
+
             private StateBuilder() {}
+
             public TagsBuilder withState(State newState) {
                 state = newState;
                 return new TagsBuilder();
@@ -316,7 +336,9 @@ public class Instance extends AbstractModel {
         }
 
         public class TagsBuilder {
+
             private TagsBuilder() {}
+
             public IdBuilder withTags(String [] newTags) {
                 tags = newTags;
                 return new IdBuilder();
@@ -324,23 +346,29 @@ public class Instance extends AbstractModel {
         }
 
         public class IdBuilder {
+
             private IdBuilder() {}
-            public URIBuilder withId(String newId) {
+
+            public UriBuilder withId(String newId) {
                 id = newId;
-                return new URIBuilder();
+                return new UriBuilder();
             }
         }
 
-        public class URIBuilder {
-            private URIBuilder() {}
-            public OwnerBuilder withURI(String newUri) {
+        public class UriBuilder {
+
+            private UriBuilder() {}
+
+            public OwnerBuilder withUri(String newUri) {
                 uri = newUri;
                 return new OwnerBuilder();
             }
         }
 
         public class OwnerBuilder {
+
             private OwnerBuilder() {}
+
             public InstanceBuilder withOwner(String newOwner) {
                 owner = newOwner;
                 return new InstanceBuilder();
@@ -348,14 +376,15 @@ public class Instance extends AbstractModel {
         }
 
         public class InstanceBuilder {
+
             private InstanceBuilder() {}
 
-            public InstanceBuilder withApplicationBox(ApplicationBox newApplicationBox){
+            public InstanceBuilder withApplicationBox(ApplicationBox newApplicationBox) {
                 applicationBox = newApplicationBox;
                 return this;
             }
 
-            public InstanceBuilder withPolicyBox(PolicyBox newPolicyBox){
+            public InstanceBuilder withPolicyBox(PolicyBox newPolicyBox) {
                 policyBox = newPolicyBox;
                 return this;
             }

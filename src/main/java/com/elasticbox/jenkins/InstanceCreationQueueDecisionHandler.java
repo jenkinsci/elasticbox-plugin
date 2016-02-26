@@ -20,27 +20,26 @@ import hudson.model.BuildableItemWithBuildWrappers;
 import hudson.model.Descriptor;
 import hudson.model.Queue;
 import hudson.model.labels.LabelAtom;
+
+import jenkins.model.Jenkins;
+
 import java.io.IOException;
+
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 @Extension
 public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHandler {
     private static final Logger LOGGER = Logger.getLogger(InstanceCreationQueueDecisionHandler.class.getName());
 
     @Override
-    public boolean shouldSchedule(Queue.Task p, List<Action> actions) {
-        if (p instanceof AbstractProject && p instanceof BuildableItemWithBuildWrappers) {
-            AbstractProject project = (AbstractProject) p;
+    public boolean shouldSchedule(Queue.Task task, List<Action> actions) {
+        if (task instanceof AbstractProject && task instanceof BuildableItemWithBuildWrappers) {
+            AbstractProject project = (AbstractProject) task;
             InstanceCreator instanceCreator = null;
             boolean singleUse = false;
-            for (Object buildWrapper : ((BuildableItemWithBuildWrappers) p).getBuildWrappersList().toMap().values()) {
+            for (Object buildWrapper : ((BuildableItemWithBuildWrappers)task).getBuildWrappersList().toMap().values()) {
                 if (buildWrapper instanceof InstanceCreator) {
                     instanceCreator = (InstanceCreator) buildWrapper;
                 } else if (buildWrapper instanceof SingleUseSlaveBuildOption) {
@@ -51,7 +50,7 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                 }
             }
             if (instanceCreator != null) {
-                for(Queue.Item item : Queue.getInstance().getItems(p)) {
+                for (Queue.Item item : Queue.getInstance().getItems(task)) {
                     boolean shouldScheduleItem = false;
                     for (Queue.QueueAction action: item.getActions(Queue.QueueAction.class)) {
                         shouldScheduleItem |= action.shouldSchedule(actions);
@@ -59,7 +58,7 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                     for (Queue.QueueAction action: Util.filter(actions,Queue.QueueAction.class)) {
                         shouldScheduleItem |= action.shouldSchedule(item.getActions());
                     }
-                    if(!shouldScheduleItem) {
+                    if (!shouldScheduleItem) {
                         return false;
                     }
                 }

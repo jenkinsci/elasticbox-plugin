@@ -67,9 +67,6 @@ import java.util.Set;
 import javax.net.ssl.SSLContext;
 
 
-/**
- * @author Phong Nguyen Le
- */
 public class Client implements ApiClient {
 
     public static final Set FINISH_STATES = new HashSet(Arrays.asList(InstanceState.DONE, InstanceState.UNAVAILABLE));
@@ -120,12 +117,12 @@ public class Client implements ApiClient {
         return MessageFormat.format("{0}/services/instances/{1}", endpointUrl, instanceId);
     }
 
-    public static final String getInstancePageUrl(String endpointUrl, String instanceId) {
-        return getPageUrl(endpointUrl, getInstanceUrl(endpointUrl, instanceId));
+    public String getInstanceUrl(String instanceId) {
+        return getInstanceUrl(endpointUrl, instanceId);
     }
 
-    public static final String getResourceId(String resourceUrl) {
-        return resourceUrl != null ? resourceUrl.substring(resourceUrl.lastIndexOf('/') + 1) : null;
+    public String getPageUrl(JSONObject resource) {
+        return getPageUrl(endpointUrl, resource);
     }
 
     public static final String getPageUrl(String endpointUrl, String resourceUrl) {
@@ -163,6 +160,14 @@ public class Client implements ApiClient {
         return null;
     }
 
+    public static final String getInstancePageUrl(String endpointUrl, String instanceId) {
+        return getPageUrl(endpointUrl, getInstanceUrl(endpointUrl, instanceId));
+    }
+
+    public static final String getResourceId(String resourceUrl) {
+        return resourceUrl != null ? resourceUrl.substring(resourceUrl.lastIndexOf('/') + 1) : null;
+    }
+
     private static String dasherize(String str) {
         return str.replaceAll("[^a-z0-9-]", "-");
     }
@@ -179,10 +184,12 @@ public class Client implements ApiClient {
 
                 SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustStrategy() {
                     @Override
-                    public boolean isTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                    public boolean isTrusted(X509Certificate[] x509Certificates, String authType)
+                            throws CertificateException {
+
                         return true;
                     }
-                }).build();
+                    }).build();
 
                 httpClientBuilder.setSslcontext(sslContext);
 
@@ -310,7 +317,9 @@ public class Client implements ApiClient {
                 contentType = mimeType != null ? ContentType.create(mimeType) : ContentType.DEFAULT_BINARY;
             }
             String[] segments = fileUrl.getPath().split("/");
-            entityBuilder.addBinaryBody("blob", connection.getInputStream(), contentType, segments[segments.length - 1]);
+
+            entityBuilder.addBinaryBody(
+                    "blob", connection.getInputStream(), contentType, segments[segments.length - 1]);
         }
         HttpPost post = new HttpPost(prepareUrl("/services/blobs/upload"));
         post.setEntity(entityBuilder.build());
@@ -525,7 +534,7 @@ public class Client implements ApiClient {
         if (variables != null && !variables.isEmpty()) {
             JSONArray instanceBoxes = instance.getJSONArray("boxes");
             JSONObject mainBox = instanceBoxes.getJSONObject(0);
-            JSONArray boxStack = new BoxStack(mainBox.getString("id"), instanceBoxes, this).toJSONArray();
+            JSONArray boxStack = new BoxStack(mainBox.getString("id"), instanceBoxes, this).toJsonArray();
             JSONArray boxVariables = new JSONArray();
             for (Object box : boxStack) {
                 boxVariables.addAll(((JSONObject) box).getJSONArray("variables"));
@@ -572,7 +581,7 @@ public class Client implements ApiClient {
             JSONArray instanceBoxes = instance.getJSONArray("boxes");
             JSONObject mainBox = instanceBoxes.getJSONObject(0);
             BoxStack boxStack = new BoxStack(mainBox.getString("id"), instanceBoxes, this);
-            JSONArray stackBoxes = boxStack.toJSONArray();
+            JSONArray stackBoxes = boxStack.toJsonArray();
             JSONObject boxVersionJson = boxStack.findBox(boxVersion);
             if (boxVersionJson == null) {
                 throw new IOException(
@@ -641,7 +650,7 @@ public class Client implements ApiClient {
         }
 
         if (variables != null && !variables.isEmpty()) {
-            JSONArray boxStack = new BoxStack(boxId, getBoxStack(boxId), this).toJSONArray();
+            JSONArray boxStack = new BoxStack(boxId, getBoxStack(boxId), this).toJsonArray();
             JSONArray boxVariables = new JSONArray();
             for (Object stackBox : boxStack) {
                 boxVariables.addAll(((JSONObject) stackBox).getJSONArray("variables"));
@@ -794,10 +803,15 @@ public class Client implements ApiClient {
         JSONObject instance = (JSONObject) doGet(instanceUrl, false);
         String state = instance.getString("state");
         String operation = instance.getJSONObject("operation").getString("event");
-        String terminateOperation = (
-                state.equals(InstanceState.DONE) && ON_OPERATIONS.contains(operation)) ||
-                (state.equals(InstanceState.UNAVAILABLE)
-                        && operation.equals(InstanceOperation.TERMINATE)) ? "terminate" : "force_terminate";
+
+        String terminateOperation = null;
+        if ((state.equals(InstanceState.DONE) && ON_OPERATIONS.contains(operation))
+                || (state.equals(InstanceState.UNAVAILABLE) && operation.equals(InstanceOperation.TERMINATE))) {
+
+            terminateOperation = "terminate";
+        } else {
+            terminateOperation = "force_terminate";
+        }
 
         return doTerminate(instanceUrl, terminateOperation);
     }
@@ -807,11 +821,14 @@ public class Client implements ApiClient {
     }
 
     public IProgressMonitor poweron(String instanceId) throws IOException {
+
         JSONObject instance = getInstance(instanceId);
+
         String state = instance.getString("state");
-        if (ON_OPERATIONS.contains(
-                instance.getJSONObject("operation").getString("event")) &&
-                    (InstanceState.DONE.equals(state) || InstanceState.PROCESSING.equals(state))) {
+
+        if (ON_OPERATIONS.contains(instance.getJSONObject("operation").getString("event"))
+                && (InstanceState.DONE.equals(state) || InstanceState.PROCESSING.equals(state))) {
+
             return new IProgressMonitor.DoneMonitor(getInstanceUrl(instanceId));
         }
 
@@ -943,14 +960,6 @@ public class Client implements ApiClient {
                 EntityUtils.consumeQuietly(response.getEntity());
             }
         }
-    }
-
-    public String getPageUrl(JSONObject resource) {
-        return getPageUrl(endpointUrl, resource);
-    }
-
-    public String getInstanceUrl(String instanceId) {
-        return getInstanceUrl(endpointUrl, instanceId);
     }
 
     public String getProviderUrl(String providerId) {
@@ -1095,8 +1104,10 @@ public class Client implements ApiClient {
             String updated = instance.getString("updated");
             String state = instance.getString("state");
             String operation = instance.getJSONObject("operation").getString("event");
-            if (lastModified.equals(updated) || !FINISH_STATES.contains(state) ||
-                    (operations != null && !operations.contains(operation))) {
+            if (lastModified.equals(updated)
+                    || !FINISH_STATES.contains(state)
+                    || (operations != null && !operations.contains(operation))) {
+
                 return false;
             }
 

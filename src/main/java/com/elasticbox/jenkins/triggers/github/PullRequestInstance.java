@@ -12,10 +12,6 @@
 
 package com.elasticbox.jenkins.triggers.github;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class PullRequestInstance {
     public final String id;
     public final String cloud;

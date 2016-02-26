@@ -16,11 +16,7 @@ package com.elasticbox.jenkins.model.commands;
 
 import com.elasticbox.Constants;
 
-/**
- * Created by serna on 1/8/16.
- */
 public class ReconfigureInstanceCommand extends AbstractCommand {
-
 
     @Override
     boolean canHandle(DeploymentContext context) {

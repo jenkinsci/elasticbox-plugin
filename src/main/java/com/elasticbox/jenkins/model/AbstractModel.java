@@ -1,8 +1,5 @@
 package com.elasticbox.jenkins.model;
 
-/**
- * Created by serna on 11/27/15.
- */
 public class AbstractModel {
 
     private String id;

@@ -19,13 +19,11 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import java.io.IOException;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.io.IOException;
+
 public class SingleUseSlaveBuildOption extends BuildWrapper {
 
     @DataBoundConstructor
@@ -34,11 +32,15 @@ public class SingleUseSlaveBuildOption extends BuildWrapper {
     }
 
     @Override
-    public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+    public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
+        throws IOException, InterruptedException {
+
         return new Environment() {
 
             @Override
-            public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
+            public boolean tearDown(AbstractBuild build, BuildListener listener)
+                throws IOException, InterruptedException {
+
                 return true;
             }
 

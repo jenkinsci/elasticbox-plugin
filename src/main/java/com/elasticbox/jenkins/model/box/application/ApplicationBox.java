@@ -11,16 +11,13 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
 
-/**
- * Created by serna on 11/26/15.
- */
 public class ApplicationBox extends AbstractBox {
 
     public ApplicationBox(ApplicationBoxBuilder builder) {
         super(builder);
     }
 
-    public static class ApplicationBoxBuilder extends AbstractBox.ComplexBuilder<ApplicationBoxBuilder, ApplicationBox> {
+    public static class ApplicationBoxBuilder extends AbstractBox.ComplexBuilder<ApplicationBoxBuilder,ApplicationBox> {
 
         public ApplicationBoxBuilder() {
             this.type = BoxType.APPLICATION;

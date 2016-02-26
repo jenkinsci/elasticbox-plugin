@@ -14,10 +14,6 @@ package com.elasticbox.jenkins.util;
 
 import net.sf.json.JSONObject;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public interface ObjectFilter {
 
     public boolean accept(JSONObject instance);

@@ -6,10 +6,10 @@ import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
 import com.elasticbox.jenkins.model.repository.InstanceRepository;
 import com.elasticbox.jenkins.model.repository.WorkspaceRepository;
-import com.elasticbox.jenkins.model.repository.api.BoxRepositoryAPIImpl;
-import com.elasticbox.jenkins.model.repository.api.DeploymentOrderRepositoryAPIImpl;
-import com.elasticbox.jenkins.model.repository.api.InstanceRepositoryAPIImpl;
-import com.elasticbox.jenkins.model.repository.api.WorkspacesRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.repository.api.BoxRepositoryApiImpl;
+import com.elasticbox.jenkins.model.repository.api.DeploymentOrderRepositoryApiImpl;
+import com.elasticbox.jenkins.model.repository.api.InstanceRepositoryApiImpl;
+import com.elasticbox.jenkins.model.repository.api.WorkspacesRepositoryApiImpl;
 import com.elasticbox.jenkins.model.services.deployment.configuration.policies.AbstractDeploymentDataPoliciesHandler;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.AbstractBoxDeploymentContext;
 import com.elasticbox.jenkins.model.services.deployment.execution.deployers.BoxDeployer;
@@ -20,6 +20,7 @@ import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
+
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,10 +40,10 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
 
     public DeployBoxOrderServiceImpl(ApiClient client) {
 
-        this.boxRepository = new BoxRepositoryAPIImpl(client);
-        this.instanceRepository = new InstanceRepositoryAPIImpl(client);
-        this.deploymentOrderRepository =  new DeploymentOrderRepositoryAPIImpl(client);
-        this.workspacesRepository = new WorkspacesRepositoryAPIImpl(client);
+        this.boxRepository = new BoxRepositoryApiImpl(client);
+        this.instanceRepository = new InstanceRepositoryApiImpl(client);
+        this.deploymentOrderRepository =  new DeploymentOrderRepositoryApiImpl(client);
+        this.workspacesRepository = new WorkspacesRepositoryApiImpl(client);
     }
 
     @Override
@@ -54,8 +55,8 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
             return type;
 
         } catch (RepositoryException e) {
-            logger.log(Level.SEVERE, "Impossible to retrieve box: "+boxToDeploy);
-            throw new ServiceException("Impossible to retrieve box: "+boxToDeploy);
+            logger.log(Level.SEVERE, "Impossible to retrieve box: " + boxToDeploy);
+            throw new ServiceException("Impossible to retrieve box: " + boxToDeploy);
         }
     }
 
@@ -67,45 +68,65 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
             return new DeployBoxOrderResult<List<AbstractBox>>(updateableBoxes);
 
         } catch (RepositoryException e) {
-            logger.log(Level.SEVERE, "Impossible to retrieve updateable boxes (no policies neither application boxes) for workspace: "+workspace);
-            throw new ServiceException("Impossible to retrieve updateable boxes (no policies neither application boxes) for workspace: "+workspace);
+            logger.log(
+                    Level.SEVERE,
+                    "Impossible to retrieve updateable boxes (no policies neither application boxes) for workspace: "
+                            + workspace);
+
+            throw new ServiceException(
+                    "Impossible to retrieve updateable boxes (no policies neither application boxes) for workspace: "
+                            + workspace);
         }
     }
 
 
     @Override
-    public DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException{
+    public DeployBoxOrderResult<List<AbstractBox>> getBoxesToDeploy(String workspace) throws ServiceException {
         try {
             final List<AbstractBox> noPolicyBoxes = boxRepository.getNoPolicyBoxes(workspace);
             return new DeployBoxOrderResult<List<AbstractBox>>(noPolicyBoxes);
 
         } catch (RepositoryException e) {
-            logger.log(Level.SEVERE, "Impossible to get boxes o deploy for workspace: "+workspace);
-            throw new ServiceException("Impossible to get boxes to deploy for workspace: "+workspace);
+            logger.log(Level.SEVERE, "Impossible to get boxes o deploy for workspace: " + workspace);
+            throw new ServiceException("Impossible to get boxes to deploy for workspace: " + workspace);
         }
     }
 
 
     @Override
-    public DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy) throws ServiceException {
+    public DeployBoxOrderResult<List<PolicyBox>> deploymentPolicies(String workspace, String boxToDeploy)
+            throws ServiceException {
 
         try {
             final AbstractBox box = boxRepository.getBox(boxToDeploy);
-            final List<PolicyBox> policies = AbstractDeploymentDataPoliciesHandler.getPolicies(boxRepository, workspace, box);
+
+            final List<PolicyBox> policies =
+                    AbstractDeploymentDataPoliciesHandler.getPolicies(boxRepository, workspace, box);
+
             return new DeployBoxOrderResult<List<PolicyBox>>(policies);
 
         } catch (RepositoryException e) {
-            logger.log(Level.SEVERE, "Impossible to get policies for workspace: "+workspace+", box: "+boxToDeploy);
-            throw new ServiceException("Impossible to get policies for workspace: "+workspace+", box: "+boxToDeploy);
+
+            logger.log(
+                    Level.SEVERE,
+                    "Impossible to get policies for workspace: " + workspace + ", box: " + boxToDeploy);
+
+            throw new ServiceException(
+                    "Impossible to get policies for workspace: " + workspace + ", box: " + boxToDeploy);
         }
 
     }
 
     @Override
-    public DeployBoxOrderResult<AbstractWorkspace> findWorkspaceOrFirstByDefault(String workspace) throws ServiceException {
+    public DeployBoxOrderResult<AbstractWorkspace> findWorkspaceOrFirstByDefault(String workspace)
+            throws ServiceException {
+
         try {
-            final AbstractWorkspace workspaceOrFirstByDefault = workspacesRepository.findWorkspaceOrFirstByDefault(workspace);
+            final AbstractWorkspace workspaceOrFirstByDefault =
+                    workspacesRepository.findWorkspaceOrFirstByDefault(workspace);
+
             return new DeployBoxOrderResult<AbstractWorkspace>(workspaceOrFirstByDefault);
+
         } catch (RepositoryException e) {
             logger.log(Level.SEVERE, "Impossible retrieve workspaces", e);
             throw new ServiceException("Impossible retrieve workspaces",e);
@@ -126,7 +147,8 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
         }
     }
 
-    public <T extends AbstractBoxDeploymentContext>DeployBoxOrderResult<List<Instance>> deploy(T context) throws ServiceException{
+    public <T extends AbstractBoxDeploymentContext> DeployBoxOrderResult<List<Instance>> deploy(T context)
+            throws ServiceException {
 
         context.setBoxRepository(boxRepository);
         context.setDeploymentOrderRepository(deploymentOrderRepository);
@@ -152,8 +174,8 @@ public class DeployBoxOrderServiceImpl implements DeployBoxOrderService {
             return new DeployBoxOrderResult<AbstractBox>(boxOrFirstByDefault);
 
         } catch (RepositoryException e) {
-            logger.log(Level.SEVERE, "Error getting box: " + box+ " for workspace: "+workspace, e);
-            throw new ServiceException("Error getting box: " + box+ " for workspace: "+workspace, e);
+            logger.log(Level.SEVERE, "Error getting box: " + box + " for workspace: " + workspace, e);
+            throw new ServiceException("Error getting box: " + box + " for workspace: " + workspace, e);
         }
     }
 }

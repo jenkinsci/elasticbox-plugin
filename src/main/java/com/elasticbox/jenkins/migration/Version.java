@@ -12,15 +12,14 @@
 
 package com.elasticbox.jenkins.migration;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class Version implements Comparable<Version> {
+
     public static final Version _0_9_3 = new Version(0, 9, 3);
     public static final Version _4_0_3 = new Version(4, 0, 3);
 
-    public final int major, minor, micro;
+    public final int major;
+    public final int minor;
+    public final int micro;
 
     public Version(int major, int minor, int micro) {
         this.major = major;
@@ -39,10 +38,10 @@ public class Version implements Comparable<Version> {
         return result;
     }
 
-    public int compare(int a, int b) {
-        if (a > b) {
+    public int compare(int versionA, int versionB) {
+        if (versionA > versionB) {
             return 1;
-        } else if (a < b) {
+        } else if (versionA < versionB) {
             return -1;
         } else {
             return 0;

@@ -36,9 +36,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
-/**
- * Created by serna on 12/7/15.
- */
 public class TestUpdateInstanceTask {
 
     @Test

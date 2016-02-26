@@ -22,10 +22,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by serna on 11/29/15.
- * Tests the JSON to Objects parsing
- */
 public class InstanceFactoryTest {
 
 

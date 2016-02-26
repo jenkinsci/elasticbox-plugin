@@ -30,33 +30,31 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+public class InstanceRepositoryApiImpl implements InstanceRepository {
 
-/**
- * Created by serna on 11/26/15.
- */
-    public class InstanceRepositoryAPIImpl implements InstanceRepository {
-
-    private static final Logger logger = Logger.getLogger(InstanceRepositoryAPIImpl.class.getName());
+    private static final Logger logger = Logger.getLogger(InstanceRepositoryApiImpl.class.getName());
 
     private ApiClient client;
 
-    public InstanceRepositoryAPIImpl(ApiClient client) {
+    public InstanceRepositoryApiImpl(ApiClient client) {
         this.client = client;
     }
 
     @Override
     public Instance getInstance(String instanceId) throws RepositoryException {
-        try{
-
+        try {
 
             JSONObject jsonObject = client.getInstance(instanceId);
+
             return new InstanceTransformer().apply(jsonObject);
+
         } catch (IOException e) {
-            logger.log(Level.SEVERE,"There is an error retrieving instance: "+instanceId+" from the API",e);
-            throw new RepositoryException("Error retrieving instance: "+instanceId+" from API");
+
+            logger.log(Level.SEVERE,"There is an error retrieving instance: " + instanceId + " from the API",e);
+            throw new RepositoryException("Error retrieving instance: " + instanceId + " from API");
         } catch (ElasticBoxModelException e) {
-            logger.log(Level.SEVERE, "Error converting instance: "+instanceId+" from JSON", e);
-            throw new RepositoryException("Error converting instance: "+instanceId+" from JSON");
+            logger.log(Level.SEVERE, "Error converting instance: " + instanceId + " from JSON", e);
+            throw new RepositoryException("Error converting instance: " + instanceId + " from JSON");
         }
     }
 
@@ -65,16 +63,24 @@ import java.util.logging.Logger;
 
         try {
             List<Instance> instances = new ArrayList<>();
-            final JSONArray instancesJSONArray = client.getInstances(workspace, Arrays.asList(id));
-            for (Object jsonElement : instancesJSONArray) {
+
+            final JSONArray instancesJsonArray = client.getInstances(workspace, Arrays.asList(id));
+
+            for (Object jsonElement : instancesJsonArray) {
                 JSONObject jsonInstance = (JSONObject) jsonElement;
                 final Instance instance =  new InstanceTransformer().apply(jsonInstance);
                 instances.add(instance);
             }
+
             return instances;
+
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "There is an error retrieving instances: " + Arrays.asList(id) + " for workspace: "+workspace, e);
-            throw new RepositoryException("There is an error retrieving instances: " + Arrays.asList(id) + " for workspace: "+workspace);
+            logger.log(
+                Level.SEVERE,
+                "There is an error retrieving instances: " + Arrays.asList(id) + " for workspace: " + workspace, e);
+
+            throw new RepositoryException(
+                "There is an error retrieving instances: " + Arrays.asList(id) + " for workspace: " + workspace);
         }
     }
 }

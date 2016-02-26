@@ -17,22 +17,25 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
+
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  *
- * @author Phong Nguyen Le
- * @deprecated
+ * @author Phong Nguyen Le.
+ * @deprecated The Operation alternative should be used.
  */
 public class StopBox extends InstanceBuildStep {
 
@@ -42,7 +45,9 @@ public class StopBox extends InstanceBuildStep {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
+        throws InterruptedException, IOException {
+
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Stop Box build step");
 

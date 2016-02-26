@@ -17,6 +17,7 @@ import com.cloudbees.jenkins.GitHubRepositoryName;
 import com.coravy.hudson.plugins.github.GithubProjectProperty;
 import com.elasticbox.jenkins.ElasticBoxExecutor;
 import com.elasticbox.jenkins.triggers.IBuildHandler;
+
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Executor;
@@ -33,20 +34,9 @@ import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.util.BuildData;
 import hudson.security.ACL;
 import hudson.util.SequentialExecutionQueue;
-import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
+
 import jenkins.model.Jenkins;
+
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.apache.commons.lang.StringUtils;
@@ -60,11 +50,22 @@ import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.GitHub;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
 public class PullRequestBuildHandler implements IBuildHandler {
+
     public static final String PR_NUMBER = "PR_NUMBER";
     public static final String PR_BRANCH = "PR_BRANCH";
     public static final String BUILD_REQUESTER = "BUILD_REQUESTER";
@@ -76,8 +77,12 @@ public class PullRequestBuildHandler implements IBuildHandler {
     public static final String PR_URL = "PR_URL";
 
     private static final Logger LOGGER = Logger.getLogger(PullRequestBuildHandler.class.getName());
-    private static final SequentialExecutionQueue sequentialExecutionQueue = new SequentialExecutionQueue(ElasticBoxExecutor.threadPool);
-    private static final Collection<GHEvent> WEBHOOK_EVENTS = Arrays.asList(GHEvent.PULL_REQUEST, GHEvent.ISSUE_COMMENT);
+
+    private static final SequentialExecutionQueue sequentialExecutionQueue
+        = new SequentialExecutionQueue(ElasticBoxExecutor.threadPool);
+
+    private static final Collection<GHEvent> WEBHOOK_EVENTS
+        = Arrays.asList(GHEvent.PULL_REQUEST, GHEvent.ISSUE_COMMENT);
 
     private final AbstractProject<?, ?> project;
     private final Pattern triggerPhrasePattern;
@@ -86,9 +91,15 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
     public PullRequestBuildHandler(AbstractProject<?, ?> project, boolean newTrigger) throws IOException {
         this.project = project;
+
         final GithubProjectProperty property = project.getProperty(GithubProjectProperty.class);
-        if (property == null || property.getProjectUrl() == null || StringUtils.isBlank(property.getProjectUrl().baseUrl())) {
-            throw new IOException(MessageFormat.format("GitHub project URL must be specified for project {0}", project.getFullName()));
+
+        if (property == null
+            || property.getProjectUrl() == null
+            || StringUtils.isBlank(property.getProjectUrl().baseUrl())) {
+
+            throw new IOException(
+                MessageFormat.format("GitHub project URL must be specified for project {0}", project.getFullName()));
         }
 
         String gitHubProjectUrl = property.getProjectUrl().baseUrl().trim();
@@ -99,7 +110,10 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
         GHRepository repo = gitHubRepoName.resolveOne();
         if (repo == null) {
-            LOGGER.severe(MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials", gitHubRepoName));
+            LOGGER.severe(
+                MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials",
+                    gitHubRepoName));
+
             gitHubRepositoryUrl = gitHubProjectUrl;
         } else {
             gitHubRepositoryUrl = repo.getHtmlUrl().toString();
@@ -128,19 +142,39 @@ public class PullRequestBuildHandler implements IBuildHandler {
             // The construction of webhook URL requires Jenkins root URL which might be null if it is not manually
             // configured and it is retrieved in a separate thread without request context. So the webhook URL is first
             // retrieved here.
-            PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class);
-            final String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl()) ? descriptor.getWebHookUrl() : descriptor.getWebHookExternalUrl();
+            PullRequestBuildTrigger.DescriptorImpl descriptor
+                = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance()
+                                                                    .getDescriptor(PullRequestBuildTrigger.class);
+
+            final String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl())
+                ? descriptor.getWebHookUrl()
+                : descriptor.getWebHookExternalUrl();
+
             if (webhookUrl == null) {
-                LOGGER.warning(MessageFormat.format("Cannot add webhook to GitHub repository {0}. Please configure Jenkins URL or Webhook External URL for {1}", gitHubRepositoryUrl, descriptor.getDisplayName()));
+                LOGGER.warning(
+                    MessageFormat.format(
+                        "Cannot add webhook to GitHub repository {0}. "
+                            + "Please configure Jenkins URL or Webhook External URL for {1}",
+                        gitHubRepositoryUrl,
+                        descriptor.getDisplayName()));
+
             } else {
-                LOGGER.info(MessageFormat.format("Adding webhook {0} to GitHub repository {1}", webhookUrl, gitHubRepositoryUrl));
+                LOGGER.info(
+                    MessageFormat.format("Adding webhook {0} to GitHub repository {1}",
+                        webhookUrl,
+                        gitHubRepositoryUrl));
+
                 sequentialExecutionQueue.execute(new Runnable() {
 
                     public void run() {
                         try {
                             createWebHook(webhookUrl);
                         } catch (Throwable ex) {
-                            LOGGER.log(Level.SEVERE, MessageFormat.format("Error adding webhook to GitHub repository {0}", gitHubRepositoryUrl), ex);
+                            LOGGER.log(
+                                Level.SEVERE,
+                                MessageFormat.format("Error adding webhook to GitHub repository {0}",
+                                    gitHubRepositoryUrl),
+                                ex);
                         }
                     }
                 });
@@ -153,22 +187,41 @@ public class PullRequestBuildHandler implements IBuildHandler {
     }
 
     private void configureGit(GitHubRepositoryName gitHubRepoName, PullRequestBuildTrigger trigger) throws IOException {
+
         if (project.getScm() instanceof GitSCM) {
             GitSCM git = (GitSCM) project.getScm();
             List<UserRemoteConfig> userRemoteConfigs = new ArrayList<UserRemoteConfig>();
-            if (git.getUserRemoteConfigs().isEmpty() || (git.getUserRemoteConfigs().size() == 1 &&
-                    StringUtils.isBlank(git.getUserRemoteConfigs().get(0).getUrl()))) {
-                LOGGER.info(MessageFormat.format("Git is selected as SCM of project {0} but not yet configured, configuring it",
+
+            if (git.getUserRemoteConfigs().isEmpty()
+                || (git.getUserRemoteConfigs().size() == 1
+                    && StringUtils.isBlank(git.getUserRemoteConfigs().get(0).getUrl()))) {
+
+                LOGGER.info(
+                    MessageFormat.format(
+                        "Git is selected as SCM of project {0} but not yet configured, configuring it",
                         project.getFullName()));
-                String url = MessageFormat.format("https://{0}/{1}/{2}.git", gitHubRepoName.getHost(),
-                        gitHubRepoName.getUserName(), gitHubRepoName.getRepositoryName());
-                userRemoteConfigs.add(new UserRemoteConfig(url, "origin", "+refs/pull/*:refs/remotes/origin/pr/*", null));
+
+                String url = MessageFormat.format(
+                    "https://{0}/{1}/{2}.git",
+                    gitHubRepoName.getHost(),
+                    gitHubRepoName.getUserName(),
+                    gitHubRepoName.getRepositoryName());
+
+                userRemoteConfigs.add(
+                    new UserRemoteConfig(url, "origin", "+refs/pull/*:refs/remotes/origin/pr/*", null));
+
                 List<BranchSpec> branches = new ArrayList<BranchSpec>();
+
                 branches.add(new BranchSpec("${PR_COMMIT}"));
                 GitSCM updatedGit = new GitSCM(userRemoteConfigs, branches, git.isDoGenerateSubmoduleConfigurations(),
                         git.getSubmoduleCfg(), git.getBrowser(), git.getGitTool(), git.getExtensions());
+
                 project.setScm(updatedGit);
-                LOGGER.info(MessageFormat.format("Git is configured to work with {0}", trigger.getDescriptor().getDisplayName()));
+
+                LOGGER.info(
+                    MessageFormat.format(
+                        "Git is configured to work with {0}",
+                        trigger.getDescriptor().getDisplayName()));
             }
         }
     }
@@ -179,7 +232,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
             // check if the webhook already exists
             for (GHHook hook : repo.getHooks()) {
                 if ("web".equals(hook.getName()) && webhookUrl.equals(hook.getConfig().get("url"))) {
-                    LOGGER.info(MessageFormat.format("Webhook {0} already exists for {1}", webhookUrl, gitHubRepositoryUrl));
+                    LOGGER.info(
+                        MessageFormat.format("Webhook {0} already exists for {1}", webhookUrl, gitHubRepositoryUrl));
                     return hook;
                 }
             }
@@ -188,13 +242,30 @@ public class PullRequestBuildHandler implements IBuildHandler {
                 config.put("url", webhookUrl);
                 config.put("insecure_ssl", "1");
                 GHHook hook = repo.createHook("web", config, WEBHOOK_EVENTS, true);
-                LOGGER.info(MessageFormat.format("Webhook {0} is added to GitHub repository {1}", webhookUrl, gitHubRepositoryUrl));
+                LOGGER.info(
+                    MessageFormat.format(
+                        "Webhook {0} is added to GitHub repository {1}",
+                        webhookUrl,
+                        gitHubRepositoryUrl));
+
                 return hook;
             } catch (IOException e) {
-                LOGGER.log(Level.FINEST, MessageFormat.format("Failed to add webhook {0} to GitHub repository {1}", webhookUrl, gitHubRepositoryUrl), e);
+                LOGGER.log(
+                    Level.FINEST,
+                    MessageFormat.format("Failed to add webhook {0} to GitHub repository {1}",
+                        webhookUrl,
+                        gitHubRepositoryUrl),
+                    e);
             }
         }
-        LOGGER.warning(MessageFormat.format("Cannot add webhook {0} to GitHub repository {1}. Make sure that you specified a valid GitHub credential for GitHub project {1} in Jenkins configuration.", webhookUrl, gitHubRepositoryUrl));
+        LOGGER.warning(
+            MessageFormat.format(
+                "Cannot add webhook {0} to GitHub repository {1}. "
+                    + "Make sure that you specified a valid GitHub credential for GitHub project {1} in Jenkins "
+                    + "configuration.",
+                webhookUrl,
+                gitHubRepositoryUrl));
+
         return null;
     }
 
@@ -202,11 +273,22 @@ public class PullRequestBuildHandler implements IBuildHandler {
         GHPullRequest pullRequest = prEventPayload.getPullRequest();
         String pullRequestUrl = pullRequest.getHtmlUrl().toString();
         if (!pullRequestUrl.startsWith(gitHubRepositoryUrl)) {
-            LOGGER.finest(MessageFormat.format("Pull request {0} is not related to project {1}. GitHub project URL configured for project {1}: {2}",
-                    pullRequestUrl, project.getFullName(), gitHubRepositoryUrl));
+            LOGGER.finest(
+                MessageFormat.format(
+                    "Pull request {0} is not related to project {1}. "
+                        + "GitHub project URL configured for project {1}: {2}",
+                    pullRequestUrl,
+                    project.getFullName(),
+                    gitHubRepositoryUrl));
             return;
         }
-        LOGGER.info(MessageFormat.format("Handling event ''{0}'' of pull request {1} for project {2}", prEventPayload.getAction(), pullRequestUrl, project.getFullName()));
+
+        LOGGER.info(
+            MessageFormat.format("Handling event ''{0}'' of pull request {1} for project {2}",
+                prEventPayload.getAction(),
+                pullRequestUrl,
+                project.getFullName()));
+
         PullRequestManager pullRequestManager = PullRequestManager.getInstance();
         PullRequestData pullRequestData = pullRequestManager.getPullRequestData(pullRequestUrl, project);
         if (PullRequestManager.PullRequestAction.CLOSED.equals(prEventPayload.getAction())) {
@@ -218,7 +300,12 @@ public class PullRequestBuildHandler implements IBuildHandler {
         }
 
         if (!isWhitelisted(pullRequest.getUser(), gitHub)) {
-            LOGGER.info(MessageFormat.format("GitHub user {0} is not in the whitelist of project {1}", pullRequest.getUser().getLogin(), project.getFullName()));
+            LOGGER.info(
+                MessageFormat.format(
+                    "GitHub user {0} is not in the whitelist of project {1}",
+                    pullRequest.getUser().getLogin(),
+                    project.getFullName()));
+
             return;
         }
 
@@ -252,13 +339,25 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
         String issueUrl = issueComment.getIssue().getHtmlUrl().toString();
         if (!issueUrl.startsWith(gitHubRepositoryUrl)) {
-            LOGGER.finest(MessageFormat.format("GitHub issue {0} is not related to project {1}. GitHub project URL configured for project {1}: {2}",
-                    issueUrl, project.getFullName(), gitHubRepositoryUrl));
+            LOGGER.finest(
+                MessageFormat.format(
+                    "GitHub issue {0} is not related to project {1}. "
+                        + "GitHub project URL configured for project {1}: {2}",
+                    issueUrl,
+                    project.getFullName(),
+                    gitHubRepositoryUrl));
+
             return;
         }
+
         GHUser buildRequester = issueComment.getComment().getUser();
         if (!isWhitelisted(buildRequester, gitHub)) {
-            LOGGER.info(MessageFormat.format("GitHub user {0} is not in the whitelist of project {1}", buildRequester.getLogin(), project.getFullName()));
+            LOGGER.info(
+                MessageFormat.format(
+                    "GitHub user {0} is not in the whitelist of project {1}",
+                    buildRequester.getLogin(),
+                    project.getFullName()));
+
             return;
         }
 
@@ -268,7 +367,9 @@ public class PullRequestBuildHandler implements IBuildHandler {
             cancelBuilds(pullRequestData);
             build(pullRequest, buildRequester, new TriggerCause(pullRequest, buildRequester));
         } else {
-            LOGGER.finest(MessageFormat.format("Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString()));
+            LOGGER.finest(
+                MessageFormat.format(
+                    "Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString()));
         }
     }
 
@@ -294,8 +395,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
     private boolean isPullRequestBuild(AbstractBuild build, String pullRequestUrl) {
         ParametersAction parameters = build.getAction(ParametersAction.class);
-        return parameters != null &&
-                parameters.getParameters().contains(new StringParameterValue("PR_URL", pullRequestUrl));
+        return parameters != null
+            && parameters.getParameters().contains(new StringParameterValue("PR_URL", pullRequestUrl));
 
     }
 
@@ -383,8 +484,11 @@ public class PullRequestBuildHandler implements IBuildHandler {
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
-            for (AbstractProject<?,?> aProject : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
-                PullRequestData data = pullRequestManager.removePullRequestData(pullRequest.getHtmlUrl().toString(), aProject);
+            for (AbstractProject<?,?> project : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+
+                PullRequestData data =
+                    pullRequestManager.removePullRequestData(pullRequest.getHtmlUrl().toString(), project);
+
                 if (data != null) {
                     pullRequestDataList.add(data);
                 }

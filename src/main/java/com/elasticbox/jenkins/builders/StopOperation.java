@@ -19,24 +19,24 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class StopOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
@@ -44,13 +44,24 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
         super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
-    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
+    public void perform(
+        ElasticBoxCloud cloud,
+        String workspace,
+        AbstractBuild<?, ?> build,
+        Launcher launcher,
+        TaskLogger logger) throws InterruptedException, IOException {
+
         logger.info(MessageFormat.format("Executing {0}", getDescriptor().getDisplayName()));
 
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
         Client client = cloud.getClient();
         Set<String> resolvedTags = resolver.resolveTags(getTags());
-        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
+
+        logger.info(
+            MessageFormat.format(
+                "Looking for instances with the following tags: {0}",
+                StringUtils.join(resolvedTags, ", ")));
+
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, true);
         if (!canPerform(instances, logger)) {
             return;
@@ -67,9 +78,21 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
             String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Stopping instance {0}", instancePageUrl));
         }
+
         if (isWaitForCompletion()) {
-            logger.info(MessageFormat.format("Waiting for {0} to complete stopping", instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(getDescriptor().getDisplayName(), monitors, client, logger, getWaitForCompletionTimeout());
+            logger.info(
+                MessageFormat.format(
+                    "Waiting for {0} to complete stopping",
+                    instances.size() > 1
+                        ? "the instances"
+                        : "the instance"));
+
+            LongOperation.waitForCompletion(
+                getDescriptor().getDisplayName(),
+                monitors,
+                client,
+                logger,
+                getWaitForCompletionTimeout());
         }
     }
 

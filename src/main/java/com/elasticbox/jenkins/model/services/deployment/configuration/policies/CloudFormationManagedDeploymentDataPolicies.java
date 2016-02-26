@@ -10,17 +10,16 @@ import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by serna on 11/30/15.
- */
 public class CloudFormationManagedDeploymentDataPolicies extends AbstractDeploymentDataPoliciesHandler {
 
     @Override
-    public List<PolicyBox> retrievePoliciesToDeploy(BoxRepository boxRepository, String workspace, final AbstractBox boxToDeploy) throws RepositoryException {
+    public List<PolicyBox> retrievePoliciesToDeploy(
+            BoxRepository boxRepository, String workspace, final AbstractBox boxToDeploy) throws RepositoryException {
 
-        return new ArrayList<PolicyBox>(){{add((ManagedCloudFormationBox)boxToDeploy);}};
+        return Arrays.asList((PolicyBox)boxToDeploy);
 
     }
 

@@ -12,6 +12,10 @@
 
 package com.elasticbox.jenkins;
 
+import static com.elasticbox.jenkins.DescriptorHelper.anyOfThemIsBlank;
+import static com.elasticbox.jenkins.DescriptorHelper.getEmptyListBoxModel;
+import static com.elasticbox.jenkins.DescriptorHelper.getEmptyListBoxModel;
+
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.migration.AbstractConverter;
 import com.elasticbox.jenkins.migration.RetentionTimeConverter;
@@ -20,6 +24,7 @@ import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImp
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
+
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -29,23 +34,24 @@ import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import hudson.util.XStream2;
+
+import jenkins.model.Jenkins;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import hudson.util.XStream2;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class InstanceCreator extends BuildWrapper {
 
     private static final Logger logger = Logger.getLogger(InstanceCreator.class.getName());
@@ -78,7 +84,9 @@ public class InstanceCreator extends BuildWrapper {
     }
 
     @Override
-    public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+    public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener)
+        throws IOException, InterruptedException {
+
         for (Node node : build.getProject().getAssignedLabel().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
@@ -90,8 +98,11 @@ public class InstanceCreator extends BuildWrapper {
         }
 
         return new Environment() {
+
             @Override
-            public boolean tearDown(AbstractBuild build, BuildListener listener) throws IOException, InterruptedException {
+            public boolean tearDown(AbstractBuild build, BuildListener listener)
+                throws IOException, InterruptedException {
+
                 if (ebSlave.isSingleUse()) {
                     ebSlave.getComputer().setAcceptingTasks(false);
                 }
@@ -110,15 +121,26 @@ public class InstanceCreator extends BuildWrapper {
                     cloud = ebCloud.name;
                 }
             } else {
-                Cloud c = Jenkins.getInstance().getCloud(cloud);
-                if (c instanceof ElasticBoxCloud) {
-                    ebCloud = (ElasticBoxCloud) c;
+                Cloud cloud = Jenkins.getInstance().getCloud(this.cloud);
+                if (cloud instanceof ElasticBoxCloud) {
+                    ebCloud = (ElasticBoxCloud) cloud;
                 }
             }
-            slaveConfiguration = new ProjectSlaveConfiguration(UUID.randomUUID().toString(), cloud, workspace, box,
-                    boxVersion, profile, null, null, null, ebCloud != null ? ebCloud.getMaxInstances() : 1, null, variables,
-                    StringUtils.EMPTY, 30, null, 1,
-                    ElasticBoxSlaveHandler.TIMEOUT_MINUTES, null);
+            slaveConfiguration = new ProjectSlaveConfiguration(
+                UUID.randomUUID().toString(),
+                cloud,
+                workspace,
+                box,
+                boxVersion,
+                profile,
+                null,
+                null,
+                null,
+                ebCloud != null
+                    ? ebCloud.getMaxInstances()
+                    : 1, null, variables,
+                StringUtils.EMPTY, 30, null, 1,
+                ElasticBoxSlaveHandler.TIMEOUT_MINUTES, null);
         }
 
         return this;
@@ -140,17 +162,25 @@ public class InstanceCreator extends BuildWrapper {
         @Override
         public BuildWrapper newInstance(StaplerRequest req, JSONObject formData) throws FormException {
 
-
             JSONObject slaveConfigJson = formData.getJSONObject(ProjectSlaveConfiguration.SLAVE_CONFIGURATION);
-            if(DescriptorHelper.anyOfThemIsBlank(slaveConfigJson.getString("cloud"), slaveConfigJson.getString("workspace"), slaveConfigJson.getString("box"))){
-                throw new FormException("Required fields should be provided", ProjectSlaveConfiguration.SLAVE_CONFIGURATION);
+
+            if (anyOfThemIsBlank(
+                slaveConfigJson.getString("cloud"),
+                slaveConfigJson.getString("workspace"),
+                slaveConfigJson.getString("box"))) {
+
+                throw new FormException(
+                    "Required fields should be provided",
+                    ProjectSlaveConfiguration.SLAVE_CONFIGURATION);
             }
 
             DescriptorHelper.fixDeploymentPolicyFormData(slaveConfigJson);
 
             InstanceCreator instanceCreator = (InstanceCreator) super.newInstance(req, formData);
 
-            ProjectSlaveConfiguration.DescriptorImpl descriptor = (ProjectSlaveConfiguration.DescriptorImpl) instanceCreator.getSlaveConfiguration().getDescriptor();
+            ProjectSlaveConfiguration.DescriptorImpl descriptor
+                = (ProjectSlaveConfiguration.DescriptorImpl) instanceCreator.getSlaveConfiguration().getDescriptor();
+
             descriptor.validateSlaveConfiguration(instanceCreator.getSlaveConfiguration());
 
             return instanceCreator;
@@ -167,19 +197,35 @@ public class InstanceCreator extends BuildWrapper {
 
     private static class DeploymentTypeMigrator extends AbstractConverter.Migrator<InstanceCreator> {
 
-        public DeploymentTypeMigrator() {super(Version._4_0_3);}
+        public DeploymentTypeMigrator() {
+            super(Version._4_0_3);
+        }
 
         @Override
         protected void migrate(InstanceCreator instanceCreator, Version olderVersion) {
+
             final ProjectSlaveConfiguration slaveConfiguration = instanceCreator.getSlaveConfiguration();
-            if(StringUtils.isBlank(slaveConfiguration.getBoxDeploymentType())){
-                if(StringUtils.isNotBlank(slaveConfiguration.getCloud())){
+
+            if (StringUtils.isBlank(slaveConfiguration.getBoxDeploymentType())) {
+
+                if (StringUtils.isNotBlank(slaveConfiguration.getCloud())) {
+
                     final Client client = ClientCache.getClient(slaveConfiguration.getCloud());
-                    final DeploymentType deploymentType = new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
+
+                    final DeploymentType deploymentType
+                        = new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
+
                     slaveConfiguration.boxDeploymentType = deploymentType.getValue();
-                }else{
-                    logger.log(Level.SEVERE,"InstanceCreator migration failed, there is no cloud configured to deploy: "+slaveConfiguration.getBox());
-                    throw new ServiceException("InstanceCreator migration failed, there is no cloud configured to deploy: "+slaveConfiguration.getBox());
+
+                } else {
+                    logger.log(
+                        Level.SEVERE,
+                        "InstanceCreator migration failed, there is no cloud configured to deploy: "
+                            + slaveConfiguration.getBox());
+
+                    throw new ServiceException(
+                        "InstanceCreator migration failed, there is no cloud configured to deploy: "
+                            + slaveConfiguration.getBox());
                 }
             }
         }
@@ -187,7 +233,9 @@ public class InstanceCreator extends BuildWrapper {
 
     private static class RetentionTimeMigrator extends AbstractConverter.Migrator<InstanceCreator> {
 
-        public RetentionTimeMigrator() {super(Version._0_9_3);}
+        public RetentionTimeMigrator() {
+            super(Version._0_9_3);
+        }
 
         @Override
         protected void migrate(InstanceCreator obj, Version olderVersion) {

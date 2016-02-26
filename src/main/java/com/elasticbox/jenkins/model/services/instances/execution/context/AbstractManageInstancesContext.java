@@ -26,9 +26,6 @@ import hudson.model.BuildListener;
 
 import java.util.Set;
 
-/**
- * Created by serna on 1/19/16.
- */
 public abstract class AbstractManageInstancesContext<T extends ManageInstanceOrder> {
 
     private ElasticBoxCloud cloud;
@@ -92,7 +89,8 @@ public abstract class AbstractManageInstancesContext<T extends ManageInstanceOrd
         this.instanceRepository = instanceRepository;
     }
 
-    public static abstract class ManageInstancesContextBuilder<B extends ManageInstancesContextBuilder, T extends AbstractManageInstancesContext>{
+    public abstract static class ManageInstancesContextBuilder
+            <B extends ManageInstancesContextBuilder, T extends AbstractManageInstancesContext> {
 
         private ElasticBoxCloud cloud;
         private AbstractBuild<?, ?> build;
@@ -108,49 +106,51 @@ public abstract class AbstractManageInstancesContext<T extends ManageInstanceOrd
 
         abstract T build();
 
-        protected B getThis() { return (B) this; }
-
-        public B cloud(ElasticBoxCloud cloud){
-            this.cloud = cloud;
-            return getThis();
-        }
-
-        public B build(AbstractBuild<?, ?> build){
+        public B build(AbstractBuild<?, ?> build) {
             this.build = build;
             return getThis();
         }
 
-        public B launcher(Launcher launcher){
+        protected B getThis() {
+            return (B) this;
+        }
+
+        public B cloud(ElasticBoxCloud cloud) {
+            this.cloud = cloud;
+            return getThis();
+        }
+
+        public B launcher(Launcher launcher) {
             this.launcher = launcher;
             return getThis();
         }
 
-        public B listener(BuildListener listener){
+        public B listener(BuildListener listener) {
             this.listener = listener;
             return getThis();
         }
 
-        public B box(String box){
+        public B box(String box) {
             this.box = box;
             return getThis();
         }
 
-        public B boxVersion(String boxVersion){
+        public B boxVersion(String boxVersion) {
             this.boxVersion = boxVersion;
             return getThis();
         }
 
-        public B tags(Set<String> tags){
+        public B tags(Set<String> tags) {
             this.tags = tags.toArray(new String[tags.size()]);
             return getThis();
         }
 
-        public B waitForDone(boolean waitForDone){
+        public B waitForDone(boolean waitForDone) {
             this.waitForDone = waitForDone;
             return getThis();
         }
 
-        public B logger(TaskLogger logger){
+        public B logger(TaskLogger logger) {
             this.logger = logger;
             return getThis();
         }

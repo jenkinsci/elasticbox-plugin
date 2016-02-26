@@ -8,9 +8,6 @@ import com.elasticbox.jenkins.model.profile.ProfileType;
 import com.elasticbox.jenkins.model.provider.Provider;
 import org.apache.commons.lang.StringUtils;
 
-/**
- * Created by serna on 11/26/15.
- */
 public class PolicyBox extends AbstractBox {
 
     private ProfileType profileType;

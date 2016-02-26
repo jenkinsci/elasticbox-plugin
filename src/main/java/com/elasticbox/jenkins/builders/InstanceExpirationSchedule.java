@@ -9,30 +9,31 @@
  * information or reproduction of this material is strictly forbidden unless prior
  * written permission is obtained from ElasticBox.
  */
+
 package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.Client;
+
 import hudson.Extension;
 import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-
 import hudson.util.ListBoxModel;
-import java.text.MessageFormat;
-import java.text.ParseException;
-import java.util.TimeZone;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-/**
- * Created by Phong Nguyen Le (ple@elasticbox.com) on 11/21/14.
- */
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.text.MessageFormat;
+import java.text.ParseException;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 public abstract class InstanceExpirationSchedule extends InstanceExpiration {
     private static final DateFormat EBX_DATE_FORMAT = createStrictDateFormat("yyyy-MM-dd HH:mm:00.000000");
     public static final DateFormat DATE_FORMAT = createStrictDateFormat("MM/dd/yyyy");
@@ -91,14 +92,18 @@ public abstract class InstanceExpirationSchedule extends InstanceExpiration {
         return time;
     }
 
-    public String getUTCDateTime() throws ParseException {
+    public String getUtcDateTime() throws ParseException {
+
         long currentTime = System.currentTimeMillis();
-        Date dateTime = hours != null ? new Date(currentTime + TimeUnit.HOURS.toMillis(Integer.parseInt(hours))) :
-                DATE_TIME_FORMAT.parse(MessageFormat.format("{0} {1}", date, time));
+
+        Date dateTime = hours != null
+            ? new Date(currentTime + TimeUnit.HOURS.toMillis(Integer.parseInt(hours)))
+            : DATE_TIME_FORMAT.parse(MessageFormat.format("{0} {1}", date, time));
+
         return EBX_DATE_FORMAT.format(new Date(dateTime.getTime() - TimeZone.getDefault().getOffset(currentTime)));
     }
 
-    public static abstract class InstanceExpirationScheduleDescriptor extends InstanceExpirationDescriptor {
+    public abstract static class InstanceExpirationScheduleDescriptor extends InstanceExpirationDescriptor {
 
         private ListBoxModel hoursItems;
         private ComboBoxModel times;

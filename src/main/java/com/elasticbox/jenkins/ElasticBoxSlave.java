@@ -17,6 +17,7 @@ import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.Constants;
 import com.elasticbox.jenkins.util.JsonUtil;
+
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -30,6 +31,17 @@ import hudson.slaves.JNLPLauncher;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
+
+import jenkins.model.Jenkins;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collections;
@@ -40,19 +52,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
 
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class ElasticBoxSlave extends Slave {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlave.class.getName());
 
@@ -105,20 +106,36 @@ public class ElasticBoxSlave extends Slave {
 
     private final transient int launchTimeout;
 
-    public ElasticBoxSlave(ProjectSlaveConfiguration config, boolean singleUse) throws Descriptor.FormException, IOException {
+    public ElasticBoxSlave(ProjectSlaveConfiguration config, boolean singleUse)
+            throws Descriptor.FormException, IOException {
+
         this(config, config.getElasticBoxCloud(), new ProjectSlaveConfigurationRetentionStrategy(config), singleUse);
     }
 
-    public ElasticBoxSlave(SlaveConfiguration config, ElasticBoxCloud cloud) throws Descriptor.FormException, IOException {
+    public ElasticBoxSlave(SlaveConfiguration config, ElasticBoxCloud cloud)
+            throws Descriptor.FormException, IOException {
+
         this(config, cloud, new SlaveConfigurationRetentionStrategy(config, cloud), false);
     }
 
     public ElasticBoxSlave(AbstractSlaveConfiguration config, ElasticBoxCloud cloud,
             RetentionStrategy retentionStrategy, boolean singleUse) throws Descriptor.FormException, IOException {
-        super(generateName(cloud, config.resolveBoxVersion(cloud.getClient())), config.getDescription(),
-            StringUtils.isBlank(config.getRemoteFS()) ? getRemoteFS(config.resolveDeploymentPolicy(cloud.getClient()), cloud) : config.getRemoteFS(),
-            config.getExecutors(), config.getMode(), config.getLabels(), new JNLPLauncher(), retentionStrategy,
-            Collections.EMPTY_LIST);
+
+        super(
+                generateName(
+                    cloud,
+                    config.resolveBoxVersion(cloud.getClient())),
+                    config.getDescription(),
+                    StringUtils.isBlank(config.getRemoteFs())
+                            ? getRemoteFs(config.resolveDeploymentPolicy(cloud.getClient()), cloud)
+                            : config.getRemoteFs(),
+                    config.getExecutors(),
+                    config.getMode(),
+                config.getLabels(),
+                new JNLPLauncher(),
+                retentionStrategy,
+                Collections.EMPTY_LIST);
+
         this.boxVersion = config.getResolvedBoxVersion();
         this.profileId = config.getResolvedDeploymentPolicy();
         this.singleUse = singleUse;
@@ -189,7 +206,8 @@ public class ElasticBoxSlave extends Slave {
             if (cloud instanceof ElasticBoxCloud) {
                 ebCloud = (ElasticBoxCloud) cloud;
             } else {
-                throw new IOException(MessageFormat.format("Cannot find any ElasticBox cloud with name ''{0}''", cloudName));
+                throw new IOException(
+                        MessageFormat.format("Cannot find any ElasticBox cloud with name ''{0}''", cloudName));
             }
         }
 
@@ -206,7 +224,11 @@ public class ElasticBoxSlave extends Slave {
 
     public JSONArray getPolicyVariables() {
         AbstractSlaveConfiguration slaveConfig = getSlaveConfiguration();
-        return slaveConfig != null ? JsonUtil.createCloudFormationDeployVariables(slaveConfig.getProvider(), slaveConfig.getLocation()) : null;
+        if (slaveConfig != null) {
+            return JsonUtil.createCloudFormationDeployVariables(slaveConfig.getProvider(), slaveConfig.getLocation());
+        }
+
+        return null;
     }
 
     public void setInstanceStatusMessage(String message) {
@@ -269,7 +291,8 @@ public class ElasticBoxSlave extends Slave {
     public boolean isTerminated() throws IOException {
         checkInstanceReachable();
         JSONObject instance = getCloud().getClient().getInstance(getInstanceId());
-        return Client.InstanceState.DONE.equals(instance.get("state")) && Client.TERMINATE_OPERATIONS.contains(instance.get("operation"));
+        return Client.InstanceState.DONE.equals(
+                instance.get("state")) && Client.TERMINATE_OPERATIONS.contains(instance.get("operation"));
     }
 
     public JSONObject getInstance() throws IOException {
@@ -291,7 +314,11 @@ public class ElasticBoxSlave extends Slave {
             throw new IOException("Slave doesn't have a deployed instance");
         }
         if (!instanceUrl.startsWith(ebCloud.getEndpointUrl())) {
-            throw new IOException(MessageFormat.format("The instance {0} has been created at a different ElasticBox endpoint than the currently configured one. Open {0} in a browser to terminate it.", instanceUrl));
+            throw new IOException(
+                    MessageFormat.format(
+                            "The instance {0} has been created at a different ElasticBox endpoint than the currently"
+                                    + " configured one. Open {0} in a browser to terminate it.",
+                            instanceUrl));
         }
     }
 
@@ -308,20 +335,29 @@ public class ElasticBoxSlave extends Slave {
                 public String toString() {
                     String message;
                     ElasticBoxCloud cloud = null;
+                    String instanceUrl = getInstanceUrl();
                     try {
                         cloud = getCloud();
                     } catch (IOException ex) {
+                        LOGGER.log(
+                                Level.SEVERE,
+                                MessageFormat.format("Error trying to get the cloud for instance {0}", instanceUrl));
                     }
-                    String instanceUrl = getInstanceUrl();
                     if (instanceUrl == null || cloud == null) {
                         message = "This slave will be removed shortly";
                     } else {
                         String url = Client.getPageUrl(((ElasticBoxCloud) cloud).getEndpointUrl(), instanceUrl);
                         if (url != null) {
-                            message = MessageFormat.format("Instance at {0} of ElasticBox cloud ''{1}'' will be terminated and deleted",
-                                    url, cloud.getDisplayName());
+                            message = MessageFormat.format(
+                                    "Instance at {0} of ElasticBox cloud ''{1}'' will be terminated and deleted",
+                                    url,
+                                    cloud.getDisplayName());
                         } else {
-                            message = MessageFormat.format("Instance {0} must be terminated but that's not possible because the endpoint URL of ElasticBox cloud ''{1}'' has been changed", instanceUrl, cloud.getDisplayName());
+                            message = MessageFormat.format(
+                                    "Instance {0} must be terminated but that's not possible because the endpoint URL"
+                                            + " of ElasticBox cloud ''{1}'' has been changed",
+                                    instanceUrl,
+                                    cloud.getDisplayName());
                         }
                     }
                     return message;
@@ -344,8 +380,8 @@ public class ElasticBoxSlave extends Slave {
         }
 
         AbstractSlaveConfiguration slaveConfig = getSlaveConfiguration();
-        return slaveConfig != null && (slaveConfig.getRetentionTime() == 0 ||
-                (slaveConfig.getMaxBuilds() > 0 && builds >= slaveConfig.getMaxBuilds()));
+        return slaveConfig != null && (slaveConfig.getRetentionTime() == 0
+                || (slaveConfig.getMaxBuilds() > 0 && builds >= slaveConfig.getMaxBuilds()));
     }
 
     public void save() {
@@ -356,7 +392,7 @@ public class ElasticBoxSlave extends Slave {
         }
     }
 
-    private static String getRemoteFS(String profileId, ElasticBoxCloud cloud) throws IOException {
+    private static String getRemoteFs(String profileId, ElasticBoxCloud cloud) throws IOException {
         Client client = cloud.getClient();
         JSONObject profile = client.getBox(profileId);
         JSONArray claims = profile.getJSONArray("claims");
@@ -365,26 +401,34 @@ public class ElasticBoxSlave extends Slave {
         } else if (claims.contains(Constants.WINDOWS_CLAIM)) {
             return "C:\\Jenkins";
         } else {
-            throw new IOException(MessageFormat.format("Cannot create slave since the selected deployment policy ''{0}'' supports neither Linux nor Windows.",
-                    profile.getString("name")));
+            throw new IOException(
+                    MessageFormat.format(
+                            "Cannot create slave since the selected deployment policy ''{0}'' supports"
+                                    + " neither Linux nor Windows.",
+                            profile.getString("name")));
         }
     }
 
-    private static abstract class ElasticBoxRetentionStrategy extends RetentionStrategy<ElasticBoxComputer> {
+    private abstract static class ElasticBoxRetentionStrategy extends RetentionStrategy<ElasticBoxComputer> {
+
         public abstract boolean shouldTerminate(ElasticBoxComputer computer);
 
         protected abstract int getRetentionTime();
 
         @Override
-        public boolean isManualLaunchAllowed(ElasticBoxComputer c) {
+        public boolean isManualLaunchAllowed(ElasticBoxComputer computer) {
             return false;
         }
 
         @Override
         public synchronized long check(ElasticBoxComputer computer) {
             if (shouldTerminate(computer)) {
-                LOGGER.info(MessageFormat.format("Retention time of {0} minutes is elapsed for slave {1}. The computer is terminating",
-                        getRetentionTime(), computer.getSlave().getDisplayName()));
+                LOGGER.info(
+                        MessageFormat.format(
+                                "Retention time of {0} minutes is elapsed for slave {1}. The computer is terminating",
+                                getRetentionTime(),
+                                computer.getSlave().getDisplayName()));
+
                 computer.terminate();
             }
 
@@ -443,7 +487,8 @@ public class ElasticBoxSlave extends Slave {
         }
     }
 
-    private static final class ProjectSlaveConfigurationRetentionStrategy extends AbstractSlaveConfigurationRetentionStrategy {
+    private static final class ProjectSlaveConfigurationRetentionStrategy
+            extends AbstractSlaveConfigurationRetentionStrategy {
 
         public ProjectSlaveConfigurationRetentionStrategy(ProjectSlaveConfiguration slaveConfig) {
             super(slaveConfig);
@@ -456,7 +501,7 @@ public class ElasticBoxSlave extends Slave {
 
     }
 
-    private static abstract class AbstractSlaveConfigurationRetentionStrategy extends IdleTimeoutRetentionStrategy {
+    private abstract static class AbstractSlaveConfigurationRetentionStrategy extends IdleTimeoutRetentionStrategy {
 
         protected final String slaveConfigId;
         protected final int minInstances;
@@ -494,7 +539,8 @@ public class ElasticBoxSlave extends Slave {
                     activeInstances = ElasticBoxSlaveHandler.getActiveInstances(computer.getSlave().getCloud());
                 } catch (IOException ex) {
                     LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-                    // cannot decide whether the slave should be terminated because the active instances could not be fetched
+                    // cannot decide whether the slave should be terminated because the active instances
+                    // could not be fetched
                     // leave it alone for now
                     return false;
                 }
@@ -524,8 +570,9 @@ public class ElasticBoxSlave extends Slave {
                     }
                 }
 
-                if (configActiveInstanceIDs.contains(computer.getSlave().getInstanceId()) &&
-                        instanceCount <= getMinInstances()) {
+                if (configActiveInstanceIDs.contains(computer.getSlave().getInstanceId())
+                        && instanceCount <= getMinInstances()) {
+
                     return false;
                 }
             }
@@ -553,7 +600,7 @@ public class ElasticBoxSlave extends Slave {
             throw new FormException("This slave cannot be updated.", "");
         }
 
-        @Initializer(before=InitMilestone.PLUGINS_STARTED)
+        @Initializer(before = InitMilestone.PLUGINS_STARTED)
         public static void addAliases() {
             Items.XSTREAM2.addCompatibilityAlias("com.elasticbox.jenkins.ElasticBoxSlave.RetentionStrategyImpl",
                     IdleTimeoutRetentionStrategy.class);
@@ -568,7 +615,10 @@ public class ElasticBoxSlave extends Slave {
                 slave.retentionTime = Integer.MAX_VALUE;
             }
             if (slave.getRetentionStrategy() instanceof IdleTimeoutRetentionStrategy) {
-                IdleTimeoutRetentionStrategy retentionStrategy = (IdleTimeoutRetentionStrategy) slave.getRetentionStrategy();
+
+                IdleTimeoutRetentionStrategy retentionStrategy =
+                        (IdleTimeoutRetentionStrategy) slave.getRetentionStrategy();
+
                 if (retentionStrategy.getRetentionTime() == 0) {
                     retentionStrategy.retentionTime = Integer.MAX_VALUE;
                 }

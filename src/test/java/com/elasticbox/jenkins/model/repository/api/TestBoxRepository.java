@@ -16,9 +16,6 @@ import java.util.List;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
-/**
- * Created by serna on 12/3/15.
- */
 public class TestBoxRepository {
 
     @Test
@@ -30,7 +27,7 @@ public class TestBoxRepository {
         JSONArray array = null;
         when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getFakeJSONArrayContainingOneFakeBoxForEachType());
 
-        final List<AbstractBox> noPolicyAndNoApplicationBoxes = new BoxRepositoryAPIImpl(api).getNoPolicyAndNoApplicationBoxes(workspace);
+        final List<AbstractBox> noPolicyAndNoApplicationBoxes = new BoxRepositoryApiImpl(api).getNoPolicyAndNoApplicationBoxes(workspace);
 
         for (AbstractBox box : noPolicyAndNoApplicationBoxes) {
             assertTrue("Application boxes should not be retrieved", box.getType() != BoxType.APPLICATION);
@@ -47,7 +44,7 @@ public class TestBoxRepository {
         JSONArray array = null;
         when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getFakeJSONArrayContainingOneFakeBoxForEachType());
 
-        final List<AbstractBox> noPolicyAndNoApplicationBoxes = new BoxRepositoryAPIImpl(api).getNoPolicyBoxes(workspace);
+        final List<AbstractBox> noPolicyAndNoApplicationBoxes = new BoxRepositoryApiImpl(api).getNoPolicyBoxes(workspace);
 
         for (AbstractBox box : noPolicyAndNoApplicationBoxes) {
             assertTrue("policy boxes should not be retrieved", box.getType() != BoxType.POLICY);
@@ -63,7 +60,7 @@ public class TestBoxRepository {
         JSONArray array = null;
         when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getFakeJSONArrayContainingOneFakeBoxForEachType());
 
-        final List<PolicyBox> noCloudFormationPolicyBoxes = new BoxRepositoryAPIImpl(api).getNoCloudFormationPolicyBoxes(workspace);
+        final List<PolicyBox> noCloudFormationPolicyBoxes = new BoxRepositoryApiImpl(api).getNoCloudFormationPolicyBoxes(workspace);
 
         for (PolicyBox box : noCloudFormationPolicyBoxes) {
             assertTrue("Only CF policy boxes should be retrieved", (box.getProfileType() instanceof PolicyProfileType));
@@ -79,7 +76,7 @@ public class TestBoxRepository {
         JSONArray array = null;
         when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getFakeJSONArrayContainingOneFakeBoxForEachType());
 
-        final List<PolicyBox> noCloudFormationPolicyBoxes = new BoxRepositoryAPIImpl(api).getCloudFormationPolicyBoxes(workspace);
+        final List<PolicyBox> noCloudFormationPolicyBoxes = new BoxRepositoryApiImpl(api).getCloudFormationPolicyBoxes(workspace);
 
         for (PolicyBox box : noCloudFormationPolicyBoxes) {
             assertTrue("Only CF policy boxes should be retrieved", (box.getProfileType() instanceof PolicyProfileType));

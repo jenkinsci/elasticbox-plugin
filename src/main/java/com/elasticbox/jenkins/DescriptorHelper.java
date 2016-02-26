@@ -23,12 +23,16 @@ import com.elasticbox.jenkins.util.JsonUtil;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.slaves.Cloud;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+
 import jenkins.model.Jenkins;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
@@ -37,7 +41,6 @@ import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
-import javax.servlet.ServletException;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -52,10 +55,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-/**
- *
- * @author Phong Nguyen Le
- */
+import javax.servlet.ServletException;
+
 public class DescriptorHelper {
     private static final Logger LOGGER = Logger.getLogger(DescriptorHelper.class.getName());
 
@@ -68,8 +69,10 @@ public class DescriptorHelper {
             try {
                 for (Object providerObject : client.getProviders(workspace)) {
                     JSONObject providerJson = (JSONObject) providerObject;
-                    if (providerJson.getString("type").equals(Constants.AMAZON_PROVIDER_TYPE) &&
-                            JsonUtil.find(providerJson, "services", "name", Constants.CLOUD_FOUNDATION_SERVICE) != null) {
+                    if (providerJson.getString("type").equals(Constants.AMAZON_PROVIDER_TYPE)
+                            && JsonUtil.find(
+                                    providerJson, "services", "name", Constants.CLOUD_FOUNDATION_SERVICE) != null) {
+
                         model.add(providerJson.getString("name"), providerJson.getString("id"));
                     }
                 }
@@ -85,7 +88,10 @@ public class DescriptorHelper {
         if (client != null && StringUtils.isNotBlank(provider)) {
             try {
                 JSONObject providerJson = client.getProvider(provider);
-                JSONObject cloudFormationService = JsonUtil.find(providerJson, "services", "name", Constants.CLOUD_FOUNDATION_SERVICE);
+
+                JSONObject cloudFormationService = JsonUtil.find(
+                        providerJson, "services", "name", Constants.CLOUD_FOUNDATION_SERVICE);
+
                 if (cloudFormationService != null) {
                     for (Object location : cloudFormationService.getJSONArray("locations")) {
                         String locationName = ((JSONObject) location).getString("name");
@@ -99,10 +105,10 @@ public class DescriptorHelper {
         return model;
     }
 
-    public static class JSONArrayResponse implements HttpResponse {
+    public static class JsonArrayResponse implements HttpResponse {
         private final JSONArray jsonArray;
 
-        public JSONArrayResponse(JSONArray jsonArray) {
+        public JsonArrayResponse(JSONArray jsonArray) {
             this.jsonArray = jsonArray;
         }
 
@@ -110,8 +116,11 @@ public class DescriptorHelper {
             return jsonArray;
         }
 
-        public void generateResponse(StaplerRequest request, StaplerResponse response, Object node) throws IOException, ServletException {
+        public void generateResponse(StaplerRequest request, StaplerResponse response, Object node)
+                throws IOException, ServletException {
+
             response.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
+
             response.getWriter().write(jsonArray.toString());
         }
 
@@ -129,18 +138,19 @@ public class DescriptorHelper {
     }
 
     public static String getToken(String endpointUrl, String username, String password) throws IOException {
-        final String TOKEN_DESCRIPTION = "ElasticBox CI Jenkins Plugin";
+
+
         String token = null;
         Client client = new Client(endpointUrl, username, password);
         try {
-            token = client.generateToken(TOKEN_DESCRIPTION);
+            token = client.generateToken(Constants.TOKEN_DESCRIPTION);
         } catch (ClientException ex) {
             if (ex.getStatusCode() != HttpStatus.SC_CONFLICT) {
                 throw ex;
             } else {
                 for (Object tokenObject : client.getTokens()) {
                     JSONObject tokenJson = (JSONObject) tokenObject;
-                    if (tokenJson.getString("description").equals(TOKEN_DESCRIPTION)) {
+                    if (tokenJson.getString("description").equals(Constants.TOKEN_DESCRIPTION)) {
                         token = tokenJson.getString("value");
                         break;
                     }
@@ -206,8 +216,11 @@ public class DescriptorHelper {
             for (Object json : client.getBoxVersions(box)) {
                 JSONObject boxVersion = (JSONObject) json;
                 JSONObject versionObject = boxVersion.getJSONObject("version").getJSONObject("number");
-                String displayMessage = MessageFormat.format("Version {0}.{1}.{2} - {3}", versionObject.getInt("major"),
-                        versionObject.getInt("minor"), versionObject.getInt("patch"),
+                String displayMessage = MessageFormat.format(
+                        "Version {0}.{1}.{2} - {3}",
+                        versionObject.getInt("major"),
+                        versionObject.getInt("minor"),
+                        versionObject.getInt("patch"),
                         boxVersion.getJSONObject("version").getString("description"));
 
                 boxVersions.add(displayMessage, boxVersion.getString("id"));
@@ -223,7 +236,9 @@ public class DescriptorHelper {
         return getBoxVersions(ClientCache.getClient(cloud), workspace, box);
     }
 
-    public static String getResolvedBoxVersion(Client client, String workspace, String box, String boxVersion) throws IOException {
+    public static String getResolvedBoxVersion(Client client, String workspace, String box, String boxVersion)
+            throws IOException {
+
         return LATEST_BOX_VERSION.equals(boxVersion) ? client.getLatestBoxVersion(workspace, box) : boxVersion;
     }
 
@@ -252,13 +267,13 @@ public class DescriptorHelper {
         return getProfiles(ClientCache.getClient(cloud), workspace, box);
     }
 
-    public static JSONArrayResponse getBoxStack(Client client, String workspace, String boxId, String boxVersion) {
+    public static JsonArrayResponse getBoxStack(Client client, String workspace, String boxId, String boxVersion) {
         if (client != null && StringUtils.isNotBlank(boxId) && StringUtils.isNotBlank(boxVersion)) {
             try {
                 if (LATEST_BOX_VERSION.equals(boxVersion)) {
                     boxVersion = client.getLatestBoxVersion(workspace, boxId);
                 }
-                JSONArray boxStack = new BoxStack(boxVersion, client.getBoxStack(boxVersion), client).toJSONArray();
+                JSONArray boxStack = new BoxStack(boxVersion, client.getBoxStack(boxVersion), client).toJsonArray();
                 for (Object boxJson : boxStack) {
                     for (Object variable : ((JSONObject) boxJson).getJSONArray("variables")) {
                         JSONObject variableJson = (JSONObject) variable;
@@ -270,20 +285,20 @@ public class DescriptorHelper {
                         }
                     }
                 }
-                return new JSONArrayResponse(boxStack);
+                return new JsonArrayResponse(boxStack);
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for box {0}", boxId), ex);
             }
         }
 
-        return new JSONArrayResponse(new JSONArray());
+        return new JsonArrayResponse(new JSONArray());
     }
 
-    public static JSONArrayResponse getBoxStack(String cloud, String workspace, String boxId, String boxVersion) {
+    public static JsonArrayResponse getBoxStack(String cloud, String workspace, String boxId, String boxVersion) {
         return getBoxStack(ClientCache.getClient(cloud), workspace, boxId, boxVersion);
     }
 
-    public static JSONArrayResponse getInstanceBoxStack(Client client, String instance) {
+    public static JsonArrayResponse getInstanceBoxStack(Client client, String instance) {
         if (client != null && StringUtils.isNotBlank(instance)) {
             try {
                 JSONObject instanceJson = client.getInstance(instance);
@@ -295,17 +310,19 @@ public class DescriptorHelper {
                     }
                 }
                 BoxStack boxStack = new BoxStack(boxes.getJSONObject(0).getString("id"), boxes, client, variables);
-                return new JSONArrayResponse(boxStack.toJSONArray());
+                return new JsonArrayResponse(boxStack.toJsonArray());
 
             } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching variables for profile {0}", instance), ex);
+                LOGGER.log(
+                        Level.SEVERE,
+                        MessageFormat.format("Error fetching variables for profile {0}", instance), ex);
             }
         }
 
-        return new JSONArrayResponse(new JSONArray());
+        return new JsonArrayResponse(new JSONArray());
     }
 
-    public static JSONArrayResponse getInstanceBoxStack(String cloud, String instance) {
+    public static JsonArrayResponse getInstanceBoxStack(String cloud, String instance) {
         return getInstanceBoxStack(ClientCache.getClient(cloud), instance);
     }
 
@@ -336,7 +353,9 @@ public class DescriptorHelper {
                 return false;
             }
 
-            Set<String> instanceTags = new HashSet<String>(Arrays.asList((String[])instance.getJSONArray("tags").toArray(new String[0])));
+            Set<String> instanceTags = new HashSet<String>(
+                    Arrays.asList((String[])instance.getJSONArray("tags").toArray(new String[0])));
+
             instanceTags.add(instance.getString("id"));
             boolean hasTags = instanceTags.containsAll(tags);
             if (!hasTags) {
@@ -355,8 +374,10 @@ public class DescriptorHelper {
                 }
             }
             if (hasTags && excludeInaccessible) {
-                return !Client.InstanceState.UNAVAILABLE.equals(instance.getString("state")) &&
-                        !Client.TERMINATE_OPERATIONS.contains(instance.getJSONObject("operation").getString("event"));
+                return
+                        !Client.InstanceState.UNAVAILABLE.equals(instance.getString("state"))
+                                && !Client.TERMINATE_OPERATIONS.contains(
+                                            instance.getJSONObject("operation").getString("event"));
             }
             return hasTags;
         }
@@ -382,6 +403,36 @@ public class DescriptorHelper {
         }
     }
 
+    public static ListBoxModel getInstances(String cloud, String workspace, String box) {
+        return getInstances(ClientCache.getClient(cloud), workspace, box);
+    }
+
+    public static ListBoxModel getInstances(Client client, String workspace, String box) {
+        ListBoxModel instances = new ListBoxModel();
+        JSONArray instanceArray = getInstancesAsJsonArrayResponse(client, workspace, box).getJsonArray();
+        for (Object instance : instanceArray) {
+            JSONObject json = (JSONObject) instance;
+            instances.add(json.getString("name"), json.getString("id"));
+        }
+        return instances;
+    }
+
+    public static JSONArray getInstances(
+            Set<String> tags, String cloud, String workspace, boolean excludeInaccessible) {
+
+        return getInstances(
+                ClientCache.getClient(cloud),
+                workspace,
+                new InstanceFilterByTags(tags, excludeInaccessible));
+    }
+
+    public static JSONArray getInstances(Set<String> tags, String cloud, String workspace, String boxVersion) {
+        return getInstances(ClientCache.getClient(cloud), workspace,
+                new CompositeObjectFilter(
+                        new InstanceFilterByTags(tags, false),
+                        new InstanceFilterByBox((boxVersion))));
+    }
+
     public static JSONArray getInstances(Client client, String workspace, ObjectFilter filter) {
         JSONArray instances = new JSONArray();
         if (client == null || StringUtils.isBlank(workspace)) {
@@ -389,25 +440,31 @@ public class DescriptorHelper {
         }
 
         try {
+
             JSONArray instanceArray = client.getInstances(workspace);
-            if (!instanceArray.isEmpty() && !instanceArray.getJSONObject(0).getJSONArray("boxes").getJSONObject(0).containsKey("id")) {
+
+            if (!instanceArray.isEmpty()
+                    && !instanceArray.getJSONObject(0).getJSONArray("boxes").getJSONObject(0).containsKey("id")) {
+
                 List<String> instanceIDs = new ArrayList<String>();
                 for (int i = 0; i < instanceArray.size(); i++) {
                     instanceIDs.add(instanceArray.getJSONObject(i).getString("id"));
                 }
                 instanceArray = client.getInstances(workspace, instanceIDs);
             }
+
             for (Object instance : instanceArray) {
                 JSONObject json = (JSONObject) instance;
                 if (filter.accept(json)) {
                     instances.add(json);
                 }
             }
+
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, MessageFormat.format("Error fetching instances of workspace {0}", workspace), ex);
         }
 
-        Collections.sort(instances, new Comparator<Object> () {
+        Collections.sort(instances, new Comparator<Object>() {
             public int compare(Object o1, Object o2) {
                 return ((JSONObject) o1).getString("name").compareTo(((JSONObject) o2).getString("name"));
             }
@@ -416,33 +473,24 @@ public class DescriptorHelper {
         return instances;
     }
 
-    public static JSONArrayResponse getInstancesAsJSONArrayResponse(Client client, String workspace, String box) {
+    public static JsonArrayResponse getInstancesAsJsonArrayResponse(Client client, String workspace, String box) {
+
         JSONArray instances = getInstances(client, workspace, new InstanceFilterByBox(box));
+
         for (Object instance : instances) {
             JSONObject json = (JSONObject) instance;
 
-            json.put("name", MessageFormat.format("{0} - {1}", json.getString("name"), json.getJSONObject("service").getString("id")));
+            json.put("name", MessageFormat.format(
+                    "{0} - {1}",
+                    json.getString("name"),
+                    json.getJSONObject("service").getString("id")));
         }
 
-        return new JSONArrayResponse(instances);
+        return new JsonArrayResponse(instances);
     }
 
-    public static JSONArrayResponse getInstancesAsJSONArrayResponse(String cloud, String workspace, String box) {
-        return getInstancesAsJSONArrayResponse(ClientCache.getClient(cloud), workspace, box);
-    }
-
-    public static ListBoxModel getInstances(Client client, String workspace, String box) {
-        ListBoxModel instances = new ListBoxModel();
-        JSONArray instanceArray = getInstancesAsJSONArrayResponse(client, workspace, box).getJsonArray();
-        for (Object instance : instanceArray) {
-            JSONObject json = (JSONObject) instance;
-            instances.add(json.getString("name"), json.getString("id"));
-        }
-        return instances;
-    }
-
-    public static ListBoxModel getInstances(String cloud, String workspace, String box) {
-        return getInstances(ClientCache.getClient(cloud), workspace, box);
+    public static JsonArrayResponse getInstancesAsJsonArrayResponse(String cloud, String workspace, String box) {
+        return getInstancesAsJsonArrayResponse(ClientCache.getClient(cloud), workspace, box);
     }
 
     public static FormValidation checkSlaveBox(Client client, String box) {
@@ -465,7 +513,10 @@ public class DescriptorHelper {
         if (SlaveInstance.isSlaveBox(stack.getJSONObject(0))) {
             return FormValidation.ok();
         } else if (stack.size() == 1) {
-            return FormValidation.error(MessageFormat.format("The selected box version does not have the following required variables: {0}", variableListStr));
+            return FormValidation.error(
+                    MessageFormat.format(
+                            "The selected box version does not have the following required variables: {0}",
+                            variableListStr));
         }
 
         JSONObject slaveBox = null;
@@ -478,9 +529,17 @@ public class DescriptorHelper {
         }
 
         if (slaveBox != null) {
-            return FormValidation.ok(MessageFormat.format("The required variables {0} are detected in child box {1}. They will be set by Jenkins at deployment time.", variableListStr, slaveBox.getString("name")));
+            return FormValidation.ok(
+                    MessageFormat.format(
+                            "The required variables {0} are detected in child box {1}. "
+                                    + "They will be set by Jenkins at deployment time.",
+                            variableListStr,
+                            slaveBox.getString("name")));
         } else {
-            String message = MessageFormat.format("The selected box version and its child boxes do not have the following required variables: {0}", variableListStr);
+            String message = MessageFormat.format(
+                    "The selected box version and its child boxes do not have the following required variables: {0}",
+                    variableListStr);
+
             return FormValidation.error(message);
         }
     }
@@ -508,13 +567,24 @@ public class DescriptorHelper {
             }
         }
         for (Iterator iter = variableArray.iterator(); iter.hasNext();) {
+
             JSONObject varJson = (JSONObject) iter.next();
-            String fullVariableName = (varJson.containsKey("scope") ? varJson.getString("scope") : StringUtils.EMPTY) + '.' + varJson.getString("name");
+
+            String fullVariableName;
+            if (varJson.containsKey("scope") ) {
+                fullVariableName = varJson.getString("scope");
+            } else {
+                fullVariableName = StringUtils.EMPTY + '.' + varJson.getString("name");
+            }
+
             if (!fullVariableNames.contains(fullVariableName)) {
                 iter.remove();
             }
 
-            if (varJson.getString("type").equals("Binding") && varJson.containsKey("value") && StringUtils.isBlank(varJson.getString("value"))) {
+            if (varJson.getString("type").equals("Binding")
+                    && varJson.containsKey("value")
+                    && StringUtils.isBlank(varJson.getString("value"))) {
+
                 iter.remove();
             }
         }
@@ -539,7 +609,12 @@ public class DescriptorHelper {
         return variableArray.toString();
     }
 
-    public static final String resolveDeploymentPolicy(Client client, String workspaceId, String policy, String commaSeparateClaims) throws IOException {
+    public static final String resolveDeploymentPolicy(
+            Client client,
+            String workspaceId,
+            String policy,
+            String commaSeparateClaims) throws IOException {
+
         String resolvedDeploymentPolicy;
         if (commaSeparateClaims != null) {
             if (StringUtils.isNotBlank(commaSeparateClaims)) {
@@ -549,14 +624,18 @@ public class DescriptorHelper {
                 }
                 List<JSONObject> policies = client.getPolicies(workspaceId, tags);
                 if (policies.isEmpty()) {
-                    throw new IOException(MessageFormat.format("Cannot find any deployment policy with claims: {0}", commaSeparateClaims));
+                    throw new IOException(
+                            MessageFormat.format(
+                                    "Cannot find any deployment policy with claims: {0}",
+                                    commaSeparateClaims));
                 } else {
                     resolvedDeploymentPolicy = policies.get(0).getString("id");
                 }
-            } else if(policy != null && StringUtils.isNotBlank(policy)) {
+            } else if (policy != null && StringUtils.isNotBlank(policy)) {
                 resolvedDeploymentPolicy = policy;
             } else {
-                throw new IOException(MessageFormat.format("Claims are required to select a deployment policy", commaSeparateClaims));
+                throw new IOException(
+                        MessageFormat.format("Claims are required to select a deployment policy", commaSeparateClaims));
             }
         } else {
             resolvedDeploymentPolicy = policy;
@@ -564,20 +643,11 @@ public class DescriptorHelper {
         return resolvedDeploymentPolicy;
     }
 
-    public static JSONArray getInstances(Set<String> tags, String cloud, String workspace, boolean excludeInaccessible) {
-        return getInstances(ClientCache.getClient(cloud), workspace, new InstanceFilterByTags(tags, excludeInaccessible));
-    }
-
-    public static JSONArray getInstances(Set<String> tags, String cloud, String workspace, String boxVersion) {
-        return getInstances(ClientCache.getClient(cloud), workspace,
-                new CompositeObjectFilter(new InstanceFilterByTags(tags, false), new InstanceFilterByBox((boxVersion))));
-    }
-
     public static void fixDeploymentPolicyFormData(JSONObject formData) {
 
         final DeploymentType boxDeploymentType = DeploymentType.findBy(formData.getString("boxDeploymentType"));
 
-        switch (boxDeploymentType){
+        switch (boxDeploymentType) {
             case APPLICATIONBOX_DEPLOYMENT_TYPE:
                 formData.remove("profile");
                 formData.remove("provider");
@@ -618,9 +688,12 @@ public class DescriptorHelper {
     }
 
     public static ListBoxModel getEmptyListBoxModel(final String emptyName, final String emptyValue) {
-        return new ListBoxModel() {{
-            add(new ListBoxModel.Option(emptyName, emptyValue));
-        }};
+
+        return new ListBoxModel() {
+            {
+                add(new ListBoxModel.Option(emptyName, emptyValue));
+            }
+        };
     }
 
     public static boolean anyOfThemIsBlank(String... inputParameters) {
@@ -633,7 +706,7 @@ public class DescriptorHelper {
     }
 
     private static ListBoxModel sort(ListBoxModel model) {
-        Collections.sort(model, new Comparator<ListBoxModel.Option> () {
+        Collections.sort(model, new Comparator<ListBoxModel.Option>() {
             public int compare(ListBoxModel.Option o1, ListBoxModel.Option o2) {
                 return o1.name.compareTo(o2.name);
             }

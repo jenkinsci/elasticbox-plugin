@@ -14,21 +14,23 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.jenkins.util.Condition;
 import com.thoughtworks.xstream.XStream;
+
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.slaves.Cloud;
+
+import jenkins.model.Jenkins;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+
 import java.io.IOException;
+
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class Initializers {
     private static final Logger LOGGER = Logger.getLogger(Initializers.class.getName());
 
@@ -38,7 +40,6 @@ public class Initializers {
 
         // wait for nodes to be set
         new Condition() {
-
             @Override
             public boolean satisfied() {
                 return Jenkins.getInstance().getNodes() != null;

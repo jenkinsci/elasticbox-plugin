@@ -20,9 +20,6 @@ import net.sf.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by serna on 2/12/16.
- */
 public class CompositeBoxFilter implements Filter<JSONObject> {
 
     private List<Filter<JSONObject>> filters =  new ArrayList<>();
@@ -35,15 +32,15 @@ public class CompositeBoxFilter implements Filter<JSONObject> {
         this.filters = filters;
     }
 
-    public CompositeBoxFilter add(Filter<JSONObject> filter){
+    public CompositeBoxFilter add(Filter<JSONObject> filter) {
         filters.add(filter);
         return this;
     }
 
     @Override
     public boolean apply(JSONObject it) {
-        for(Filter<JSONObject> filter : getFilters()){
-            if (!filter.apply(it)){
+        for (Filter<JSONObject> filter : getFilters()) {
+            if (!filter.apply(it)) {
                 return false;
             }
         }

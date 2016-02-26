@@ -1,8 +1,5 @@
 package com.elasticbox.jenkins.model.provider;
 
-/**
- * Created by serna on 11/26/15.
- */
 public enum ProviderType {
     AMAZON,
     AZURE,

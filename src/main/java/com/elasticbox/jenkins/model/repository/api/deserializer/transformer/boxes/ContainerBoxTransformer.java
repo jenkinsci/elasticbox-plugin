@@ -19,9 +19,6 @@ import com.elasticbox.jenkins.model.box.docker.ContainerBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/29/15.
- */
 public class ContainerBoxTransformer extends AbstractBoxTransformer<ContainerBox> {
 
     @Override
@@ -35,6 +32,7 @@ public class ContainerBoxTransformer extends AbstractBoxTransformer<ContainerBox
 
         return  box;
     }
+
     @Override
     public boolean shouldApply(JSONObject jsonObject) {
         return super.canCreate(jsonObject, BoxType.DOCKER);

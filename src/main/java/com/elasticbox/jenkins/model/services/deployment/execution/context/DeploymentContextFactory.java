@@ -32,14 +32,12 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 1/23/16.
- */
 public abstract class DeploymentContextFactory<T extends AbstractBoxDeploymentContext> {
 
     private static final Logger logger = Logger.getLogger(DeploymentContextFactory.class.getName());
 
-    protected static EnumMap<DeploymentType, DeploymentContextFactory> deploymentTypeMap = new EnumMap<DeploymentType, DeploymentContextFactory>(DeploymentType.class);
+    protected static EnumMap<DeploymentType, DeploymentContextFactory> deploymentTypeMap =
+            new EnumMap<DeploymentType, DeploymentContextFactory>(DeploymentType.class);
 
     public abstract ApplicationBoxDeploymentContext createContext(DeployBox deployBox,
                                                                   VariableResolver variableResolver,
@@ -49,8 +47,10 @@ public abstract class DeploymentContextFactory<T extends AbstractBoxDeploymentCo
                                                                   BuildListener listener,
                                                                   TaskLogger logger) throws AbortException;
 
-    static{
-        deploymentTypeMap.put(DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE, new ApplicationBoxDeploymentContext.ApplicationBoxDeploymentFactory());
+    static {
+        deploymentTypeMap.put(
+                DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE,
+                new ApplicationBoxDeploymentContext.ApplicationBoxDeploymentFactory());
     }
 
 
@@ -64,22 +64,29 @@ public abstract class DeploymentContextFactory<T extends AbstractBoxDeploymentCo
                                             TaskLogger taskLogger) throws AbortException, ServiceException {
 
         final String boxDeploymentType = deployBox.getBoxDeploymentType();
-        if(StringUtils.isNotBlank(boxDeploymentType)){
+        if (StringUtils.isNotBlank(boxDeploymentType)) {
             final DeploymentType deploymentType = DeploymentType.findBy(boxDeploymentType);
-            if (deploymentTypeMap.containsKey(deploymentType)){
+            if (deploymentTypeMap.containsKey(deploymentType)) {
                 final DeploymentContextFactory deploymentContextFactory = deploymentTypeMap.get(deploymentType);
-                return (T) deploymentContextFactory.createContext(deployBox, variableResolver, cloud, build, launcher, listener, taskLogger);
+                return (T) deploymentContextFactory.createContext(
+                        deployBox,
+                        variableResolver,
+                        cloud,
+                        build,
+                        launcher,
+                        listener,
+                        taskLogger);
             }
         }
 
         taskLogger.error("There is no DeploymentContextFactory for DeploymentType: {0}", boxDeploymentType);
         logger.log(Level.SEVERE, "There is no DeploymentContextFactory for DeploymentType: " + boxDeploymentType);
 
-        throw new ServiceException("There is no DeploymentContextFactory for DeploymentType: "+boxDeploymentType);
+        throw new ServiceException("There is no DeploymentContextFactory for DeploymentType: " + boxDeploymentType);
 
     }
 
-    protected String [] commaSeparatedValuesToArray(String commaSeparated){
+    protected String [] commaSeparatedValuesToArray(String commaSeparated) {
         if (StringUtils.isNotBlank(commaSeparated)) {
             Set<String> set = new HashSet<String>();
             for (String token : commaSeparated.split(",")) {

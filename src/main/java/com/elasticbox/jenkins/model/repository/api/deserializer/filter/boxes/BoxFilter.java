@@ -19,18 +19,16 @@ import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/27/15.
- */
 public class BoxFilter implements Filter<JSONObject> {
 
     @Override
     public boolean apply(JSONObject jsonObject) {
 
-        if(!BoxType.isBox(jsonObject.getString("schema")))
+        if (!BoxType.isBox(jsonObject.getString("schema"))) {
             return false;
+        }
 
-        if(Constants.SERVICES_BOXES_TO_BE_EXCLUDED.containsKey(jsonObject.getString("name"))){
+        if (Constants.SERVICES_BOXES_TO_BE_EXCLUDED.containsKey(jsonObject.getString("name"))) {
             return false;
         }
 

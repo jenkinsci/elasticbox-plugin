@@ -17,16 +17,18 @@ package com.elasticbox.jenkins.model.repository.api.deserializer;
 import com.elasticbox.jenkins.model.repository.api.deserializer.action.Action;
 import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
 import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.Transformer;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Utils {
 
-    public static String [] toStringArray(JSONArray jsonArray){
+    public static String [] toStringArray(JSONArray jsonArray) {
 
-        if(!jsonArray.isEmpty()){
+        if (!jsonArray.isEmpty()) {
             return (String[]) jsonArray.toArray(new String[jsonArray.size()]);
         }
 
@@ -75,7 +77,8 @@ public class Utils {
     }
 
     public static <T> void map(List<T> src, Action<T> action) {
-        for (T it : src)
+        for (T it : src) {
             action.apply(it);
+        }
     }
 }
