@@ -201,7 +201,7 @@
         <hamcrest.version>1.3</hamcrest.version>
         <powermock.version>1.6.2</powermock.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <checkstyle.version>6.14.1</checkstyle.version>
+        <puppycrawl.version>6.14.1</puppycrawl.version>
         <checkstyle.plugin.version>2.1</checkstyle.plugin.version>
     </properties>
 
@@ -252,7 +252,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>${checkstyle.version}</version>
+                        <version>${puppycrawl.version}</version>
                     </dependency>
                 </dependencies>
                 <executions>
