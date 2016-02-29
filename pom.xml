@@ -32,6 +32,10 @@
             <id>repo.jenkins-ci.org</id>
             <url>http://repo.jenkins-ci.org/public/</url>
         </pluginRepository>
+        <pluginRepository>
+            <id>jenkins-releases</id>
+            <url>http://repo.jenkins-ci.org/releases/</url>
+        </pluginRepository>
     </pluginRepositories>
 
     <developers>
@@ -206,7 +210,7 @@
         <powermock.version>1.6.2</powermock.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <checkstyle.version>6.14.1</checkstyle.version>
-        <checkstyle.plugin.version>2.16</checkstyle.plugin.version>
+        <checkstyle.plugin.version>2.17</checkstyle.plugin.version>
     </properties>
 
     <build>
@@ -263,11 +267,9 @@
                     <execution>
                         <id>verify-style</id>
                         <phase>validate</phase>
-                        <!--
                         <goals>
                             <goal>check</goal>
                         </goals>
-                        -->
                     </execution>
                 </executions>
                 <configuration>
