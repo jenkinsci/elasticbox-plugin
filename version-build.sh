@@ -90,7 +90,7 @@ then
 fi
 
 cd ${REPOSITORY_FOLDER}
-mvn ${BUILD_OPTIONS} clean install -X
+mvn ${BUILD_OPTIONS} clean install
 
 # keep the test results and logs for the tested Jenkins version
 TEST_RESULTS_FOLDER=${REPOSITORY_FOLDER}/results/${JENKINS_VERSION}
