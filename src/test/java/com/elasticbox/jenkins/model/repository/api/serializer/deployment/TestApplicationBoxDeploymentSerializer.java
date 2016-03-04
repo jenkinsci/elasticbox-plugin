@@ -53,7 +53,6 @@ public class TestApplicationBoxDeploymentSerializer {
                 .build();
 
         final JSONObject request = new ApplicationBoxDeploymentSerializer().createRequest(applicationBoxDeploymentContext);
-
         assertTrue("policyBox id was not set", request.getJSONObject("lease").getString("expire").equals(expiration.getUtcDateTime()));
         assertTrue("policyBox id was not set", request.getJSONObject("lease").getString("operation").equals("terminate"));
         assertTrue("policyBox id was not set", request.getJSONObject("box").getString("id").equals("FAKE_BOX_ID"));
