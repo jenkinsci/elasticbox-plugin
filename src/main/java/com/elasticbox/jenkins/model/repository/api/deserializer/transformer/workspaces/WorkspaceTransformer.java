@@ -21,15 +21,14 @@ import com.elasticbox.jenkins.model.workspace.PersonalWorkspace;
 import com.elasticbox.jenkins.model.workspace.TeamWorkspace;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/29/15.
- */
 public class WorkspaceTransformer implements Transformer<JSONObject, AbstractWorkspace> {
     @Override
     public AbstractWorkspace apply(JSONObject jsonObject) throws ElasticBoxModelException {
 
-        final AbstractWorkspace.WorkspaceType workspaceType = AbstractWorkspace.WorkspaceType.findBy(jsonObject.getString("schema"));
-        if (workspaceType == AbstractWorkspace.WorkspaceType.PERSONAL){
+        final AbstractWorkspace.WorkspaceType workspaceType
+            = AbstractWorkspace.WorkspaceType.findBy(jsonObject.getString("schema"));
+
+        if (workspaceType == AbstractWorkspace.WorkspaceType.PERSONAL) {
             return new PersonalWorkspace.PersonalWorkspaceBuilder()
                     .withId(jsonObject.getString("id"))
                     .withSchema(jsonObject.getString("schema"))
@@ -45,7 +44,9 @@ public class WorkspaceTransformer implements Transformer<JSONObject, AbstractWor
                 .withSchema(jsonObject.getString("schema"))
                 .withName(jsonObject.getString("name"))
                 .withType(workspaceType)
-                .withOrganizations((String[]) jsonObject.getJSONArray("organizations").toArray(new String[jsonObject.getJSONArray("organizations").size()]))
+                .withOrganizations((String[])jsonObject.getJSONArray("organizations")
+                    .toArray(new String[jsonObject.getJSONArray("organizations").size()]))
+
                 .build();
 
     }

@@ -4,14 +4,14 @@ import com.elasticbox.jenkins.model.box.AbstractBox;
 import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.box.ClaimsVsRequirementsDeployable;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
+
 import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
 
-/**
- * Created by serna on 11/29/15.
- */
-public class TemplateCloudFormationBox extends AbstractBox implements CloudFormationBox, ClaimsVsRequirementsDeployable{
+public class TemplateCloudFormationBox
+    extends AbstractBox
+    implements CloudFormationBox, ClaimsVsRequirementsDeployable {
 
     private String [] requirements;
 
@@ -30,7 +30,8 @@ public class TemplateCloudFormationBox extends AbstractBox implements CloudForma
     }
 
 
-    public static class TemplateCloudFormationBoxBuilder extends AbstractBox.ComplexBuilder<TemplateCloudFormationBoxBuilder, TemplateCloudFormationBox> {
+    public static class TemplateCloudFormationBoxBuilder
+        extends AbstractBox.ComplexBuilder<TemplateCloudFormationBoxBuilder, TemplateCloudFormationBox> {
 
         private String[] requirements;
 

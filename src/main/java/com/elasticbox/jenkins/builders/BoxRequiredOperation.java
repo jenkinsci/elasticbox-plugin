@@ -19,10 +19,6 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public abstract class BoxRequiredOperation extends Operation {
     private final String box;
     private final String boxVersion;
@@ -52,9 +48,11 @@ public abstract class BoxRequiredOperation extends Operation {
         return variables;
     }
 
-    public static abstract class Descriptor extends OperationDescriptor {
+    public abstract static class Descriptor extends OperationDescriptor {
 
-        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud, @RelativePath("..") @QueryParameter String workspace) {
+        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String cloud,
+                                           @RelativePath("..") @QueryParameter String workspace) {
+
             return DescriptorHelper.getBoxes(cloud, workspace);
         }
 
@@ -63,9 +61,13 @@ public abstract class BoxRequiredOperation extends Operation {
             return DescriptorHelper.getBoxVersions(cloud, workspace, box);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@RelativePath("..") @QueryParameter String cloud,
-                @QueryParameter String workspace, @QueryParameter String box, @QueryParameter String boxVersion) {
-            DescriptorHelper.JSONArrayResponse response = DescriptorHelper.getBoxStack(cloud, workspace, box,
+        public DescriptorHelper.JsonArrayResponse doGetBoxStack(
+                @RelativePath("..") @QueryParameter String cloud,
+                @QueryParameter String workspace,
+                @QueryParameter String box,
+                @QueryParameter String boxVersion) {
+
+            DescriptorHelper.JsonArrayResponse response = DescriptorHelper.getBoxStack(cloud, workspace, box,
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
             // reset the variable of all variable to empty string so the UI will save variables with non-empty value and
             // only those variables will be updated for every instance with matching tags
@@ -80,10 +82,13 @@ public abstract class BoxRequiredOperation extends Operation {
             return response;
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetInstances(@RelativePath("..") @QueryParameter String cloud,
-                @RelativePath("..") @QueryParameter String workspace, @QueryParameter String box,
+        public DescriptorHelper.JsonArrayResponse doGetInstances(
+                @RelativePath("..") @QueryParameter String cloud,
+                @RelativePath("..") @QueryParameter String workspace,
+                @QueryParameter String box,
                 @QueryParameter String boxVersion) {
-            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace,
+
+            return DescriptorHelper.getInstancesAsJsonArrayResponse(cloud, workspace,
                     StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 

@@ -19,27 +19,38 @@ import hudson.model.Result;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import hudson.plugins.git.util.BuildData;
+
+import jenkins.model.Jenkins;
+
+import org.apache.commons.lang.StringUtils;
+
+import org.kohsuke.github.GHCommitState;
+import org.kohsuke.github.GHPullRequest;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.github.GHCommitState;
-import org.kohsuke.github.GHPullRequest;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 @Extension
 public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
     private static final Logger LOGGER = Logger.getLogger(PullRequestBuildListener.class.getName());
 
-    public boolean postStatus(AbstractBuild<?, ?> build, GHPullRequest pullRequest, GHCommitState status, String message) {
+    public boolean postStatus(
+        AbstractBuild<?, ?> build, GHPullRequest pullRequest, GHCommitState status, String message) {
+
         String detailsUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();
-        LOGGER.finest(MessageFormat.format("Posting status {0} to {1} with details URL {2} and message: {3}", status, pullRequest.getHtmlUrl(), detailsUrl, message));
+
+        LOGGER.finest(
+            MessageFormat.format(
+                "Posting status {0} to {1} with details URL {2} and message: {3}",
+                status,
+                pullRequest.getHtmlUrl(),
+                detailsUrl,
+                message)
+        );
+
         try {
             pullRequest.getRepository().createCommitStatus(pullRequest.getHead().getSha(), status, detailsUrl, message);
             return true;
@@ -52,9 +63,18 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
     public void postComment(AbstractBuild<?, ?> build, GHPullRequest pullRequest, String comment) {
         String detailsUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();
         try {
+
             pullRequest.comment(MessageFormat.format("{0}. See {1} for more details.", comment, detailsUrl));
+
         } catch (IOException ex1) {
-            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting comment to {0}", pullRequest.getHtmlUrl()), ex1);
+
+            LOGGER.log(
+                Level.SEVERE,
+                MessageFormat.format(
+                    "Error posting comment to {0}",
+                    pullRequest.getHtmlUrl()),
+                ex1
+            );
         }
     }
 
@@ -75,7 +95,14 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
                     pullRequest.getTitle(), pullRequest.getHtmlUrl(), prLinkText,
                     StringUtils.abbreviate(pullRequest.getTitle(), 58 - prLinkText.length())));
         } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, MessageFormat.format("Error updating description of build {0}", build.getUrl()), ex);
+
+            LOGGER.log(
+                Level.SEVERE,
+                MessageFormat.format(
+                    "Error updating description of build {0}",
+                    build.getUrl()),
+                ex
+            );
         }
     }
 
@@ -91,7 +118,10 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
             Action action = iter.next();
             if (action instanceof BuildData) {
                 BuildData buildData = (BuildData) action;
-                if (buildData.getLastBuiltRevision() != null && pullRequest.getHead().getSha().equals(buildData.getLastBuiltRevision())) {
+
+                if (buildData.getLastBuiltRevision() != null
+                    && pullRequest.getHead().getSha().equals(buildData.getLastBuiltRevision())) {
+
                     iter.remove();
                     break;
                 }

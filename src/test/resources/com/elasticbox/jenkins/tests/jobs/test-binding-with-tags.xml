@@ -23,47 +23,61 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.9-SNAPSHOT">
-      <id>com.elasticbox.jenkins.builders.DeployBox-cccdcb46-c9d5-48d5-8415-7e2e0fe070c8</id>
-      <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
-      <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
-      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
-      <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
-      <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;CONNECTION&quot;,&quot;value&quot;:&quot;connection&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Text&quot;}]</variables>
-      <skipIfExisting>false</skipIfExisting>
-      <alternateAction>none</alternateAction>
-      <waitForCompletion>true</waitForCompletion>
-      <tags>test-binding-box, ${TEST_TAG}</tags>
+        <id>com.elasticbox.jenkins.builders.DeployBox-cccdcb46-c9d5-48d5-8415-7e2e0fe070c8</id>
+        <cloud>elasticbox</cloud>
+        <workspace>tphongio</workspace>
+        <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
+        <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
+        <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
+        <instances>1</instances>
+        <variables>
+        [
+            {"name": "CONNECTION", "value": "connection", "scope": "", "type": "Text"}
+        ]
+        </variables>
+        <skipIfExisting>false</skipIfExisting>
+        <alternateAction>none</alternateAction>
+        <waitForCompletion>true</waitForCompletion>
+        <tags>test-binding-box, ${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.9-SNAPSHOT">
-      <id>com.elasticbox.jenkins.builders.DeployBox-9e541abf-98db-48e4-81c0-fead772049c6</id>
-      <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
-      <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
-      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
-      <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
-      <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;ANY_BINDING&quot;,&quot;value&quot;:&quot;(${TEST_TAG})&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Binding&quot;}]</variables>
-      <skipIfExisting>false</skipIfExisting>
-      <alternateAction>none</alternateAction>
-      <waitForCompletion>true</waitForCompletion>
-      <tags>test-linux-box, ${TEST_TAG}</tags>
+        <id>com.elasticbox.jenkins.builders.DeployBox-9e541abf-98db-48e4-81c0-fead772049c6</id>
+        <cloud>elasticbox</cloud>
+        <workspace>tphongio</workspace>
+        <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
+        <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
+        <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
+        <instances>1</instances>
+        <variables>
+            [
+            {"name": "ANY_BINDING", "value": "(${TEST_TAG})", "scope": "", "type": "Binding"}
+            ]
+        </variables>
+        <skipIfExisting>false</skipIfExisting>
+        <alternateAction>none</alternateAction>
+        <waitForCompletion>true</waitForCompletion>
+        <tags>test-linux-box, ${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.9-SNAPSHOT">
-      <id>com.elasticbox.jenkins.builders.DeployBox-079d92d8-d1ca-4e4c-bc19-cdca9798e661</id>
-      <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
-      <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
-      <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
-      <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
-      <instances>1</instances>
-      <variables>[{&quot;name&quot;:&quot;BINDING&quot;,&quot;value&quot;:&quot;(test-linux-box, ${TEST_TAG})&quot;,&quot;scope&quot;:&quot;&quot;,&quot;type&quot;:&quot;Binding&quot;},{&quot;name&quot;:&quot;ANY_BINDING&quot;,&quot;value&quot;:&quot;(test-binding-box, ${TEST_TAG})&quot;,&quot;scope&quot;:&quot;nested&quot;,&quot;type&quot;:&quot;Binding&quot;}]</variables>
-      <skipIfExisting>false</skipIfExisting>
-      <alternateAction>none</alternateAction>
-      <waitForCompletion>true</waitForCompletion>
-      <tags>test-nested-box, ${TEST_TAG}</tags>
+        <id>com.elasticbox.jenkins.builders.DeployBox-079d92d8-d1ca-4e4c-bc19-cdca9798e661</id>
+        <cloud>elasticbox</cloud>
+        <workspace>tphongio</workspace>
+        <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
+        <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
+        <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
+        <instances>1</instances>
+        <variables>
+            [
+            {"name": "BINDING", "value": "(test-linux-box, ${TEST_TAG})", "scope": "", "type": "Binding"},
+            {"name": "ANY_BINDING", "value": "(test-binding-box, ${TEST_TAG})", "scope": "nested", "type": "Binding"}
+            ]
+        </variables>
+        <skipIfExisting>false</skipIfExisting>
+        <alternateAction>none</alternateAction>
+        <waitForCompletion>true</waitForCompletion>
+        <tags>test-nested-box, ${TEST_TAG}</tags>
     </com.elasticbox.jenkins.builders.DeployBox>
+      <!--
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.9-SNAPSHOT">
       <cloud>elasticbox</cloud>
       <workspace>tphongio</workspace>
@@ -76,6 +90,7 @@
         </com.elasticbox.jenkins.builders.UpdateOperation>
       </operations>
     </com.elasticbox.jenkins.builders.ManageInstance>
+    -->
   </builders>
   <publishers/>
   <buildWrappers/>

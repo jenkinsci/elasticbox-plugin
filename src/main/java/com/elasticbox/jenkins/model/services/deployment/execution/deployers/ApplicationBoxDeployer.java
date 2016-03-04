@@ -31,10 +31,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 1/19/16.
- */
-public class ApplicationBoxDeployer implements BoxDeployer<ApplicationBoxDeploymentContext>{
+public class ApplicationBoxDeployer implements BoxDeployer<ApplicationBoxDeploymentContext> {
 
     private static final Logger logger = Logger.getLogger(ApplicationBoxDeployer.class.getName());
 
@@ -49,17 +46,17 @@ public class ApplicationBoxDeployer implements BoxDeployer<ApplicationBoxDeploym
         final String owner = order.getOwner();
 
         //Calculate the final box id to deploy taking acount of the version and box id
-        if(Constants.LATEST_BOX_VERSION.equals(boxVersion)){
+        if (Constants.LATEST_BOX_VERSION.equals(boxVersion)) {
             final AbstractBox boxModel = boxRepository.getBox(box);
-            if(!boxModel.canWrite(owner)){
+            if (!boxModel.canWrite(owner)) {
                 final List<AbstractBox> boxVersions = boxRepository.getBoxVersions(box);
-                if(!boxVersion.isEmpty()){
+                if (!boxVersion.isEmpty()) {
                     context.setBoxToDeployId(boxVersions.get(0).getId());
                 }
             }
         }
 
-        if (!order.isWaitForDone()){
+        if (!order.isWaitForDone()) {
             return context.getDeploymentOrderRepository().deploy(context);
         }
 
@@ -74,12 +71,13 @@ public class ApplicationBoxDeployer implements BoxDeployer<ApplicationBoxDeploym
             return deployApplicationBoxTask.succesfullyDeployedInstances();
         } catch (TaskException e) {
             deploymentLogger.error("ApplicationBox: {0} deployment error", order.getName());
-            logger.log(Level.SEVERE, "ApplicationBox deployment error, order: "+context.getOrder(), e);
-            throw new ServiceException("ApplicationBox deployment error, order: "+context.getOrder(), e);
+            logger.log(Level.SEVERE, "ApplicationBox deployment error, order: " + context.getOrder(), e);
+            throw new ServiceException("ApplicationBox deployment error, order: " + context.getOrder(), e);
         }
     }
 
-    public static class ApplicationBoxDeployerFactory extends BoxDeployerFactory<ApplicationBoxDeployer, ApplicationBoxDeploymentContext>{
+    public static class ApplicationBoxDeployerFactory
+            extends BoxDeployerFactory<ApplicationBoxDeployer, ApplicationBoxDeploymentContext> {
 
         @Override
         public ApplicationBoxDeployer createDeployer(ApplicationBoxDeploymentContext context) {

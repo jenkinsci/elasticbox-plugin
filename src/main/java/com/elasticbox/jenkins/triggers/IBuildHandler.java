@@ -12,10 +12,6 @@
 
 package com.elasticbox.jenkins.triggers;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public interface IBuildHandler {
 
 }

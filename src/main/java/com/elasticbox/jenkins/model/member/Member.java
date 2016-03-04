@@ -15,18 +15,16 @@
 package com.elasticbox.jenkins.model.member;
 
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
-import org.apache.commons.lang.enums.*;
 
-/**
- * Created by serna on 1/21/16.
- */
 public class Member {
 
-    public enum Role{
+    public enum Role {
+
         READ("read"), COLLABORATOR("collaborator");
 
         private String value;
-        Role(String value){
+
+        Role(String value) {
             this.value = value;
         }
 
@@ -35,14 +33,16 @@ public class Member {
         }
 
         public static Role findByValue(String member) throws ElasticBoxModelException {
-            for(Role r : values()){
-                if( r.getValue().equals(member)){
+            for (Role r : values()) {
+                if (r.getValue().equals(member)) {
                     return r;
                 }
             }
-            throw new ElasticBoxModelException("There is no Member type for value: "+member);
+
+            throw new ElasticBoxModelException("There is no Member type for value: " + member);
         }
     }
+
     private Role role;
     private String workspace;
 

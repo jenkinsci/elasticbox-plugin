@@ -36,9 +36,6 @@ import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.List;
 
-/**
- * Created by serna on 1/18/16
- */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(VariableResolver.class)
 public class DeployBoxTesting {

@@ -31,10 +31,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 1/20/16.
- */
-public class ApplicationBoxDeploymentContext extends AbstractBoxDeploymentContext<ApplicationBoxDeploymentOrder>{
+public class ApplicationBoxDeploymentContext extends AbstractBoxDeploymentContext<ApplicationBoxDeploymentOrder> {
 
     private ApplicationBoxDeploymentContext(Builder builder) {
         super(builder);
@@ -55,7 +52,7 @@ public class ApplicationBoxDeploymentContext extends AbstractBoxDeploymentContex
 
         private String[] requirements;
 
-        public Builder requirements(String [] requirements){
+        public Builder requirements(String [] requirements) {
             this.requirements = requirements;
             return this;
         }
@@ -66,7 +63,8 @@ public class ApplicationBoxDeploymentContext extends AbstractBoxDeploymentContex
         }
     }
 
-    public static class ApplicationBoxDeploymentFactory extends DeploymentContextFactory<ApplicationBoxDeploymentContext>{
+    public static class ApplicationBoxDeploymentFactory
+            extends DeploymentContextFactory<ApplicationBoxDeploymentContext> {
 
         @Override
         public ApplicationBoxDeploymentContext createContext(DeployBox deployBox,
@@ -86,7 +84,7 @@ public class ApplicationBoxDeploymentContext extends AbstractBoxDeploymentContex
             if (expiration instanceof InstanceExpirationSchedule) {
                 InstanceExpirationSchedule expirationSchedule = (InstanceExpirationSchedule) expiration;
                 try {
-                    expirationTime = expirationSchedule.getUTCDateTime();
+                    expirationTime = expirationSchedule.getUtcDateTime();
                 } catch (ParseException ex) {
                     Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
                     logger.error("Error parsing expiration time: {0}", ex.getMessage());

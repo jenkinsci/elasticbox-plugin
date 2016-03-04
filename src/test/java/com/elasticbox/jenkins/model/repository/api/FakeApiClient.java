@@ -1,6 +1,6 @@
 package com.elasticbox.jenkins.model.repository.api;
 
-import com.elasticbox.APIClient;
+import com.elasticbox.ApiClient;
 import com.elasticbox.jenkins.UnitTestingUtils;
 import net.sf.json.JSON;
 import net.sf.json.JSONArray;
@@ -9,10 +9,7 @@ import net.sf.json.JSONObject;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Created by serna on 12/3/15.
- */
-public class FakeAPIClient implements APIClient{
+public class FakeApiClient implements ApiClient {
 
     @Override
     public JSONArray getBoxVersions(String boxId) throws IOException {

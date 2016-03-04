@@ -12,15 +12,12 @@
 
 package com.elasticbox.jenkins.util;
 
+import net.sf.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import net.sf.json.JSONObject;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class CompositeObjectFilter implements ObjectFilter {
     private final List<ObjectFilter> filters;
 

@@ -14,9 +14,6 @@
 
 package com.elasticbox.jenkins.model.workspace;
 
-/**
- * Created by serna on 1/28/16.
- */
 public class PersonalWorkspace extends AbstractWorkspace {
 
     private String email;
@@ -29,7 +26,8 @@ public class PersonalWorkspace extends AbstractWorkspace {
 
     }
 
-    public static class PersonalWorkspaceBuilder extends AbstractWorkspace.ComplexBuilder<PersonalWorkspaceBuilder, PersonalWorkspace> {
+    public static class PersonalWorkspaceBuilder
+        extends AbstractWorkspace.ComplexBuilder<PersonalWorkspaceBuilder, PersonalWorkspace> {
 
         private String email;
         private String organization;

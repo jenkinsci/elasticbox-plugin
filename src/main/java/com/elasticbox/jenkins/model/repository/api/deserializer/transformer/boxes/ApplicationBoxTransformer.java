@@ -19,13 +19,11 @@ import com.elasticbox.jenkins.model.box.application.ApplicationBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/29/15.
- */
 public class ApplicationBoxTransformer extends AbstractBoxTransformer<ApplicationBox> {
 
     @Override
     public ApplicationBox apply(JSONObject jsonObject) throws ElasticBoxModelException {
+
         ApplicationBox box = new ApplicationBox.ApplicationBoxBuilder()
                 .withOwner(jsonObject.getString("owner"))
                 .withId(jsonObject.getString("id"))
@@ -35,6 +33,7 @@ public class ApplicationBoxTransformer extends AbstractBoxTransformer<Applicatio
 
         return  box;
     }
+
     @Override
     public boolean shouldApply(JSONObject jsonObject) {
         return super.canCreate(jsonObject, BoxType.APPLICATION);

@@ -18,21 +18,25 @@ import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
+
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+
+import net.sf.json.JSONArray;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collections;
-import net.sf.json.JSONArray;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  *
- * @author Phong Nguyen Le
- * @deprecated
+ * @author Phong Nguyen Le.
+ * @deprecated there is a reinstall operation that should be used instead of this
  */
 public class ReinstallBox extends InstanceBuildStep {
 
@@ -42,7 +46,9 @@ public class ReinstallBox extends InstanceBuildStep {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
+        throws InterruptedException, IOException {
+
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Reinstall Box build step");
 
@@ -58,10 +64,14 @@ public class ReinstallBox extends InstanceBuildStep {
 
     static void reinstall(String instanceId, Client client, JSONArray jsonVariables,
             boolean waitForCompletion, TaskLogger logger) throws IOException, InterruptedException {
+
         IProgressMonitor monitor = client.reinstall(instanceId,
                 DescriptorHelper.removeInvalidVariables(jsonVariables, instanceId, client));
+
         String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl());
+
         logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));
+
         if (waitForCompletion) {
             logger.info("Waiting for the instance to finish reinstall");
             LongOperation.waitForCompletion(Client.InstanceOperation.REINSTALL, Collections.singletonList(monitor),

@@ -15,11 +15,9 @@
 package com.elasticbox.jenkins.model.services.deployment.configuration.validation;
 
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+
 import java.util.List;
 
-/**
- * Created by serna on 1/14/16.
- */
 public interface DeploymentValidationResult {
 
     boolean isOk();
@@ -28,8 +26,10 @@ public interface DeploymentValidationResult {
 
     DeploymentData getDeploymentData();
 
-    interface Cause{
+    interface Cause {
+
         String message();
+
         String field();
     }
 

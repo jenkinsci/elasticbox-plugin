@@ -14,6 +14,7 @@ package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
+
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Computer;
@@ -30,11 +31,21 @@ import hudson.slaves.NodeProvisioner;
 import hudson.slaves.OfflineCause;
 import hudson.slaves.SlaveComputer;
 import hudson.util.RunList;
+
+import jenkins.model.Jenkins;
+
+import org.apache.commons.httpclient.HttpStatus;
+
+import org.jenkinsci.remoting.RoleChecker;
+
 import java.io.IOException;
+
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+
 import java.text.MessageFormat;
+
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -44,14 +55,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import org.apache.commons.httpclient.HttpStatus;
-import org.jenkinsci.remoting.RoleChecker;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+
 public final class ElasticBoxComputer extends SlaveComputer {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxComputer.class.getName());
 
@@ -79,9 +84,9 @@ public final class ElasticBoxComputer extends SlaveComputer {
             return null;
         }
 
-        for(Inet4Address ia : channel.call(new HostAddresses())) {
+        for (Inet4Address ia : channel.call(new HostAddresses())) {
             try {
-                if(ComputerPinger.checkIsReachable(ia, 3)) {
+                if (ComputerPinger.checkIsReachable(ia, 3)) {
                     cachedHostAddress = ia.getHostAddress();
                     hostAddressCached = true;
                     break;
@@ -102,9 +107,19 @@ public final class ElasticBoxComputer extends SlaveComputer {
         boolean terminateNow = false;
         if (isSlaveRemoved(cause)) {
             try {
-                LOGGER.info(MessageFormat.format("Slave {0} is removed, its instance {1} will be terminated.", slave.getNodeName(), slave.getInstancePageUrl()));
+                LOGGER.info(
+                        MessageFormat.format(
+                                "Slave {0} is removed, its instance {1} will be terminated.",
+                                slave.getNodeName(),
+                                slave.getInstancePageUrl()));
+
             } catch (IOException ex) {
-                LOGGER.warning(MessageFormat.format("Slave {0} is removed, its instance cannot be terminated due to the following error: {1}", slave.getNodeName(), ex.getMessage()));
+                LOGGER.warning(
+                        MessageFormat.format(
+                                "Slave {0} is removed, its instance cannot be terminated due to the following error:"
+                                        + " {1}",
+                                slave.getNodeName(),
+                                ex.getMessage()));
 
             }
             // remove any pending launches
@@ -124,7 +139,10 @@ public final class ElasticBoxComputer extends SlaveComputer {
                         LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                         buildTag = build.getDescription();
                     }
-                    LOGGER.warning(MessageFormat.format("The build ''{0}'' will be cancelled because a slave cannot be launched for it.", buildTag));
+                    LOGGER.warning(
+                            MessageFormat.format(
+                                    "The build ''{0}'' will be cancelled because a slave cannot be launched for it.",
+                                    buildTag));
                 }
             }
             for (LabelAtom label : slaveLabels) {
@@ -181,11 +199,21 @@ public final class ElasticBoxComputer extends SlaveComputer {
             } catch (ClientException ex) {
                 if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
                     retry = true;
-                    LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slave.getDisplayName()), ex);
+                    LOGGER.log(
+                            Level.SEVERE,
+                            MessageFormat.format(
+                                    "Error termininating ElasticBox slave {0}",
+                                    slave.getDisplayName()),
+                            ex);
                 }
             } catch (IOException ex) {
                 retry = true;
-                LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slave.getDisplayName()), ex);
+                LOGGER.log(
+                        Level.SEVERE,
+                        MessageFormat.format(
+                                "Error termininating ElasticBox slave {0}",
+                                slave.getDisplayName()),
+                        ex);
             }
 
             if (retry) {
@@ -198,8 +226,15 @@ public final class ElasticBoxComputer extends SlaveComputer {
                                 slave.terminate();
                                 return;
                             } catch (IOException ex) {
-                                LOGGER.log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slave.getDisplayName()), ex);
+                                LOGGER.log(
+                                        Level.SEVERE,
+                                        MessageFormat.format(
+                                                "Error termininating ElasticBox slave {0}",
+                                                slave.getDisplayName()),
+                                        ex);
+
                             } catch (InterruptedException ex) {
+                                Logger.getLogger(ElasticBoxSlave.class.getName()).log(Level.SEVERE,ex.getMessage(), ex);
                             }
                         }
                         String instanceLocation = slave.getInstanceUrl();
@@ -208,8 +243,13 @@ public final class ElasticBoxComputer extends SlaveComputer {
                         } catch (IOException ex) {
                             Logger.getLogger(ElasticBoxSlave.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
                         }
-                        LOGGER.log(Level.SEVERE, MessageFormat.format("Cannot termininate ElasticBox slave {0} after several retries. Please terminate it manually at {1}",
-                                slave.getDisplayName(), instanceLocation));
+                        LOGGER.log(
+                                Level.SEVERE,
+                                MessageFormat.format(
+                                        "Cannot termininate ElasticBox slave {0} after several retries. "
+                                                + "Please terminate it manually at {1}",
+                                        slave.getDisplayName(),
+                                        instanceLocation));
                     }
                 });
             }
@@ -219,8 +259,11 @@ public final class ElasticBoxComputer extends SlaveComputer {
     }
 
     private static boolean isSlaveRemoved(OfflineCause cause) {
-        return cause instanceof OfflineCause.SimpleOfflineCause &&
-                ((OfflineCause.SimpleOfflineCause) cause).description.toString().equals(Messages._Hudson_NodeBeingRemoved().toString());
+        return cause instanceof OfflineCause.SimpleOfflineCause
+                && ((OfflineCause.SimpleOfflineCause) cause)
+                            .description
+                                .toString()
+                                    .equals(Messages._Hudson_NodeBeingRemoved().toString());
     }
 
     private static class HostAddresses implements Callable<List<Inet4Address>, IOException> {
@@ -231,9 +274,9 @@ public final class ElasticBoxComputer extends SlaveComputer {
             Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
             while (nis.hasMoreElements()) {
                 NetworkInterface ni =  nis.nextElement();
-                Enumeration<InetAddress> e = ni.getInetAddresses();
-                while (e.hasMoreElements()) {
-                    InetAddress ia =  e.nextElement();
+                Enumeration<InetAddress> enumeration = ni.getInetAddresses();
+                while (enumeration.hasMoreElements()) {
+                    InetAddress ia =  enumeration.nextElement();
                     if (ia instanceof Inet4Address && !ia.isLoopbackAddress()) {
                         inetAddresses.add((Inet4Address) ia);
                     }
@@ -251,9 +294,9 @@ public final class ElasticBoxComputer extends SlaveComputer {
     public static final class ComputerListenerImpl extends ComputerListener {
 
         @Override
-        public void onOffline(Computer c) {
-            if (c instanceof ElasticBoxComputer) {
-                ElasticBoxComputer ebComputer = (ElasticBoxComputer) c;
+        public void onOffline(Computer computer) {
+            if (computer instanceof ElasticBoxComputer) {
+                ElasticBoxComputer ebComputer = (ElasticBoxComputer) computer;
                 if (ebComputer.mustBeTerminatedOnOffline()) {
                     ebComputer.terminate();
                 }

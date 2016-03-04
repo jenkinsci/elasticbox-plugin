@@ -20,9 +20,6 @@ import com.elasticbox.jenkins.model.services.deployment.execution.context.Applic
 
 import java.util.List;
 
-/**
- * Created by serna on 1/20/16.
- */
 public interface DeploymentOrderRepository {
 
     public List<Instance> deploy(ApplicationBoxDeploymentContext deploymentContext) throws RepositoryException;

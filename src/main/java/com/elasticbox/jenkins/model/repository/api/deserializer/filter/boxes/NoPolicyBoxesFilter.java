@@ -18,16 +18,13 @@ import com.elasticbox.jenkins.model.box.BoxType;
 import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/26/15.
- */
 public class NoPolicyBoxesFilter implements Filter<JSONObject> {
 
     @Override
     public boolean apply(JSONObject jsonObject) {
         String schema = jsonObject.getString("schema");
 
-        if(BoxType.POLICY.isType(schema)){
+        if (BoxType.POLICY.isType(schema)) {
             return false;
         }
 

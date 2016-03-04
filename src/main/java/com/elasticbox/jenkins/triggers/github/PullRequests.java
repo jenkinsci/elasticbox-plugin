@@ -13,13 +13,10 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import com.elasticbox.jenkins.util.ProjectData;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class PullRequests extends ProjectData.Datum {
     private final List<PullRequestData> data;
 

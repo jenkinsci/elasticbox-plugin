@@ -20,10 +20,8 @@ import com.elasticbox.jenkins.model.profile.PolicyProfileType;
 import com.elasticbox.jenkins.model.profile.ProfileType;
 import com.elasticbox.jenkins.model.provider.Provider;
 
-/**
- * Created by serna on 1/21/16.
- */
-public abstract class PolicyBoxBuilder<B extends AbstractBox.ComplexBuilder<B,T>,T> extends AbstractBox.ComplexBuilder<B, T> {
+public abstract class PolicyBoxBuilder<B extends AbstractBox.ComplexBuilder<B,T>,T>
+    extends AbstractBox.ComplexBuilder<B, T> {
 
     protected ProfileType profileType;
 
@@ -34,7 +32,7 @@ public abstract class PolicyBoxBuilder<B extends AbstractBox.ComplexBuilder<B,T>
         this.type = BoxType.POLICY;
     }
 
-    abstract public B withProfileType(String schema);
+    public abstract B withProfileType(String schema);
 
     public B withProvider(Provider provider) {
         this.provider = provider;

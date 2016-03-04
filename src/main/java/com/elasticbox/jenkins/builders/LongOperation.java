@@ -15,22 +15,24 @@ package com.elasticbox.jenkins.builders;
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.util.TaskLogger;
+
 import hudson.AbortException;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+
 import java.io.IOException;
+
 import java.text.MessageFormat;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public abstract class LongOperation extends Operation {
 
     private final boolean waitForCompletion;
@@ -65,7 +67,10 @@ public abstract class LongOperation extends Operation {
         }
         Object waitLock = new Object();
         long startWaitTime = System.currentTimeMillis();
-        while (!instanceIdToMonitorMap.isEmpty() && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime) < timeoutMinutes) {
+
+        while (!instanceIdToMonitorMap.isEmpty()
+            && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime) < timeoutMinutes) {
+
             synchronized (waitLock) {
                 waitLock.wait(3000);
             }
@@ -96,14 +101,22 @@ public abstract class LongOperation extends Operation {
                         StringUtils.join(instanceIDs, ", ")));
             }
         }
+        
         if (!instanceIdToMonitorMap.isEmpty()) {
-            List<String> instancePageURLs = new ArrayList<String>();
+
+            List<String> instancePageUrls = new ArrayList<String>();
+
             for (IProgressMonitor monitor : instanceIdToMonitorMap.values()) {
-                instancePageURLs.add(Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl()));
+                instancePageUrls.add(Client.getPageUrl(client.getEndpointUrl(), monitor.getResourceUrl()));
             }
-            String message = MessageFormat.format("The following instances still are not ready after waiting for {0} minutes: {1}",
-                    TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime), StringUtils.join(instancePageURLs, ','));
+
+            String message = MessageFormat.format(
+                "The following instances still are not ready after waiting for {0} minutes: {1}",
+                TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - startWaitTime),
+                StringUtils.join(instancePageUrls, ','));
+
             logger.error(message);
+
             throw new AbortException(message);
         }
     }

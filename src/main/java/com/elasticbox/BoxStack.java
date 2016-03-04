@@ -12,17 +12,15 @@
 
 package com.elasticbox;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class BoxStack {
+
     private final List<JSONObject> overriddenVariables;
     private final JSONArray boxes;
     private final String boxId;
@@ -39,7 +37,7 @@ public class BoxStack {
         this.overriddenVariables = overridenVariables;
     }
 
-    public JSONArray toJSONArray() {
+    public JSONArray toJsonArray() {
         return JSONArray.fromObject(createBoxStack("", boxId));
     }
 
@@ -70,11 +68,12 @@ public class BoxStack {
     }
 
     private List<JSONObject> createBoxStack(String scope, String boxId) {
+
         JSONObject box = findBox(boxId);
         if (box == null) {
             return Collections.EMPTY_LIST;
         }
-        List<JSONObject> boxStack = new ArrayList<JSONObject>();
+
         JSONObject stackBox = new JSONObject();
         String icon = null;
         if (box.containsKey("icon")) {
@@ -88,6 +87,8 @@ public class BoxStack {
         stackBox.put("id", box.getString("id"));
         stackBox.put("name", box.getString("name"));
         stackBox.put("icon", client.getEndpointUrl() + icon);
+
+        List<JSONObject> boxStack = new ArrayList<JSONObject>();
         boxStack.add(stackBox);
         JSONArray stackBoxVariables = new JSONArray();
         JSONArray variables = box.getJSONArray("variables");
@@ -115,10 +116,15 @@ public class BoxStack {
             }
         }
         stackBox.put("variables", stackBoxVariables);
+
         for (JSONObject boxVariable : boxVariables) {
             String variableName = boxVariable.getString("name");
-            boxStack.addAll(createBoxStack(scope.isEmpty() ? variableName : scope + '.' + variableName, boxVariable.getString("value")));
+            boxStack.addAll(
+                    createBoxStack(
+                            scope.isEmpty() ? variableName : scope + '.' + variableName,
+                            boxVariable.getString("value")));
         }
+
         return boxStack;
     }
 

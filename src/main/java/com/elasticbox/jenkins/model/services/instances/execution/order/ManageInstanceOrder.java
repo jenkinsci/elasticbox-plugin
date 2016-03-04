@@ -14,8 +14,5 @@
 
 package com.elasticbox.jenkins.model.services.instances.execution.order;
 
-/**
- * Created by serna on 2/8/16.
- */
 public interface ManageInstanceOrder {
 }

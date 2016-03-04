@@ -12,20 +12,21 @@
 
 package com.elasticbox.jenkins;
 
+
 import hudson.Extension;
 import hudson.model.LabelFinder;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
-import java.util.Collection;
-import java.util.Collections;
-import javax.annotation.CheckForNull;
+
 import jenkins.model.Jenkins;
+
 import org.apache.commons.lang.StringUtils;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.util.Collection;
+import java.util.Collections;
+
+import javax.annotation.CheckForNull;
+
 @Extension
 public class ElasticBoxLabelFinder extends LabelFinder {
     public static final String SINGLE_USE_PREFIX = "elasticbox-single-use-";

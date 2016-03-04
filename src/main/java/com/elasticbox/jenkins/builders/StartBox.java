@@ -17,22 +17,25 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.TaskLogger;
+
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  *
- * @author Phong Nguyen Le
- * @deprecated
+ * @author Phong Nguyen Le.
+ * @deprecated you should use the DeployBox
  */
 public class StartBox extends InstanceBuildStep {
 
@@ -42,7 +45,9 @@ public class StartBox extends InstanceBuildStep {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
+        throws InterruptedException, IOException {
+
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Start Box build step");
 
@@ -61,8 +66,15 @@ public class StartBox extends InstanceBuildStep {
             logger.info(MessageFormat.format("The box instance {0} has been started successfully ", instancePageUrl));
             return true;
         } catch (IProgressMonitor.IncompleteException ex) {
+
             Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
-            logger.error(MessageFormat.format("Failed to start box instance {0}: {1}", instancePageUrl, ex.getMessage()));
+
+            logger.error(
+                MessageFormat.format(
+                    "Failed to start box instance {0}: {1}",
+                    instancePageUrl,
+                    ex.getMessage()));
+
             throw new AbortException(ex.getMessage());
         }
     }

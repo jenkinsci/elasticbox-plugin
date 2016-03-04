@@ -13,15 +13,23 @@
 package com.elasticbox.jenkins.util;
 
 import com.elasticbox.Constants;
-import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxComputer;
 import com.elasticbox.jenkins.builders.IInstanceProvider;
+
 import hudson.Util;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.Computer;
+import hudson.model.Node;
+import hudson.model.Project;
+import hudson.model.TaskListener;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,14 +37,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+
 public final class VariableResolver {
 
     public static JSONArray parseVariables(String variables) {
@@ -53,7 +55,9 @@ public final class VariableResolver {
         this(null, null, build, listener);
     }
 
-    public VariableResolver(String cloudName, String workspace, AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {
+    public VariableResolver(String cloudName, String workspace, AbstractBuild build, TaskListener listener)
+        throws IOException, InterruptedException {
+
         this.cloudName = cloudName;
         this.workspace = workspace;
         instanceProviders = new ArrayList<IInstanceProvider>();

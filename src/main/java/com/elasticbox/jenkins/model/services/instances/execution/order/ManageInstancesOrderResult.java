@@ -14,9 +14,6 @@
 
 package com.elasticbox.jenkins.model.services.instances.execution.order;
 
-/**
- * Created by serna on 11/27/15.
- */
 public class ManageInstancesOrderResult<T> {
 
     private T result;
@@ -25,7 +22,7 @@ public class ManageInstancesOrderResult<T> {
         this.result = result;
     }
 
-    public T getResult(){
+    public T getResult() {
         return result;
     }
 

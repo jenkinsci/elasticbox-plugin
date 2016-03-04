@@ -14,10 +14,6 @@ package com.elasticbox;
 
 import java.io.IOException;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class ClientException extends IOException {
     private final int statusCode;
 

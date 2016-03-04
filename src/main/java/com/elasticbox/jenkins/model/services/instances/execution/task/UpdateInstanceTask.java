@@ -16,7 +16,7 @@ package com.elasticbox.jenkins.model.services.instances.execution.task;
 
 import com.elasticbox.Client;
 import com.elasticbox.jenkins.model.instance.Instance;
-import com.elasticbox.jenkins.model.repository.api.InstanceRepositoryAPIImpl;
+import com.elasticbox.jenkins.model.repository.api.InstanceRepositoryApiImpl;
 import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 import com.elasticbox.jenkins.model.services.task.ScheduledPoolingTask;
 import com.elasticbox.jenkins.model.services.task.Task;
@@ -30,9 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 2/8/16.
- */
 public class UpdateInstanceTask implements Task<JSONObject> {
 
     private static final Logger logger = Logger.getLogger(UpdateInstanceTask.class.getName());
@@ -61,12 +58,29 @@ public class UpdateInstanceTask implements Task<JSONObject> {
     private String boxVersion;
     private TaskLogger taskLogger;
 
-    private JSONObject updatedJSONInstance;
+    private JSONObject updatedJsonInstance;
     private int totalRoundtrips = 0;
 
 
-    public UpdateInstanceTask(Client client, TaskLogger logger, JSONObject instanceJson, JSONArray resolvedVariables, String boxVersion) {
-        this(client, logger, instanceJson, resolvedVariables, boxVersion, true, INITIAL_DELAY, DELAY, TIMEOUT, READING_STATE_RETRY_COUNT, RETRY_COUNT);
+    public UpdateInstanceTask(
+        Client client,
+        TaskLogger logger,
+        JSONObject instanceJson,
+        JSONArray resolvedVariables,
+        String boxVersion) {
+
+        this(
+            client,
+            logger,
+            instanceJson,
+            resolvedVariables,
+            boxVersion,
+            true,
+            INITIAL_DELAY,
+            DELAY,
+            TIMEOUT,
+            READING_STATE_RETRY_COUNT,
+            RETRY_COUNT);
     }
 
     public UpdateInstanceTask(Client client,
@@ -104,31 +118,33 @@ public class UpdateInstanceTask implements Task<JSONObject> {
     public void execute() throws TaskException {
 
         for (int i = 0; i < retries; i++) {
-            if(updateInstance()){
+            if (updateInstance()) {
                 return;
             }
-            logger.log(Level.WARNING, "Retry instance: "+instanceJson.getString("id")+" updating action");
+
+            logger.log(Level.WARNING, "Retry instance: " + instanceJson.getString("id") + " updating action");
         }
 
-        throw new TaskException("Instance: "+ instanceJson.getString("id")+" cannot be updated");
+        throw new TaskException("Instance: " + instanceJson.getString("id") + " cannot be updated");
     }
 
-    private boolean updateInstance(){
+    private boolean updateInstance() {
 
         final String instanceId = instanceJson.getString("id");
         int readingExecutions = 0;
         try {
-            if (waitForInstanceToBeReady){
+            if (waitForInstanceToBeReady) {
                 readingExecutions = waitForInstanceToBeReady(instanceId);
             }
 
-            updatedJSONInstance = client.updateInstance(instanceJson, resolvedVariables, boxVersion);
+            updatedJsonInstance = client.updateInstance(instanceJson, resolvedVariables, boxVersion);
             totalRoundtrips = readingExecutions;
 
             return  true;
 
         } catch (RepositoryException | IOException | TaskException ex) {
-            logger.log(Level.SEVERE, "Instance: "+instanceId+" cannot be updated", ex);
+
+            logger.log(Level.SEVERE, "Instance: " + instanceId + " cannot be updated", ex);
             taskLogger.info("Instance {0} cannot be updated", instanceId);
 
             return false;
@@ -138,14 +154,14 @@ public class UpdateInstanceTask implements Task<JSONObject> {
 
     private int waitForInstanceToBeReady(String instanceId) throws TaskException, RepositoryException {
 
-        final InstanceRepositoryAPIImpl service = new InstanceRepositoryAPIImpl(client);
+        final InstanceRepositoryApiImpl service = new InstanceRepositoryApiImpl(client);
 
         final Instance instance = service.getInstance(instanceId);
 
         final Instance.State state = instance.getState();
 
         WaitForInstanceToBeReady updateInstanceWhenIsReady = null;
-        if (state == Instance.State.PROCESSING){
+        if (state == Instance.State.PROCESSING) {
 
             taskLogger.info("Waiting for instance: {0} to be ready for update", instanceId);
 
@@ -164,14 +180,14 @@ public class UpdateInstanceTask implements Task<JSONObject> {
 
     @Override
     public JSONObject getResult() {
-        return updatedJSONInstance;
+        return updatedJsonInstance;
     }
 
     public int getTotalRoundtrips() {
         return totalRoundtrips;
     }
 
-    private class WaitForInstanceToBeReady extends ScheduledPoolingTask<Instance>{
+    private class WaitForInstanceToBeReady extends ScheduledPoolingTask<Instance> {
 
         private AtomicInteger errors = new AtomicInteger(0);
 
@@ -183,32 +199,35 @@ public class UpdateInstanceTask implements Task<JSONObject> {
         protected void performExecute() throws TaskException {
             final String instanceId = instanceJson.getString("id");
             try {
-                this.result = new InstanceRepositoryAPIImpl(client).getInstance(instanceId);
+                this.result = new InstanceRepositoryApiImpl(client).getInstance(instanceId);
             } catch (RepositoryException e) {
 
                 final int errorCounter = errors.incrementAndGet();
 
-                logger.log(Level.SEVERE, "Error ["+errorCounter+"] getting instance: "+instanceJson.getString("id"),e);
-                taskLogger.error("Error {0} checking the state of the instance: {1}", errorCounter, instanceJson.getString("id"));
+                logger.log(
+                    Level.SEVERE, "Error [" + errorCounter + "] getting instance: " + instanceJson.getString("id"),e);
 
-                if(errorCounter > readingStateRetries){
-                    throw new TaskException("Error checking instance: "+instanceJson.getString("id"));
+                taskLogger.error(
+                    "Error {0} checking the state of the instance: {1}", errorCounter, instanceJson.getString("id"));
+
+                if (errorCounter > readingStateRetries) {
+                    throw new TaskException("Error checking instance: " + instanceJson.getString("id"));
                 }
             }
         }
 
         @Override
         public boolean isDone() {
-            if(result != null){
+            if (result != null) {
                 return this.result.getState() != Instance.State.PROCESSING;
             }
             return  false;
         }
 
-        public int getTotalRoundtrips(){
+        public int getTotalRoundtrips() {
             return this.getCounter();
         }
-    };
+    }
 
 
 }

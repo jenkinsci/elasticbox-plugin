@@ -20,23 +20,24 @@ import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class ReinstallOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
@@ -44,13 +45,24 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
         super(tags, waitForCompletion, waitForCompletionTimeout);
     }
 
-    public void perform(ElasticBoxCloud cloud, String workspace, AbstractBuild<?, ?> build, Launcher launcher, TaskLogger logger) throws InterruptedException, IOException {
+    public void perform(
+        ElasticBoxCloud cloud,
+        String workspace,
+        AbstractBuild<?, ?> build,
+        Launcher launcher,
+        TaskLogger logger) throws InterruptedException, IOException {
+
         logger.info("Executing Reinstall");
 
         VariableResolver resolver = new VariableResolver(cloud.name, workspace, build, logger.getTaskListener());
-        Client client = cloud.getClient();
         Set<String> resolvedTags = resolver.resolveTags(getTags());
-        logger.info(MessageFormat.format("Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
+
+        Client client = cloud.getClient();
+
+        logger.info(
+            MessageFormat.format(
+                "Looking for instances with the following tags: {0}", StringUtils.join(resolvedTags, ", ")));
+
         JSONArray instances = DescriptorHelper.getInstances(client, workspace, instanceFilter(resolvedTags));
         if (!canPerform(instances, logger)) {
             return;
@@ -59,8 +71,13 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
         reinstall(instances, null, getWaitForCompletionTimeout(), client, logger);
     }
 
-    static void reinstall(JSONArray instances, JSONArray variables, int waitForCompletionTimeout, Client client,
-            TaskLogger logger) throws InterruptedException, IOException {
+    static void reinstall(
+        JSONArray instances,
+        JSONArray variables,
+        int waitForCompletionTimeout,
+        Client client,
+        TaskLogger logger) throws InterruptedException, IOException {
+
         List<IProgressMonitor> monitors = new ArrayList<IProgressMonitor>();
         for (Object instance : instances) {
             if (Thread.interrupted()) {
@@ -72,27 +89,36 @@ public class ReinstallOperation extends LongOperation implements IOperation.Inst
             String instancePageUrl = Client.getPageUrl(client.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Reinstalling box instance {0}", instancePageUrl));
         }
+
         if (waitForCompletionTimeout > 0) {
-            logger.info(MessageFormat.format("Waiting for {0} to finish reinstall", instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
+
+            logger.info(
+                MessageFormat.format(
+                    "Waiting for {0} to finish reinstall", instances.size() > 1 ? "the instances" : "the instance"));
+
+            LongOperation.waitForCompletion(
+                DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
         }
     }
 
     public static final ObjectFilter instanceFilter(Set<String> tags) {
-        return new CompositeObjectFilter(new DescriptorHelper.InstanceFilterByTags(tags, false),
+        return new CompositeObjectFilter(
+            new DescriptorHelper.InstanceFilterByTags(tags, false),
             new ObjectFilter() {
+                public boolean accept(JSONObject instance) {
+                    // reject inaccessible instances that cannot be reinstalled
+                    String operation = instance.getJSONObject("operation").getString("event");
 
-            public boolean accept(JSONObject instance) {
-                // reject inaccessible instances that cannot be reinstalled
-                String operation = instance.getJSONObject("operation").getString("event");
+                    if (Client.InstanceState.UNAVAILABLE.equals(instance.getString("state"))
+                        && (Client.InstanceOperation.REINSTALL.equals(operation)
+                        || Client.InstanceOperation.RECONFIGURE.equals(operation))) {
 
-                if (Client.InstanceState.UNAVAILABLE.equals(instance.getString("state")) &&
-                        (Client.InstanceOperation.REINSTALL.equals(operation) || Client.InstanceOperation.RECONFIGURE.equals(operation))) {
-                    return true;
+                        return true;
+                    }
+                    return !Client.TERMINATE_OPERATIONS.contains(operation);
                 }
-                return !Client.TERMINATE_OPERATIONS.contains(operation);
             }
-        });
+        );
     }
 
     @Override

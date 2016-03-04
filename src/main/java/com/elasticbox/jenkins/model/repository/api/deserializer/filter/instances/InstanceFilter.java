@@ -17,9 +17,6 @@ package com.elasticbox.jenkins.model.repository.api.deserializer.filter.instance
 import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/27/15.
- */
 public class InstanceFilter implements Filter<JSONObject> {
 
     @Override

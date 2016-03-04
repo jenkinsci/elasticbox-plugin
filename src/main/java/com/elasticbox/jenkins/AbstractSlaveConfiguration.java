@@ -13,36 +13,26 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
-import com.elasticbox.jenkins.migration.AbstractConverter;
-import com.elasticbox.jenkins.migration.Version;
-import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
-import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
-import com.elasticbox.jenkins.model.services.error.ServiceException;
-import com.elasticbox.jenkins.util.ClientCache;
-import com.thoughtworks.xstream.converters.UnmarshallingContext;
-import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
-import hudson.util.XStream2;
+
+import jenkins.model.Jenkins;
+
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.QueryParameter;
+
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.QueryParameter;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public abstract class AbstractSlaveConfiguration implements Describable<AbstractSlaveConfiguration> {
     private static final Logger LOGGER = Logger.getLogger(AbstractSlaveConfiguration.class.getName());
 
@@ -60,7 +50,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     private final int maxInstances;
     private String tags;
     private final String labels;
-    private final String remoteFS;
+    private final String remoteFs;
     private final String description;
     private final Node.Mode mode;
     protected int retentionTime;
@@ -74,8 +64,9 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
 
     public AbstractSlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile,
             String claims, String provider, String location, int minInstances,
-            int maxInstances, String tags, String variables, String labels, String description, String remoteFS,
-            Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout, String boxDeploymentType) {
+            int maxInstances, String tags, String variables, String labels, String description, String remoteFs,
+            Node.Mode mode, int retentionTime, int maxBuilds, int executors, int launchTimeout,
+                                      String boxDeploymentType) {
         super();
         this.id = id;
         this.workspace = workspace;
@@ -91,7 +82,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         this.variables = variables;
         this.labels = labels;
         this.description = description;
-        this.remoteFS = remoteFS;
+        this.remoteFs = remoteFs;
         this.mode = mode;
         this.retentionTime = retentionTime;
         this.maxBuilds = maxBuilds;
@@ -210,8 +201,8 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         return mode;
     }
 
-    public String getRemoteFS() {
-        return remoteFS;
+    public String getRemoteFs() {
+        return remoteFs;
     }
 
     public final Set<LabelAtom> getLabelSet() {
@@ -231,8 +222,8 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
     }
 
     String resolveBoxVersion(Client client) throws IOException {
-        resolvedBoxVersion = DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion) ?
-                client.getLatestBoxVersion(workspace, box) : boxVersion;
+        resolvedBoxVersion = DescriptorHelper.LATEST_BOX_VERSION.equals(boxVersion)
+                ? client.getLatestBoxVersion(workspace, box) : boxVersion;
         return resolvedBoxVersion;
     }
 
@@ -240,7 +231,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
         return resolvedDeploymentPolicy = DescriptorHelper.resolveDeploymentPolicy(client, workspace, profile, claims);
     }
 
-    public static abstract class AbstractSlaveConfigurationDescriptor extends Descriptor<AbstractSlaveConfiguration> {
+    public abstract static class AbstractSlaveConfigurationDescriptor extends Descriptor<AbstractSlaveConfiguration> {
 
         public FormValidation doCheckMaxBuildsText(@QueryParameter String value) {
             if (StringUtils.isNotBlank(value)) {
@@ -266,7 +257,8 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
                     boxVersion = client.getLatestBoxVersion(workspace, box);
                 } catch (IOException ex) {
                     LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-                    return FormValidation.error(MessageFormat.format("Error retrieving latest version of box {0}", box));
+                    return FormValidation.error(
+                            MessageFormat.format("Error retrieving latest version of box {0}", box));
                 }
             }
             return DescriptorHelper.checkSlaveBox(client, boxVersion);

@@ -17,25 +17,26 @@ import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.model.AbstractProject;
 import hudson.model.Saveable;
+
+import jenkins.model.Jenkins;
+
 import java.io.File;
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class ProjectData implements Saveable {
+
     private static final Logger LOGGER = Logger.getLogger(ProjectData.class.getName());
 
-    private static final ConcurrentHashMap<AbstractProject, ProjectData> projectDataLookup = new ConcurrentHashMap<AbstractProject, ProjectData>();
+    private static final ConcurrentHashMap<AbstractProject, ProjectData> projectDataLookup =
+        new ConcurrentHashMap<AbstractProject, ProjectData>();
 
-    public static abstract class Datum {
+    public abstract static class Datum {
         protected abstract void setProjectData(ProjectData projectData);
     }
 
@@ -66,8 +67,7 @@ public class ProjectData implements Saveable {
     }
 
     /**
-     * Adds a new Datum to this ProjectData
-     *
+     * Adds a new Datum to this ProjectData.
      * @param datum the new datum to add
      * @return false if the datum is not added because a datum with the same class name already exists, true otherwise
      */

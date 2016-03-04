@@ -20,13 +20,11 @@ import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Created by serna on 11/30/15.
- */
 public class PolicyBasedAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
 
     @Override
@@ -73,19 +71,20 @@ public class PolicyBasedAbstractDeploymentDataValidator implements DeploymentDat
 
             @Override
             public List<Cause> causes() {
-                return new ArrayList<Cause>() {{
-                    add(new Cause() {
-                        @Override
-                        public String message() {
-                            return Constants.AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS;
-                        }
 
-                        @Override
-                        public String field() {
-                            return "profile";
-                        }
-                    });
-                }};
+                final Cause cause = new Cause() {
+                    @Override
+                    public String message() {
+                        return Constants.AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS;
+                    }
+
+                    @Override
+                    public String field() {
+                        return "profile";
+                    }
+                };
+
+                return Arrays.asList(cause);
             }
 
             @Override
@@ -95,28 +94,28 @@ public class PolicyBasedAbstractDeploymentDataValidator implements DeploymentDat
         };
     }
 
-        private class CloudformationTemplateDeploymentData implements DeploymentValidationResult.DeploymentData {
+    private class CloudformationTemplateDeploymentData implements DeploymentValidationResult.DeploymentData {
 
-            private DeploymentType deploymentType = DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE;
-            private String policy;
-            private Set<String> claims;
+        private DeploymentType deploymentType = DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE;
+        private String policy;
+        private Set<String> claims;
 
-            public CloudformationTemplateDeploymentData(String policy, Set<String> claims) {
-                this.policy = policy;
-                this.claims = claims;
-            }
-
-            public DeploymentType getDeploymentType() {
-                return deploymentType;
-            }
-
-            public String getPolicy() {
-                return policy;
-            }
-
-            public Set<String> getClaims() {
-                return claims;
-            }
+        public CloudformationTemplateDeploymentData(String policy, Set<String> claims) {
+            this.policy = policy;
+            this.claims = claims;
         }
+
+        public DeploymentType getDeploymentType() {
+            return deploymentType;
+        }
+
+        public String getPolicy() {
+            return policy;
+        }
+
+        public Set<String> getClaims() {
+            return claims;
+        }
+    }
 
 }

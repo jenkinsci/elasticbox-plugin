@@ -14,9 +14,6 @@
 
 package com.elasticbox.jenkins.model.services.deployment.execution.order;
 
-/**
- * Created by serna on 1/20/16.
- */
 public class ApplicationBoxDeploymentOrder extends AbstractDeployBoxOrder {
 
     private String [] requirements;

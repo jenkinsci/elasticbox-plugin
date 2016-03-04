@@ -2,9 +2,6 @@ package com.elasticbox.jenkins.model.services.deployment.execution.order;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 
-/**
- * Created by serna on 11/27/15.
- */
 public abstract class AbstractDeployBoxOrder {
 
     private boolean waitForDone;

@@ -25,10 +25,7 @@ import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxe
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/29/15.
- */
-public class InstanceTransformer implements Transformer<JSONObject, Instance>{
+public class InstanceTransformer implements Transformer<JSONObject, Instance> {
 
     @Override
     public Instance apply(JSONObject jsonObject) throws ElasticBoxModelException {
@@ -46,7 +43,7 @@ public class InstanceTransformer implements Transformer<JSONObject, Instance>{
                 .withState(Instance.State.findByValue(jsonObject.getString("state")))
                 .withTags(Utils.toStringArray(jsonObject.getJSONArray("tags")))
                 .withId(jsonObject.getString("id"))
-                .withURI(jsonObject.getString("uri"))
+                .withUri(jsonObject.getString("uri"))
                 .withOwner(jsonObject.getString("owner"))
                 .withPolicyBox(getPolicyBox(jsonObject.getJSONObject("policy_box")))
                 .build();
@@ -55,16 +52,19 @@ public class InstanceTransformer implements Transformer<JSONObject, Instance>{
 
     }
 
-    private PolicyBox getPolicyBox(JSONObject policyJson){
+    private PolicyBox getPolicyBox(JSONObject policyJson) {
+
         final AbstractBox abstractBox = new BoxFactory().apply(policyJson);
-        if(abstractBox !=null && abstractBox.getType() == BoxType.POLICY){
+
+        if (abstractBox != null && abstractBox.getType() == BoxType.POLICY) {
             return (PolicyBox) abstractBox;
         }
+
         return null;
     }
 
     private AbstractBox [] getBoxes(JSONArray arrayBoxes) throws ElasticBoxModelException {
-        if(!arrayBoxes.isEmpty()){
+        if (!arrayBoxes.isEmpty()) {
             int counter = 0;
             AbstractBox [] boxes = new AbstractBox[arrayBoxes.size()];
             for (Object boxObject : arrayBoxes) {
@@ -73,30 +73,37 @@ public class InstanceTransformer implements Transformer<JSONObject, Instance>{
                 boxes[counter] = box;
                 counter++;
             }
+
             return boxes;
         }
+
         return new AbstractBox[0];
     }
 
     private Instance.Operation getOperation(JSONObject operationObject) throws ElasticBoxModelException {
-        if (!operationObject.isNullObject()){
+
+        if (!operationObject.isNullObject()) {
             final String event = operationObject.getString("event");
             final String workspace = operationObject.getString("workspace");
             final String created = operationObject.getString("created");
 
             final Instance.OperationType operationType = Instance.OperationType.findByValue(event);
             final Instance.Operation operation = new Instance.Operation(operationType, created, workspace);
+
             return operation;
         }
+
         return null;
     }
 
-    private Instance.Service getService(JSONObject serviceObject){
-        if (!serviceObject.isNullObject()){
+    private Instance.Service getService(JSONObject serviceObject) {
+
+        if (!serviceObject.isNullObject()) {
             final String id = serviceObject.getString("id");
             final Instance.Service service = new Instance.Service(id);
             return service;
         }
+
         return null;
     }
 

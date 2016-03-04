@@ -20,13 +20,11 @@ import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Created by serna on 11/30/15.
- */
 public class CloudFormationTemplateAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
 
 
@@ -53,7 +51,7 @@ public class CloudFormationTemplateAbstractDeploymentDataValidator implements De
             @Override
             public DeploymentData getDeploymentData() {
                 final Set<String> claimsSet = new HashSet<String>();
-                if (StringUtils.isNotEmpty(claims)){
+                if (StringUtils.isNotEmpty(claims)) {
                     for (String tag : claims.split(",")) {
                         claimsSet.add(tag.trim());
                     }
@@ -62,7 +60,7 @@ public class CloudFormationTemplateAbstractDeploymentDataValidator implements De
             }
         };
 
-        if(StringUtils.isNotEmpty(profile) || StringUtils.isNotEmpty(claims)){
+        if (StringUtils.isNotEmpty(profile) || StringUtils.isNotEmpty(claims)) {
             return ok;
         }
 
@@ -74,7 +72,8 @@ public class CloudFormationTemplateAbstractDeploymentDataValidator implements De
 
             @Override
             public List<Cause> causes() {
-                return new ArrayList<Cause>(){{add(new Cause() {
+
+                final Cause cause = new Cause() {
                     @Override
                     public String message() {
                         return Constants.AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS;
@@ -84,7 +83,10 @@ public class CloudFormationTemplateAbstractDeploymentDataValidator implements De
                     public String field() {
                         return "profile";
                     }
-                });}};
+                };
+
+                return Arrays.asList(cause);
+
             }
 
             @Override
@@ -93,6 +95,7 @@ public class CloudFormationTemplateAbstractDeploymentDataValidator implements De
             }
         };
     }
+
     private class CloudformationTemplateDeploymentData implements DeploymentValidationResult.DeploymentData {
 
         private DeploymentType deploymentType = DeploymentType.CLOUDFORMATIONTEMPLATE_DEPLOYMENT_TYPE;

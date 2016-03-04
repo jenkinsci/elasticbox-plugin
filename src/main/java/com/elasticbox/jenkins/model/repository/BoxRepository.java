@@ -6,9 +6,6 @@ import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 
 import java.util.List;
 
-/**
- * Created by serna on 11/26/15.
- */
 public interface BoxRepository {
 
     public List<AbstractBox> getNoPolicyAndNoApplicationBoxes(String workspace) throws RepositoryException;

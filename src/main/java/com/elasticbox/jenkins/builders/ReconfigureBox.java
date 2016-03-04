@@ -20,25 +20,28 @@ import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.Builder;
-import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.Collections;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.Collections;
+
 /**
- *
- * @author Phong Nguyen Le
- * @deprecated
+ * @author Phong Nguyen Le.
+ * @deprecated Should be removed because there is ReconfigureOperation that do the same
  */
 public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvider {
     private final String id;
@@ -110,7 +113,7 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
 
     public String getInstanceId(AbstractBuild build) {
         final Instance instance = instanceManager.getInstance(build);
-        return instance != null ? instance.getId(): null;
+        return instance != null ? instance.getId() : null;
     }
 
     @Override
@@ -150,14 +153,14 @@ public class ReconfigureBox extends InstanceBuildStep implements IInstanceProvid
             return super.newInstance(req, formData);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetBoxStack(@QueryParameter String cloud,
+        public DescriptorHelper.JsonArrayResponse doGetBoxStack(@QueryParameter String cloud,
                 @QueryParameter String instance) {
             return DescriptorHelper.getInstanceBoxStack(cloud, instance);
         }
 
-        public DescriptorHelper.JSONArrayResponse doGetInstances(@QueryParameter String cloud,
+        public DescriptorHelper.JsonArrayResponse doGetInstances(@QueryParameter String cloud,
                 @QueryParameter String workspace, @QueryParameter String box) {
-            return DescriptorHelper.getInstancesAsJSONArrayResponse(cloud, workspace, box);
+            return DescriptorHelper.getInstancesAsJsonArrayResponse(cloud, workspace, box);
         }
 
         @Override

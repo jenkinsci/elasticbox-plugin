@@ -14,22 +14,21 @@ package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.util.TaskLogger;
+
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Descriptor;
 import hudson.slaves.Cloud;
+
+import jenkins.model.Jenkins;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import jenkins.model.Jenkins;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public abstract class ManageObject extends AbstractBuilder {
     private final List<? extends Operation> operations;
 
@@ -43,7 +42,9 @@ public abstract class ManageObject extends AbstractBuilder {
     }
 
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
+        throws InterruptedException, IOException {
+
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Manage Instance build step");
 
@@ -59,7 +60,7 @@ public abstract class ManageObject extends AbstractBuilder {
         return true;
     }
 
-    public static abstract class ManageObjectDescriptor extends AbstractBuilderDescriptor {
+    public abstract static class ManageObjectDescriptor extends AbstractBuilderDescriptor {
         public abstract List<? extends Descriptor<Operation>> getOperations();
 
         protected List<? extends Descriptor<Operation>> getOperationDescriptors(Class type) {

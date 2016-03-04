@@ -16,9 +16,6 @@ package com.elasticbox.jenkins.model.services.task;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Created by serna on 12/9/15.
- */
 public class TestComplexTaskBase {
 
     protected ScheduledPoolingTask<Integer> createFakeScheduledPoolingTask(long delay, long initialDelay, long timeout, final int succesfullyIteration, final long takeTime){

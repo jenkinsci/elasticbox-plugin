@@ -19,9 +19,6 @@ import com.elasticbox.jenkins.model.box.script.ScriptBox;
 import com.elasticbox.jenkins.model.repository.api.deserializer.Utils;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/29/15.
- */
 public class ScriptBoxTransformer extends AbstractBoxTransformer<ScriptBox> {
 
     @Override

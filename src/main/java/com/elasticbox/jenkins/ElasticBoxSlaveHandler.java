@@ -12,20 +12,33 @@
 
 package com.elasticbox.jenkins;
 
+import static com.elasticbox.jenkins.ElasticBoxExecutor.threadPool;
+
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
 import com.elasticbox.Constants;
 import com.elasticbox.IProgressMonitor;
-import static com.elasticbox.jenkins.ElasticBoxExecutor.threadPool;
 import com.elasticbox.jenkins.util.SlaveInstance;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
+
+import jenkins.model.Jenkins;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.lang.StringUtils;
+
 import java.io.IOException;
+
 import java.text.MessageFormat;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,16 +51,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.lang.StringUtils;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 @Extension
 public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxSlaveHandler.class.getName());
@@ -65,12 +69,21 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
 
     }
 
-    private static final Queue<InstanceCreationRequest> incomingQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
-    private static final Queue<InstanceCreationRequest> submittedQueue = new ConcurrentLinkedQueue<InstanceCreationRequest>();
-    private static final Queue<ElasticBoxSlave> terminatedSlaves = new ConcurrentLinkedQueue<ElasticBoxSlave>();
+    private static final Queue<InstanceCreationRequest> incomingQueue
+            = new ConcurrentLinkedQueue<InstanceCreationRequest>();
+
+    private static final Queue<InstanceCreationRequest> submittedQueue
+            = new ConcurrentLinkedQueue<InstanceCreationRequest>();
+
+    private static final Queue<ElasticBoxSlave> terminatedSlaves
+            = new ConcurrentLinkedQueue<ElasticBoxSlave>();
+
 
     public static final ElasticBoxSlaveHandler getInstance() {
-        return Jenkins.getInstance().getExtensionList(ElasticBoxExecutor.Workload.class).get(ElasticBoxSlaveHandler.class);
+        return Jenkins
+                .getInstance()
+                .getExtensionList(ElasticBoxExecutor.Workload.class)
+                .get(ElasticBoxSlaveHandler.class);
     }
 
     public static final IProgressMonitor submit(ElasticBoxSlave slave) {
@@ -152,7 +165,14 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
                     removeSlave(request.slave);
                 }
             } else {
-                log(Level.WARNING, MessageFormat.format("Max number of ElasticBox instances has been reached for {0}", cloud.getDisplayName()), null, listener);
+                log(
+                    Level.WARNING,
+                    MessageFormat.format(
+                            "Max number of ElasticBox instances has been reached for {0}",
+                            cloud.getDisplayName()),
+                        null,
+                        listener);
+
                 request.monitor.setMonitor(IProgressMonitor.DONE_MONITOR);
                 removeSlave(request.slave);
             }
@@ -210,7 +230,8 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             try {
                 Jenkins.getInstance().save();
             } catch (IOException ex) {
-                Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.SEVERE, "Error saving configuration", ex);
+                Logger.getLogger(ElasticBoxSlaveHandler.class.getName())
+                        .log(Level.SEVERE, "Error saving configuration", ex);
             }
         }
     }
@@ -229,19 +250,32 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
      *
      * @param slavesToRemove a list to be filled with inactive or invalid slaves that can be removed
      * @return a list of slaves to remove
-     * @throws IOException
+     * @throws IOException if there is no cloud or slave
      */
-    private static List<ElasticBoxSlave> collectSlavesToRemove(SlaveInstanceManager slaveInstanceManager) throws IOException {
+    private static List<ElasticBoxSlave> collectSlavesToRemove(SlaveInstanceManager slaveInstanceManager)
+            throws IOException {
+
         List<ElasticBoxSlave> slavesToRemove = new ArrayList<ElasticBoxSlave>();
+
         for (JSONObject instance : slaveInstanceManager.getInstances()) {
             String state = instance.getString("state");
             String instanceId = instance.getString("id");
             ElasticBoxSlave slave = slaveInstanceManager.getSlave(instanceId);
-            if (Client.InstanceState.DONE.equals(state) && Client.TERMINATE_OPERATIONS.contains(instance.getJSONObject("operation").getString("event"))) {
+
+            if (Client.InstanceState.DONE.equals(state)
+                    && Client.TERMINATE_OPERATIONS.contains(instance.getJSONObject("operation").getString("event"))) {
+
                 addToTerminatedQueue(slave);
+
             } else if (Client.InstanceState.UNAVAILABLE.equals(state) && !slave.getComputer().isOffline()) {
-                Logger.getLogger(ElasticBoxSlaveHandler.class.getName()).log(Level.INFO,
-                        MessageFormat.format("The instance {0} is unavailable, it will be terminated.", slave.getInstancePageUrl()));
+
+                Logger.getLogger(ElasticBoxSlaveHandler.class.getName())
+                        .log(
+                            Level.INFO,
+                            MessageFormat.format(
+                                    "The instance {0} is unavailable, it will be terminated.",
+                                    slave.getInstancePageUrl()));
+
                 slavesToRemove.add(slave);
             }
         }
@@ -259,7 +293,15 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             if (ex instanceof ClientException && ((ClientException) ex).getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return true;
             }
-            log(Level.SEVERE, MessageFormat.format("Error fetching the instance data of ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
+
+            log(
+                Level.SEVERE,
+                MessageFormat.format("Error fetching the instance data of ElasticBox slave {0}",
+                        slave.getDisplayName()),
+                ex,
+                listener
+            );
+
             return false;
         }
         String state = instance.getString("state");
@@ -267,7 +309,14 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             try {
                 slave.getCloud().getClient().forceTerminate(instance.getString("id"));
             } catch (IOException ex) {
-                log(Level.SEVERE, MessageFormat.format("Error force-terminating the instance of ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
+                log(
+                    Level.SEVERE,
+                    MessageFormat.format(
+                            "Error force-terminating the instance of ElasticBox slave {0}",
+                            slave.getDisplayName()),
+                    ex,
+                    listener
+                );
             }
             return false;
         }
@@ -287,12 +336,22 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             }
             return true;
         } catch (IOException ex) {
-            log(Level.SEVERE, MessageFormat.format("Error deleting ElasticBox slave {0}", slave.getDisplayName()), ex, listener);
+
+            log(
+                Level.SEVERE,
+                MessageFormat.format("Error deleting ElasticBox slave {0}",
+                    slave.getDisplayName()),
+                ex,
+                listener
+            );
+
             return false;
         }
     }
 
-    private void purgeSlaves(SlaveInstanceManager slaveInstanceManager, final TaskListener listener) throws IOException {
+    private void purgeSlaves(SlaveInstanceManager slaveInstanceManager, final TaskListener listener)
+        throws IOException {
+
         List<ElasticBoxSlave> slavesToRemove = collectSlavesToRemove(slaveInstanceManager);
 
         // terminate slaves that are marked as deletable
@@ -305,7 +364,14 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
                         try {
                             slaveToTerminate.terminate();
                         } catch (IOException ex) {
-                            log(Level.SEVERE, MessageFormat.format("Error termininating ElasticBox slave {0}", slaveToTerminate.getDisplayName()), ex);
+
+                            log(
+                                Level.SEVERE,
+                                MessageFormat.format(
+                                    "Error termininating ElasticBox slave {0}",
+                                    slaveToTerminate.getDisplayName()),
+                                ex
+                            );
                         }
                     }
                 });
@@ -352,29 +418,44 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
         AbstractSlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
         String workspace = slaveConfig.getWorkspace();
         if (slaveConfig != null && slaveConfig.getVariables() != null) {
+
             JSONArray configuredVariables = VariableResolver.parseVariables(slaveConfig.getVariables());
+
             for (int i = 0; i < configuredVariables.size(); i++) {
+
                 JSONObject variable = configuredVariables.getJSONObject(i);
-                if (!scope.equals(variable.getString("scope")) ||
-                        !SlaveInstance.REQUIRED_VARIABLES.contains(variable.getString("name"))) {
+
+                if (!scope.equals(variable.getString("scope"))
+                    || !SlaveInstance.REQUIRED_VARIABLES.contains(variable.getString("name"))) {
+
                     variables.add(variable);
                 }
             }
         }
+
         LOGGER.info(MessageFormat.format("Deploying box {0}", ebClient.getBoxPageUrl(request.slave.getBoxVersion())));
+
         IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), null,
                 workspace, Collections.singletonList(request.slave.getNodeName()), variables, null,
                 null, request.slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
+
         request.slave.setInstanceUrl(monitor.getResourceUrl());
+
         request.slave.setInstanceStatusMessage(MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>",
                 request.slave.getInstancePageUrl()));
+
         request.monitor.setMonitor(monitor);
+
         request.monitor.setLaunched();
+
         submittedQueue.add(request);
     }
 
     private Map<AbstractSlaveConfiguration, Integer> countSlavesPerConfiguration() {
-        Map<AbstractSlaveConfiguration, Integer> slaveConfigToSlaveCountMap = new HashMap<AbstractSlaveConfiguration, Integer>();
+
+        Map<AbstractSlaveConfiguration, Integer> slaveConfigToSlaveCountMap =
+            new HashMap<AbstractSlaveConfiguration, Integer>();
+
         for (Node node : Jenkins.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
@@ -388,8 +469,10 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
         return slaveConfigToSlaveCountMap;
     }
 
-    private void launchMinimumSlaves(ElasticBoxCloud cloud, Map<AbstractSlaveConfiguration, Integer> slaveConfigToSlaveCountMap)
-            throws IOException {
+    private void launchMinimumSlaves(
+        ElasticBoxCloud cloud,
+        Map<AbstractSlaveConfiguration, Integer> slaveConfigToSlaveCountMap) throws IOException {
+
         for (SlaveConfiguration slaveConfig : cloud.getSlaveConfigurations()) {
             if (slaveConfig.getMinInstances() > 0) {
                 Integer slaveCount = slaveConfigToSlaveCountMap.get(slaveConfig);

@@ -19,10 +19,6 @@ import hudson.model.Descriptor;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public abstract class Operation implements IOperation, Describable<Operation> {
     private final String tags;
 
@@ -55,6 +51,6 @@ public abstract class Operation implements IOperation, Describable<Operation> {
         return Jenkins.getInstance().getDescriptor(getClass());
     }
 
-    public static abstract class OperationDescriptor extends Descriptor<Operation> {
+    public abstract static class OperationDescriptor extends Descriptor<Operation> {
     }
 }

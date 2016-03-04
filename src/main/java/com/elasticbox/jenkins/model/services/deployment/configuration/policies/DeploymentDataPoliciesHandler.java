@@ -21,12 +21,11 @@ import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 
 import java.util.List;
 
-/**
- * Created by serna on 1/22/16.
- */
 public interface DeploymentDataPoliciesHandler {
 
-    List<PolicyBox> retrievePoliciesToDeploy(BoxRepository boxRepository, String workspace, final AbstractBox boxToDeploy) throws RepositoryException;
+    List<PolicyBox> retrievePoliciesToDeploy(
+            BoxRepository boxRepository, String workspace, final AbstractBox boxToDeploy)
+            throws RepositoryException;
 
     boolean canManage(AbstractBox boxToDeploy);
 }

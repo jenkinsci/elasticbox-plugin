@@ -14,9 +14,6 @@
 
 package com.elasticbox.jenkins.model.workspace;
 
-/**
- * Created by serna on 1/28/16.
- */
 public class TeamWorkspace extends AbstractWorkspace {
 
     private String owner;

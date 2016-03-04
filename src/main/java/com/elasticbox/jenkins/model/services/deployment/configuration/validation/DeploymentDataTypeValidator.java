@@ -18,9 +18,6 @@ import com.elasticbox.jenkins.builders.DeployBox;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 
-/**
- * Created by serna on 1/22/16.
- */
 public interface DeploymentDataTypeValidator {
 
     DeploymentValidationResult validateDeploymentDataType(DeployBox deployData) throws ServiceException;

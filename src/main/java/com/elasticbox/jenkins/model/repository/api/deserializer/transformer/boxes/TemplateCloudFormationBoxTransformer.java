@@ -24,9 +24,6 @@ import net.sf.json.JSONObject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 11/29/15.
- */
 public class TemplateCloudFormationBoxTransformer extends AbstractBoxTransformer<TemplateCloudFormationBox> {
 
     private static final Logger logger = Logger.getLogger(TemplateCloudFormationBoxTransformer.class.getName());
@@ -34,7 +31,9 @@ public class TemplateCloudFormationBoxTransformer extends AbstractBoxTransformer
     @Override
     public TemplateCloudFormationBox apply(JSONObject jsonObject) throws ElasticBoxModelException {
 
-        TemplateCloudFormationBox templateCloudFormationBox = new TemplateCloudFormationBox.TemplateCloudFormationBoxBuilder()
+        TemplateCloudFormationBox templateCloudFormationBox
+            = new TemplateCloudFormationBox.TemplateCloudFormationBoxBuilder()
+
                 .withOwner(jsonObject.getString("owner"))
                 .withId(jsonObject.getString("id"))
                 .withName(jsonObject.getString("name"))
@@ -47,13 +46,13 @@ public class TemplateCloudFormationBoxTransformer extends AbstractBoxTransformer
     @Override
     public boolean shouldApply(JSONObject jsonObject) {
 
-        if(super.canCreate(jsonObject, BoxType.CLOUDFORMATION)){
+        if (super.canCreate(jsonObject, BoxType.CLOUDFORMATION)) {
             final String type = jsonObject.getString("type");
             try {
                 final CloudFormationBoxType cloudFormationBoxType = CloudFormationBoxType.getType(type);
                 return cloudFormationBoxType == CloudFormationBoxType.TEMPLATE;
             } catch (ElasticBoxModelException e) {
-                logger.log(Level.SEVERE, "There is no CloudFormation type for type: "+type);
+                logger.log(Level.SEVERE, "There is no CloudFormation type for type: " + type);
                 e.printStackTrace();
             }
 

@@ -20,23 +20,24 @@ import com.elasticbox.jenkins.util.CompositeObjectFilter;
 import com.elasticbox.jenkins.util.ObjectFilter;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.StringUtils;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class ReconfigureOperation extends LongOperation implements IOperation.InstanceOperation {
 
     @DataBoundConstructor
@@ -77,9 +78,20 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
             logger.info(MessageFormat.format("Reconfiguring box instance {0}", instancePageUrl));
         }
         if (waitForCompletionTimeout > 0) {
-            logger.info(MessageFormat.format("Waiting for {0} to finish reconfiguration",
-                    instances.size() > 1 ? "the instances" : "the instance"));
-            LongOperation.waitForCompletion(DescriptorImpl.DISPLAY_NAME, monitors, client, logger, waitForCompletionTimeout);
+            logger.info(
+                MessageFormat.format(
+                    "Waiting for {0} to finish reconfiguration",
+                    instances.size() > 1
+                        ? "the instances"
+                        : "the instance")
+            );
+
+            LongOperation.waitForCompletion(
+                DescriptorImpl.DISPLAY_NAME,
+                monitors,
+                client,
+                logger,
+                waitForCompletionTimeout);
         }
 
     }
@@ -87,17 +99,19 @@ public class ReconfigureOperation extends LongOperation implements IOperation.In
     public static final ObjectFilter instanceFilter(Set<String> tags) {
         return new CompositeObjectFilter(new DescriptorHelper.InstanceFilterByTags(tags, false),
             new ObjectFilter() {
+                public boolean accept(JSONObject instance) {
 
-            public boolean accept(JSONObject instance) {
-                // reject inaccessible instances that cannot be reconfigured
-                String operation = instance.getJSONObject("operation").getString("event");
-                if (Client.InstanceState.UNAVAILABLE.equals(instance.getString("state")) &&
-                        Client.InstanceOperation.RECONFIGURE.equals(operation)) {
-                    return true;
+                    // reject inaccessible instances that cannot be reconfigured
+                    String operation = instance.getJSONObject("operation").getString("event");
+
+                    if (Client.InstanceState.UNAVAILABLE.equals(instance.getString("state"))
+                        && Client.InstanceOperation.RECONFIGURE.equals(operation)) {
+
+                        return true;
+                    }
+                    return !Client.TERMINATE_OPERATIONS.contains(operation);
                 }
-                return !Client.TERMINATE_OPERATIONS.contains(operation);
-            }
-        });
+            });
     }
 
     @Override

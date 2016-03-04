@@ -14,16 +14,15 @@ package com.elasticbox.jenkins.builders;
 
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.instances.InstanceTransformer;
+
 import hudson.model.AbstractBuild;
+
+import net.sf.json.JSONObject;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import net.sf.json.JSONObject;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 class InstanceManager {
     private final Map<String, Instance> buildIdToInstanceMap;
 
@@ -43,11 +42,14 @@ class InstanceManager {
     }
 
     public void setInstance(AbstractBuild build, Instance instance) {
+
         buildIdToInstanceMap.put(build.getId(), instance);
 
         for (Iterator<String> iter = buildIdToInstanceMap.keySet().iterator(); iter.hasNext();) {
-            Object _build = build.getProject().getBuild(iter.next());
-            if (!(_build instanceof AbstractBuild) || !((AbstractBuild) _build).isBuilding()) {
+
+            Object currentBuild = build.getProject().getBuild(iter.next());
+
+            if (!(currentBuild instanceof AbstractBuild) || !((AbstractBuild) currentBuild).isBuilding()) {
                 iter.remove();
             }
         }

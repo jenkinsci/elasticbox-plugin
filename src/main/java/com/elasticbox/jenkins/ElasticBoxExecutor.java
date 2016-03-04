@@ -18,25 +18,28 @@ import hudson.model.AsyncPeriodicWork;
 import hudson.model.TaskListener;
 import hudson.util.DaemonThreadFactory;
 import hudson.util.ExceptionCatchingThreadFactory;
+
+import jenkins.model.Jenkins;
+
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 @Extension
 public class ElasticBoxExecutor extends AsyncPeriodicWork {
-    private static final long RECURRENT_PERIOD = Long.getLong("elasticbox.jenkins.ElasticBoxExecutor.recurrentPeriod", 10000);
+
+    private static final long RECURRENT_PERIOD =
+            Long.getLong("elasticbox.jenkins.ElasticBoxExecutor.recurrentPeriod", 10000);
+
     private static final Logger LOGGER = Logger.getLogger(ElasticBoxExecutor.class.getName());
 
-    public static final ExecutorService threadPool = Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(new DaemonThreadFactory()));
+    public static final ExecutorService threadPool =
+            Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(new DaemonThreadFactory()));
 
     public ElasticBoxExecutor() {
         super(ElasticBoxExecutor.class.getName());
@@ -90,7 +93,7 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
         ASYNC
     }
 
-    public static abstract class Workload implements ExtensionPoint {
+    public abstract static class Workload implements ExtensionPoint {
         private Logger logger = Logger.getLogger(getClass().getName());
 
         protected abstract ExecutionType getExecutionType();

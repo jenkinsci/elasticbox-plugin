@@ -6,9 +6,6 @@ import com.elasticbox.jenkins.model.member.Member;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by serna on 11/27/15.
- */
 public class AbstractBox  extends AbstractModel {
 
     private String name;
@@ -44,20 +41,22 @@ public class AbstractBox  extends AbstractModel {
         T build();
     }
 
-    public boolean canWrite(String owner){
-        if (getOwner().equals(owner))
+    public boolean canWrite(String owner) {
+        if (getOwner().equals(owner)) {
             return true;
+        }
 
-        for (Member member: getMembers()){
-            if (member.getWorkspace().equals(owner)){
-                if (member.getRole() == Member.Role.COLLABORATOR)
+        for (Member member: getMembers()) {
+            if (member.getWorkspace().equals(owner)) {
+                if (member.getRole() == Member.Role.COLLABORATOR) {
                     return true;
+                }
             }
         }
         return false;
     }
 
-    public static abstract class ComplexBuilder<B extends ComplexBuilder<B,T>,T> implements Builder<T> {
+    public  abstract static class ComplexBuilder<B extends ComplexBuilder<B,T>,T> implements Builder<T> {
 
         protected BoxType type;
 
@@ -66,27 +65,27 @@ public class AbstractBox  extends AbstractModel {
         private String owner;
         private Member[] members;
 
-        public B withId(String id){
+        public B withId(String id) {
             this.id = id;
             return getThis();
         }
 
-        public B withName(String name){
+        public B withName(String name) {
             this.name =  name;
             return getThis();
         }
 
-        public B withOwner(String owner){
+        public B withOwner(String owner) {
             this.owner =  owner;
             return getThis();
         }
 
-        public B withType(BoxType type){
+        public B withType(BoxType type) {
             this.type =  type;
             return getThis();
         }
 
-        public B withMembers(Member[] members){
+        public B withMembers(Member[] members) {
             this.members =  members;
             return getThis();
         }
@@ -97,4 +96,6 @@ public class AbstractBox  extends AbstractModel {
         }
 
     }
+
+
 }

@@ -25,34 +25,34 @@ import org.apache.commons.lang.StringUtils;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 12/3/15.
- */
 public abstract  class AbstractBoxTransformer<R extends AbstractBox> implements BoxTransformer<JSONObject, R> {
 
     private static final Logger logger = Logger.getLogger(AbstractBoxTransformer.class.getName());
 
     protected boolean canCreate(JSONObject jsonObject, BoxType typeToCheck) {
         final String schema = jsonObject.getString("schema");
-        if(StringUtils.isNotBlank(schema) && BoxType.isBox(schema)){
+        if (StringUtils.isNotBlank(schema) && BoxType.isBox(schema)) {
             try {
                 final BoxType boxType  = BoxType.getType(schema);
                 return boxType == typeToCheck;
             } catch (ElasticBoxModelException e) {
-                logger.log(Level.SEVERE, "There is no BoxType for type: "+schema);
+                logger.log(Level.SEVERE, "There is no BoxType for type: " + schema);
                 e.printStackTrace();
             }
         }
         return false;
     }
 
-    protected Member[] getMembers(JSONArray memberArrayObject){
-        if(!memberArrayObject.isEmpty()){
+    protected Member[] getMembers(JSONArray memberArrayObject) {
+        if (!memberArrayObject.isEmpty()) {
             int counter = 0;
             Member [] members = new Member[memberArrayObject.size()];
             for (Object memberObject : memberArrayObject) {
                 JSONObject memberJson = (JSONObject) memberObject;
-                Member member = new Member(Member.Role.findByValue(memberJson.getString("role")),memberJson.getString("workspace"));
+                Member member = new Member(
+                        Member.Role.findByValue(memberJson.getString("role")),
+                        memberJson.getString("workspace"));
+
                 members[counter] = member;
                 counter++;
             }

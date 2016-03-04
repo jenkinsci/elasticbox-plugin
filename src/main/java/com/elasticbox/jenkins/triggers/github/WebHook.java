@@ -14,18 +14,16 @@ package com.elasticbox.jenkins.triggers.github;
 
 import hudson.Extension;
 import hudson.model.UnprotectedRootAction;
-import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 @Extension
 public class WebHook implements UnprotectedRootAction {
     private static final Logger LOGGER = Logger.getLogger(WebHook.class.getName());

@@ -21,9 +21,6 @@ import com.elasticbox.jenkins.model.services.deployment.execution.context.Applic
 
 import java.util.List;
 
-/**
- * Created by serna on 1/23/16.
- */
 public interface BoxDeployer<T extends AbstractBoxDeploymentContext> {
 
     List<Instance> deploy(T context) throws RepositoryException;

@@ -18,9 +18,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by serna on 12/7/15.
- */
 public class TestTaskDependingOnOtherTasks extends TestComplexTaskBase{
 
     @Test

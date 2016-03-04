@@ -19,20 +19,18 @@ import com.elasticbox.jenkins.model.profile.PolicyProfileType;
 import com.elasticbox.jenkins.model.repository.api.deserializer.filter.Filter;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 11/26/15.
- */
 public class NoCloudFormationPolicyBoxesFilter implements Filter<JSONObject> {
 
     @Override
     public boolean apply(JSONObject jsonObject) {
         String schema = jsonObject.getString("schema");
 
-        if(BoxType.POLICY.isType(schema)){
+        if (BoxType.POLICY.isType(schema)) {
             String policySchema = jsonObject.getJSONObject("profile").getString("schema");
 
-            if(PolicyProfileType.AMAZON_CLOUDFORMATION.isType(policySchema))
+            if (PolicyProfileType.AMAZON_CLOUDFORMATION.isType(policySchema)) {
                 return false;
+            }
 
             return true;
         }

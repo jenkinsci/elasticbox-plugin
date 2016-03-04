@@ -1,8 +1,5 @@
 package com.elasticbox.jenkins.model.services.deployment.execution.order;
 
-/**
- * Created by serna on 11/27/15.
- */
 public class DeployBoxOrderResult<T> {
 
     private T result;
@@ -11,7 +8,7 @@ public class DeployBoxOrderResult<T> {
         this.result = result;
     }
 
-    public T getResult(){
+    public T getResult() {
         return result;
     }
 

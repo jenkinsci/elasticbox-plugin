@@ -20,19 +20,15 @@ import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 
-/**
- * Created by serna on 11/29/15.
- */
 public class BoxFactory extends AbstractBoxTransformer<AbstractBox> {
 
-    public static AbstractBoxTransformer[] boxCreationActions = new AbstractBoxTransformer[]{
+    public static AbstractBoxTransformer[] boxCreationActions = new AbstractBoxTransformer[] {
         new ScriptBoxTransformer(),
-            new PolicyBoxTransformer(),
-                new TemplateCloudFormationBoxTransformer(),
-                    new ManagedCloudFormationBoxTransformer(),
-                        new ApplicationBoxTransformer(),
-                            new ContainerBoxTransformer()
-
+        new PolicyBoxTransformer(),
+        new TemplateCloudFormationBoxTransformer(),
+        new ManagedCloudFormationBoxTransformer(),
+        new ApplicationBoxTransformer(),
+        new ContainerBoxTransformer()
     };
 
     @Override
@@ -45,16 +41,18 @@ public class BoxFactory extends AbstractBoxTransformer<AbstractBox> {
     public AbstractBox apply(JSONObject jsonObject) {
         final String schema = jsonObject.getString("schema");
 
-        if(StringUtils.isNotBlank(schema) && BoxType.isBox(schema)){
+        if (StringUtils.isNotBlank(schema) && BoxType.isBox(schema)) {
 
             final BoxType boxType = BoxType.getType(schema);
 
             for (AbstractBoxTransformer<AbstractBox> action : boxCreationActions) {
-                if (action.shouldApply(jsonObject)){
+                if (action.shouldApply(jsonObject)) {
                     return action.apply(jsonObject);
                 }
             }
 
         }
-        throw new ElasticBoxModelException("There is no factory for building: "+schema);    }
+
+        throw new ElasticBoxModelException("There is no factory for building: " + schema);
+    }
 }

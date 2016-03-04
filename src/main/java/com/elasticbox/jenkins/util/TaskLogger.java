@@ -13,12 +13,9 @@
 package com.elasticbox.jenkins.util;
 
 import hudson.model.TaskListener;
+
 import java.text.MessageFormat;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class TaskLogger {
     private static final String PREFIX = "[ElasticBox] - ";
     private final TaskListener taskListener;

@@ -50,7 +50,7 @@ written permission is obtained from ElasticBox.
     <f:advanced>
         <f:section title="Advanced Configuration" />
 
-        <f:entry title="${%Remote FS root}" field="remoteFS">
+        <f:entry title="${%Remote FS root}" field="remoteFs">
           <f:textbox />
         </f:entry>
 

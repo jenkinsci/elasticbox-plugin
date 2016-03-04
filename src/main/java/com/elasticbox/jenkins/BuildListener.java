@@ -18,13 +18,10 @@ import hudson.model.AbstractProject;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 @Extension
 public class BuildListener extends RunListener<AbstractBuild> {
     private static final Logger LOGGER = Logger.getLogger(BuildListener.class.getName());

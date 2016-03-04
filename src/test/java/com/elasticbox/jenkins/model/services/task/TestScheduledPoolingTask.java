@@ -20,9 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by serna on 12/7/15.
- */
 public class TestScheduledPoolingTask {
 
     @Test

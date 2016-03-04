@@ -16,9 +16,6 @@ package com.elasticbox.jenkins.model.services.task;
 
 import java.util.List;
 
-/**
- * Created by serna on 12/9/15.
- */
 public class TaskDependingOnOtherTasksExample extends TaskDependingOnOtherTasks<Integer> {
 
     private int executionTime;

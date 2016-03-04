@@ -14,9 +14,6 @@
 
 package com.elasticbox.jenkins.model.variable;
 
-/**
- * Created by serna on 1/20/16.
- */
 public class Variable {
 
     private Type type;

@@ -27,9 +27,6 @@ import java.util.HashSet;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by serna on 1/22/16.
- */
 public class TestApplicationBoxDeploymentSerializer {
 
     @Test
@@ -43,7 +40,7 @@ public class TestApplicationBoxDeploymentSerializer {
         final ApplicationBoxDeploymentContext applicationBoxDeploymentContext = new ApplicationBoxDeploymentContext.Builder()
                 .box("FAKE_BOX_ID")
                 .boxVersion("NOT_LATEST")
-                .expirationTime(expiration.getUTCDateTime())
+                .expirationTime(expiration.getUtcDateTime())
                 .expirationOperation(expiration.getOperation())
                 .requirements(new String[]{"FAKE_CLAIM"})
                 .tags(new HashSet<String>() {{
@@ -56,11 +53,10 @@ public class TestApplicationBoxDeploymentSerializer {
                 .build();
 
         final JSONObject request = new ApplicationBoxDeploymentSerializer().createRequest(applicationBoxDeploymentContext);
-
-        assertTrue("policyBox id was not set", request.getJSONObject("lease").getString("expire").equals(expiration.getUTCDateTime()));
+        assertTrue("policyBox id was not set", request.getJSONObject("lease").getString("expire").equals(expiration.getUtcDateTime()));
         assertTrue("policyBox id was not set", request.getJSONObject("lease").getString("operation").equals("terminate"));
         assertTrue("policyBox id was not set", request.getJSONObject("box").getString("id").equals("FAKE_BOX_ID"));
-        assertTrue("policyBox id was not set", request.getJSONArray("instance_tags").get(0).equals("FAKE_TAG"));
+        assertTrue("policyBox id was not set", request.getJSONArray("instanceTags").get(0).equals("FAKE_TAG"));
         assertTrue("policyBox id was not set", request.getJSONArray("requirements").get(0).equals("FAKE_CLAIM"));
         assertTrue("policyBox id was not set", request.getString("schema").equals("http://elasticbox.net/schemas/deploy/application"));
         assertTrue("policyBox id was not set", request.getString("owner").equals("FAKE_OWNER"));

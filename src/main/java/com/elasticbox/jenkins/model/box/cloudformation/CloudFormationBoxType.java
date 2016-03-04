@@ -3,26 +3,23 @@ package com.elasticbox.jenkins.model.box.cloudformation;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import org.apache.commons.lang.ArrayUtils;
 
-/**
- * Created by serna on 11/29/15.
- */
 public enum CloudFormationBoxType {
 
-    MANAGED{
+    MANAGED {
         @Override
         public String[] getIncludedTypes() {
             return new String[]{
-                    "MySQL Database Service",
-                    "Microsoft SQL Database Service",
-                    "Oracle Database Service",
-                    "PostgreSQL Database Service",
-                    "Memcached Service",
-                    "S3 Bucket",
-                    "Dynamo DB Domain"
+                "MySQL Database Service",
+                "Microsoft SQL Database Service",
+                "Oracle Database Service",
+                "PostgreSQL Database Service",
+                "Memcached Service",
+                "S3 Bucket",
+                "Dynamo DB Domain"
             };
         }
     },
-    TEMPLATE{
+    TEMPLATE {
         @Override
         public String[] getIncludedTypes() {
             return new String[]{"CloudFormation Service"};
@@ -39,7 +36,7 @@ public enum CloudFormationBoxType {
                 return cloudFormationBoxType;
             }
         }
-        throw new ElasticBoxModelException("There is no cloud formation box with type : "+type);
+        throw new ElasticBoxModelException("There is no cloud formation box with type : " + type);
     }
 
 }

@@ -17,22 +17,19 @@ import hudson.model.AbstractBuild;
 
 /**
  * Interface for build step to implements to provide instance to subsequent build steps of a build.
- *
  * @author Phong Nguyen Le
  */
 public interface IInstanceProvider {
 
     /**
-     * Gets the unique ID of the build step
-     *
+     * Gets the unique ID of the build step.
      * @return the unique ID
      */
     String getId();
 
     /**
      * Gets the ID of an instance that can be used in a subsequent build step of a build.
-     *
-     * @param build
+     * @param build that is being handled
      * @return the ID of an existing instance or <code>null</code>
      */
     String getInstanceId(AbstractBuild build);

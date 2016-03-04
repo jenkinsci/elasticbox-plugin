@@ -14,8 +14,5 @@
 
 package com.elasticbox.jenkins.model.commands;
 
-/**
- * Created by serna on 1/8/16.
- */
 public interface Command {
 }

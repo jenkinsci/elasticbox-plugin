@@ -17,9 +17,6 @@ package com.elasticbox.jenkins.model.repository.api.deserializer.filter.boxes;
 import com.elasticbox.jenkins.model.box.BoxType;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 12/3/15.
- */
 public class NoApplicationBoxes extends NoPolicyBoxesFilter {
 
     @Override
@@ -27,7 +24,7 @@ public class NoApplicationBoxes extends NoPolicyBoxesFilter {
 
         String schema = jsonObject.getString("schema");
 
-        if(BoxType.APPLICATION.isType(schema)){
+        if (BoxType.APPLICATION.isType(schema)) {
             return false;
         }
 

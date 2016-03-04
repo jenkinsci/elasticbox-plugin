@@ -20,13 +20,10 @@ import com.elasticbox.jenkins.model.repository.error.RepositoryException;
 
 import java.util.List;
 
-/**
- * Created by serna on 1/7/16.
- */
 public interface InstanceRepository {
 
-     public List<Instance> getInstances(String workspace, String [] id) throws RepositoryException;
+    public List<Instance> getInstances(String workspace, String [] id) throws RepositoryException;
 
-     public Instance getInstance(String instanceId) throws RepositoryException;
+    public Instance getInstance(String instanceId) throws RepositoryException;
 
 }

@@ -15,11 +15,8 @@ package com.elasticbox.jenkins;
 import hudson.model.AbstractProject;
 import hudson.model.BuildableItemWithBuildWrappers;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class ElasticBoxBuildWrappers {
+
     public final InstanceCreator instanceCreator;
     public final SingleUseSlaveBuildOption singleUseSlaveOption;
 
@@ -32,7 +29,9 @@ public class ElasticBoxBuildWrappers {
         SingleUseSlaveBuildOption singleUseOption = null;
         InstanceCreator instanceCreator = null;
         if (project instanceof BuildableItemWithBuildWrappers) {
-            for (Object buildWrapper : ((BuildableItemWithBuildWrappers) project).getBuildWrappersList().toMap().values()) {
+
+            for (Object buildWrapper : ((BuildableItemWithBuildWrappers) project).getBuildWrappersList().toMap()
+                    .values()) {
                 if (buildWrapper instanceof InstanceCreator) {
                     instanceCreator = (InstanceCreator) buildWrapper;
                 } else if (buildWrapper instanceof SingleUseSlaveBuildOption) {

@@ -36,9 +36,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 11/30/15.
- */
 public class ApplicationBoxAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
 
     @Override
@@ -51,7 +48,7 @@ public class ApplicationBoxAbstractDeploymentDataValidator implements Deployment
 
         final String claims = deployData.getClaims();
         final Set<String> claimsSet = new HashSet<String>();
-        if (StringUtils.isNotEmpty(claims)){
+        if (StringUtils.isNotEmpty(claims)) {
             for (String tag : claims.split(",")) {
                 claimsSet.add(tag.trim());
             }

@@ -13,19 +13,21 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.IProgressMonitor;
+
 import hudson.slaves.SlaveComputer;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.lang.time.StopWatch;
+
 import java.io.IOException;
+
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.sf.json.JSONObject;
-import org.apache.commons.lang.time.StopWatch;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 class LaunchSlaveProgressMonitor implements IProgressMonitor {
+
     private static final Logger LOGGER = Logger.getLogger(LaunchSlaveProgressMonitor.class.getName());
 
     private final Object waitLock = new Object();
@@ -50,6 +52,11 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
     }
 
     @Override
+    public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
+        return monitor != null ? monitor.isDone(instance) : false;
+    }
+
+    @Override
     public long getCreationTime() {
         return creationTime;
     }
@@ -69,6 +76,11 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
                 try {
                     waitLock.wait(remainingTime);
                 } catch (InterruptedException ex) {
+                    LOGGER.log(
+                        Level.SEVERE,
+                        "Thread interrupted waiting for condition",
+                        ex
+                    );
                 }
             }
             long currentTime = System.currentTimeMillis();
@@ -114,11 +126,6 @@ class LaunchSlaveProgressMonitor implements IProgressMonitor {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
             }
         }
-    }
-
-    @Override
-    public boolean isDone(JSONObject instance) throws IncompleteException, IOException {
-        return monitor != null ? monitor.isDone(instance) : false;
     }
 
     void setLaunched() {

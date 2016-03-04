@@ -12,24 +12,28 @@
 
 package com.elasticbox.jenkins.util;
 
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.time.StopWatch;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public abstract class Condition {
+
+    private static final Logger logger = Logger.getLogger(Condition.class.getName());
 
     public abstract boolean satisfied();
 
     public synchronized void waitUntilSatisfied(long timeoutSeconds) {
+
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
+
         while (!satisfied() && stopWatch.getTime() < TimeUnit.SECONDS.toMillis(timeoutSeconds)) {
             try {
                 wait(1000);
             } catch (InterruptedException ex) {
+                logger.log(Level.SEVERE, "Thread Interrupted ", ex);
             }
         }
     }

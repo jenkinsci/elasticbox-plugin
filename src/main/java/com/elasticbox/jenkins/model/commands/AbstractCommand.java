@@ -14,14 +14,11 @@
 
 package com.elasticbox.jenkins.model.commands;
 
-/**
- * Created by serna on 1/8/16.
- */
 public abstract class AbstractCommand implements Command {
 
     abstract boolean canHandle(DeploymentContext context);
 
-    public static Command factory(DeploymentContext context){
+    public static Command factory(DeploymentContext context) {
         return null;
     }
 

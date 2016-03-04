@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.triggers;
 
 import com.elasticbox.jenkins.triggers.github.WebHook;
+
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.AbstractProject;
@@ -20,20 +21,20 @@ import hudson.model.Item;
 import hudson.model.RootAction;
 import hudson.triggers.Trigger;
 import hudson.triggers.TriggerDescriptor;
+
+import jenkins.model.Jenkins;
+
+import net.sf.json.JSONObject;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
+
 import java.io.IOException;
 
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
     private static final Logger LOGGER = Logger.getLogger(PullRequestBuildTrigger.class.getName());
 
@@ -67,9 +68,18 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
     @Override
     public void start(AbstractProject<?, ?> project, boolean newInstance) {
+
         BuildManager buildManager = getDescriptor().getBuildManager();
+
         if (buildManager == null) {
-            LOGGER.severe(MessageFormat.format("Cannot retrieve build manager. {0} requires GitHub plugin, you need to install GitHub plugin in order to use it.", getDescriptor().getDisplayName()));
+
+            LOGGER.severe(
+                MessageFormat.format(
+                    "Cannot retrieve build manager. {0} requires GitHub plugin, you need to install GitHub plugin"
+                        + " in order to use it.",
+                    getDescriptor().getDisplayName())
+            );
+
             return;
         }
 
@@ -102,9 +112,16 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
         @Override
         public Trigger<?> newInstance(StaplerRequest req, JSONObject formData) throws FormException {
+
             if (getBuildManager() == null) {
-                throw new FormException(MessageFormat.format("Cannot retrieve build manager. ''{0}'' requires GitHub plugin, you need to install GitHub plugin in order to use it.", getDisplayName()), "all");
+                throw new FormException(
+                    MessageFormat.format(
+                        "Cannot retrieve build manager. ''{0}'' requires GitHub plugin, you need to install GitHub "
+                            + "plugin in order to use it.",
+                        getDisplayName()),
+                    "all");
             }
+
             return super.newInstance(req, formData);
         }
 
@@ -135,7 +152,8 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
             if (!jenkinsUrl.endsWith("/")) {
                 jenkinsUrl += '/';
             }
-            return jenkinsUrl + Jenkins.getInstance().getExtensionList(RootAction.class).get(WebHook.class).getUrlName() + '/';
+            return jenkinsUrl
+                + Jenkins.getInstance().getExtensionList(RootAction.class).get(WebHook.class).getUrlName() + '/';
         }
 
         public String getWebHookExternalUrl() {

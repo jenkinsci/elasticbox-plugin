@@ -4,6 +4,7 @@ import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.elasticbox.jenkins.triggers.github.TriggerCause;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
+
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
@@ -12,15 +13,15 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import java.io.IOException;
-import java.text.MessageFormat;
+
 import jenkins.model.Jenkins;
+
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- * @author Phong Nguyen Le
- */
+import java.io.IOException;
+import java.text.MessageFormat;
+
 public class PullRequestCommenter extends Builder {
     private final String comment;
 

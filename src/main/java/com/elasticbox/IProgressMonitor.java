@@ -12,13 +12,10 @@
 
 package com.elasticbox;
 
-import java.io.IOException;
 import net.sf.json.JSONObject;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import java.io.IOException;
+
 public interface IProgressMonitor {
     String getResourceUrl();
 
@@ -30,7 +27,6 @@ public interface IProgressMonitor {
 
     /**
      * Waits for the task to finish successfully.
-     *
      * @param timeout in minutes
      * @throws com.elasticbox.IProgressMonitor.IncompleteException if the task finished but is not complete
      * @throws IOException if unexpected error occurred
@@ -51,6 +47,10 @@ public interface IProgressMonitor {
             return resourceUrl;
         }
 
+        public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
+            return true;
+        }
+
         public boolean isDone() throws IProgressMonitor.IncompleteException, IOException {
             return true;
         }
@@ -60,10 +60,6 @@ public interface IProgressMonitor {
         }
 
         public void waitForDone(int timeout) throws IProgressMonitor.IncompleteException, IOException {
-        }
-
-        public boolean isDone(JSONObject instance) throws IProgressMonitor.IncompleteException, IOException {
-            return true;
         }
     }
 

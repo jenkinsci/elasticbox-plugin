@@ -14,7 +14,7 @@
 
 package com.elasticbox.jenkins.model.repository.api;
 
-import com.elasticbox.APIClient;
+import com.elasticbox.ApiClient;
 import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.instance.Instance;
 import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
@@ -31,39 +31,41 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by serna on 1/20/16.
- */
-public class DeploymentOrderRepositoryAPIImpl implements DeploymentOrderRepository{
+public class DeploymentOrderRepositoryApiImpl implements DeploymentOrderRepository {
 
-    private static final Logger logger = Logger.getLogger(DeploymentOrderRepositoryAPIImpl.class.getName());
+    private static final Logger logger = Logger.getLogger(DeploymentOrderRepositoryApiImpl.class.getName());
 
-    private APIClient client;
+    private ApiClient client;
 
-    public DeploymentOrderRepositoryAPIImpl(APIClient client) {
+    public DeploymentOrderRepositoryApiImpl(ApiClient client) {
         this.client = client;
     }
 
     @Override
-    public List<Instance> deploy(ApplicationBoxDeploymentContext deploymentContext) throws RepositoryException{
+    public List<Instance> deploy(ApplicationBoxDeploymentContext deploymentContext) throws RepositoryException {
 
         try {
             final JSONObject request = new ApplicationBoxDeploymentSerializer().createRequest(deploymentContext);
+
             List<Instance> instances = new ArrayList<>();
-            final JSONArray instancesJSONArray = client.<JSONArray>doPost(Constants.INSTANCES_API_RESOURCE, request, true);
-            for (Object jsonElement : instancesJSONArray) {
+
+            final JSONArray instancesJsonArray =
+                    client.<JSONArray>doPost(Constants.INSTANCES_API_RESOURCE, request, true);
+
+            for (Object jsonElement : instancesJsonArray) {
                 JSONObject jsonInstance = (JSONObject) jsonElement;
                 final Instance instance =  new InstanceTransformer().apply(jsonInstance);
                 instances.add(instance);
             }
             return instances;
+
         } catch (IOException e) {
             deploymentContext.getLogger().error("There is an error deploying ApplicationBox: {0}, id: {1}",
                     deploymentContext.getOrder().getName(),
                         deploymentContext.getOrder().getBox());
 
-            logger.log(Level.SEVERE, "There is an error deploying ApplicationBox, order: "+deploymentContext,e);
-            throw new RepositoryException("There is an error deploying ApplicationBox, order: "+deploymentContext);
+            logger.log(Level.SEVERE, "There is an error deploying ApplicationBox, order: " + deploymentContext,e);
+            throw new RepositoryException("There is an error deploying ApplicationBox, order: " + deploymentContext);
         }
     }
 }

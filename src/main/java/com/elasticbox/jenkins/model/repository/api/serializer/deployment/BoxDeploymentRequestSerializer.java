@@ -18,11 +18,9 @@ import com.elasticbox.jenkins.model.services.deployment.execution.context.Abstra
 import com.elasticbox.jenkins.model.services.deployment.execution.order.AbstractDeployBoxOrder;
 import net.sf.json.JSONObject;
 
-/**
- * Created by serna on 1/22/16.
- */
-public interface BoxDeploymentRequestSerializer<R extends AbstractDeployBoxOrder,T extends AbstractBoxDeploymentContext<R>> {
+public interface BoxDeploymentRequestSerializer
+        <R extends AbstractDeployBoxOrder, T extends AbstractBoxDeploymentContext<R>> {
 
-     JSONObject createRequest(T context);
+    JSONObject createRequest(T context);
 
 }

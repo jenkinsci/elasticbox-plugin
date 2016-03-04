@@ -14,9 +14,6 @@
 
 package com.elasticbox.jenkins.model.services.instances.execution.context;
 
-/**
- * Created by serna on 1/19/16.
- */
 public interface ManageInstancesContext {
 
 
