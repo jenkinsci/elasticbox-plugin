@@ -37,13 +37,16 @@ public class BindingWithTagsTest extends BuildStepTestBase {
 
     @Test
     public void testBindingWithTags() throws Exception {
+
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
         FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("jobs/test-binding-with-tags.xml"), testParameters, jenkins.getInstance());
+
         ByteArrayOutputStream log = new ByteArrayOutputStream();
         build.getLogText().writeLogTo(0, log);
         String logText = log.toString();
         Assertions.assertThat(build.getResult()).as(logText).isEqualTo(Result.SUCCESS);
+
         JSONArray instances = getInstances(Collections.singleton(testTag), cloud.name, TestUtils.TEST_WORKSPACE);
 
         // verify the bindings
@@ -52,18 +55,23 @@ public class BindingWithTagsTest extends BuildStepTestBase {
 
         JSONObject testLinuxBoxInstance = TestUtils.findInstance(instances, TestUtils.TEST_LINUX_BOX_NAME);
         Assert.assertNotNull(testLinuxBoxInstance);
+
         JSONArray bindings = testLinuxBoxInstance.getJSONArray("bindings");
-        Assert.assertEquals(MessageFormat.format("Number of bindings unexpected: Found {0}, expected: {1}", bindings.size(), 1),
-                bindings.size(), 1);
-        Assert.assertTrue(MessageFormat.format("Instance is not a binding: {0}", testBindingBoxInstance.getString("id")),
-                bindings.getJSONObject(0).getJSONArray("instances").contains(testBindingBoxInstance.getString("id")));
+        Assert.assertEquals(
+            MessageFormat.format(
+                "Number of bindings unexpected: Found {0}, expected: {1}", bindings.size(), 1),bindings.size(), 1);
+
+        Assert.assertTrue(
+            MessageFormat.format(
+                "Instance is not a binding: {0}", testBindingBoxInstance.getString("id")),
+            bindings.getJSONObject(0).getJSONArray("instances").contains(testBindingBoxInstance.getString("id")));
 
         JSONObject testNestedBoxInstance = TestUtils.findInstance(instances, TestUtils.TEST_NESTED_BOX_NAME);
         Assert.assertNotNull(testNestedBoxInstance);
 
         bindings = testNestedBoxInstance.getJSONArray("bindings");
-        Assert.assertEquals(MessageFormat.format("Number of bindings unexpected: Found {0}, expected: {1}", bindings.size(), 2),
-                bindings.size(), 2);
+        Assert.assertEquals(
+            MessageFormat.format("Number of bindings unexpected: Found {0}, expected: {1}", bindings.size(), 2),bindings.size(), 2);
 
         TestUtils.cleanUp(testTag, jenkins.getInstance());
     }

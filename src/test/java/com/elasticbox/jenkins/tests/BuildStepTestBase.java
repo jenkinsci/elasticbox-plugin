@@ -45,32 +45,44 @@ public class BuildStepTestBase extends TestBase {
     @Before
     @Override
     public void setup() throws Exception {
+
         super.setup();
+
         Client client = cloud.getClient();
         JSONObject workspace = (JSONObject) client.doGet(MessageFormat.format("/services/workspaces/{0}", TestUtils.TEST_WORKSPACE), false);
+
         testProvider = TestUtils.createTestProvider(client);
+
         testBoxDataLookup = new HashMap<String, TestBoxData>();
+
         templateResolver = createTemplateResolver();
 
         for (TestBoxData testBoxData : testBoxDataList) {
             testBoxDataLookup.put(testBoxData.getJson().getString("name"), testBoxData);
+
             JSONObject testBox = TestUtils.createTestBox(testBoxData, templateResolver, client);
+
             JSONObject testProfile = TestUtils.createTestProfile(testBoxData, testProvider, templateResolver, client);
         }
 
         TestBoxData testBindingBoxData = testBoxDataLookup.get(TestUtils.TEST_BINDING_BOX_NAME);
+
         JSONArray variables = new JSONArray();
         JSONObject variable = new JSONObject();
         variable.put("name", "CONNECTION");
         variable.put("type", "Text");
         variable.put("value", "connection");
         variables.add(variable);
+
         IProgressMonitor monitor = client.deploy(testBindingBoxData.getJson().getString("id"),
                 testBindingBoxData.getNewProfileId(), null, testBindingBoxData.getJson().getString("owner"),
                 Arrays.asList("jenkins-plugin-test", TestUtils.TEST_BINDING_INSTANCE_TAG), variables, null, null, new JSONArray(), null);
         monitor.waitForDone(10);
+
         JSONObject testBindingBoxInstance = client.getInstance(Client.getResourceId(monitor.getResourceUrl()));
+
         deleteAfter(testBindingBoxInstance);
+
         newTestBindingBoxInstanceId = testBindingBoxInstance.getString("id");
     }
 

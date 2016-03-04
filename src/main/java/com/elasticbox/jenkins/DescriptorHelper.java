@@ -572,10 +572,11 @@ public class DescriptorHelper {
 
             String fullVariableName;
             if (varJson.containsKey("scope") ) {
-                fullVariableName = varJson.getString("scope");
+                fullVariableName = varJson.getString("scope") + '.' + varJson.getString("name");;
             } else {
                 fullVariableName = StringUtils.EMPTY + '.' + varJson.getString("name");
             }
+
 
             if (!fullVariableNames.contains(fullVariableName)) {
                 iter.remove();
