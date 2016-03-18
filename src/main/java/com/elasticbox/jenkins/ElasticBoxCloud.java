@@ -208,6 +208,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     }
 
     private Collection<NodeProvisioner.PlannedNode> doProvision(Label label, int excessWorkload) {
+        if (LOGGER.isLoggable(Level.FINER)) {
+            LOGGER.entering(LOGGER.getName(), "doProvision(" + label + "," + excessWorkload + ")");
+        }
         List<JSONObject> activeInstances;
         try {
             activeInstances = ElasticBoxSlaveHandler.getActiveInstances(this);
@@ -305,6 +308,11 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                     newSlave = new ElasticBoxSlave(slaveConfig, this);
                 }
                 final ElasticBoxSlave slave = newSlave;
+
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine("doProvision(): provisioning a EB Slave node - " + slave);
+                }
+
                 plannedNodes.add(new NodeProvisioner.PlannedNode(slave.getDisplayName(),
                         new FutureWrapper<Node>(Computer.threadPoolForRemoting.submit(new Callable<Node>() {
                             public Node call() throws Exception {

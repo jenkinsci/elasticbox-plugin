@@ -45,11 +45,9 @@ import java.util.logging.Logger;
 
 public class SlaveConfiguration extends AbstractSlaveConfiguration {
 
-    private static final Logger logger = Logger.getLogger(SlaveConfiguration.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(SlaveConfiguration.class.getName());
 
     public static final String SLAVE_CONFIGURATIONS = "slaveConfigurations";
-
-    private static final Logger LOGGER = Logger.getLogger(SlaveConfiguration.class.getName());
 
     @DataBoundConstructor
     public SlaveConfiguration(String id, String workspace, String box, String boxVersion, String profile,

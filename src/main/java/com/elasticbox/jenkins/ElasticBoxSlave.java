@@ -274,9 +274,15 @@ public class ElasticBoxSlave extends Slave {
         Client client = getCloud().getClient();
         String instanceId = getInstanceId();
         try {
+            LOGGER.info("Terminating slave - " + toString());
             client.terminate(instanceId);
+
         } catch (ClientException ex) {
+
             if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine("Forcing slave termination - " + toString());
+                }
                 client.forceTerminate(instanceId);
             }
         }
@@ -285,14 +291,20 @@ public class ElasticBoxSlave extends Slave {
 
     public void delete() throws IOException {
         checkInstanceReachable();
+
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("Deleting slave - " + toString());
+        }
         getCloud().getClient().delete(getInstanceId());
     }
 
     public boolean isTerminated() throws IOException {
-        checkInstanceReachable();
-        JSONObject instance = getCloud().getClient().getInstance(getInstanceId());
-        return Client.InstanceState.DONE.equals(
-                instance.get("state")) && Client.TERMINATE_OPERATIONS.contains(instance.get("operation"));
+        JSONObject instance = getInstance();
+        String state = instance.getString("state");
+        String operation = instance.getJSONObject("operation").getString("event");
+
+        return Client.InstanceState.DONE.equals(state)
+                && Client.TERMINATE_OPERATIONS.contains(operation);
     }
 
     public JSONObject getInstance() throws IOException {
@@ -322,9 +334,15 @@ public class ElasticBoxSlave extends Slave {
         }
     }
 
-
+    public String getInstanceState() throws IOException {
+        JSONObject instance = getInstance();
+        return instance.getString("state");
+    }
 
     void markForTermination() {
+        if (LOGGER.isLoggable(Level.FINER)) {
+            LOGGER.entering(LOGGER.getName(), "markForTermination()");
+        }
         setDeletable(true);
         SlaveComputer computer = getComputer();
         if (computer != null) {
@@ -625,5 +643,28 @@ public class ElasticBoxSlave extends Slave {
             }
         }
 
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(100).append("Name:").append(getNodeName());
+
+        if (instanceUrl != null) {
+            sb.append(". Url:").append(instanceUrl);
+            try {
+                String operation = getInstance().getJSONObject("operation").getString("event");
+                sb.append(". LastOp:").append(operation);
+                String str = getInstance().getString("state");
+                sb.append(". Status:").append(str);
+            } catch (IOException e) {
+                sb.append(". Message:").append(e.getMessage());
+            }
+        } else {
+            String statusMessage = getInstanceStatusMessage();
+            if (statusMessage != null) {
+                sb.append(". StatusMessage:").append(statusMessage);
+            }
+        }
+        return sb.toString();
     }
 }
