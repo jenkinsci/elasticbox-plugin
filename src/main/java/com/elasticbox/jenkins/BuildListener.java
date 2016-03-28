@@ -34,6 +34,7 @@ public class BuildListener extends RunListener<AbstractBuild> {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
                 slave.incrementBuilds();
                 if (slave.hasExpired() || requiresGlobalSingleUseSlave(build.getProject())) {
+                    LOGGER.info(build.toString() + " has completed. Marking slave for termination - " + slave);
                     slave.markForTermination();
                 }
             }

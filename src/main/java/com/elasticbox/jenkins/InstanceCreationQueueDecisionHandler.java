@@ -63,12 +63,13 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                     }
                 }
 
-                LabelAtom label = ElasticBoxLabelFinder.getLabel(instanceCreator.getSlaveConfiguration(), singleUse);
+                ProjectSlaveConfiguration config = instanceCreator.getSlaveConfiguration();
+                LabelAtom label = ElasticBoxLabelFinder.getLabel(config, singleUse);
                 if (singleUse) {
                     try {
-                        ElasticBoxSlave slave = new ElasticBoxSlave(instanceCreator.getSlaveConfiguration(), singleUse);
-                        Jenkins.getInstance().addNode(slave);
-                        ElasticBoxSlaveHandler.submit(slave);
+                        LOGGER.info("Launching single use slave for task: " + project.getAssignedLabelString() );
+                        LaunchAttempts.resetAttempts(config.getId() );
+                        ElasticBoxSlaveHandler.launchSingleUseSlave(config, label.getName() );
                     } catch (Descriptor.FormException ex) {
                         LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                     } catch (IOException ex) {
@@ -80,11 +81,9 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                 } catch (IOException ex) {
                     LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
                 }
-
             }
         }
 
         return true;
     }
-
 }

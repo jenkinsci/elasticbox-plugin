@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadFactory;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.junit.After;
@@ -102,6 +104,8 @@ public class BuildStepTestBase extends TestBase {
                 }
             }
         }
+
+        Thread.sleep(20000);
 
         if (testProvider != null) {
             delete(testProvider, client);

@@ -22,7 +22,6 @@ import hudson.util.ExceptionCatchingThreadFactory;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -32,11 +31,10 @@ import java.util.logging.Logger;
 
 @Extension
 public class ElasticBoxExecutor extends AsyncPeriodicWork {
+    private static final Logger LOGGER = Logger.getLogger(ElasticBoxExecutor.class.getName());
 
     private static final long RECURRENT_PERIOD =
-            Long.getLong("elasticbox.jenkins.ElasticBoxExecutor.recurrentPeriod", 10000);
-
-    private static final Logger LOGGER = Logger.getLogger(ElasticBoxExecutor.class.getName());
+            Long.getLong("elasticbox.jenkins.ElasticBoxExecutor.recurrentPeriod", 20 * 1000);
 
     public static final ExecutorService threadPool =
             Executors.newCachedThreadPool(new ExceptionCatchingThreadFactory(new DaemonThreadFactory()));
@@ -62,6 +60,9 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
         List<Workload> syncWorkloads = new ArrayList<Workload>();
         for (Workload workload : Jenkins.getInstance().getExtensionList(Workload.class)) {
             if (workload.getExecutionType() == ExecutionType.ASYNC) {
+                if (LOGGER.isLoggable(Level.FINEST)) {
+                    LOGGER.finest("Executing asynchronous workload: " + workload);
+                }
                 executeAsync(workload, listener);
             } else {
                 syncWorkloads.add(workload);
@@ -70,6 +71,9 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
 
         for (Workload workload : syncWorkloads) {
             try {
+                if (LOGGER.isLoggable(Level.FINEST)) {
+                    LOGGER.finest("Executing synchronous workload: " + workload);
+                }
                 workload.execute(listener);
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
