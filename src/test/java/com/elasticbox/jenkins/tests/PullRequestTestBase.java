@@ -74,7 +74,8 @@ import org.w3c.dom.Document;
 public class PullRequestTestBase extends BuildStepTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestTestBase.class.getName());
     private static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
-    private static final String PR_TITLE = MessageFormat.format("ElasticBox Jenkins plugin test PR {0}", UUID.randomUUID().toString());
+    private static final String PR_TITLE_PREFIX = "ElasticBox Jenkins plugin test PR ";
+    private static final String PR_TITLE = PR_TITLE_PREFIX + UUID.randomUUID().toString();
     private static final String PR_DESCRIPTION = "Automatic test PR from ElasticBox Jenkins plugin";
 
     protected String testTag;
@@ -159,7 +160,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
         GHPullRequest ghPullRequest = null;
         List<GHPullRequest> openedPullRequests = githubRepo.getPullRequests(GHIssueState.OPEN);
         for (GHPullRequest pullRequest : openedPullRequests) {
-            if (pullRequest.getTitle().equals(PR_TITLE)) {
+            if(pullRequest.getTitle().startsWith(PR_TITLE_PREFIX)){
+                LOGGER.info("Found an existing open PR, reusing it: " + pullRequest.getTitle() );
                 ghPullRequest = pullRequest;
                 break;
             }
