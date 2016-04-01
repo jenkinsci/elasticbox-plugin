@@ -36,6 +36,11 @@
             <name>Oscar Serna</name>
             <email>serna@elasticbox.com</email>
         </developer>
+        <developer>
+            <id>gsanchezu</id>
+            <name>Guillermo Sanchez Urien</name>
+            <email>guillermo@elasticbox.com</email>
+        </developer>
     </developers>
 
     <scm>

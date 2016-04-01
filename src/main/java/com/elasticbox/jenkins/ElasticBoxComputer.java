@@ -91,7 +91,9 @@ public final class ElasticBoxComputer extends SlaveComputer {
                     hostAddressCached = true;
                     break;
                 } else {
-                    LOGGER.fine(MessageFormat.format("{0} didn't respond to ping", ia.getHostAddress()));
+                    if (LOGGER.isLoggable(Level.FINE)) {
+                        LOGGER.fine(MessageFormat.format("{0} didn't respond to ping", ia.getHostAddress()));
+                    }
                 }
             } catch (IOException e) {
                 LOGGER.log(Level.FINE, e.getMessage(), e);
@@ -104,6 +106,9 @@ public final class ElasticBoxComputer extends SlaveComputer {
     @Override
     public Future<?> disconnect(OfflineCause cause) {
         boolean online = isOnline();
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine("Cause:" + cause + " - " + getSlave() );
+        }
         boolean terminateNow = false;
         if (isSlaveRemoved(cause)) {
             try {
@@ -294,7 +299,7 @@ public final class ElasticBoxComputer extends SlaveComputer {
     public static final class ComputerListenerImpl extends ComputerListener {
 
         @Override
-        public void onOffline(Computer computer) {
+        public void onOffline(Computer computer, OfflineCause cause) {
             if (computer instanceof ElasticBoxComputer) {
                 ElasticBoxComputer ebComputer = (ElasticBoxComputer) computer;
                 if (ebComputer.mustBeTerminatedOnOffline()) {
