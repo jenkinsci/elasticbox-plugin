@@ -44,6 +44,15 @@ public class LaunchAttempts {
         return (attempt == null) ? 0 : attempt.number;
     }
 
+    public static boolean isLastSlaveAttept(ElasticBoxSlave slave) {
+        if (slave != null) {
+            String configId = slave.getSlaveConfiguration().getId();
+            Attempt attempt = launchInstancesAttempts.get(configId);
+            return attempt != null && attempt.number >= MAX_ATTEMPTS && slave.equals(attempt.slave);
+        }
+        return false;
+    }
+
     public static boolean maxAttemptsReached(String configId) {
         Attempt currentAttempt = launchInstancesAttempts.get(configId);
         return currentAttempt != null && currentAttempt.number >= MAX_ATTEMPTS;

@@ -66,18 +66,8 @@ public class SlaveInstanceManager {
                 if (slave.getInstanceUrl() != null) {
                     String instanceId = slave.getInstanceId();
                     instanceIdToSlaveMap.put(instanceId, slave);
-
-                } else {
-                    if (slavesWithoutInstance == null) {
-                        slavesWithoutInstance = new ArrayList<ElasticBoxSlave>();
-                    }
-                    slavesWithoutInstance.add(slave);
                 }
             }
-        }
-
-        if (instanceIdToSlaveMap.isEmpty() && slavesWithoutInstance == null) {
-            slavesWithoutInstance = Collections.emptyList();
         }
 
         if (LOGGER.isLoggable(Level.FINEST)) {

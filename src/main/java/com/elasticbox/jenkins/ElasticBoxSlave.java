@@ -341,7 +341,7 @@ public class ElasticBoxSlave extends Slave {
 
     void markForTermination() {
         if (LOGGER.isLoggable(Level.FINER)) {
-            LOGGER.entering(LOGGER.getName(), "markForTermination()");
+            LOGGER.finer("Marking slave for termination - " + toString() );
         }
         setDeletable(true);
         SlaveComputer computer = getComputer();
