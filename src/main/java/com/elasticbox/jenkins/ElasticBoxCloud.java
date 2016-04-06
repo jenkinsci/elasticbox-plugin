@@ -705,14 +705,16 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
                         if (slaveConfig != null) {
                             if (newCloud.getSlaveConfiguration(slaveConfig.getId()) == null) {
-                                throw new FormException(
-                                        MessageFormat.format(
-                                                "Cannot remove slave configuration ''{0}'' from ElasticBox cloud {1} "
-                                                        + "because it is used by slave {2}.",
-                                                slaveConfig.getDescription(),
-                                                existingCloud.getDisplayName(),
-                                                slave.getDisplayName()),
-                                        SlaveConfiguration.SLAVE_CONFIGURATIONS);
+                                String message = MessageFormat.format(
+                                        "Cannot regenerate slave configuration ''{0}'' from ElasticBox cloud {1} "
+                                                + "because it is used by slave [{2}].",
+                                        slaveConfig.getDescription(),
+                                        existingCloud.getDisplayName(),
+                                        slave.getDisplayName() );
+                                LOGGER.severe(message);
+                                LOGGER.severe("Slave might be single use, and must finish before proceed. Label: "
+                                        + slave.getLabelString() );
+                                throw new FormException(message, SlaveConfiguration.SLAVE_CONFIGURATIONS);
                             }
                         } else {
                             // this is for backward compatibility with older slaves that are not associated with
