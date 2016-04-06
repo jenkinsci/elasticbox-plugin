@@ -19,6 +19,7 @@ import hudson.model.Node;
 import hudson.slaves.Cloud;
 import jenkins.model.Jenkins;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import java.io.IOException;
@@ -41,6 +42,7 @@ public class SlaveInstanceManager {
     private final Map<ElasticBoxCloud, List<JSONObject>> cloudToInstancesMap;
     private Collection<ElasticBoxSlave> slavesWithoutInstance;
     private final Map<ElasticBoxCloud, Set<String>> cloudToWorkspaceIDsMap;
+    private boolean allFetched = false;
 
     public SlaveInstanceManager() throws IOException {
         instanceIdToSlaveMap = new HashMap<String, ElasticBoxSlave>();
@@ -66,6 +68,43 @@ public class SlaveInstanceManager {
                 if (slave.getInstanceUrl() != null) {
                     String instanceId = slave.getInstanceId();
                     instanceIdToSlaveMap.put(instanceId, slave);
+                } else {
+                    if (slavesWithoutInstance == null) {
+                        slavesWithoutInstance = new ArrayList<>();
+                    }
+                    slavesWithoutInstance.add(slave);
+                }
+            }
+        }
+
+        if (slavesWithoutInstance != null) {
+            ElasticBoxCloud cloud = null;
+            String wks = null;
+            JSONArray instances = null;
+            AbstractSlaveConfiguration config = null;
+            for (ElasticBoxSlave slave: slavesWithoutInstance) {
+                config = slave.getSlaveConfiguration();
+                if ( slave.getCloud() != null && config != null) {
+                    if (!slave.getCloud().equals(cloud) && !config.getWorkspace().equals(wks)) {
+                        cloud = slave.getCloud();
+                        wks = slave.getSlaveConfiguration().getWorkspace();
+                        instances = slave.getCloud().getClient().getInstances(wks);
+                    }
+                    for (Object instance : instances) {
+                        JSONObject instanceJson = (JSONObject) instance;
+                        String label = instanceJson.getJSONArray("tags").getString(0);
+                        if (slave.getNodeName().equals(label)) {
+                            String instanceId = instanceJson.getString("id");
+                            if (slave.getInstanceUrl() == null) {
+                                String url = slave.getCloud().getClient().getInstanceUrl(instanceId);
+                                slave.setInstanceUrl(slave.getCloud().getClient().getInstanceUrl(url));
+                                LOGGER.info("Linked instance [" + url + "] with orphan slave - " + slave);
+                            }
+                            slavesWithoutInstance.remove(slave);
+                            instanceIdToSlaveMap.put(instanceId, slave);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -78,7 +117,6 @@ public class SlaveInstanceManager {
             sb.append("\nslavesWithoutInstance=").append(slavesWithoutInstance);
             LOGGER.finest(sb.toString());
         }
-
     }
 
     public ElasticBoxSlave getSlave(String instanceId) {
@@ -93,14 +131,13 @@ public class SlaveInstanceManager {
 
         if (slavesWithoutInstance == null) {
             ensureAllFetched();
-            Set<String> validInstanceIDs = new HashSet<String>();
+            Set<String> validInstanceIDs = new HashSet<>();
             for (List<JSONObject> instances : cloudToInstancesMap.values()) {
                 for (JSONObject instance : instances) {
                     validInstanceIDs.add(instance.getString("id"));
                 }
             }
-            Map<String, ElasticBoxSlave> invalidInstanceIdToSlaveMap =
-                    new HashMap<String, ElasticBoxSlave>(instanceIdToSlaveMap);
+            Map<String, ElasticBoxSlave> invalidInstanceIdToSlaveMap = new HashMap<>(instanceIdToSlaveMap);
 
             invalidInstanceIdToSlaveMap.keySet().removeAll(validInstanceIDs);
             slavesWithoutInstance = new ArrayList<ElasticBoxSlave>(invalidInstanceIdToSlaveMap.values());
@@ -154,11 +191,16 @@ public class SlaveInstanceManager {
     }
 
     private void ensureAllFetched() throws IOException {
+        if (this.allFetched) {
+            return;
+        }
+
         Set<ElasticBoxCloud> unfetchedClouds = new HashSet(cloudToWorkspaceIDsMap.keySet());
         unfetchedClouds.removeAll(cloudToInstancesMap.keySet());
         for (ElasticBoxCloud cloud : unfetchedClouds) {
             getInstances(cloud);
         }
+        this.allFetched = true;
     }
 
     public Map<ElasticBoxCloud, Integer> getMaxInstancesPerCloud() throws IOException {
