@@ -68,7 +68,6 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                 if (singleUse) {
                     try {
                         LOGGER.info("Launching single use slave for task: " + project.getAssignedLabelString() );
-                        LaunchAttempts.resetAttempts(config.getId() );
                         ElasticBoxSlaveHandler.launchSingleUseSlave(config, label.getName() );
                     } catch (Descriptor.FormException ex) {
                         LOGGER.log(Level.SEVERE, ex.getMessage(), ex);

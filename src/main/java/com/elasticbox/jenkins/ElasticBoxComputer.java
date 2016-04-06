@@ -192,7 +192,7 @@ public final class ElasticBoxComputer extends SlaveComputer {
 
         try {
             slave.checkInstanceReachable();
-            if (slave.isSingleUse() && LaunchAttempts.maxAttemptsReached(slave.getSlaveConfiguration().getId() )) {
+            if (slave.isSingleUse() && !slave.isRemovableFromCloud() ) {
                 for (Queue.BuildableItem item : Jenkins.getInstance().getQueue().getBuildableItems(this)) {
                     item.getFuture().cancel(true);
                 }

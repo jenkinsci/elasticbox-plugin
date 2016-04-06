@@ -64,6 +64,19 @@ public class ElasticBoxSlave extends Slave {
     private static final int ID_PREFIX_LENGTH = 21;
     private static final String ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
+    private final String boxVersion;
+    private String profileId;
+    private final boolean singleUse;
+    private String instanceUrl;
+    private String instanceStatusMessage;
+    private int retentionTime;
+    private int builds;
+    private final String cloudName;
+    private boolean deletable;
+    private boolean removableFromCloud = true;
+
+    private final transient int launchTimeout;
+
     private static String randomId(Random random) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 8; i++) {
@@ -93,18 +106,6 @@ public class ElasticBoxSlave extends Slave {
 
         return name;
     }
-
-    private final String boxVersion;
-    private String profileId;
-    private final boolean singleUse;
-    private String instanceUrl;
-    private String instanceStatusMessage;
-    private int retentionTime;
-    private int builds;
-    private final String cloudName;
-    private boolean deletable;
-
-    private final transient int launchTimeout;
 
     public ElasticBoxSlave(ProjectSlaveConfiguration config, boolean singleUse)
             throws Descriptor.FormException, IOException {
@@ -427,6 +428,14 @@ public class ElasticBoxSlave extends Slave {
         }
     }
 
+    public boolean isRemovableFromCloud() {
+        return removableFromCloud;
+    }
+
+    public void setRemovableFromCloud(boolean removableFromCloud) {
+        this.removableFromCloud = removableFromCloud;
+    }
+
     private abstract static class ElasticBoxRetentionStrategy extends RetentionStrategy<ElasticBoxComputer> {
 
         public abstract boolean shouldTerminate(ElasticBoxComputer computer);
@@ -561,6 +570,9 @@ public class ElasticBoxSlave extends Slave {
                     // could not be fetched
                     // leave it alone for now
                     return false;
+                }
+                if (LOGGER.isLoggable(Level.FINEST)) {
+                    LOGGER.finest("Checking Slave - " + computer.getSlave() );
                 }
 
                 if (activeInstances.size() <= getMinInstances()) {
