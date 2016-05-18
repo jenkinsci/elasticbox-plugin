@@ -47,7 +47,7 @@
     "head": {
       "label": "{{ GITHUB_USER }}:{{ BRANCH }}",
       "ref": "{{ BRANCH }}",
-      "sha": "{{ COMMIT_SHA }}",
+      "sha": "0fd46d038e2f1d80ab5c488284c1244e234266da",
       "user": {
         "login": "{{ GITHUB_USER }}",
         "id": 7797160,

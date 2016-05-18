@@ -327,11 +327,11 @@ public class PullRequestBuildHandler implements IBuildHandler {
         }
 
         if (startBuild) {
-            LOGGER.info("Starting new build for Pull request: " + pullRequest);
+            LOGGER.info("Starting new build for Pull request: " + pullRequestData);
             cancelBuilds(pullRequestData);
             build(pullRequest, null, new TriggerCause(prEventPayload));
         } else {
-            LOGGER.info("No new build has been triggered for Pull request: " + pullRequest);
+            LOGGER.info("No new build has been triggered for Pull request: " + pullRequestData);
         }
     }
 

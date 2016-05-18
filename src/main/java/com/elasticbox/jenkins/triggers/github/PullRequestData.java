@@ -63,12 +63,18 @@ public class PullRequestData {
             return false;
         }
         if (pullRequest.getUpdatedAt().compareTo(lastUpdated) <= 0) {
-            LOGGER.warning("Pull Request updated field invalid: " + lastUpdated + " > " + pullRequest.getUpdatedAt() );
+            LOGGER.warning("Pull Request updated timestamp is older than previous timestamp - Old:"
+                    + lastUpdated + " > New:" + pullRequest.getUpdatedAt() );
             return false;
         }
-        boolean updated = !pullRequest.getHead().getSha().equals(headSha);
+
+        final String newSha = pullRequest.getHead().getSha();
+        LOGGER.info("Pull Request sha values - Old:" + headSha + " New:" + newSha);
+        boolean updated = !newSha.equals(headSha);
+
         lastUpdated = pullRequest.getUpdatedAt();
-        headSha = pullRequest.getHead().getSha();
+        headSha = newSha;
+
         return updated;
     }
 
@@ -97,4 +103,10 @@ public class PullRequestData {
         projectData.save();
     }
 
+    @Override
+    public String toString() {
+        return "PullRequestData{Url=" + pullRequestUrl +
+                ", lastUpdated=" + lastUpdated +
+                ", headSha=" + headSha + '}';
+    }
 }

@@ -25,6 +25,7 @@ import hudson.model.ParametersAction;
 import hudson.model.StringParameterValue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -101,12 +102,16 @@ public class PullRequestTestBase extends BuildStepTestBase {
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks
-        for (GHHook hook : gitHubRepo.getHooks()) {
-            try {
+        try {
+            for (GHHook hook : gitHubRepo.getHooks()) {
                 hook.delete();
-            } catch (Exception ex) {
             }
+        } catch (FileNotFoundException ex) {
+            LOGGER.warning("No hooks defined for this " + gitHubRepo);
+        } catch (Exception ex) {
+            LOGGER.warning("Error while trying to delete hooks from Repo: " + gitHubRepo);
         }
+
         GHPullRequest ghPullRequest = getTestPullRequest(gitHubRepo);
         // try to delete all comments that are older than 1 hour
         Calendar calendar = Calendar.getInstance();
@@ -176,7 +181,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         if (ghPullRequest == null) {
-            ghPullRequest = githubRepo.createPullRequest(PR_TITLE, TestUtils.GITHUB_TEST_BRANCH, githubRepo.getMasterBranch(), PR_DESCRIPTION);
+            ghPullRequest = githubRepo.createPullRequest(PR_TITLE, TestUtils.GITHUB_TEST_BRANCH, githubRepo.getDefaultBranch(), PR_DESCRIPTION);
         }
 
         return ghPullRequest;
@@ -315,6 +320,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         private final StringEntity openPullRequestPayload;
         private final StringEntity closePullRequestPayload;
         private final StringEntity reopenPullRequestPayload;
+        private final StringEntity syncPullRequestPayload;
         private final String commentPullRequestPayloadTemplate;
         private final GHPullRequest ghPullRequest;
 
@@ -328,6 +334,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
             openPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-opened.json"), jinjaContext));
             closePullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext));
             reopenPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-reopened.json"), jinjaContext));
+            syncPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-synchronize.json"), jinjaContext));
             commentPullRequestPayloadTemplate = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-github-issue-comment-created.json"), jinjaContext);
         }
 
@@ -382,6 +389,11 @@ public class PullRequestTestBase extends BuildStepTestBase {
             LOGGER.info("Closing PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.close();
             postPayload(closePullRequestPayload, "pull_request");
+        }
+
+        public void sync() throws IOException {
+            LOGGER.info("Synchronizing PR #" + getGHPullRequest().getNumber() );
+            postPayload(syncPullRequestPayload, "pull_request");
         }
 
         public void comment(String comment) throws IOException {
