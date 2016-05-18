@@ -13,9 +13,7 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import com.elasticbox.jenkins.util.ProjectData;
-
 import hudson.model.AbstractProject;
-
 import org.kohsuke.github.GHPullRequest;
 
 import java.io.IOException;
@@ -23,8 +21,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class PullRequestData {
+    private static final Logger LOGGER = Logger.getLogger(PullRequestData.class.getName());
 
     public final URL pullRequestUrl;
     private Date lastUpdated;
@@ -59,9 +59,11 @@ public class PullRequestData {
 
     public boolean update(GHPullRequest pullRequest) throws IOException {
         if (!pullRequest.getHtmlUrl().equals(pullRequestUrl)) {
+            LOGGER.warning("Pull Request urls do not match: " + pullRequestUrl + " != " + pullRequest.getHtmlUrl() );
             return false;
         }
         if (pullRequest.getUpdatedAt().compareTo(lastUpdated) <= 0) {
+            LOGGER.warning("Pull Request updated field invalid: " + lastUpdated + " > " + pullRequest.getUpdatedAt() );
             return false;
         }
         boolean updated = !pullRequest.getHead().getSha().equals(headSha);

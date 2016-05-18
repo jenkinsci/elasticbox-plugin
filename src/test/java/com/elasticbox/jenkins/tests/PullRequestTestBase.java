@@ -367,21 +367,25 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         public void open() throws IOException {
+            LOGGER.info("Opening PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.reopen();
             postPayload(openPullRequestPayload, "pull_request");
         }
 
         public void reopen() throws IOException {
+            LOGGER.info("Reopening PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.reopen();
             postPayload(reopenPullRequestPayload, "pull_request");
         }
 
         public void close() throws IOException {
+            LOGGER.info("Closing PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.close();
             postPayload(closePullRequestPayload, "pull_request");
         }
 
         public void comment(String comment) throws IOException {
+            LOGGER.info("Commenting PR #" + getGHPullRequest().getNumber() + ": " + comment);
             postPayload(createPayload(commentPullRequestPayloadTemplate.replace("${COMMENT}", comment)), "issue_comment");
         }
     }
@@ -393,6 +397,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void updateWhitelist(String whitelist) throws Exception {
+        LOGGER.info("Updating Whitelist: " + whitelist);
         Document document = getProjectDocument();
         document.getElementsByTagName("whitelist").item(0).setTextContent(whitelist);
         updateProject(document);

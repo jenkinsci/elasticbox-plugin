@@ -34,7 +34,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     @Test
     public void testPullRequestLifecycleManagement() throws Exception {
         // check GitHub webhook
-        Thread.sleep(3000);
+        Thread.sleep(5000);
         List<GHHook> hooks = gitHubRepo.getHooks();
         GHHook webhook = null;
         for (GHHook hook : hooks) {

@@ -65,6 +65,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class PullRequestBuildHandler implements IBuildHandler {
+    private static final Logger LOGGER = Logger.getLogger(PullRequestBuildHandler.class.getName());
 
     public static final String PR_NUMBER = "PR_NUMBER";
     public static final String PR_BRANCH = "PR_BRANCH";
@@ -76,7 +77,6 @@ public class PullRequestBuildHandler implements IBuildHandler {
     public static final String PR_OWNER_EMAIL = "PR_OWNER_EMAIL";
     public static final String PR_URL = "PR_URL";
 
-    private static final Logger LOGGER = Logger.getLogger(PullRequestBuildHandler.class.getName());
 
     private static final SequentialExecutionQueue sequentialExecutionQueue
         = new SequentialExecutionQueue(ElasticBoxExecutor.threadPool);
@@ -310,6 +310,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         }
 
         boolean startBuild = false;
+        LOGGER.info("Existing Pull Request data: " + pullRequestData);
         if (pullRequestData == null) {
             if (PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction())) {
                 LOGGER.info(MessageFormat.format("Updated pull request {0} was not built previously", pullRequestUrl));
@@ -321,9 +322,16 @@ public class PullRequestBuildHandler implements IBuildHandler {
             startBuild = true;
         }
 
+        if (LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.fine("Event payload: " + prEventPayload);
+        }
+
         if (startBuild) {
+            LOGGER.info("Starting new build for Pull request: " + pullRequest);
             cancelBuilds(pullRequestData);
             build(pullRequest, null, new TriggerCause(prEventPayload));
+        } else {
+            LOGGER.info("No new build has been triggered for Pull request: " + pullRequest);
         }
     }
 
