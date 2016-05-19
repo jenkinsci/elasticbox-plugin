@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 public class PullRequestData {
     private static final Logger LOGGER = Logger.getLogger(PullRequestData.class.getName());
 
-    public final URL pullRequestUrl;
+    public final String pullRequestUrl;
     private Date lastUpdated;
     private String headSha;
     private final List<PullRequestInstance> instances;
@@ -34,7 +34,7 @@ public class PullRequestData {
     private transient ProjectData projectData;
 
     public PullRequestData(GHPullRequest pullRequest, ProjectData projectData) throws IOException {
-        this.pullRequestUrl = pullRequest.getHtmlUrl();
+        this.pullRequestUrl = pullRequest.getHtmlUrl().toExternalForm();
         this.headSha = pullRequest.getHead().getSha();
         this.lastUpdated = pullRequest.getUpdatedAt();
         this.instances = new ArrayList<PullRequestInstance>();
@@ -58,8 +58,9 @@ public class PullRequestData {
     }
 
     public boolean update(GHPullRequest pullRequest) throws IOException {
-        if (!pullRequest.getHtmlUrl().equals(pullRequestUrl)) {
-            LOGGER.warning("Pull Request urls do not match: " + pullRequestUrl + " != " + pullRequest.getHtmlUrl() );
+        // Comparing Strings, since URL objects may differ even for the same URL string because of any other field
+        if (!pullRequest.getHtmlUrl().toExternalForm().equals(pullRequestUrl) ) {
+            LOGGER.warning("Pull Request URLs do not match: " + pullRequestUrl + " != " + pullRequest.getHtmlUrl() );
             return false;
         }
         if (pullRequest.getUpdatedAt().compareTo(lastUpdated) <= 0) {

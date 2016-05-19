@@ -30,9 +30,11 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -51,6 +53,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -320,7 +323,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         private final StringEntity openPullRequestPayload;
         private final StringEntity closePullRequestPayload;
         private final StringEntity reopenPullRequestPayload;
-        private final StringEntity syncPullRequestPayload;
+        private final String syncPullRequestPayload;
         private final String commentPullRequestPayloadTemplate;
         private final GHPullRequest ghPullRequest;
 
@@ -334,7 +337,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
             openPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-opened.json"), jinjaContext));
             closePullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext));
             reopenPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-reopened.json"), jinjaContext));
-            syncPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-synchronize.json"), jinjaContext));
+            syncPullRequestPayload = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-synchronize.json"), jinjaContext);
             commentPullRequestPayloadTemplate = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-github-issue-comment-created.json"), jinjaContext);
         }
 
@@ -391,9 +394,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
             postPayload(closePullRequestPayload, "pull_request");
         }
 
-        public void sync() throws IOException {
+        public void sync(String sha) throws IOException {
             LOGGER.info("Synchronizing PR #" + getGHPullRequest().getNumber() );
-            postPayload(syncPullRequestPayload, "pull_request");
+
+            String payload = StringUtils.replaceOnce(syncPullRequestPayload, "${RANDOM_SHA}", sha);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd\'T\'HH:mm:ss\'Z\'");
+            payload = StringUtils.replaceOnce(payload, "${TIMESTAMP}", dateFormat.format(new Date() ));
+
+            postPayload(createPayload(payload), "pull_request");
         }
 
         public void comment(String comment) throws IOException {

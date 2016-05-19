@@ -33,7 +33,7 @@
     },
     "body": "",
     "created_at": "2016-05-17T11:40:00Z",
-    "updated_at": "2016-05-17T13:44:48Z",
+    "updated_at": "${TIMESTAMP}",
     "closed_at": null,
     "merged_at": null,
     "merge_commit_sha": "60bcf920b5c139cd3b8362937dbc955d046b18c3",
@@ -47,7 +47,7 @@
     "head": {
       "label": "{{ GITHUB_USER }}:{{ BRANCH }}",
       "ref": "{{ BRANCH }}",
-      "sha": "0fd46d038e2f1d80ab5c488284c1244e234266da",
+      "sha": "${RANDOM_SHA}",
       "user": {
         "login": "{{ GITHUB_USER }}",
         "id": 7797160,

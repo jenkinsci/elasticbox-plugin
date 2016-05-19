@@ -67,7 +67,10 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         instances.addAll(checkBuild(null));
 
         // Testing the sync payload:
-        testSyncPayload();
+        testSyncPayload("0fd46d038e2f1d80ab5c488284c1244e234266da");
+
+        // Testing the sync payload - second run:
+        testSyncPayload("48c5e45a77ee6247d7389d3a8d7d74d0869b88c7");
 
         final String triggerPhrase = "Jenkins test this please";
         pullRequest.comment(triggerPhrase);
@@ -118,8 +121,8 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         abortBuildOfClosePullRequest();
     }
 
-    private void testSyncPayload() throws IOException {
-        pullRequest.sync();
+    private void testSyncPayload(String sha) throws IOException {
+        pullRequest.sync(sha);
         ensureBuildTriggered("Build is not triggered after 1 minute on synchronizing of pull request: ", pullRequest.getGHPullRequest().getHtmlUrl());
     }
 

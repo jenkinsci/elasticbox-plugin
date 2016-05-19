@@ -291,6 +291,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
         PullRequestManager pullRequestManager = PullRequestManager.getInstance();
         PullRequestData pullRequestData = pullRequestManager.getPullRequestData(pullRequestUrl, project);
+
         if (PullRequestManager.PullRequestAction.CLOSED.equals(prEventPayload.getAction())) {
             if (pullRequestData != null) {
                 cancelBuilds(pullRequestData);
@@ -311,19 +312,21 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
         boolean startBuild = false;
         LOGGER.info("Existing Pull Request data: " + pullRequestData);
+
         if (pullRequestData == null) {
             if (PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction())) {
                 LOGGER.info(MessageFormat.format("Updated pull request {0} was not built previously", pullRequestUrl));
             }
             pullRequestData = pullRequestManager.addPullRequestData(pullRequest, project);
             startBuild = pullRequestData.getLastUpdated().equals(pullRequest.getUpdatedAt());
+
         } else if (pullRequestData.update(pullRequest)) {
             pullRequestData.save();
             startBuild = true;
         }
 
         if (LOGGER.isLoggable(Level.FINE) ) {
-            LOGGER.fine("Event payload: " + prEventPayload);
+            LOGGER.fine("Received event payload: " + prEventPayload);
         }
 
         if (startBuild) {
