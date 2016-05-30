@@ -34,4 +34,8 @@ public class PullRequestInstance {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return id;
+    }
 }

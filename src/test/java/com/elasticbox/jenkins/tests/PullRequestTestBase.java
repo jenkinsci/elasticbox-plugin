@@ -77,6 +77,7 @@ import org.w3c.dom.Document;
  */
 public class PullRequestTestBase extends BuildStepTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestTestBase.class.getName());
+    
     private static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
     private static final String PR_TITLE_PREFIX = "ElasticBox Jenkins plugin test PR ";
     private static final String PR_TITLE = PR_TITLE_PREFIX + UUID.randomUUID().toString();

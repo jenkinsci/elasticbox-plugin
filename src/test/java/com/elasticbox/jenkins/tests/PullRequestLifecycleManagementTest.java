@@ -129,6 +129,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     private void ensureBuildTriggered(String messageFormat, Object parameter) {
         final AbstractBuild build = waitForNextBuild(60);
         Assert.assertNotNull(MessageFormat.format(messageFormat, parameter), build);
+
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15) );
         Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", parameter), build.isBuilding() );
     }

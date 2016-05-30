@@ -14,10 +14,10 @@ package com.elasticbox.jenkins.triggers.github;
 
 import com.elasticbox.jenkins.util.ProjectData;
 import hudson.model.AbstractProject;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.github.GHPullRequest;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -58,23 +58,24 @@ public class PullRequestData {
     }
 
     public boolean update(GHPullRequest pullRequest) throws IOException {
+
+        LOGGER.info("Existing Pull Request data before updating: " + toString() );
+
         // Comparing Strings, since URL objects may differ even for the same URL string because of any other field
         if (!pullRequest.getHtmlUrl().toExternalForm().equals(pullRequestUrl) ) {
             LOGGER.warning("Pull Request URLs do not match: " + pullRequestUrl + " != " + pullRequest.getHtmlUrl() );
             return false;
         }
         if (pullRequest.getUpdatedAt().compareTo(lastUpdated) <= 0) {
-            LOGGER.warning("Pull Request updated timestamp is older than previous timestamp - Old:"
-                    + lastUpdated + " > New:" + pullRequest.getUpdatedAt() );
             return false;
         }
 
-        final String newSha = pullRequest.getHead().getSha();
-        LOGGER.info("Pull Request sha values - Old:" + headSha + " New:" + newSha);
-        boolean updated = !newSha.equals(headSha);
-
         lastUpdated = pullRequest.getUpdatedAt();
+        final String newSha = pullRequest.getHead().getSha();
+        boolean updated = !newSha.equals(headSha);
         headSha = newSha;
+
+        LOGGER.info("Updated Pull Request data: " + toString() );
 
         return updated;
     }
@@ -106,8 +107,9 @@ public class PullRequestData {
 
     @Override
     public String toString() {
-        return "PullRequestData{Url=" + pullRequestUrl +
-                ", lastUpdated=" + lastUpdated +
-                ", headSha=" + headSha + '}';
+        return "PullRequestData{Url=" + pullRequestUrl
+                + ", lastUpdated=" + lastUpdated
+                + ", instances=" + ( (instances.size() > 0) ? StringUtils.join(instances, ';') : "NONE")
+                + ", headSha=" + headSha + '}';
     }
 }
