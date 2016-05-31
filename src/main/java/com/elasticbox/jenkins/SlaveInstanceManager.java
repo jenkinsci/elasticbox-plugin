@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,7 +41,7 @@ public class SlaveInstanceManager {
     private final Map<String, ElasticBoxSlave> instanceIdToSlaveMap;
     private Map<ElasticBoxSlave, JSONObject> slaveToInstanceMap;
     private final Map<ElasticBoxCloud, List<JSONObject>> cloudToInstancesMap;
-    private Collection<ElasticBoxSlave> slavesWithoutInstance;
+    private List<ElasticBoxSlave> slavesWithoutInstance;
     private final Map<ElasticBoxCloud, Set<String>> cloudToWorkspaceIDsMap;
     private boolean allFetched = false;
 
@@ -78,29 +79,36 @@ public class SlaveInstanceManager {
         }
 
         if (slavesWithoutInstance != null) {
+
             ElasticBoxCloud cloud = null;
             String wks = null;
             JSONArray instances = null;
-            AbstractSlaveConfiguration config = null;
-            for (ElasticBoxSlave slave: slavesWithoutInstance) {
+            AbstractSlaveConfiguration config;
+
+            Iterator<ElasticBoxSlave> iterator = slavesWithoutInstance.iterator();
+            while (iterator.hasNext() ) {
+
+                ElasticBoxSlave slave = iterator.next();
                 config = slave.getSlaveConfiguration();
+
                 if ( slave.getCloud() != null && config != null) {
                     if (!slave.getCloud().equals(cloud) && !config.getWorkspace().equals(wks)) {
                         cloud = slave.getCloud();
                         wks = slave.getSlaveConfiguration().getWorkspace();
-                        instances = slave.getCloud().getClient().getInstances(wks);
+                        instances = cloud.getClient().getInstances(wks);
                     }
                     for (Object instance : instances) {
                         JSONObject instanceJson = (JSONObject) instance;
                         String label = instanceJson.getJSONArray("tags").getString(0);
+
                         if (slave.getNodeName().equals(label)) {
                             String instanceId = instanceJson.getString("id");
                             if (slave.getInstanceUrl() == null) {
-                                String url = slave.getCloud().getClient().getInstanceUrl(instanceId);
-                                slave.setInstanceUrl(slave.getCloud().getClient().getInstanceUrl(url));
+                                final String url = cloud.getClient().getInstanceUrl(instanceId);
+                                slave.setInstanceUrl(url);
                                 LOGGER.info("Linked instance [" + url + "] with orphan slave - " + slave);
                             }
-                            slavesWithoutInstance.remove(slave);
+                            iterator.remove();
                             instanceIdToSlaveMap.put(instanceId, slave);
                             break;
                         }

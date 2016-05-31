@@ -165,7 +165,12 @@ public class Client implements ApiClient {
 
     public void connect() throws IOException {
         if (token != null && username == null) {
-            doGet("/services/workspaces", true);
+            try {
+                doGet("/services/workspaces", true);
+            } catch (IOException excep) {
+                LOGGER.severe("Unable to connect to: " + endpointUrl );
+                throw excep;
+            }
             return;
         }
 
