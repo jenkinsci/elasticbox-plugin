@@ -171,7 +171,7 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
     protected void execute(TaskListener listener) throws IOException {
         if (LOGGER.isLoggable(Level.FINER)) {
             if (terminatedSlaves.isEmpty() && incomingQueue.isEmpty() && submittedQueue.isEmpty() ) {
-                LOGGER.finer("No pending tasks");
+                LOGGER.finest("No pending tasks");
             } else {
                 StringBuilder trace = new StringBuilder(200);
                 trace.append("Pending tasks:");

@@ -55,6 +55,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -148,7 +149,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                     gitHubRepoName)
             );
         } else {
-            LOGGER.info("Connected to GitHub Repo:" + gitHubRepoName);
+            LOGGER.info("Connected to GitHub Repo: " + gitHubRepoName);
         }
 
         return gitHub;
@@ -223,16 +224,17 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         GHEventPayload.IssueComment issueComment
             = gitHub.parseEventPayload(new StringReader(payload), GHEventPayload.IssueComment.class);
 
-        LOGGER.finest(
-            MessageFormat.format(
-                "Comment on {0} from {1}: {2}",
-                issueComment.getIssue().getUrl(),
-                issueComment.getComment().getUser(),
-                issueComment.getComment().getBody())
-        );
+        if (LOGGER.isLoggable(Level.FINER) ) {
+            LOGGER.finer(MessageFormat.format("Comment on {0} from {1}: {2}",
+                    issueComment.getIssue().getUrl(),
+                    issueComment.getComment().getUser(),
+                    issueComment.getComment().getBody() ));
+        }
 
-        if (!"created".equals(issueComment.getAction())) {
-            LOGGER.finest(MessageFormat.format("Unsupported issue_comment action: ''{0}''", issueComment.getAction()));
+        if ( !"created".equals(issueComment.getAction() )) {
+            if (LOGGER.isLoggable(Level.FINER) ) {
+                LOGGER.finer("Unsupported issue_comment action: " + issueComment.getAction() );
+            }
             return;
         }
 

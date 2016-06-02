@@ -347,10 +347,10 @@ public class PullRequestBuildHandler implements IBuildHandler {
     void handle(GHEventPayload.IssueComment issueComment, GitHub gitHub) throws IOException {
         // check the trigger phrase
         PullRequestBuildTrigger trigger = project.getTrigger(PullRequestBuildTrigger.class);
-        if (StringUtils.isBlank(trigger.getTriggerPhrase())) {
-            return;
-        }
-        if (!triggerPhrasePattern.matcher(issueComment.getComment().getBody()).find()) {
+        if (StringUtils.isBlank(trigger.getTriggerPhrase() )) {
+            if (LOGGER.isLoggable(Level.FINE) ) {
+                LOGGER.fine("No trigger phrase configured for project: " + project.getDisplayName() );
+            }
             return;
         }
 
@@ -364,6 +364,14 @@ public class PullRequestBuildHandler implements IBuildHandler {
                     project.getFullName(),
                     gitHubRepositoryUrl));
 
+            return;
+        }
+
+        String commentBody = issueComment.getComment().getBody();
+        if (!triggerPhrasePattern.matcher(commentBody).find()) {
+            if (LOGGER.isLoggable(Level.FINE) ) {
+                LOGGER.fine("No trigger phrase matching on comment: " + commentBody );
+            }
             return;
         }
 
@@ -384,7 +392,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
             cancelBuilds(pullRequestData);
             build(pullRequest, buildRequester, new TriggerCause(pullRequest, buildRequester));
         } else {
-            LOGGER.finest(
+            LOGGER.finer(
                 MessageFormat.format(
                     "Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString()));
         }
