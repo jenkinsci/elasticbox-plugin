@@ -46,12 +46,17 @@ public class WebHook implements UnprotectedRootAction {
         String event = req.getHeader("X-GitHub-Event");
         if (event != null) {
             String payload = req.getParameter("payload");
-            LOGGER.finest(MessageFormat.format("GitHub event: {0}", event));
+            LOGGER.info("Received GitHub event: " + event);
+
+            if (LOGGER.isLoggable(Level.FINEST) ) {
+                LOGGER.finest("Received event payload: " + payload);
+            }
+
             try {
                 PullRequestManager.getInstance().handleEvent(event, payload);
             } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, MessageFormat.format("Error handling GitHub event: {0}", event), ex);
-                LOGGER.finest(MessageFormat.format("Event payload: {0}", payload));
+                LOGGER.severe(MessageFormat.format("Event payload: {0}", payload));
             }
         }
     }

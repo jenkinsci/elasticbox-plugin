@@ -29,7 +29,7 @@
             "required": false,
             "type": "File",
             "name": "VAR_FILE",
-            "value": ""
+            "value": "/dev/null"
         }
     ],
     "events": {},

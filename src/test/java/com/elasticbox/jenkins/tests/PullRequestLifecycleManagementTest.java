@@ -15,6 +15,8 @@ package com.elasticbox.jenkins.tests;
 import com.elasticbox.jenkins.util.Condition;
 import hudson.model.AbstractBuild;
 import hudson.model.Result;
+
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +36,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     @Test
     public void testPullRequestLifecycleManagement() throws Exception {
         // check GitHub webhook
-        Thread.sleep(3000);
+        Thread.sleep(5000);
         List<GHHook> hooks = gitHubRepo.getHooks();
         GHHook webhook = null;
         for (GHHook hook : hooks) {
@@ -64,6 +66,12 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         final List<JSONObject> instances = new ArrayList<JSONObject>();
         instances.addAll(checkBuild(null));
 
+        // Testing the sync payload:
+        testSyncPayload("0fd46d038e2f1d80ab5c488284c1244e234266da");
+
+        // Testing the sync payload - second run:
+        testSyncPayload("48c5e45a77ee6247d7389d3a8d7d74d0869b88c7");
+
         final String triggerPhrase = "Jenkins test this please";
         pullRequest.comment(triggerPhrase);
         Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''", triggerPhrase),
@@ -71,10 +79,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
 
         updateTriggerPhrase(triggerPhrase);
         pullRequest.comment(triggerPhrase);
-        Assert.assertNotNull(MessageFormat.format("Build is not triggered on posting trigger phrase to pull request {0} after 1 minute", pullRequest.getGHPullRequest().getHtmlUrl()),
-                waitForNextBuild(60));
-        waitForCompletion(TimeUnit.MINUTES.toSeconds(15));
-        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild().isBuilding());
+        ensureBuildTriggered("Build is not triggered on posting trigger phrase to pull request {0} after 1 minute", pullRequest.getGHPullRequest().getHtmlUrl());
 
         instances.addAll(checkBuild(TestUtils.GITHUB_USER));
 
@@ -90,24 +95,23 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         updateWhitelist(testTag);
         pullRequest.open();
         Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(30));
+
         pullRequest.comment(triggerPhrase);
         Assert.assertNull("Build is triggered even by comment of user not in the whitelist", waitForNextBuild(30));
+
         pullRequest.close();
         pullRequest.reopen();
         Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(30));
 
         updateWhitelist(testTag + ',' + TestUtils.GITHUB_USER);
         pullRequest.reopen();
-        AbstractBuild build = waitForNextBuild(60);
-        Assert.assertNotNull("Build is not triggered after 1 minutes", build);
-        waitForCompletion(TimeUnit.MINUTES.toSeconds(15));
-        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getUrl()), build.isBuilding());
+        ensureBuildTriggered("Build is not triggered on reopen of pull request {0} after 1 minute", pullRequest.getGHPullRequest().getHtmlUrl());
+
         instances.addAll(checkBuild(null));
 
         pullRequest.comment(triggerPhrase);
-        build = waitForNextBuild(60);
-        Assert.assertNotNull("Build is not triggered after 1 minutes", build);
-        waitForCompletion(TimeUnit.MINUTES.toSeconds(15));
+        ensureBuildTriggered("Build is not triggered on posting trigger comment to pull request {0} after 1 minute", pullRequest.getGHPullRequest().getHtmlUrl());
+
         instances.addAll(checkBuild(TestUtils.GITHUB_USER));
 
         pullRequest.close();
@@ -117,7 +121,20 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         abortBuildOfClosePullRequest();
     }
 
-    public void abortBuildOfClosePullRequest() throws Exception {
+    private void testSyncPayload(String sha) throws IOException {
+        pullRequest.sync(sha);
+        ensureBuildTriggered("Build is not triggered after 1 minute on synchronizing of pull request: ", pullRequest.getGHPullRequest().getHtmlUrl());
+    }
+
+    private void ensureBuildTriggered(String messageFormat, Object parameter) {
+        final AbstractBuild build = waitForNextBuild(60);
+        Assert.assertNotNull(MessageFormat.format(messageFormat, parameter), build);
+
+        waitForCompletion(TimeUnit.MINUTES.toSeconds(15) );
+        Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", parameter), build.isBuilding() );
+    }
+
+    private void abortBuildOfClosePullRequest() throws Exception {
         pullRequest.open();
         // check that the job is triggered
         final AbstractBuild build = waitForNextBuild(60);
