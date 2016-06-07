@@ -18,6 +18,8 @@ import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.services.deployment.execution.context.ApplicationBoxDeploymentContext;
 import com.elasticbox.jenkins.model.services.deployment.execution.order.ApplicationBoxDeploymentOrder;
 import net.sf.json.JSONObject;
+import net.sf.json.JsonConfig;
+import net.sf.json.processors.PropertyNameProcessor;
 import org.apache.commons.lang.StringUtils;
 
 public class ApplicationBoxDeploymentSerializer
@@ -46,7 +48,20 @@ public class ApplicationBoxDeploymentSerializer
                         box,
                         lease);
 
-        return JSONObject.fromObject(applicationBoxDeploymentRequestObject);
+        JsonConfig jsonConfig = new JsonConfig();
+        jsonConfig.registerJsonPropertyNameProcessor(
+            ApplicationBoxDeploymentRequestObject.class, new PropertyNameProcessor() {
+                @Override
+                public String processPropertyName(Class beanClass, String name) {
+                    if (name.equals("instanceTags")) {
+                        return "instance_tags";
+                    }
+                    return name;
+                }
+            }
+        );
+
+        return JSONObject.fromObject(applicationBoxDeploymentRequestObject, jsonConfig);
     }
 
 

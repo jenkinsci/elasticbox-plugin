@@ -67,6 +67,7 @@ public class PullRequestData {
             return false;
         }
         if (pullRequest.getUpdatedAt().compareTo(lastUpdated) <= 0) {
+
             return false;
         }
 
