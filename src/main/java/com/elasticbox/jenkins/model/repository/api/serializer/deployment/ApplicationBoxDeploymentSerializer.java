@@ -53,7 +53,7 @@ public class ApplicationBoxDeploymentSerializer
             ApplicationBoxDeploymentRequestObject.class, new PropertyNameProcessor() {
                 @Override
                 public String processPropertyName(Class beanClass, String name) {
-                    if(name.equals("instanceTags")) {
+                    if (name.equals("instanceTags")) {
                         return "instance_tags";
                     }
                     return name;
