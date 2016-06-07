@@ -50,11 +50,10 @@ public class ApplicationBoxDeploymentSerializer
 
         JsonConfig jsonConfig = new JsonConfig();
         jsonConfig.registerJsonPropertyNameProcessor(
-            ApplicationBoxDeploymentRequestObject.class,
-            new PropertyNameProcessor() {
+            ApplicationBoxDeploymentRequestObject.class, new PropertyNameProcessor() {
                 @Override
                 public String processPropertyName(Class beanClass, String name) {
-                    if(name.equals("instanceTags")){
+                    if(name.equals("instanceTags")) {
                         return "instance_tags";
                     }
                     return name;
