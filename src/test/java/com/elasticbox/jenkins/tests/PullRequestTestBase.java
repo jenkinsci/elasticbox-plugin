@@ -25,13 +25,16 @@ import hudson.model.ParametersAction;
 import hudson.model.StringParameterValue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -50,6 +53,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -73,6 +77,7 @@ import org.w3c.dom.Document;
  */
 public class PullRequestTestBase extends BuildStepTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestTestBase.class.getName());
+    
     private static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
     private static final String PR_TITLE_PREFIX = "ElasticBox Jenkins plugin test PR ";
     private static final String PR_TITLE = PR_TITLE_PREFIX + UUID.randomUUID().toString();
@@ -101,12 +106,16 @@ public class PullRequestTestBase extends BuildStepTestBase {
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks
-        for (GHHook hook : gitHubRepo.getHooks()) {
-            try {
+        try {
+            for (GHHook hook : gitHubRepo.getHooks()) {
                 hook.delete();
-            } catch (Exception ex) {
             }
+        } catch (FileNotFoundException ex) {
+            LOGGER.warning("No hooks defined for this " + gitHubRepo);
+        } catch (Exception ex) {
+            LOGGER.warning("Error while trying to delete hooks from Repo: " + gitHubRepo);
         }
+
         GHPullRequest ghPullRequest = getTestPullRequest(gitHubRepo);
         // try to delete all comments that are older than 1 hour
         Calendar calendar = Calendar.getInstance();
@@ -176,7 +185,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         if (ghPullRequest == null) {
-            ghPullRequest = githubRepo.createPullRequest(PR_TITLE, TestUtils.GITHUB_TEST_BRANCH, githubRepo.getMasterBranch(), PR_DESCRIPTION);
+            ghPullRequest = githubRepo.createPullRequest(PR_TITLE, TestUtils.GITHUB_TEST_BRANCH, githubRepo.getDefaultBranch(), PR_DESCRIPTION);
         }
 
         return ghPullRequest;
@@ -315,6 +324,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         private final StringEntity openPullRequestPayload;
         private final StringEntity closePullRequestPayload;
         private final StringEntity reopenPullRequestPayload;
+        private final String syncPullRequestPayload;
         private final String commentPullRequestPayloadTemplate;
         private final GHPullRequest ghPullRequest;
 
@@ -328,6 +338,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
             openPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-opened.json"), jinjaContext));
             closePullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext));
             reopenPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-reopened.json"), jinjaContext));
+            syncPullRequestPayload = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-synchronize.json"), jinjaContext);
             commentPullRequestPayloadTemplate = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-github-issue-comment-created.json"), jinjaContext);
         }
 
@@ -367,21 +378,35 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         public void open() throws IOException {
+            LOGGER.info("Opening PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.reopen();
             postPayload(openPullRequestPayload, "pull_request");
         }
 
         public void reopen() throws IOException {
+            LOGGER.info("Reopening PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.reopen();
             postPayload(reopenPullRequestPayload, "pull_request");
         }
 
         public void close() throws IOException {
+            LOGGER.info("Closing PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.close();
             postPayload(closePullRequestPayload, "pull_request");
         }
 
+        public void sync(String sha) throws IOException {
+            LOGGER.info("Synchronizing PR #" + getGHPullRequest().getNumber() );
+
+            String payload = StringUtils.replaceOnce(syncPullRequestPayload, "${RANDOM_SHA}", sha);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd\'T\'HH:mm:ss\'Z\'");
+            payload = StringUtils.replaceOnce(payload, "${TIMESTAMP}", dateFormat.format(new Date() ));
+
+            postPayload(createPayload(payload), "pull_request");
+        }
+
         public void comment(String comment) throws IOException {
+            LOGGER.info("Commenting PR #" + getGHPullRequest().getNumber() + ": " + comment);
             postPayload(createPayload(commentPullRequestPayloadTemplate.replace("${COMMENT}", comment)), "issue_comment");
         }
     }
@@ -393,6 +418,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void updateWhitelist(String whitelist) throws Exception {
+        LOGGER.info("Updating Whitelist: " + whitelist);
         Document document = getProjectDocument();
         document.getElementsByTagName("whitelist").item(0).setTextContent(whitelist);
         updateProject(document);

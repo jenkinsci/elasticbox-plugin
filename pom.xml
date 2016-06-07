@@ -6,6 +6,7 @@
         <version>1.644</version><!-- version of Jenkins this plugin is built against, oldest supported version is 1.551 -->
     </parent>
 
+    <groupId>com.elasticbox.jenkins-ci.plugins</groupId>
     <artifactId>elasticbox</artifactId>
     <version>4.0.9-SNAPSHOT</version>
     <packaging>hpi</packaging>
@@ -53,6 +54,12 @@
     <dependencies>
 
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>11.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.coravy.hudson.plugins.github</groupId>
             <artifactId>github</artifactId>
             <version>1.13.1</version>
@@ -68,10 +75,6 @@
                 <exclusion>
                     <groupId>com.github.stephenc.findbugs</groupId>
                     <artifactId>findbugs-annotations</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>joda-time</groupId>

@@ -66,6 +66,8 @@ import java.util.regex.Pattern;
 
 public class PullRequestBuildHandler implements IBuildHandler {
 
+    private static final Logger LOGGER = Logger.getLogger(PullRequestBuildHandler.class.getName());
+
     public static final String PR_NUMBER = "PR_NUMBER";
     public static final String PR_BRANCH = "PR_BRANCH";
     public static final String BUILD_REQUESTER = "BUILD_REQUESTER";
@@ -75,8 +77,6 @@ public class PullRequestBuildHandler implements IBuildHandler {
     public static final String PR_OWNER = "PR_OWNER";
     public static final String PR_OWNER_EMAIL = "PR_OWNER_EMAIL";
     public static final String PR_URL = "PR_URL";
-
-    private static final Logger LOGGER = Logger.getLogger(PullRequestBuildHandler.class.getName());
 
     private static final SequentialExecutionQueue sequentialExecutionQueue
         = new SequentialExecutionQueue(ElasticBoxExecutor.threadPool);
@@ -273,7 +273,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         GHPullRequest pullRequest = prEventPayload.getPullRequest();
         String pullRequestUrl = pullRequest.getHtmlUrl().toString();
         if (!pullRequestUrl.startsWith(gitHubRepositoryUrl)) {
-            LOGGER.finest(
+            LOGGER.config(
                 MessageFormat.format(
                     "Pull request {0} is not related to project {1}. "
                         + "GitHub project URL configured for project {1}: {2}",
@@ -291,10 +291,14 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
         PullRequestManager pullRequestManager = PullRequestManager.getInstance();
         PullRequestData pullRequestData = pullRequestManager.getPullRequestData(pullRequestUrl, project);
+
         if (PullRequestManager.PullRequestAction.CLOSED.equals(prEventPayload.getAction())) {
             if (pullRequestData != null) {
                 cancelBuilds(pullRequestData);
                 deleteInstances(pullRequest);
+            } else {
+                LOGGER.warning("No previous data available for received Pull Request 'close' event: "
+                        + pullRequestUrl);
             }
             return;
         }
@@ -310,20 +314,33 @@ public class PullRequestBuildHandler implements IBuildHandler {
         }
 
         boolean startBuild = false;
+
         if (pullRequestData == null) {
             if (PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction())) {
                 LOGGER.info(MessageFormat.format("Updated pull request {0} was not built previously", pullRequestUrl));
             }
             pullRequestData = pullRequestManager.addPullRequestData(pullRequest, project);
             startBuild = pullRequestData.getLastUpdated().equals(pullRequest.getUpdatedAt());
+
         } else if (pullRequestData.update(pullRequest)) {
             pullRequestData.save();
             startBuild = true;
         }
 
+        if (LOGGER.isLoggable(Level.FINEST) ) {
+            LOGGER.finest("Received event payload: " + prEventPayload);
+        }
+
         if (startBuild) {
+            if (LOGGER.isLoggable(Level.FINE) ) {
+                LOGGER.fine("Cancelling previous running builds and starting new build for Pull request: "
+                        + pullRequestData);
+            }
             cancelBuilds(pullRequestData);
             build(pullRequest, null, new TriggerCause(prEventPayload));
+
+        } else if (LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.fine("No new build has been triggered for Pull request: " + pullRequestData);
         }
     }
 
@@ -424,6 +441,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
                     executor.interrupt();
                 }
             }
+        } else {
+            LOGGER.fine("There is no previous running builds to cancel for Pull Request: " + pullRequestUrl);
         }
     }
 

@@ -147,6 +147,8 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                     "Cannot connect to {0}. Please check your registered GitHub credentials",
                     gitHubRepoName)
             );
+        } else {
+            LOGGER.info("Connected to GitHub Repo:" + gitHubRepoName);
         }
 
         return gitHub;
@@ -177,6 +179,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             handleIssueCommentEvent(payload);
         } else {
             LOGGER.warning(MessageFormat.format("Unsupported GitHub event: ''{0}''", event));
+            LOGGER.finer("Details of the unsupported GitHub payload: " + payload);
         }
     }
 

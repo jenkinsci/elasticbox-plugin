@@ -13,20 +13,20 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import com.elasticbox.jenkins.util.ProjectData;
-
 import hudson.model.AbstractProject;
-
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.github.GHPullRequest;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class PullRequestData {
+    private static final Logger LOGGER = Logger.getLogger(PullRequestData.class.getName());
 
-    public final URL pullRequestUrl;
+    public final String pullRequestUrl;
     private Date lastUpdated;
     private String headSha;
     private final List<PullRequestInstance> instances;
@@ -34,7 +34,7 @@ public class PullRequestData {
     private transient ProjectData projectData;
 
     public PullRequestData(GHPullRequest pullRequest, ProjectData projectData) throws IOException {
-        this.pullRequestUrl = pullRequest.getHtmlUrl();
+        this.pullRequestUrl = pullRequest.getHtmlUrl().toExternalForm();
         this.headSha = pullRequest.getHead().getSha();
         this.lastUpdated = pullRequest.getUpdatedAt();
         this.instances = new ArrayList<PullRequestInstance>();
@@ -58,15 +58,26 @@ public class PullRequestData {
     }
 
     public boolean update(GHPullRequest pullRequest) throws IOException {
-        if (!pullRequest.getHtmlUrl().equals(pullRequestUrl)) {
+
+        LOGGER.info("Existing Pull Request data before updating: " + toString() );
+
+        // Comparing Strings, since URL objects may differ even for the same URL string because of any other field
+        if (!pullRequest.getHtmlUrl().toExternalForm().equals(pullRequestUrl) ) {
+            LOGGER.warning("Pull Request URLs do not match: " + pullRequestUrl + " != " + pullRequest.getHtmlUrl() );
             return false;
         }
         if (pullRequest.getUpdatedAt().compareTo(lastUpdated) <= 0) {
+
             return false;
         }
-        boolean updated = !pullRequest.getHead().getSha().equals(headSha);
+
         lastUpdated = pullRequest.getUpdatedAt();
-        headSha = pullRequest.getHead().getSha();
+        final String newSha = pullRequest.getHead().getSha();
+        boolean updated = !newSha.equals(headSha);
+        headSha = newSha;
+
+        LOGGER.info("Updated Pull Request data: " + toString() );
+
         return updated;
     }
 
@@ -95,4 +106,11 @@ public class PullRequestData {
         projectData.save();
     }
 
+    @Override
+    public String toString() {
+        return "PullRequestData{Url=" + pullRequestUrl
+                + ", lastUpdated=" + lastUpdated
+                + ", instances=" + ( (instances.size() > 0) ? StringUtils.join(instances, ';') : "NONE")
+                + ", headSha=" + headSha + '}';
+    }
 }
