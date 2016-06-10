@@ -112,6 +112,7 @@ function build_with_jenkins_version() {
         BUILD_OPTIONS="${BUILD_OPTIONS} -g ${GITHUB_TOKEN}"
     fi
 
+    echo "Building Jenkins version [${JENKINS_VERSION}] with options [${BUILD_OPTIONS}]"
     bash $(dirname $0)/version-build.sh ${BUILD_OPTIONS}
 }
 

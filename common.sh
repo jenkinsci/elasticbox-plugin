@@ -21,18 +21,28 @@ function upgrade_appliance() {
         exit 1
     fi
 
-    echo Start upgrading the appliance
+    echo "Start upgrading the appliance"
     curl -ksf -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" "${EBX_ADDRESS}/services/appliance/upgrade" || true
 
-    echo Wait for the appliance services to restart
-    sleep 60
+    echo "Waiting for the appliance services to restart..."
 
-    # Make sure that the appliance is back up
+    # Make sure that the appliance is back up (polling for a while)
     if [[ -z ${EBX_TOKEN} ]]
     then
         EBX_TOKEN=$(ebx_token test_admin@elasticbox.com elasticbox)
     fi
-    WORKSPACES=$(curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" ${EBX_ADDRESS}/services/workspaces | grep http://elasticbox.net/schemas/)
+
+    for i in `seq 20`
+    do
+      sleep 10
+      WORKSPACES=$(curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" ${EBX_ADDRESS}/services/workspaces | grep http://elasticbox.net/schemas/)
+      if [[ -n "${WORKSPACES}" ]]
+      then
+        echo "Restart finished successfully. Appliance is online."
+        break
+      fi
+    done
+
     if [[ -z "${WORKSPACES}" ]]
     then
         echo "Cannot access the ElasticBox appliance at ${EBX_ADDRESS} after upgrade"
