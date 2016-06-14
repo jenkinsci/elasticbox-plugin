@@ -452,18 +452,19 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
     }
 
     private void deployInstance(InstanceCreationRequest request) throws IOException {
-        ElasticBoxCloud cloud = request.slave.getCloud();
-        Client ebClient = cloud.getClient();
+        final ElasticBoxSlave slave = request.slave;
+        final ElasticBoxCloud cloud = slave.getCloud();
+        final Client ebClient = cloud.getClient();
 
-        AbstractSlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
-        String workspace = slaveConfig.getWorkspace();
+        LOGGER.info("Deploying box - " + ebClient.getBoxPageUrl(slave.getBoxVersion() ));
 
-        JSONArray variables = getJenkinsVariables(request.slave);
+        final AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
 
-        LOGGER.info("Deploying box - " + ebClient.getBoxPageUrl(request.slave.getBoxVersion() ));
+        final JSONArray variables = getJenkinsVariables(slave);
+        final String workspace = slaveConfig.getWorkspace();
 
         List<String> tags = new ArrayList<>();
-        tags.add(request.slave.getNodeName() );
+        tags.add(slave.getNodeName() );
 
         String userTags = slaveConfig.getTags();
         if (StringUtils.isNotEmpty(userTags) ) {
@@ -471,19 +472,18 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             tags.addAll(Arrays.asList(userTagList) );
         }
 
-        IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), null,
-                workspace, tags, variables, null,
-                null, request.slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
+        IProgressMonitor monitor = ebClient.deploy(slave.getBoxVersion(), slave.getProfileId(), null, workspace, tags,
+                variables, null, null, slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
 
-        request.slave.setInstanceUrl(monitor.getResourceUrl());
-        request.slave.setInstanceStatusMessage(
+        slave.setInstanceUrl(monitor.getResourceUrl());
+        slave.setInstanceStatusMessage(
                 MessageFormat.format("Submitted request to deploy instance <a href=\"{0}\">{0}</a>",
-                request.slave.getInstancePageUrl()));
+                slave.getInstancePageUrl()));
 
         request.monitor.setMonitor(monitor);
         request.monitor.setLaunched();
         if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.fine("Adding slave to Submitted queue - " + request.slave);
+            LOGGER.fine("Adding slave to Submitted queue - " + slave);
         }
         submittedQueue.add(request);
     }
