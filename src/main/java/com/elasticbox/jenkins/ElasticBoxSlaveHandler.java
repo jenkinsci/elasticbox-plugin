@@ -38,6 +38,7 @@ import org.apache.commons.lang.StringUtils;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -453,14 +454,25 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
     private void deployInstance(InstanceCreationRequest request) throws IOException {
         ElasticBoxCloud cloud = request.slave.getCloud();
         Client ebClient = cloud.getClient();
+
         AbstractSlaveConfiguration slaveConfig = request.slave.getSlaveConfiguration();
         String workspace = slaveConfig.getWorkspace();
+
         JSONArray variables = getJenkinsVariables(request.slave);
 
         LOGGER.info("Deploying box - " + ebClient.getBoxPageUrl(request.slave.getBoxVersion() ));
 
+        List<String> tags = new ArrayList<>();
+        tags.add(request.slave.getNodeName() );
+
+        String userTags = slaveConfig.getTags();
+        if (StringUtils.isNotEmpty(userTags) ) {
+            String[] userTagList = StringUtils.split(userTags, ", ");
+            tags.addAll(Arrays.asList(userTagList) );
+        }
+
         IProgressMonitor monitor = ebClient.deploy(request.slave.getBoxVersion(), request.slave.getProfileId(), null,
-                workspace, Collections.singletonList(request.slave.getNodeName()), variables, null,
+                workspace, tags, variables, null,
                 null, request.slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
 
         request.slave.setInstanceUrl(monitor.getResourceUrl());
