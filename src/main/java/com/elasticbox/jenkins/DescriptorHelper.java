@@ -582,10 +582,7 @@ public class DescriptorHelper {
                 iter.remove();
             }
 
-            if (varJson.getString("type").equals("Binding")
-                    && varJson.containsKey("value")
-                    && StringUtils.isBlank(varJson.getString("value"))) {
-
+            if (varJson.containsKey("value") && StringUtils.isBlank(varJson.getString("value") )) {
                 iter.remove();
             }
         }
