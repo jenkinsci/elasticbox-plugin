@@ -17,23 +17,22 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.ElasticBoxSlave;
 import com.elasticbox.jenkins.SingleUseSlaveBuildOption;
 import com.elasticbox.jenkins.SlaveConfiguration;
-import static com.elasticbox.jenkins.tests.SlaveBuildTestBase.LOGGER;
-
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.queue.QueueTaskFuture;
-import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import junit.framework.TestCase;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  *

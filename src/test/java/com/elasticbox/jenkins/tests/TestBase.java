@@ -49,6 +49,7 @@ public class TestBase {
 
     @Before
     public void setup() throws Exception {
+        jenkins.timeout = 300;
         cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
         jenkins.getInstance().clouds.add(cloud);
     }

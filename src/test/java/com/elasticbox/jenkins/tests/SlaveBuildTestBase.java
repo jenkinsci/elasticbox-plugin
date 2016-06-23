@@ -52,7 +52,7 @@ import org.jvnet.hudson.test.JenkinsRule;
  *
  * @author Phong Nguyen Le
  */
-public class SlaveBuildTestBase extends BuildStepTestBase{
+public class SlaveBuildTestBase extends BuildStepTestBase {
 
     protected static final Logger LOGGER = Logger.getLogger(SlaveBuildTestBase.class.getName());
 
@@ -65,6 +65,15 @@ public class SlaveBuildTestBase extends BuildStepTestBase{
 
         jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
         JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+    }
+
+    protected JSONObject createSlaveBox() throws Exception {
+        final TestBoxData testBoxData = new TestBoxData("boxes/linux-jenkins-slave/linux-jenkins-slave.json", null);
+        Client client = cloud.getClient();
+
+        JSONObject testBox = TestUtils.createTestBox(testBoxData, templateResolver, client);
+
+        return testBox;
     }
 
     @After
