@@ -178,7 +178,7 @@
       <instances>1</instances>
       <variables>
         [
-            {"name":"CONNECTION","value":"","scope":"","type":"Text"}
+            {"name":"CONNECTION","value":"connect://${SLAVE_HOST_NAME}:${BUILD_NUMBER}","scope":"","type":"Text"}
         ]
       </variables>
       <skipIfExisting>false</skipIfExisting>

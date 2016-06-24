@@ -122,16 +122,13 @@ public class ElasticBoxSlave extends Slave {
     public ElasticBoxSlave(AbstractSlaveConfiguration config, ElasticBoxCloud cloud,
             RetentionStrategy retentionStrategy, boolean singleUse) throws Descriptor.FormException, IOException {
 
-        super(
-                generateName(
-                    cloud,
-                    config.resolveBoxVersion(cloud.getClient())),
-                    config.getDescription(),
-                    StringUtils.isBlank(config.getRemoteFs())
-                            ? getRemoteFs(config.resolveDeploymentPolicy(cloud.getClient()), cloud)
-                            : config.getRemoteFs(),
-                    config.getExecutors(),
-                    config.getMode(),
+        super(generateName(cloud, config.resolveBoxVersion(cloud.getClient() )),
+                config.getDescription(),
+                StringUtils.isBlank(config.getRemoteFs() )
+                        ? getRemoteFs(config.resolveDeploymentPolicy(cloud.getClient()), cloud)
+                        : config.getRemoteFs(),
+                config.getExecutors(),
+                config.getMode(),
                 config.getLabels(),
                 new JNLPLauncher(),
                 retentionStrategy,

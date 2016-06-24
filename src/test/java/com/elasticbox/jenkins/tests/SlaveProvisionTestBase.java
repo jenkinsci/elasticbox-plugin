@@ -44,7 +44,6 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
     @Override
     public void setup() throws Exception {
         String jenkinsUrl = jenkins.getInstance().getRootUrl();
-        jenkins.timeout = 300;
         if (StringUtils.isBlank(jenkinsUrl)) {
             jenkinsUrl = jenkins.createWebClient().getContextPath();
         }
