@@ -6,12 +6,16 @@ function ebx_token() {
     curl -ksf -H 'Content-Type:application/json' -X POST --data '{"email": "'$1'", "password": "'$2'"}' ${EBX_ADDRESS}/services/security/token
 }
 
+function check_online() {
+    curl -ksf -H "ElasticBox-Token: $1" -H "ElasticBox-Release: $2" $3/services/workspaces | grep "http://elasticbox.net/schemas/"
+}
+
 function upgrade_appliance() {
     PACKAGE=${1}
     EBX_ADDRESS=${2}
     EBX_TOKEN=${3}
 
-    echo Uploading package to ${EBX_ADDRESS}
+    echo "Uploading package to ${EBX_ADDRESS}"
     ADMIN_TOKEN=$(ebx_token test_admin@elasticbox.com elasticbox)
     UPLOAD_URL="${EBX_ADDRESS}/services/appliance/upload"
     RESPONSE=$(curl -k# -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" --form blob=@${PACKAGE} ${UPLOAD_URL})
@@ -21,33 +25,27 @@ function upgrade_appliance() {
         exit 1
     fi
 
-    echo "Start upgrading the appliance"
+    [[ -z ${EBX_TOKEN} ]] && EBX_TOKEN=${ADMIN_TOKEN}
+
+    echo "Start upgrading the appliance..."
     curl -ksf -X POST -H "ElasticBox-Token: ${ADMIN_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" "${EBX_ADDRESS}/services/appliance/upgrade" || true
 
     echo "Waiting for the appliance services to restart..."
 
     # Make sure that the appliance is back up (polling for a while)
-    if [[ -z ${EBX_TOKEN} ]]
-    then
-        EBX_TOKEN=$(ebx_token test_admin@elasticbox.com elasticbox)
-    fi
-
     for i in `seq 20`
     do
-      sleep 10
-      WORKSPACES=$(curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" -H "ElasticBox-Release: ${ELASTICBOX_RELEASE}" ${EBX_ADDRESS}/services/workspaces | grep http://elasticbox.net/schemas/)
-      if [[ -n "${WORKSPACES}" ]]
+      sleep 6
+      echo "...checking if the appliance is back online "$i
+      if [[ -n $(check_online ${EBX_TOKEN} ${ELASTICBOX_RELEASE} ${EBX_ADDRESS}) ]]
       then
         echo "Restart finished successfully. Appliance is online."
-        break
+        return
       fi
     done
 
-    if [[ -z "${WORKSPACES}" ]]
-    then
-        echo "Cannot access the ElasticBox appliance at ${EBX_ADDRESS} after upgrade"
-        exit 1
-    fi
+    echo "Cannot access the ElasticBox appliance at ${EBX_ADDRESS} after upgrade"
+    exit 1
 }
 
 JENKINS_VERSION_COMMENT='version of Jenkins this plugin is built against'
