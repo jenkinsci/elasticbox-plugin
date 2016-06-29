@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
+
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
@@ -42,11 +44,13 @@ import org.junit.Test;
  * @author Phong Nguyen Le
  */
 public class BuildStepTest extends BuildStepTestBase {
+    protected static final Logger LOGGER = Logger.getLogger(BuildStepTest.class.getName());
 
     @Test
     public void testBuildWithSteps() throws Exception {
         FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-job.xml").getBytes()));
+        LOGGER.info(MessageFormat.format("Testing build steps with project: ", project));
 
         // copy files for file variables
         FilePath workspace = jenkins.getInstance().getWorkspaceFor(project);
@@ -64,10 +68,13 @@ public class BuildStepTest extends BuildStepTestBase {
         VariableResolver variableResolver = new VariableResolver(cloud.name, TestUtils.TEST_WORKSPACE, build, TaskListener.NULL);
         String jobNameAndBuildId = MessageFormat.format("{0}-{1}", variableResolver.resolve("${JOB_NAME}"), variableResolver.resolve("${BUILD_ID}"));
         String buildTag = variableResolver.resolve("${BUILD_TAG}");
+
         Client client = new Client(cloud.getEndpointUrl(), cloud.getToken());
+
         JSONObject testLinuxBox = getTestBox(TestUtils.TEST_LINUX_BOX_NAME);
         JSONObject testBindingBox = getTestBox(TestUtils.TEST_BINDING_BOX_NAME);
         JSONObject testNestedBox = getTestBox(TestUtils.TEST_NESTED_BOX_NAME);
+
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_LINUX_BOX_NAME), testLinuxBox);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_BINDING_BOX_NAME), testBindingBox);
         assertNotNull(MessageFormat.format("Cannot find box {0}", TestUtils.TEST_NESTED_BOX_NAME), testNestedBox);

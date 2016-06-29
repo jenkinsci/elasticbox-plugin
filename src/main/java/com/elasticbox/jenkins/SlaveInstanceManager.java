@@ -99,9 +99,10 @@ public class SlaveInstanceManager {
                     }
                     for (Object instance : instances) {
                         JSONObject instanceJson = (JSONObject) instance;
-                        String label = instanceJson.getJSONArray("tags").getString(0);
+                        JSONArray tags = instanceJson.getJSONArray("tags");
 
-                        if (slave.getNodeName().equals(label)) {
+                        // If the instance corresponds to a Jenkins slave, first tag will match the slave name:
+                        if (tags.size() > 0 && slave.getNodeName().equals(tags.getString(0) )) {
                             String instanceId = instanceJson.getString("id");
                             if (slave.getInstanceUrl() == null) {
                                 final String url = cloud.getClient().getInstanceUrl(instanceId);

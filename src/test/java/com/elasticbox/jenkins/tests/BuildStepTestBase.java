@@ -42,7 +42,7 @@ public class BuildStepTestBase extends TestBase {
     protected Map<String, TestBoxData> testBoxDataLookup;
     protected String newTestBindingBoxInstanceId = TestUtils.TEST_BINDING_BOX_INSTANCE_ID;
     protected JSONObject testProvider;
-    private TestUtils.TemplateResolver templateResolver;
+    protected TestUtils.TemplateResolver templateResolver;
 
     @Before
     @Override

@@ -205,12 +205,18 @@ public class TestUtils {
         Object result = null;
         long maxWaitTime = waitMinutes * 60000;
         long waitTime = 0;
+
         do {
             long waitStart = System.currentTimeMillis();
             try {
                 result = future.get(maxWaitTime - waitTime, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException ex) {
+
+            } catch (InterruptedException e) {
+                if (LOGGER.isLoggable(Level.FINEST) ) {
+                    LOGGER.finest("Waiting for the schedule result... ");
+                }
             } catch (TimeoutException ex) {
+                LOGGER.severe("Timeout reached:" + waitMinutes + " min - " + ex);
                 break;
             }
             waitTime += (System.currentTimeMillis() - waitStart);
