@@ -226,8 +226,8 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             InstanceCreationRequest request = iter.next();
             final ElasticBoxSlave slave = request.slave;
             try {
-                if (!slave.isDeletable() && request.monitor.isDone()) {
-                    if (slave.getComputer() != null && slave.getComputer().isOnline()) {
+                if (!slave.isDeletable() && request.monitor.isDone() ) {
+                    if (slave.getComputer() != null && slave.getComputer().isOnline() ) {
                         slave.setInstanceStatusMessage(MessageFormat.format(
                                 "Successfully deployed at <a href=\"{0}\">{0}</a>",
                                 slave.getInstancePageUrl()));
@@ -236,12 +236,14 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
                         iter.remove();
                     } else {
                         if (removeSlaveIfLaunchTimedOut(request, listener)) {
-                            LOGGER.info("Request timed out. Removing slave from Submitted queue - " + slave);
+                            LOGGER.info("Request timed out waiting for the computer to be online."
+                                    + "Removing slave from Submitted queue - " + slave);
                             iter.remove();
                         }
                     }
-                } else {
-                    removeSlaveIfLaunchTimedOut(request, listener);
+                } else if ( !request.monitor.isDone() && removeSlaveIfLaunchTimedOut(request, listener) ) {
+                    LOGGER.info("Request timed out. Removing slave from Submitted queue - " + slave);
+                    iter.remove();
                 }
             } catch (IProgressMonitor.IncompleteException ex) {
                 log(Level.SEVERE, ex.getMessage() + ". Attempt=" + request.attempts, ex, listener);
