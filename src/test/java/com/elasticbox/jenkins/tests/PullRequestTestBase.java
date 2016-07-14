@@ -322,11 +322,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
     protected class MockPullRequest {
         private final StringEntity openPullRequestPayload;
-        private final StringEntity closePullRequestPayload;
         private final StringEntity reopenPullRequestPayload;
+        private final String closePullRequestPayload;
         private final String syncPullRequestPayload;
         private final String commentPullRequestPayloadTemplate;
-        private final GHPullRequest ghPullRequest;
+
+        private GHPullRequest ghPullRequest;
+
+        private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd\'T\'HH:mm:ss\'Z\'");
 
         private StringEntity createPayload(String content) throws UnsupportedEncodingException {
             return new StringEntity("payload=" + URLEncoder.encode(content, "UTF-8"), ContentType.APPLICATION_FORM_URLENCODED);
@@ -336,8 +339,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
             this.ghPullRequest = ghPullRequest;
             HashMap<String, Object> jinjaContext = createJinjaContext();
             openPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-opened.json"), jinjaContext));
-            closePullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext));
             reopenPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-reopened.json"), jinjaContext));
+            closePullRequestPayload = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext);
             syncPullRequestPayload = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-synchronize.json"), jinjaContext);
             commentPullRequestPayloadTemplate = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-github-issue-comment-created.json"), jinjaContext);
         }
@@ -380,35 +383,59 @@ public class PullRequestTestBase extends BuildStepTestBase {
         public void open() throws IOException {
             LOGGER.info("Opening PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.reopen();
+            refreshPullRequestData();
             postPayload(openPullRequestPayload, "pull_request");
         }
 
         public void reopen() throws IOException {
             LOGGER.info("Reopening PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.reopen();
+            refreshPullRequestData();
             postPayload(reopenPullRequestPayload, "pull_request");
         }
 
         public void close() throws IOException {
             LOGGER.info("Closing PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.close();
-            postPayload(closePullRequestPayload, "pull_request");
+            refreshPullRequestData();
+
+            postPayload(createPayload(closePullRequestPayload.replace("${TIMESTAMP}", dateFormat.format(new Date() ))),
+                    "pull_request");
         }
 
         public void sync(String sha) throws IOException {
             LOGGER.info("Synchronizing PR #" + getGHPullRequest().getNumber() );
 
             String payload = StringUtils.replaceOnce(syncPullRequestPayload, "${RANDOM_SHA}", sha);
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd\'T\'HH:mm:ss\'Z\'");
             payload = StringUtils.replaceOnce(payload, "${TIMESTAMP}", dateFormat.format(new Date() ));
 
             postPayload(createPayload(payload), "pull_request");
         }
 
         public void comment(String comment) throws IOException {
-            LOGGER.info("Commenting PR #" + getGHPullRequest().getNumber() + ": " + comment);
-            postPayload(createPayload(commentPullRequestPayloadTemplate.replace("${COMMENT}", comment)), "issue_comment");
+            comment(comment, "opem");
         }
+
+        public void comment(String comment, String state) throws IOException {
+            LOGGER.info("Commenting PR #" + getGHPullRequest().getNumber() + ": " + comment);
+            ghPullRequest.comment(comment);
+            refreshPullRequestData();
+
+            final String content = commentPullRequestPayloadTemplate.replace("${COMMENT}", comment)
+                                    .replace("${STATE}", state )
+                                    .replace("${TIMESTAMP}", dateFormat.format(new Date() ));
+
+            postPayload(createPayload(content), "issue_comment");
+        }
+
+        public void refreshPullRequestData() throws IOException {
+            ghPullRequest = gitHubRepo.getPullRequest(ghPullRequest.getNumber() );
+
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.info("PR data: " + PullRequestBuildHandler.getPullRequestAsString(ghPullRequest));
+            }
+        }
+
     }
 
     private Document getProjectDocument() throws Exception {
