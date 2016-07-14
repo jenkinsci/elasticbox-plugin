@@ -114,7 +114,7 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
         }
         GHPullRequest pullRequest = cause.getPullRequest();
         // Remove previous build data of the pull request from the build
-        for (Iterator<Action> iter = build.getActions().iterator(); iter.hasNext();) {
+        for (Iterator<? extends Action> iter = build.getAllActions().iterator(); iter.hasNext();) {
             Action action = iter.next();
             if (action instanceof BuildData) {
                 BuildData buildData = (BuildData) action;
