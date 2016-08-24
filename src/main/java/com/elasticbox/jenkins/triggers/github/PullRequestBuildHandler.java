@@ -12,12 +12,11 @@
 
 package com.elasticbox.jenkins.triggers.github;
 
-import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import com.coravy.hudson.plugins.github.GithubProjectProperty;
 import com.elasticbox.jenkins.ElasticBoxExecutor;
 import com.elasticbox.jenkins.triggers.IBuildHandler;
-
+import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Executor;
@@ -34,9 +33,7 @@ import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.util.BuildData;
 import hudson.security.ACL;
 import hudson.util.SequentialExecutionQueue;
-
 import jenkins.model.Jenkins;
-
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.apache.commons.lang.StringUtils;
@@ -180,6 +177,10 @@ public class PullRequestBuildHandler implements IBuildHandler {
                 });
             }
         }
+    }
+
+    public static String getPullRequestAsString(GHPullRequest pullRequest) throws IOException {
+        return pullRequest.getHtmlUrl() + " [" + pullRequest.getState() + "] Updated: " + pullRequest.getUpdatedAt();
     }
 
     public String getGitHubRepositoryUrl() {
@@ -386,15 +387,26 @@ public class PullRequestBuildHandler implements IBuildHandler {
             return;
         }
 
-        GHPullRequest pullRequest = issueComment.getRepository().getPullRequest(issueComment.getIssue().getNumber());
+        final int prNumber = issueComment.getIssue().getNumber();
+
+        GHPullRequest pullRequest = issueComment.getRepository().getPullRequest(prNumber);
+        // Updating PR to force the cache (if present) to refresh:
+        pullRequest.setTitle(pullRequest.getTitle() );
+
+        pullRequest = issueComment.getRepository().getPullRequest(prNumber);
+
+        if (LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.fine("ghPullRequest = " + getPullRequestAsString(pullRequest) );
+        }
+
         if (pullRequest.getState() == GHIssueState.OPEN) {
             PullRequestData pullRequestData = PullRequestManager.getInstance().addPullRequestData(pullRequest, project);
+
             cancelBuilds(pullRequestData);
             build(pullRequest, buildRequester, new TriggerCause(pullRequest, buildRequester));
-        } else {
-            LOGGER.finer(
-                MessageFormat.format(
-                    "Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString()));
+        } else if (LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.fine(MessageFormat.format(
+                    "Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString() ));
         }
     }
 

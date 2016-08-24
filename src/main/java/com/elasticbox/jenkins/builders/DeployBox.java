@@ -991,6 +991,16 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
             return FormValidation.ok();
         }
 
+        public FormValidation doCheckInstanceName(@QueryParameter String instanceName,
+                                                  @QueryParameter String boxDeploymentType) {
+            if (StringUtils.isBlank(instanceName)
+                    && DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE.getValue().equals(boxDeploymentType)) {
+
+                return FormValidation.error("Instance name is required");
+            }
+            return FormValidation.ok();
+        }
+
         public ListBoxModel doFillAlternateActionItems() {
             return alternateActionItems;
         }

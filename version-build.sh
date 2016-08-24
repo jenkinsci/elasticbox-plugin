@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 set -e
 
@@ -72,7 +72,7 @@ echo Building with Jenkins version ${JENKINS_VERSION}
 echo ------------------------------------------------
 echo Testing against ElasticBox at ${EBX_ADDRESS}
 
-BUILD_OPTIONS="-DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+BUILD_OPTIONS="-B -DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
 
 if [[ -n ${EBX_TOKEN} ]]
 then

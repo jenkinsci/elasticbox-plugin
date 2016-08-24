@@ -13,17 +13,15 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import static java.text.MessageFormat.format;
-
 import static org.jenkinsci.plugins.github.config.GitHubServerConfig.withHost;
 
-import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.builders.BuilderListener;
 import com.elasticbox.jenkins.triggers.BuildManager;
+import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.elasticbox.jenkins.util.ProjectData;
 import com.elasticbox.jenkins.util.ProjectDataListener;
-
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -32,11 +30,8 @@ import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.listeners.ItemListener;
 import hudson.security.ACL;
-
 import jenkins.model.Jenkins;
-
 import net.sf.json.JSONObject;
-
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.jenkinsci.plugins.github.GitHubPlugin;
@@ -46,9 +41,7 @@ import org.kohsuke.github.GitHub;
 
 import java.io.IOException;
 import java.io.StringReader;
-
 import java.text.MessageFormat;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -250,7 +243,6 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         } finally {
             SecurityContextHolder.getContext().setAuthentication(old);
         }
-
     }
 
     @Extension

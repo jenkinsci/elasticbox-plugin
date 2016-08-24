@@ -313,8 +313,7 @@ public class DescriptorHelper {
                 return new JsonArrayResponse(boxStack.toJsonArray());
 
             } catch (IOException ex) {
-                LOGGER.log(
-                        Level.SEVERE,
+                LOGGER.log(Level.SEVERE,
                         MessageFormat.format("Error fetching variables for profile {0}", instance), ex);
             }
         }

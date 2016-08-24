@@ -14,27 +14,16 @@
 
 package com.elasticbox.jenkins.model.services.deployment.configuration.validation;
 
-import com.elasticbox.jenkins.ElasticBoxCloud;
+import com.elasticbox.Constants;
 import com.elasticbox.jenkins.builders.DeployBox;
-import com.elasticbox.jenkins.builders.InstanceExpiration;
-import com.elasticbox.jenkins.builders.InstanceExpirationSchedule;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
-import com.elasticbox.jenkins.model.services.deployment.execution.context.ApplicationBoxDeploymentContext;
-import com.elasticbox.jenkins.util.TaskLogger;
-import com.elasticbox.jenkins.util.VariableResolver;
-import hudson.AbortException;
-import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import org.apache.commons.lang.StringUtils;
 
-import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ApplicationBoxAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
 
@@ -45,6 +34,38 @@ public class ApplicationBoxAbstractDeploymentDataValidator implements Deployment
 
     @Override
     public DeploymentValidationResult validateDeploymentDataType(DeployBox deployData) {
+
+        if (StringUtils.isEmpty(deployData.getInstanceName() )) {
+            return new DeploymentValidationResult() {
+                @Override
+                public boolean isOk() {
+                    return false;
+                }
+
+                @Override
+                public List<Cause> causes() {
+
+                    final Cause cause = new Cause() {
+                        @Override
+                        public String message() {
+                            return Constants.INSTANCE_SHOULD_BE_PROVIDED;
+                        }
+
+                        @Override
+                        public String field() {
+                            return "instanceName";
+                        }
+                    };
+
+                    return Collections.singletonList(cause);
+                }
+
+                @Override
+                public DeploymentData getDeploymentData() {
+                    return null;
+                }
+            };
+        }
 
         final String claims = deployData.getClaims();
         final Set<String> claimsSet = new HashSet<String>();

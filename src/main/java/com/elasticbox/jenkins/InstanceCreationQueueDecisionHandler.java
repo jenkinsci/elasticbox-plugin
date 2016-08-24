@@ -56,7 +56,7 @@ public class InstanceCreationQueueDecisionHandler extends Queue.QueueDecisionHan
                         shouldScheduleItem |= action.shouldSchedule(actions);
                     }
                     for (Queue.QueueAction action: Util.filter(actions,Queue.QueueAction.class)) {
-                        shouldScheduleItem |= action.shouldSchedule(item.getActions());
+                        shouldScheduleItem |= action.shouldSchedule( (List<Action>) item.getAllActions() );
                     }
                     if (!shouldScheduleItem) {
                         return false;

@@ -12,13 +12,8 @@
 
 package com.elasticbox;
 
-import com.google.common.collect.Maps;
-
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public interface Constants {
 
@@ -33,6 +28,7 @@ public interface Constants {
     String AT_LEAST_SELECT_POLICY_OR_REQUIREMENTS = "Deployment option is mandatory";
     String PROVIDER_SHOULD_BE_PROVIDED = "Provider is mandatory";
     String LOCATION_SHOULD_BE_PROVIDED = "Location is mandatory";
+    String INSTANCE_SHOULD_BE_PROVIDED = "Instance Name is mandatory";
 
     //---------- Boxes
     String BOX_ANY_BOX = "AnyBox";

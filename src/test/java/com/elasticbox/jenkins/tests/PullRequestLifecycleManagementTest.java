@@ -15,17 +15,18 @@ package com.elasticbox.jenkins.tests;
 import com.elasticbox.jenkins.util.Condition;
 import hudson.model.AbstractBuild;
 import hudson.model.Result;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import org.junit.Assert;
+import org.junit.Test;
+import org.kohsuke.github.GHHook;
 
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.junit.Assert;
-import org.junit.Test;
-import org.kohsuke.github.GHHook;
+import java.util.logging.Level;
 
 /**
  *
@@ -35,6 +36,9 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
 
     @Test
     public void testPullRequestLifecycleManagement() throws Exception {
+
+        setLoggerLevel("com.elasticbox.jenkins", Level.FINER);
+
         // check GitHub webhook
         Thread.sleep(5000);
         List<GHHook> hooks = gitHubRepo.getHooks();
@@ -67,18 +71,18 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         instances.addAll(checkBuild(null));
 
         // Testing the sync payload:
-        testSyncPayload("0fd46d038e2f1d80ab5c488284c1244e234266da");
+        testSyncPayload("b33073260dbbf2457f24965c057abcf186add98d");
 
         // Testing the sync payload - second run:
-        testSyncPayload("48c5e45a77ee6247d7389d3a8d7d74d0869b88c7");
+        testSyncPayload("553d231289338741f581dd99049f36ef5e1c5533");
 
-        final String triggerPhrase = "Jenkins test this please";
-        pullRequest.comment(triggerPhrase);
-        Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''", triggerPhrase),
-                waitForNextBuild(30));
+        int count = 0;
+        final String triggerPhrase = "Jenkins test this please ";
+        pullRequest.comment(triggerPhrase + (count++) );
+        Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''", triggerPhrase), waitForNextBuild(30));
 
         updateTriggerPhrase(triggerPhrase);
-        pullRequest.comment(triggerPhrase);
+        pullRequest.comment(triggerPhrase + (count++) );
         ensureBuildTriggered("Build is not triggered on posting trigger phrase to pull request {0} after 1 minute", pullRequest.getGHPullRequest().getHtmlUrl());
 
         instances.addAll(checkBuild(TestUtils.GITHUB_USER));
@@ -87,7 +91,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10));
         Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());
 
-        pullRequest.comment(triggerPhrase);
+        pullRequest.comment(triggerPhrase + (count++), "closed");
         // check that the job is not triggered because the pull request is closed
         Assert.assertNull("Build is triggered even for closed pull request", waitForNextBuild(30));
 
@@ -96,7 +100,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         pullRequest.open();
         Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(30));
 
-        pullRequest.comment(triggerPhrase);
+        pullRequest.comment(triggerPhrase + (count++) );
         Assert.assertNull("Build is triggered even by comment of user not in the whitelist", waitForNextBuild(30));
 
         pullRequest.close();
@@ -109,7 +113,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
 
         instances.addAll(checkBuild(null));
 
-        pullRequest.comment(triggerPhrase);
+        pullRequest.comment(triggerPhrase + (count++) );
         ensureBuildTriggered("Build is not triggered on posting trigger comment to pull request {0} after 1 minute", pullRequest.getGHPullRequest().getHtmlUrl());
 
         instances.addAll(checkBuild(TestUtils.GITHUB_USER));
@@ -123,7 +127,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
 
     private void testSyncPayload(String sha) throws IOException {
         pullRequest.sync(sha);
-        ensureBuildTriggered("Build is not triggered after 1 minute on synchronizing of pull request: ", pullRequest.getGHPullRequest().getHtmlUrl());
+        ensureBuildTriggered("Build is not triggered after 1 minute on synchronizing of pull request: {0}", pullRequest.getGHPullRequest().getHtmlUrl());
     }
 
     private void ensureBuildTriggered(String messageFormat, Object parameter) {

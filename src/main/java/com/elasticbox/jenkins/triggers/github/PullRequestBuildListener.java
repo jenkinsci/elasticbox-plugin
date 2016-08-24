@@ -42,20 +42,16 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
 
         String detailsUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();
 
-        LOGGER.finest(
-            MessageFormat.format(
-                "Posting status {0} to {1} with details URL {2} and message: {3}",
-                status,
-                pullRequest.getHtmlUrl(),
-                detailsUrl,
-                message)
-        );
+        if (LOGGER.isLoggable(Level.FINER) ) {
+            LOGGER.finer(MessageFormat.format("Posting status {0} to {1} with details URL {2} and message: {3}",
+                    status, pullRequest.getHtmlUrl(), detailsUrl, message) );
+        }
 
         try {
             pullRequest.getRepository().createCommitStatus(pullRequest.getHead().getSha(), status, detailsUrl, message);
             return true;
         } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting status to {0}", pullRequest.getHtmlUrl()), ex);
+            LOGGER.log(Level.SEVERE, "Error posting status to " + pullRequest.getHtmlUrl(), ex);
         }
         return false;
     }
@@ -114,7 +110,7 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
         }
         GHPullRequest pullRequest = cause.getPullRequest();
         // Remove previous build data of the pull request from the build
-        for (Iterator<Action> iter = build.getActions().iterator(); iter.hasNext();) {
+        for (Iterator<? extends Action> iter = build.getAllActions().iterator(); iter.hasNext();) {
             Action action = iter.next();
             if (action instanceof BuildData) {
                 BuildData buildData = (BuildData) action;

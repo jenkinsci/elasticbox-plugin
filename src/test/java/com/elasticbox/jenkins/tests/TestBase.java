@@ -25,8 +25,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.junit.After;
@@ -154,5 +158,15 @@ public class TestBase {
             }
         }
         client.doDelete(resource.getString("uri"));
+    }
+
+    public void setLoggerLevel(String name, Level level) {
+        jenkins.getInstance().getLog().doConfigLogger(name, level.toString() );
+        final Logger logger = Logger.getLogger(name);
+        Handler consoleHandler = new ConsoleHandler();
+        consoleHandler.setLevel(level);
+        consoleHandler.setFormatter(new SimpleFormatter());
+        logger.addHandler(consoleHandler);
+        logger.setUseParentHandlers(false);
     }
 }

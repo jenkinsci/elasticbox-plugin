@@ -1135,7 +1135,7 @@ public class Client implements ApiClient {
                     }
                     }).build();
 
-                httpClientBuilder.setSslcontext(sslContext);
+                httpClientBuilder.setSSLContext(sslContext);
 
                 SSLConnectionSocketFactory sslConnectionSocketFactory =
                         new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier());
