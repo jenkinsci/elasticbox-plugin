@@ -20,7 +20,7 @@ import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -84,7 +84,7 @@ public class PolicyBasedAbstractDeploymentDataValidator implements DeploymentDat
                     }
                 };
 
-                return Arrays.asList(cause);
+                return Collections.singletonList(cause);
             }
 
             @Override
