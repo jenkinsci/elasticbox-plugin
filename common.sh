@@ -33,13 +33,15 @@ function upgrade_appliance() {
     echo "Waiting for the appliance services to restart..."
 
     # Make sure that the appliance is back up (polling for a while)
+    set +e
     for i in `seq 20`
     do
-      sleep 6
+      sleep 10
       echo "...checking if the appliance is back online "$i
       if [[ -n $(check_online ${EBX_TOKEN} ${ELASTICBOX_RELEASE} ${EBX_ADDRESS}) ]]
       then
         echo "Restart finished successfully. Appliance is online."
+        set -e
         return
       fi
     done
