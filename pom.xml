@@ -27,6 +27,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <checkstyle.version>6.14.1</checkstyle.version>
         <checkstyle.plugin.version>2.16</checkstyle.plugin.version>
+        <findbugs.skip>true</findbugs.skip>
     </properties>
 
     <repositories>
