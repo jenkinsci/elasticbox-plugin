@@ -105,7 +105,7 @@ public class BuildStepTestBase extends TestBase {
             }
         }
 
-        Thread.sleep(30000);
+        Thread.sleep(20000);
 
         if (testProvider != null) {
             delete(testProvider, client);
