@@ -734,7 +734,7 @@ public class Client implements ApiClient {
     public IProgressMonitor deploy(String profileId, String workspaceId, List<String> tags, JSONArray variables)
             throws IOException {
 
-        return deploy(profileId, profileId, workspaceId, null, tags, variables, null, null, null,
+        return deploy(profileId, profileId, profileId, workspaceId, tags, variables, null, null, null,
                 Constants.AUTOMATIC_UPDATES_OFF);
     }
 
@@ -761,10 +761,10 @@ public class Client implements ApiClient {
         JSONObject policyBox = new JSONObject();
         policyBox.put("id", policyId);
         policyBox.put("variables", policyVariables);
-        JSONObject boxVersionJson = getBox(boxVersion);
 
         String name;
         if (instanceName == null || StringUtils.isBlank(instanceName)) {
+            JSONObject boxVersionJson = getBox(boxVersion);
             name = boxVersionJson.getString("name");
         } else {
             name = instanceName;

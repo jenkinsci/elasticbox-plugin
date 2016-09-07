@@ -79,17 +79,17 @@ public class ElasticBoxCloudTest extends TestBase {
         JSONObject variable = new JSONObject();
         variable.put("name", "JNLP_SLAVE_OPTIONS");
         variable.put("type", "Text");
-        variable.put("value", MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp", slaveName));
+        variable.put("value", MessageFormat.format("-jnlpUrl {0}/computer/slave-agent.jnlp", slaveName));
         variables.add(variable);
         IProgressMonitor monitor = client.deploy(profile.getString("id"), profile.getString("owner"),
                 Arrays.asList("jenkins-plugin-unit-test"), variables);
         try {
             monitor.waitForDone(60);
         } catch (IProgressMonitor.IncompleteException ex) {
-
+            // Instance is UNAVAILABLE
         }
 
-        String instanceId = Client.getResourceId(monitor.getResourceUrl());
+        String instanceId = Client.getResourceId(monitor.getResourceUrl() );
         monitor = client.terminate(instanceId);
         monitor.waitForDone(60);
         client.delete(instanceId);
