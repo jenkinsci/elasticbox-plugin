@@ -210,6 +210,15 @@
           <tags>${JOB_NAME}-${BUILD_ID}, ${TEST_TAG}</tags>
           <waitForCompletion>true</waitForCompletion>
         </com.elasticbox.jenkins.builders.ReinstallOperation>
+      </operations>
+    </com.elasticbox.jenkins.builders.ManageInstance>
+    <hudson.tasks.Shell>
+      <command>sleep 10</command>
+    </hudson.tasks.Shell>
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
+      <cloud>elasticbox</cloud>
+      <workspace>tphongio</workspace>
+      <operations>
         <com.elasticbox.jenkins.builders.StopOperation>
           <tags> ${TEST_TAG}</tags>
           <waitForCompletion>true</waitForCompletion>
