@@ -17,9 +17,7 @@ import com.elasticbox.ClientException;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 
 import jenkins.model.Jenkins;
-
 import hudson.slaves.Cloud;
-
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
@@ -28,7 +26,9 @@ import org.apache.http.client.methods.HttpRequestBase;
 import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,7 +37,7 @@ public class ClientCache {
 
     private static final Logger LOGGER = Logger.getLogger(ClientCache.class.getName());
 
-    private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<String, Client>();
+    private static final ConcurrentHashMap<String, Client> clientCache = new ConcurrentHashMap<>();
 
     public static final Client findOrCreateClient(String cloudName) throws IOException {
         Client client = clientCache.get(cloudName);
@@ -47,11 +47,15 @@ public class ClientCache {
 
         synchronized (clientCache) {
             // remove clients of deleted clouds
-            for (Iterator<String> iter = clientCache.keySet().iterator(); iter.hasNext();) {
-                String name = iter.next();
+            List<String> keysToRemove = new ArrayList<>();
+            for (Enumeration<String> keys = clientCache.keys(); keys.hasMoreElements(); ) {
+                String name = keys.nextElement();
                 if (Jenkins.getInstance().getCloud(name) == null) {
-                    iter.remove();
+                    keysToRemove.add(name);
                 }
+            }
+            for (String keyToRemove: keysToRemove) {
+                clientCache.remove(keyToRemove);
             }
 
             Cloud cloud = Jenkins.getInstance().getCloud(cloudName);
@@ -139,5 +143,4 @@ public class ClientCache {
             }
         }
     }
-
 }
