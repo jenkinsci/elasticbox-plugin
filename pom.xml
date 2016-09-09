@@ -301,7 +301,14 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>animal-sniffer-maven-plugin</artifactId>
-               <version>1.15</version>
+                <version>1.15</version>
+                <configuration>
+                    <ignoreDependencies>true</ignoreDependencies>
+                    <signature>
+                        <groupId>org.codehaus.mojo.signature</groupId>
+                        <artifactId>java1${java.level}</artifactId>
+                    </signature>
+                </configuration>
             </plugin>
         </plugins>
     </build>
