@@ -10,6 +10,30 @@ function check_online() {
     curl -ksf -H "ElasticBox-Token: $1" -H "ElasticBox-Release: $2" $3/services/workspaces | grep "http://elasticbox.net/schemas/"
 }
 
+function update_appliance_ip() {
+    EBX_ADDRESS=${1}
+    EBX_TOKEN=${2}
+
+    echo "Generating appliance settings with correct hostname: ${EBX_ADDRESS}"
+
+    EBX_SETTINGS_ADDR="https://${EBX_ADDRESS}/services/appliance/settings"
+    curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" ${EBX_SETTINGS_ADDR} > settings.json
+
+    if [[ ! -f "settings.json" ]]
+    then
+        logger "ERROR: Cannot generate appliance settings for appliance at https://${INSTANCE.ADDRESS}"
+        exit 1
+    fi
+
+    perl -pe "s/\"hostname\": \".*?\"/\"hostname\": \"${EBX_ADDRESS}\"/g" -I settings.json
+
+    echo "New appliance settings:"
+    cat "settings.json"
+
+    curl -kf -X POST -H 'Content-Type:application/json' -H "ElasticBox-Token: ${EBX_TOKEN}" --data @"settings.json" ${EBX_SETTINGS_ADDR}
+    rm settings.json
+}
+
 function upgrade_appliance() {
     PACKAGE=${1}
     EBX_ADDRESS=${2}
@@ -41,6 +65,7 @@ function upgrade_appliance() {
       if [[ -n $(check_online ${EBX_TOKEN} ${ELASTICBOX_RELEASE} ${EBX_ADDRESS}) ]]
       then
         echo "Restart finished successfully. Appliance is online."
+        update_appliance_ip ${EBX_ADDRESS} ${ADMIN_TOKEN}
         set -e
         return
       fi
