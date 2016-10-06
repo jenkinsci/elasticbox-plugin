@@ -65,7 +65,6 @@ function upgrade_appliance() {
       if [[ -n $(check_online ${EBX_TOKEN} ${ELASTICBOX_RELEASE} ${EBX_ADDRESS}) ]]
       then
         echo "Restart finished successfully. Appliance is online."
-        update_appliance_ip ${EBX_ADDRESS} ${ADMIN_TOKEN}
         set -e
         return
       fi
