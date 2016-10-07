@@ -13,10 +13,11 @@ function check_online() {
 function update_appliance_ip() {
     EBX_ADDRESS=${1}
     EBX_TOKEN=${2}
+    IP=${EBX_ADDRESS/#https:\/\//}
 
-    echo "Generating appliance settings with correct hostname: ${EBX_ADDRESS}"
+    echo "Generating appliance settings with correct hostname: ${IP}"
 
-    EBX_SETTINGS_ADDR="https://${EBX_ADDRESS}/services/appliance/settings"
+    EBX_SETTINGS_ADDR="${EBX_ADDRESS}/services/appliance/settings"
     curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" ${EBX_SETTINGS_ADDR} > settings.json
 
     if [[ ! -f "settings.json" ]]
@@ -25,13 +26,12 @@ function update_appliance_ip() {
         exit 1
     fi
 
-    perl -pe "s/\"hostname\": \".*?\"/\"hostname\": \"${EBX_ADDRESS}\"/g" -I settings.json
+    sed -e "s|\"hostname\": \"[a-z0-9\.:/]*\"|\"hostname\": \"${IP}\"|" settings.json > newSettings.json
 
-    echo "New appliance settings:"
-    cat "settings.json"
-
-    curl -kf -X POST -H 'Content-Type:application/json' -H "ElasticBox-Token: ${EBX_TOKEN}" --data @"settings.json" ${EBX_SETTINGS_ADDR}
-    rm settings.json
+    echo "New settings:"
+    curl -kf -X POST -H 'Content-Type:application/json' -H "ElasticBox-Token: ${EBX_TOKEN}" --data @"newSettings.json" ${EBX_SETTINGS_ADDR}
+    echo
+    rm settings.json newSettings.json
 }
 
 function upgrade_appliance() {
