@@ -67,12 +67,15 @@ else
     JENKINS_VERSION=$(get_jenkins_version ${REPOSITORY_FOLDER})
 fi
 
-echo ------------------------------------------------
-echo Building with Jenkins version ${JENKINS_VERSION}
-echo ------------------------------------------------
-echo Testing against ElasticBox at ${EBX_ADDRESS}
+echo "------------------------------------------------"
+echo "Building with Jenkins version ${JENKINS_VERSION}"
+echo "------------------------------------------------"
+echo "Testing against ElasticBox at ${EBX_ADDRESS}"
 
 BUILD_OPTIONS="-B -DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+
+echo "Updating EBX Appliance IP setting:"
+update_appliance_ip ${EBX_ADDRESS} ${EBX_TOKEN}
 
 if [[ -n ${EBX_TOKEN} ]]
 then
@@ -90,6 +93,7 @@ then
 fi
 
 cd ${REPOSITORY_FOLDER}
+echo "Executing: mvn ${BUILD_OPTIONS} clean install"
 mvn ${BUILD_OPTIONS} clean install
 
 # keep the test results and logs for the tested Jenkins version

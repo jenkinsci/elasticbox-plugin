@@ -33,12 +33,12 @@ import org.junit.Before;
  * @author Phong Nguyen Le
  */
 public class BuildStepTestBase extends TestBase {
-    private final List<TestBoxData> testBoxDataList = Arrays.asList(new TestBoxData[] {
+    private final List<TestBoxData> testBoxDataList = Arrays.asList(
         new TestBoxData("boxes/test-linux-box/test-linux-box.json", "com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile"),
         new TestBoxData("boxes/test-binding-box.json", "com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile"),
         new TestBoxData("boxes/test-nested-box.json", "com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile"),
         new TestBoxData("boxes/test-deeply-nested-box.json", "com.elasticbox.jenkins.tests.boxes.test-deeply-nested-box.test-profile")
-    });
+    );
     protected Map<String, TestBoxData> testBoxDataLookup;
     protected String newTestBindingBoxInstanceId = TestUtils.TEST_BINDING_BOX_INSTANCE_ID;
     protected JSONObject testProvider;
