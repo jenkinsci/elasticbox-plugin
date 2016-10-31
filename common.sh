@@ -15,10 +15,12 @@ function update_appliance_ip() {
     EBX_TOKEN=${2}
     IP=${EBX_ADDRESS/#https:\/\//}
 
+    [[ -z ${EBX_TOKEN} ]] && $(ebx_token test_admin@elasticbox.com elasticbox)
+
     echo "Generating appliance settings with correct hostname: ${IP}"
 
     EBX_SETTINGS_ADDR="${EBX_ADDRESS}/services/appliance/settings"
-    curl -k# -H "ElasticBox-Token: ${EBX_TOKEN}" ${EBX_SETTINGS_ADDR} > settings.json
+    curl -ksf -H "ElasticBox-Token: ${EBX_TOKEN}" ${EBX_SETTINGS_ADDR} > settings.json
 
     if [[ ! -f "settings.json" ]]
     then
