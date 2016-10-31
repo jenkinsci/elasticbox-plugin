@@ -15,7 +15,7 @@ function update_appliance_ip() {
     EBX_TOKEN=${2}
     IP=${EBX_ADDRESS/#https:\/\//}
 
-    [[ -z ${EBX_TOKEN} ]] && $(ebx_token test_admin@elasticbox.com elasticbox)
+    [[ -z ${EBX_TOKEN} ]] && EBX_TOKEN=$(ebx_token test_admin@elasticbox.com elasticbox)
 
     echo "Generating appliance settings with correct hostname: ${IP}"
 
