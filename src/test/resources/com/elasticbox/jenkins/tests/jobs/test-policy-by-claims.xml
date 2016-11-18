@@ -25,7 +25,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9.11-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-2796eb59-f723-4578-b800-7f022d932835</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>LATEST</boxVersion>
       <claims>linux, test</claims>

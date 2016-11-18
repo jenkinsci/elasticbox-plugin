@@ -24,7 +24,7 @@
     <builders>
         <com.elasticbox.jenkins.builders.UpdateBox plugin="elasticbox@0.9.7-SNAPSHOT">
             <cloud>elasticbox</cloud>
-            <workspace>tphongio</workspace>
+            <workspace>test_admin</workspace>
             <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
             <variables>
                 [{"name": "VAR_FILE", "value": "${WORKSPACE}/test-nested-box.json", "scope": "", "type": "File"},
