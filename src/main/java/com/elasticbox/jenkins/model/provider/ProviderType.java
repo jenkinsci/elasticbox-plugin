@@ -6,6 +6,7 @@ public enum ProviderType {
     OPENSTACK,
     SOFTLAYER,
     BYOI,
+    CENTURY_LINK,
     CLOUDSTACK,
     DIMENSION_DATA,
     GCE,
@@ -13,6 +14,4 @@ public enum ProviderType {
     VSPHERE,
     TEST,
     UNKNOWN;
-
-
 }
