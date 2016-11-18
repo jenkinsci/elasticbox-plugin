@@ -63,6 +63,7 @@ public class ElasticBoxSlave extends Slave {
 
     private static final int ID_PREFIX_LENGTH = 21;
     private static final String ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+    public static final int MAX_DELETE_ATTEMPTS = 10;
 
     private final String boxVersion;
     private String profileId;
@@ -72,7 +73,7 @@ public class ElasticBoxSlave extends Slave {
     private int retentionTime;
     private int builds;
     private final String cloudName;
-    private boolean deletable;
+    private short deleteAttempts;
     private boolean removableFromCloud = true;
 
     private final transient int launchTimeout;
@@ -190,11 +191,26 @@ public class ElasticBoxSlave extends Slave {
     }
 
     public void setDeletable(boolean deletable) {
-        this.deletable = deletable;
+        if (deletable) {
+            this.deleteAttempts++;
+            if (this.deleteAttempts > MAX_DELETE_ATTEMPTS) {
+                LOGGER.warning(MessageFormat.format(
+                        "MAX_DELETE_ATTEMPTS reached. Attempted to delete slave [{0}] {1} times. Giving up.",
+                        this.toString(), MAX_DELETE_ATTEMPTS));
+
+                this.setRemovableFromCloud(false);
+            }
+        } else {
+            this.deleteAttempts = 0;
+        }
     }
 
     public boolean isDeletable() {
-        return deletable;
+        return deleteAttempts > 0;
+    }
+
+    public boolean maxDeleteAttemptsReached() {
+        return deleteAttempts > MAX_DELETE_ATTEMPTS;
     }
 
     public ElasticBoxCloud getCloud() throws IOException {
