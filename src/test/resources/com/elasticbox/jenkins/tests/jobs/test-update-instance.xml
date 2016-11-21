@@ -25,7 +25,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-8e11b523-9abe-4902-84d3-1309da145f65</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
@@ -39,7 +39,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-cb8e688c-b006-40ff-ae22-d6eee7501149</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
@@ -53,7 +53,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-adf45857-30fe-4c91-af89-98cfeaff9317</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
@@ -67,7 +67,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-764c217f-e792-41f5-bd67-66d2a6994c4b</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>531123d9-5a73-42ff-ad70-87a6eb31442e</box>
       <boxVersion>531123d9-5a73-42ff-ad70-87a6eb31442e</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-deeply-nested-box.test-profile</profile>
@@ -80,7 +80,7 @@
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9-SNAPSHOT">
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <operations>
         <com.elasticbox.jenkins.builders.UpdateOperation>
           <tags>${TEST_TAG}</tags>

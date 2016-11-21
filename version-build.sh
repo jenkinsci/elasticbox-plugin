@@ -74,14 +74,6 @@ echo "Testing against ElasticBox at ${EBX_ADDRESS}"
 
 BUILD_OPTIONS="-B -DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
 
-echo "Updating EBX Appliance IP setting:"
-update_appliance_ip ${EBX_ADDRESS} ${EBX_TOKEN}
-
-if [[ -n ${EBX_TOKEN} ]]
-then
-    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
-fi
-
 if [[ -n ${EBX_WORKSPACE} ]]
 then
     BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.workspace=${EBX_WORKSPACE}"
@@ -91,6 +83,14 @@ if [[ -n ${GITHUB_PROPERTIES} ]]
 then
     BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.GitHubProperties=${GITHUB_PROPERTIES}"
 fi
+
+if [[ -n ${EBX_TOKEN} ]]
+then
+    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
+fi
+
+echo "Updating EBX Appliance IP setting:"
+update_appliance_ip ${EBX_ADDRESS} ${EBX_TOKEN}
 
 cd ${REPOSITORY_FOLDER}
 echo "Executing: mvn ${BUILD_OPTIONS} clean install"

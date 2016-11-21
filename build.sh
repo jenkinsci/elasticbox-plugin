@@ -95,7 +95,12 @@ function build_with_jenkins_version() {
         fi
     fi
 
-    BUILD_OPTIONS="-a ${EBX_ADDRESS} -j ${JENKINS_VERSION} -c ${FORK_COUNT}"
+    BUILD_OPTIONS="-a ${EBX_ADDRESS} -c ${FORK_COUNT}"
+
+    if [[ -n ${JENKINS_VERSION} ]]
+    then
+        BUILD_OPTIONS="${BUILD_OPTIONS} -j ${JENKINS_VERSION}"
+    fi
 
     if [[ -n ${EBX_TOKEN} ]]
     then

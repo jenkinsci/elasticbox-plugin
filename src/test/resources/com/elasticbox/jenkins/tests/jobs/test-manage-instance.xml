@@ -25,7 +25,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-1d3c1032-93cf-4471-9d38-430938d932fa</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
@@ -39,7 +39,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-9c797e10-3e5d-450f-9039-0d173a72c70e</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
@@ -53,7 +53,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-88567b85-7287-4ae6-803c-8630a73d382b</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
@@ -66,7 +66,7 @@
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9-SNAPSHOT">
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <operations>
         <com.elasticbox.jenkins.builders.UpdateOperation>
           <tags>${TEST_TAG}</tags>
@@ -93,7 +93,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.9-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-c7b6158f-10b5-496a-b374-ad26d2812671</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
@@ -106,7 +106,7 @@
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <operations>
         <com.elasticbox.jenkins.builders.UpdateOperation>
           <tags>${TEST_TAG}</tags>
