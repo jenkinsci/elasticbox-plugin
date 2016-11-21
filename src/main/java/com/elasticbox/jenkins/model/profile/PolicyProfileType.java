@@ -46,7 +46,7 @@ public enum PolicyProfileType implements ProfileType {
     AZURE_ARM("/azure-arm/arm/profile") {
         @Override
         public ProviderType provider() {
-            return ProviderType.AZURE;
+            return ProviderType.AZURE_ARM;
         }
     },
     BYOI("/byoi/compute/profile") {
