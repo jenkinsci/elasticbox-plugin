@@ -7,10 +7,10 @@ import java.util.logging.Logger;
 
 public enum PolicyProfileType implements ProfileType {
 
-    CENTURY_LINK("/centurylink/compute/profile") {
+    CENTURYLINK("/centurylink/compute/profile") {
         @Override
         public ProviderType provider() {
-            return ProviderType.CENTURY_LINK;
+            return ProviderType.CENTURYLINK;
         }
     },
     AMAZON_CLOUDFORMATION("/aws/cloudformation/profile") {

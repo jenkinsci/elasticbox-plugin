@@ -7,7 +7,7 @@ public enum ProviderType {
     OPENSTACK,
     SOFTLAYER,
     BYOI,
-    CENTURY_LINK,
+    CENTURYLINK,
     CLOUDSTACK,
     DIMENSION_DATA,
     GCE,
