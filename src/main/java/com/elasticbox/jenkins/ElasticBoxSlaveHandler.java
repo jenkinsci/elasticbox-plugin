@@ -478,8 +478,8 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             tags.addAll(Arrays.asList(userTagList) );
         }
 
-        IProgressMonitor monitor = ebClient.deploy(slave.getBoxVersion(), slave.getProfileId(), null, workspace, tags,
-                variables, null, null, slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
+        IProgressMonitor monitor = ebClient.deploy(slave.getBoxVersion(), slave.getProfileId(), slave.getDisplayName(),
+                workspace, tags, variables, null, null, slave.getPolicyVariables(), Constants.AUTOMATIC_UPDATES_OFF);
 
         slave.setInstanceUrl(monitor.getResourceUrl());
         slave.setInstanceStatusMessage(
