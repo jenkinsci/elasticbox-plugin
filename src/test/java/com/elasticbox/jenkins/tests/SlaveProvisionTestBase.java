@@ -116,6 +116,7 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
             Assert.assertTrue("Unexpected slave " + slave.getDisplayName(), configToSlaveMap.containsKey(slaveConfig));
             configToSlaveMap.put(slaveConfig, slave);
             validateSlave(slave, configToSlaveScopeMap.get(slaveConfig));
+            Assert.assertEquals("Slave and instance name doesn't match:", slave.getDisplayName(), slave.getInstance().getString("name") );
         }
 
         for (Map.Entry<AbstractSlaveConfiguration, ElasticBoxSlave> entry : configToSlaveMap.entrySet()) {

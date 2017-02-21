@@ -7,6 +7,12 @@ import java.util.logging.Logger;
 
 public enum PolicyProfileType implements ProfileType {
 
+    CENTURYLINK("/centurylink/compute/profile") {
+        @Override
+        public ProviderType provider() {
+            return ProviderType.CENTURYLINK;
+        }
+    },
     AMAZON_CLOUDFORMATION("/aws/cloudformation/profile") {
         @Override
         public ProviderType provider() {
@@ -35,6 +41,12 @@ public enum PolicyProfileType implements ProfileType {
         @Override
         public ProviderType provider() {
             return ProviderType.AZURE;
+        }
+    },
+    AZURE_ARM("/azure-arm/arm/profile") {
+        @Override
+        public ProviderType provider() {
+            return ProviderType.AZURE_ARM;
         }
     },
     BYOI("/byoi/compute/profile") {
