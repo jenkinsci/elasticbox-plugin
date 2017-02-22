@@ -16,18 +16,14 @@ import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.DescriptorHelper;
 import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.util.ClientCache;
+import com.elasticbox.jenkins.util.Condition;
 import com.elasticbox.jenkins.util.TaskLogger;
 import com.elasticbox.jenkins.util.VariableResolver;
-
-import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
-
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -38,6 +34,8 @@ import java.util.List;
 import java.util.Set;
 
 public class StopOperation extends LongOperation implements IOperation.InstanceOperation {
+
+    public static final int AVAILABILITY_TIMEOUT_SECONDS = 20;
 
     @DataBoundConstructor
     public StopOperation(String tags, boolean waitForCompletion, int waitForCompletionTimeout) {
@@ -57,10 +55,7 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
         Client client = cloud.getClient();
         Set<String> resolvedTags = resolver.resolveTags(getTags());
 
-        logger.info(
-            MessageFormat.format(
-                "Looking for instances with the following tags: {0}",
-                StringUtils.join(resolvedTags, ", ")));
+        logger.info("Looking for instances with the following tags: " + StringUtils.join(resolvedTags, ", "));
 
         JSONArray instances = DescriptorHelper.getInstances(resolvedTags, cloud.name, workspace, true);
         if (!canPerform(instances, logger)) {
@@ -73,7 +68,15 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
                 throw new InterruptedException();
             }
             JSONObject instanceJson = (JSONObject) instance;
-            IProgressMonitor monitor = client.shutdown(instanceJson.getString("id"));
+            String instanceId = instanceJson.getString("id");
+
+            if ( !waitForAvailable(client, instanceId, AVAILABILITY_TIMEOUT_SECONDS)) {
+                logger.info("WARNING: Instance {0} not available in {1} seconds to execute Stop operation",
+                        instanceId, AVAILABILITY_TIMEOUT_SECONDS);
+            }
+
+            IProgressMonitor monitor = client.shutdown(instanceId);
+
             monitors.add(monitor);
             String instancePageUrl = Client.getPageUrl(cloud.getEndpointUrl(), instanceJson);
             logger.info(MessageFormat.format("Stopping instance {0}", instancePageUrl));
@@ -111,4 +114,20 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
 
     }
 
+    protected boolean waitForAvailable(final Client client, final String instanceId, long timeoutSeconds) {
+        return new Condition() {
+
+            public boolean satisfied() {
+                JSONObject instanceJson = null;
+                try {
+                    instanceJson = client.getInstance(instanceId);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+                return Client.FINISH_STATES.contains(instanceJson.getString("state"));
+            }
+
+        }.waitUntilSatisfied(timeoutSeconds);
+    }
 }

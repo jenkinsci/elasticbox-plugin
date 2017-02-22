@@ -50,7 +50,7 @@ public class BuildStepTest extends BuildStepTestBase {
     public void testBuildWithSteps() throws Exception {
         FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-job.xml").getBytes()));
-        LOGGER.info(MessageFormat.format("Testing build steps with project: ", project));
+        LOGGER.info("Testing build steps with project: " + project);
 
         // copy files for file variables
         FilePath workspace = jenkins.getInstance().getWorkspaceFor(project);

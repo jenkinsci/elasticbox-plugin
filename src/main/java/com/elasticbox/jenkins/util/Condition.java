@@ -24,18 +24,22 @@ public abstract class Condition {
 
     public abstract boolean satisfied();
 
-    public synchronized void waitUntilSatisfied(long timeoutSeconds) {
+    public synchronized boolean waitUntilSatisfied(long timeoutSeconds) {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 
-        while (!satisfied() && stopWatch.getTime() < TimeUnit.SECONDS.toMillis(timeoutSeconds)) {
+        while (stopWatch.getTime() < TimeUnit.SECONDS.toMillis(timeoutSeconds)) {
+            if (satisfied() ) {
+                return true;
+            }
             try {
                 wait(1000);
             } catch (InterruptedException ex) {
                 logger.log(Level.SEVERE, "Thread Interrupted ", ex);
             }
         }
+        return false;
     }
 
 }
