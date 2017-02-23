@@ -212,9 +212,6 @@
         </com.elasticbox.jenkins.builders.ReinstallOperation>
       </operations>
     </com.elasticbox.jenkins.builders.ManageInstance>
-    <hudson.tasks.Shell>
-      <command>sleep 10</command>
-    </hudson.tasks.Shell>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
       <cloud>elasticbox</cloud>
       <workspace>test_admin</workspace>
