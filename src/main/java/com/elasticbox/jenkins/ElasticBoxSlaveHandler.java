@@ -65,14 +65,14 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
 
     private static final Queue<ElasticBoxSlave> terminatedSlaves = new ConcurrentLinkedQueue<ElasticBoxSlave>();
 
-    private static class InstanceCreationRequest {
+    static class InstanceCreationRequest {
         private ElasticBoxSlave slave;
         private final LaunchSlaveProgressMonitor monitor;
 
-        private static final short MAX_ATTEMPTS = 3;
+        public static final short MAX_ATTEMPTS = 3;
         private short attempts = 0;
 
-        public InstanceCreationRequest(ElasticBoxSlave slave) {
+        private InstanceCreationRequest(ElasticBoxSlave slave) {
             this.slave = slave;
             monitor = new LaunchSlaveProgressMonitor(slave);
             attempts++;
@@ -97,7 +97,7 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
         return newRequest.monitor;
     }
 
-    private final void resubmitRequest(InstanceCreationRequest request) {
+    protected void resubmitRequest(InstanceCreationRequest request) {
         request.attempts++;
         request.monitor.setLaunched();
         ElasticBoxSlave oldSlave = request.slave;
@@ -266,7 +266,7 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
                             cloud,
                             "".equals(configDescription) ? config.getId() : configDescription));
                 } else {
-                    if ( !slave.isSingleUse() ) {
+                    if ( slave.isSingleUse() ) {
                         slave.setRemovableFromCloud(false);
                     }
                     resubmitRequest(request);
@@ -522,7 +522,7 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
                 AbstractSlaveConfiguration slaveConfig = slave.getSlaveConfiguration();
-                if (slaveConfig != null && slave.isRemovableFromCloud() ) {
+                if (slaveConfig != null ) {
                     List<ElasticBoxSlave> slaves = slaveConfigToSlaveListMap.get(slaveConfig);
                     if (slaves == null) {
                         slaves = new ArrayList<>();
@@ -553,7 +553,10 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
                     }
                     while (slaveCount < minInstances ) {
                         ElasticBoxSlave slave = new ElasticBoxSlave(slaveConfig, cloud);
-                        LOGGER.info("New slave to be created - " + slave);
+                        LOGGER.info(MessageFormat.format(
+                                        "New slave [{0}] to be created for slave config [{1}] in cloud [{2}]",
+                                        slave, slaveConfig.getDescription(), cloud.getDescription() ));
+
                         Jenkins.getInstance().addNode(slave);
                         ElasticBoxSlaveHandler.submit(slave);
                         slaveCount++;

@@ -193,7 +193,7 @@ public class ElasticBoxSlave extends Slave {
     public void setDeletable(boolean deletable) {
         if (deletable) {
             this.deleteAttempts++;
-            if (this.deleteAttempts > MAX_DELETE_ATTEMPTS) {
+            if (maxDeleteAttemptsReached() ) {
                 LOGGER.warning(MessageFormat.format(
                         "MAX_DELETE_ATTEMPTS reached. Attempted to delete slave [{0}] {1} times. Giving up.",
                         this.toString(), MAX_DELETE_ATTEMPTS));
