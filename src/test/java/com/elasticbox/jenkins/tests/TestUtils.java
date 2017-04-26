@@ -56,7 +56,7 @@ public class TestUtils {
 
     static final Jinjava JINJA_RENDER = new Jinjava();
     static final String GITHUB_PUBLIC_ADDRESS = "github.com";
-    static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
+    public static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
     static final String DEFAULT_TEST_WORKSPACE = "test_admin";
     static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", DEFAULT_TEST_WORKSPACE);
 
@@ -67,7 +67,7 @@ public class TestUtils {
     static final String TEST_BINDING_INSTANCE_TAG = "test-instance-binding";
 
     static final String JENKINS_SLAVE_BOX_NAME = "Linux Jenkins Slave";
-    static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
+    public static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
     static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "localhost");
     static final String TEST_PROVIDER_TYPE = "Test Provider";
     static final String TEST_TAG = System.getProperty("elasticbox.jenkins.test.tag", "jenkins-plugin-test");
