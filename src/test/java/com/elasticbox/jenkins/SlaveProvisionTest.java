@@ -13,32 +13,18 @@
 package com.elasticbox.jenkins;
 
 import com.elasticbox.Client;
-import com.elasticbox.jenkins.ElasticBoxCloud;
-import com.elasticbox.jenkins.ElasticBoxExecutor;
-import com.elasticbox.jenkins.ElasticBoxSlave;
-import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
-import com.elasticbox.jenkins.SlaveConfiguration;
 import com.elasticbox.jenkins.tests.SlaveProvisionTestBase;
 import com.elasticbox.jenkins.tests.TestUtils;
 import com.elasticbox.jenkins.util.Condition;
 import hudson.ExtensionList;
-import hudson.model.Node;
 import net.sf.json.JSONArray;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class SlaveProvisionTest extends SlaveProvisionTestBase {
 
     private ElasticBoxSlaveHandler elasticBoxSlaveHandlerMock;
@@ -90,7 +76,6 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
         Assert.assertTrue("Expected last slave not to be removable from cloud", !slave3.isRemovableFromCloud() );
         Assert.assertTrue("Expected last slave not to be deletable", !slave3.isDeletable() );
 
-//        Mockito.doNothing().when(elasticBoxSlaveHandlerMock).resubmitRequest(Mockito.any(ElasticBoxSlaveHandler.InstanceCreationRequest.class));
         Mockito.verify(elasticBoxSlaveHandlerMock, Mockito.times(ElasticBoxSlaveHandler.InstanceCreationRequest.MAX_ATTEMPTS-1))
                 .resubmitRequest((ElasticBoxSlaveHandler.InstanceCreationRequest) Mockito.any());
 

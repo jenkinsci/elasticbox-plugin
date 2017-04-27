@@ -38,10 +38,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.jvnet.hudson.test.JenkinsRule;
 
-/**
- *
- * @author Phong Nguyen Le
- */
 public class TestBase {
     private static final Logger LOGGER = Logger.getLogger(TestBase.class.getName());
 
