@@ -60,7 +60,8 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE,
                 testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION,
                 testBoxData.getNewProfileId(), null, null, null, 1, 2, slaveBoxName, variables.toString(),
-                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
+                UUID.randomUUID().toString(), slaveBoxName + "_TestSlaveCfg", null, Node.Mode.NORMAL,
+                0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue() );
     }
 
     protected void provisionSlaves() throws Exception {

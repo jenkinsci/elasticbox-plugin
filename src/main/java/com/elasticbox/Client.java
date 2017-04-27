@@ -996,6 +996,9 @@ public class Client implements ApiClient {
     public static final String getPageUrl(String endpointUrl, String resourceUrl) {
         String resourceId = getResourceId(resourceUrl);
         if (resourceId != null) {
+            if (endpointUrl.endsWith("/")) {
+                endpointUrl = endpointUrl.substring(0, endpointUrl.length() - 1);
+            }
             if (resourceUrl.startsWith(MessageFormat.format("{0}/services/instances/", endpointUrl))) {
                 return MessageFormat.format("{0}/#/instances/{1}/i", endpointUrl, resourceId);
             } else if (resourceUrl.startsWith(MessageFormat.format("{0}/services/boxes/", endpointUrl))) {

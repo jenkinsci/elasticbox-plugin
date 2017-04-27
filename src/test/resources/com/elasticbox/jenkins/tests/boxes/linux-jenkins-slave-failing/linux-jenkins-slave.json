@@ -1,0 +1,27 @@
+{
+    "name": "linux-jenkins-slave-failing",
+    "requirements": [
+        "linux"
+    ],
+    "variables": [
+        {
+            "required": false,
+            "type": "Text",
+            "name": "JENKINS_URL",
+            "value": "",
+            "visibility": "public"
+        }, {
+            "required": false,
+            "type": "Text",
+            "name": "JNLP_SLAVE_OPTIONS",
+            "value": "",
+            "visibility": "public"
+        }
+    ],
+    "members": [],
+    "events": {
+        "install": "install.sh"
+    },
+    "id": "2fb2d436-6dca-4226-a95e-4ac58fc601f3",
+    "schema": "http://elasticbox.net/schemas/boxes/script"
+}

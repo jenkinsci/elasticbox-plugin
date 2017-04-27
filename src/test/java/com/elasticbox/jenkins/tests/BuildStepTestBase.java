@@ -14,6 +14,10 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import org.junit.After;
+import org.junit.Before;
 
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -21,23 +25,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadFactory;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.junit.After;
-import org.junit.Before;
-
-/**
- *
- * @author Phong Nguyen Le
- */
 public class BuildStepTestBase extends TestBase {
     private final List<TestBoxData> testBoxDataList = Arrays.asList(
         new TestBoxData("boxes/test-linux-box/test-linux-box.json", "com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile"),
         new TestBoxData("boxes/test-binding-box.json", "com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile"),
         new TestBoxData("boxes/test-nested-box.json", "com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile"),
-        new TestBoxData("boxes/test-deeply-nested-box.json", "com.elasticbox.jenkins.tests.boxes.test-deeply-nested-box.test-profile")
+        new TestBoxData("boxes/test-deeply-nested-box.json", "com.elasticbox.jenkins.tests.boxes.test-deeply-nested-box.test-profile"),
+        new TestBoxData("boxes/linux-jenkins-slave-failing/linux-jenkins-slave.json", "com.elasticbox.jenkins.tests.boxes.linux-jenkins-slave-failing.test-profile")
     );
     protected Map<String, TestBoxData> testBoxDataLookup;
     protected String newTestBindingBoxInstanceId = TestUtils.TEST_BINDING_BOX_INSTANCE_ID;

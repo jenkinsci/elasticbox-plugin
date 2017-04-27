@@ -118,6 +118,8 @@ public final class ElasticBoxComputer extends SlaveComputer {
                                 slave.getNodeName(),
                                 slave.getInstancePageUrl()));
 
+                slave.setRemovableFromCloud(true);
+
             } catch (IOException ex) {
                 LOGGER.warning(
                         MessageFormat.format(
