@@ -266,6 +266,7 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
                             cloud,
                             "".equals(configDescription) ? config.getId() : configDescription));
                 } else {
+                    // When it is not the last attempt, keep the instance if it is a singleUse slave (remove otherwise):
                     if ( slave.isSingleUse() ) {
                         slave.setRemovableFromCloud(false);
                     }
