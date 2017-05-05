@@ -261,25 +261,38 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             return DescriptorHelper.getBoxVersions(createClient(endpointUrl, token), workspace, box);
         }
 
-        public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl,
+        public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String name,
+                                               @RelativePath("..") @QueryParameter String endpointUrl,
                                                 @RelativePath("..") @QueryParameter String token,
                                                 @QueryParameter String workspace,
                                                 @QueryParameter String box) {
 
-            ListBoxModel profiles = getEmptyListBoxModel("--Please choose policy box--", "");
             if (anyOfThemIsBlank(endpointUrl, workspace, box, token)) {
                 return getEmptyListBoxModel();
             }
 
+            Client client = (name != null && name.length() > 0)
+                    ? ClientCache.getClient(name) : new Client(endpointUrl, token);
+
             final DeployBoxOrderResult<List<PolicyBox>> result
-                = new DeployBoxOrderServiceImpl(
-                                        ClientCache.getClient(endpointUrl,token)).deploymentPolicies(workspace, box);
+                = new DeployBoxOrderServiceImpl(client).deploymentPolicies(workspace, box);
 
             final List<PolicyBox> policyBoxList = result.getResult();
+
+            ListBoxModel profiles = null;
+            if (policyBoxList.size() == 0) {
+                profiles = getEmptyListBoxModel("--No compatible policy box found--", "");
+            } else if (policyBoxList.size() == 1) {
+                profiles = new ListBoxModel();
+            } else {
+                profiles = getEmptyListBoxModel("--Please choose policy box--", "");
+            }
+
             for (PolicyBox policyBox : policyBoxList) {
                 profiles.add(policyBox.getName(), policyBox.getId());
             }
 
+            profiles.get(0).selected = true;
             return  profiles;
         }
 
