@@ -89,9 +89,6 @@ then
     BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
 fi
 
-echo "Updating EBX Appliance IP setting:"
-update_appliance_ip ${EBX_ADDRESS} ${EBX_TOKEN}
-
 cd ${REPOSITORY_FOLDER}
 echo "Executing: mvn ${BUILD_OPTIONS} clean install"
 mvn ${BUILD_OPTIONS} clean install
@@ -113,4 +110,3 @@ if [[ -f "${REPOSITORY_FOLDER}/pom.xml.bak" ]]
 then
     mv -f ${REPOSITORY_FOLDER}/pom.xml.bak ${REPOSITORY_FOLDER}/pom.xml
 fi
-
