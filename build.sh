@@ -121,6 +121,9 @@ function build_with_jenkins_version() {
     bash $(dirname $0)/version-build.sh ${BUILD_OPTIONS}
 }
 
+echo "Updating EBX Appliance IP setting:"
+update_appliance_ip ${EBX_ADDRESS} ${EBX_TOKEN}
+
 if [[ -n ${PACKAGE} ]]
 then
     upgrade_appliance ${PACKAGE} ${EBX_ADDRESS} ${EBX_TOKEN}

@@ -72,7 +72,7 @@ echo "Building with Jenkins version ${JENKINS_VERSION}"
 echo "------------------------------------------------"
 echo "Testing against ElasticBox at ${EBX_ADDRESS}"
 
-BUILD_OPTIONS="-B -DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+BUILD_OPTIONS="-B -DskipTests=false -Dmaven.javadoc.skip=true -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
 
 if [[ -n ${EBX_WORKSPACE} ]]
 then
@@ -88,9 +88,6 @@ if [[ -n ${EBX_TOKEN} ]]
 then
     BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
 fi
-
-echo "Updating EBX Appliance IP setting:"
-update_appliance_ip ${EBX_ADDRESS} ${EBX_TOKEN}
 
 cd ${REPOSITORY_FOLDER}
 echo "Executing: mvn ${BUILD_OPTIONS} clean install"
@@ -113,4 +110,3 @@ if [[ -f "${REPOSITORY_FOLDER}/pom.xml.bak" ]]
 then
     mv -f ${REPOSITORY_FOLDER}/pom.xml.bak ${REPOSITORY_FOLDER}/pom.xml
 fi
-
