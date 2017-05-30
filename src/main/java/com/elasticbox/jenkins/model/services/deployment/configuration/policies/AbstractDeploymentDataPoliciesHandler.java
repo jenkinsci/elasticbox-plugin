@@ -19,8 +19,7 @@ import java.util.Set;
 public abstract class AbstractDeploymentDataPoliciesHandler implements DeploymentDataPoliciesHandler {
 
     private static DeploymentDataPoliciesHandler[] deploymentTypeHandlers = new DeploymentDataPoliciesHandler[] {
-        new CloudFormationManagedDeploymentDataPolicies(),
-        new CloudFormationTemplateDeploymentDataPolicies(),
+        new CloudFormationDeploymentDataPolicies(),
         new ApplicationBoxDeploymentDataPolicies(),
         new PolicyDeploymentDataPolicies()
     };

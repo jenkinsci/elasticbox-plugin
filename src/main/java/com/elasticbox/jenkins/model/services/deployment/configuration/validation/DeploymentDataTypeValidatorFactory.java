@@ -14,19 +14,13 @@
 
 package com.elasticbox.jenkins.model.services.deployment.configuration.validation;
 
-import com.elasticbox.jenkins.builders.DeployBox;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
-import org.apache.commons.lang.StringUtils;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public abstract class DeploymentDataTypeValidatorFactory {
 
-    private static DeploymentDataTypeValidator[] deploymentDataTypesValidators = new DeploymentDataTypeValidator[]{
-        new CloudFormationManagedAbstractDeploymentDataValidator(),
-        new CloudFormationTemplateAbstractDeploymentDataValidator(),
+    private static DeploymentDataTypeValidator[] deploymentDataTypesValidators = new DeploymentDataTypeValidator[] {
+        new CloudFormationAbstractDeploymentDataValidator(),
         new ApplicationBoxAbstractDeploymentDataValidator(),
         new PolicyBasedAbstractDeploymentDataValidator()
     };

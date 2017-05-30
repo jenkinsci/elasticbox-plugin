@@ -651,11 +651,6 @@ public class DescriptorHelper {
                 formData.remove("location");
                 break;
 
-            case CLOUDFORMATIONMANAGED_DEPLOYMENT_TYPE:
-                formData.remove("profile");
-                formData.remove("claims");
-                break;
-
             default:
                 String policySelection = null;
                 for (Object entry : formData.entrySet()) {
@@ -676,8 +671,6 @@ public class DescriptorHelper {
 
                 break;
         }
-
-
     }
 
     public static ListBoxModel getEmptyListBoxModel() {
