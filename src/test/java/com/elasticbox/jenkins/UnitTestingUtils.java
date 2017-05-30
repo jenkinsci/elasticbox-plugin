@@ -5,10 +5,7 @@ import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.inst
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
-import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -593,7 +590,7 @@ public class UnitTestingUtils {
             "\"schema\": \"http://elasticbox.net/schemas/boxes/policy\"\n" +
             "}";
 
-    private static String templateCloudFormationBox = "{\n" +
+    private static String cloudFormationBox = "{\n" +
             "\"updated\": \"2015-11-26 10:11:54.669276\",\n" +
             "\"automatic_updates\": \"off\",\n" +
             "\"requirements\": [],\n" +
@@ -663,95 +660,6 @@ public class UnitTestingUtils {
             "\"schema\": \"http://elasticbox.net/schemas/boxes/cloudformation\"\n" +
             "}";
 
-    private static String managedCloudFormationBox = "{\n" +
-            "\"profile\": {\n" +
-            "\"range\": {\n" +
-            "\"type\": \"none\",\n" +
-            "\"name\": \"\"\n" +
-            "},\n" +
-            "\"capacity\": {\n" +
-            "\"read\": 5,\n" +
-            "\"write\": 5\n" +
-            "},\n" +
-            "\"location\": \"ap-northeast-1\",\n" +
-            "\"key\": {\n" +
-            "\"type\": \"str\",\n" +
-            "\"name\": \"Key Name\"\n" +
-            "},\n" +
-            "\"schema\": \"http://elasticbox.net/schemas/aws/ddb/profile\"\n" +
-            "},\n" +
-            "\"schema\": \"http://elasticbox.net/schemas/boxes/cloudformation\",\n" +
-            "\"provider_id\": \"77bb43a7-7122-44ba-aa6f-6f0886eccabd\",\n" +
-            "\"automatic_updates\": \"off\",\n" +
-            "\"requirements\": [],\n" +
-            "\"name\": \"CF Managed\",\n" +
-            "\"created\": \"2015-11-25 16:39:14.925122\",\n" +
-            "\"deleted\": null,\n" +
-            "\"variables\": [\n" +
-            "{\n" +
-            "\"visibility\": \"public\",\n" +
-            "\"type\": \"Options\",\n" +
-            "\"name\": \"key_type\",\n" +
-            "\"value\": \"str\",\n" +
-            "\"options\": \"int,long,float,str,unicode,Binary\"\n" +
-            "},\n" +
-            "{\n" +
-            "\"type\": \"Text\",\n" +
-            "\"visibility\": \"public\",\n" +
-            "\"value\": \"str\",\n" +
-            "\"name\": \"key_name\"\n" +
-            "},\n" +
-            "{\n" +
-            "\"type\": \"Port\",\n" +
-            "\"visibility\": \"public\",\n" +
-            "\"value\": \"80\",\n" +
-            "\"name\": \"port\"\n" +
-            "},\n" +
-            "{\n" +
-            "\"type\": \"Text\",\n" +
-            "\"visibility\": \"public\",\n" +
-            "\"value\": \"\",\n" +
-            "\"name\": \"range_name\"\n" +
-            "},\n" +
-            "{\n" +
-            "\"visibility\": \"public\",\n" +
-            "\"type\": \"Options\",\n" +
-            "\"name\": \"range_type\",\n" +
-            "\"value\": \"none\",\n" +
-            "\"options\": \"none,int,long,float,str,unicode,Binary\"\n" +
-            "},\n" +
-            "{\n" +
-            "\"type\": \"Number\",\n" +
-            "\"visibility\": \"public\",\n" +
-            "\"value\": \"5\",\n" +
-            "\"name\": \"read_capacity_units\"\n" +
-            "},\n" +
-            "{\n" +
-            "\"type\": \"Number\",\n" +
-            "\"visibility\": \"public\",\n" +
-            "\"value\": \"5\",\n" +
-            "\"name\": \"write_capacity_units\"\n" +
-            "}\n" +
-            "],\n" +
-            "\"updated\": \"2015-11-25 16:40:25.599207\",\n" +
-            "\"visibility\": \"workspace\",\n" +
-            "\"uri\": \"/services/boxes/02fab23c-5278-41ec-8d9e-0f7936582937\",\n" +
-            "\"members\": [{\n" +
-            "\"role\": \"collaborator\",\n" +
-            "\"workspace\": \"jenkins1\"\n" +
-            "},\n" +
-            "{\n" +
-            "\"role\": \"collaborator\",\n" +
-            "\"workspace\": \"engineering\"\n" +
-            "}],\n" +
-            "\"owner\": \"operations\",\n" +
-            "\"organization\": \"elasticbox\",\n" +
-            "\"type\": \"Dynamo DB Domain\",\n" +
-            "\"id\": \"02fab23c-5278-41ec-8d9e-0f7936582937\",\n" +
-            "\"description\": \"No tiene policy\"\n" +
-            "}";
-
-
     public static JSONArray getFakeProcessingInstancesArray(){
         final JSONObject instance1 = (JSONObject) JSONSerializer.toJSON(processingInstance1);
         final JSONObject instance2 = (JSONObject) JSONSerializer.toJSON(processingInstance2);
@@ -813,10 +721,6 @@ public class UnitTestingUtils {
         return (JSONArray)  JSONArray.fromObject(twoBindingVariables);
     }
 
-    public static JSONArray getOneVariableForEachType(){
-        return (JSONArray)  JSONArray.fromObject(oneVariableForEachType);
-    }
-
     public static JSONObject getFakeProcessingInstance(){
         return (JSONObject)  JSONObject.fromObject(processingInstance1);
     }
@@ -842,22 +746,7 @@ public class UnitTestingUtils {
     }
 
     public static JSONObject getFakeCloudFormationTemplateBox(){
-        return (JSONObject) JSONSerializer.toJSON(templateCloudFormationBox);
-    }
-
-    public static JSONObject getFakeCloudFormationManagedBox(){
-        return (JSONObject) JSONSerializer.toJSON(managedCloudFormationBox);
-    }
-
-    public static JSONObject [] getFakeArrayContainingOneFakeBoxForEachType(){
-        return new JSONObject[]{
-                getFakeScriptBox(),
-                getFakePolicyBox(),
-                getFakeCloudFormationTemplateBox(),
-                getFakeCloudFormationManagedBox(),
-                getFakeEmptyApplicationBox()
-        };
-
+        return (JSONObject) JSONSerializer.toJSON(cloudFormationBox);
     }
 
     public static JSONArray getFakeJSONArrayContainingOneFakeBoxForEachType(){
@@ -865,22 +754,8 @@ public class UnitTestingUtils {
             array.add(getFakeScriptBox());
             array.add(getFakePolicyBox());
             array.add(getFakeCloudFormationTemplateBox());
-            array.add(getFakeCloudFormationManagedBox());
             array.add(getFakeEmptyApplicationBox());
             array.add(getFakeCloudFormationTemplatePolicyBox());
             return array;
     }
-
-    public static JSONArray getJSONArrayFromFile(String file) throws IOException {
-        InputStream is = UnitTestingUtils.class.getResourceAsStream(file);
-        String jsonTxt = IOUtils.toString(is);
-        return (JSONArray) JSONSerializer.toJSON(jsonTxt);
-    }
-
-    public static JSONObject getFakeScriptBoxDeployRequest(){
-            return (JSONObject) JSONSerializer.toJSON(deployScriptBoxRequest);
-    }
-
-
-
 }

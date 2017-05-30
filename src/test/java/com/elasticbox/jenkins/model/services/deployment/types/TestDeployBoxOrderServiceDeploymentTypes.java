@@ -46,9 +46,9 @@ public class TestDeployBoxOrderServiceDeploymentTypes {
     }
 
     @Test
-    public void testCloudFormationManagedDeploymentType() throws IOException, RepositoryException, ServiceException {
+    public void testCloudFormationDeploymentType() throws IOException, RepositoryException, ServiceException {
 
-        testDeploymentType(UnitTestingUtils.getFakeCloudFormationManagedBox(), DeploymentType.CLOUDFORMATIONMANAGED_DEPLOYMENT_TYPE);
+        testDeploymentType(UnitTestingUtils.getFakeCloudFormationTemplateBox(), DeploymentType.CLOUDFORMATION_DEPLOYMENT_TYPE);
 
     }
 
@@ -63,7 +63,7 @@ public class TestDeployBoxOrderServiceDeploymentTypes {
 
         final DeploymentType deploymentType = deployBoxOrderService.deploymentType(fakeBox.getString("id"));
 
-        assertTrue("Deployment type should be "+targetDeploymentType, deploymentType == targetDeploymentType);
+        assertTrue("Deployment type should be " +  targetDeploymentType, deploymentType == targetDeploymentType);
 
     }
 
