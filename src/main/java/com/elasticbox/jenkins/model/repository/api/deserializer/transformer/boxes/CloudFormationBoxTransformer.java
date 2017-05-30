@@ -15,24 +15,22 @@
 package com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes;
 
 import com.elasticbox.jenkins.model.box.BoxType;
-import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBoxType;
-import com.elasticbox.jenkins.model.box.cloudformation.TemplateCloudFormationBox;
+import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
 import com.elasticbox.jenkins.model.repository.api.deserializer.Utils;
 import net.sf.json.JSONObject;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TemplateCloudFormationBoxTransformer extends AbstractBoxTransformer<TemplateCloudFormationBox> {
+public class CloudFormationBoxTransformer extends AbstractBoxTransformer<CloudFormationBox> {
 
-    private static final Logger logger = Logger.getLogger(TemplateCloudFormationBoxTransformer.class.getName());
+    private static final Logger logger = Logger.getLogger(CloudFormationBoxTransformer.class.getName());
 
     @Override
-    public TemplateCloudFormationBox apply(JSONObject jsonObject) throws ElasticBoxModelException {
+    public CloudFormationBox apply(JSONObject jsonObject) throws ElasticBoxModelException {
 
-        TemplateCloudFormationBox templateCloudFormationBox
-            = new TemplateCloudFormationBox.TemplateCloudFormationBoxBuilder()
+        CloudFormationBox cloudFormationBox
+            = new CloudFormationBox.CloudFormationBoxBuilder()
 
                 .withOwner(jsonObject.getString("owner"))
                 .withId(jsonObject.getString("id"))
@@ -40,7 +38,7 @@ public class TemplateCloudFormationBoxTransformer extends AbstractBoxTransformer
                 .withRequirements(Utils.toStringArray(jsonObject.getJSONArray("requirements")))
                 .build();
 
-        return templateCloudFormationBox;
+        return cloudFormationBox;
     }
 
     @Override
@@ -48,14 +46,11 @@ public class TemplateCloudFormationBoxTransformer extends AbstractBoxTransformer
 
         if (super.canCreate(jsonObject, BoxType.CLOUDFORMATION)) {
             final String type = jsonObject.getString("type");
-            try {
-                final CloudFormationBoxType cloudFormationBoxType = CloudFormationBoxType.getType(type);
-                return cloudFormationBoxType == CloudFormationBoxType.TEMPLATE;
-            } catch (ElasticBoxModelException e) {
-                logger.log(Level.SEVERE, "There is no CloudFormation type for type: " + type);
-                e.printStackTrace();
+            if (CloudFormationBox.CLOUD_FORMATION_TYPE.equals(type) ) {
+                return true;
+            } else {
+                logger.severe("There is no CloudFormation type for type: " + type);
             }
-
         }
 
         return false;
