@@ -51,6 +51,6 @@ public class BoxFactory extends AbstractBoxTransformer<AbstractBox> {
             }
         }
 
-        throw new ElasticBoxModelException("There is no factory for building: " + schema);
+        return null; // There is no factory for building this box schema, ignoring
     }
 }

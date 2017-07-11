@@ -49,7 +49,7 @@ public class CloudFormationBoxTransformer extends AbstractBoxTransformer<CloudFo
             if (CloudFormationBox.CLOUD_FORMATION_TYPE.equals(type) ) {
                 return true;
             } else {
-                logger.severe("There is no CloudFormation type for type: " + type);
+                logger.config("There is no CloudFormation type for type: " + type);
             }
         }
 

@@ -61,7 +61,9 @@ public class Utils {
         List<R> results = new ArrayList<R>();
         for (T it : src) {
             R result = transformer.apply(it);
-            results.add(result);
+            if (result != null) {
+                results.add(result);
+            }
         }
         return results;
     }
