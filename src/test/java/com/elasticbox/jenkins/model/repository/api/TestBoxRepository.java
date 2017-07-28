@@ -24,7 +24,6 @@ public class TestBoxRepository {
         final ApiClient api = mock(ApiClient.class);
 
         String workspace = null;
-        JSONArray array = null;
         when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getFakeJSONArrayContainingOneFakeBoxForEachType());
 
         final List<AbstractBox> noPolicyAndNoApplicationBoxes = new BoxRepositoryApiImpl(api).getNoPolicyAndNoApplicationBoxes(workspace);
@@ -41,7 +40,6 @@ public class TestBoxRepository {
         final ApiClient api = mock(ApiClient.class);
 
         String workspace = null;
-        JSONArray array = null;
         when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getFakeJSONArrayContainingOneFakeBoxForEachType());
 
         final List<AbstractBox> noPolicyAndNoApplicationBoxes = new BoxRepositoryApiImpl(api).getNoPolicyBoxes(workspace);
@@ -57,7 +55,6 @@ public class TestBoxRepository {
         final ApiClient api = mock(ApiClient.class);
 
         String workspace = null;
-        JSONArray array = null;
         when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getFakeJSONArrayContainingOneFakeBoxForEachType());
 
         final List<PolicyBox> noCloudFormationPolicyBoxes = new BoxRepositoryApiImpl(api).getNoCloudFormationPolicyBoxes(workspace);
@@ -73,7 +70,6 @@ public class TestBoxRepository {
         final ApiClient api = mock(ApiClient.class);
 
         String workspace = null;
-        JSONArray array = null;
         when(api.getAllBoxes(workspace)).thenReturn(UnitTestingUtils.getFakeJSONArrayContainingOneFakeBoxForEachType());
 
         final List<PolicyBox> noCloudFormationPolicyBoxes = new BoxRepositoryApiImpl(api).getCloudFormationPolicyBoxes(workspace);

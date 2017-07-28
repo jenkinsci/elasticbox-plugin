@@ -15,51 +15,44 @@
 package com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes;
 
 import com.elasticbox.jenkins.model.box.BoxType;
-import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBoxType;
-import com.elasticbox.jenkins.model.box.cloudformation.ManagedCloudFormationBox;
+import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
-
+import com.elasticbox.jenkins.model.repository.api.deserializer.Utils;
 import net.sf.json.JSONObject;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ManagedCloudFormationBoxTransformer extends AbstractBoxTransformer<ManagedCloudFormationBox> {
+public class CloudFormationBoxTransformer extends AbstractBoxTransformer<CloudFormationBox> {
 
-    private static final Logger logger = Logger.getLogger(ManagedCloudFormationBoxTransformer.class.getName());
+    private static final Logger logger = Logger.getLogger(CloudFormationBoxTransformer.class.getName());
 
     @Override
-    public ManagedCloudFormationBox apply(JSONObject jsonObject) throws ElasticBoxModelException {
+    public CloudFormationBox apply(JSONObject jsonObject) throws ElasticBoxModelException {
 
-        ManagedCloudFormationBox managedCloudFormationBox =
-            new ManagedCloudFormationBox.ManagedCloudFormationPolicyBoxBuilder()
+        CloudFormationBox cloudFormationBox
+            = new CloudFormationBox.CloudFormationBoxBuilder()
 
                 .withOwner(jsonObject.getString("owner"))
-                .withProfileType(jsonObject.getJSONObject("profile").getString("schema"))
                 .withId(jsonObject.getString("id"))
-                .withMembers(getMembers(jsonObject.getJSONArray("members")))
                 .withName(jsonObject.getString("name"))
+                .withRequirements(Utils.toStringArray(jsonObject.getJSONArray("requirements")))
                 .build();
 
-        return managedCloudFormationBox;
+        return cloudFormationBox;
     }
 
     @Override
     public boolean shouldApply(JSONObject jsonObject) {
 
         if (super.canCreate(jsonObject, BoxType.CLOUDFORMATION)) {
-
             final String type = jsonObject.getString("type");
-
-            try {
-                final CloudFormationBoxType cloudFormationBoxType = CloudFormationBoxType.getType(type);
-                return cloudFormationBoxType == CloudFormationBoxType.MANAGED;
-            } catch (ElasticBoxModelException e) {
-                logger.log(Level.SEVERE, "There is no CloudFormation type for type: " + type);
-                e.printStackTrace();
+            if (CloudFormationBox.CLOUD_FORMATION_TYPE.equals(type) ) {
+                return true;
+            } else {
+                logger.config("There is no CloudFormation type for type: " + type);
             }
-
         }
+
         return false;
     }
 }

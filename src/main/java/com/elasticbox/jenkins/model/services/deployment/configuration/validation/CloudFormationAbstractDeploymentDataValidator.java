@@ -25,12 +25,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class CloudFormationTemplateAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
+public class CloudFormationAbstractDeploymentDataValidator implements DeploymentDataTypeValidator {
 
 
     @Override
     public DeploymentType getManagedType() {
-        return DeploymentType.CLOUDFORMATIONTEMPLATE_DEPLOYMENT_TYPE;
+        return DeploymentType.CLOUDFORMATION_DEPLOYMENT_TYPE;
     }
 
     @Override
@@ -97,7 +97,7 @@ public class CloudFormationTemplateAbstractDeploymentDataValidator implements De
 
     private class CloudformationTemplateDeploymentData implements DeploymentValidationResult.DeploymentData {
 
-        private DeploymentType deploymentType = DeploymentType.CLOUDFORMATIONTEMPLATE_DEPLOYMENT_TYPE;
+        private DeploymentType deploymentType = DeploymentType.CLOUDFORMATION_DEPLOYMENT_TYPE;
         private String policy;
         private Set<String> claims;
 

@@ -36,13 +36,6 @@ public interface Constants {
 
     Map<String, String> SERVICES_BOXES_TO_BE_EXCLUDED = new HashMap<String, String>() {
         {
-            put("MySQL Database Service", "");
-            put("Microsoft SQL Database Service", "");
-            put("Oracle Database Service", "");
-            put("PostgreSQL Database Service", "");
-            put("S3 Bucket", "");
-            put("Dynamo DB Domain","");
-            put("Memcached Service","");
             put("CloudFormation Service","");
             put("Container Service","");
             put("Docker Container", "");

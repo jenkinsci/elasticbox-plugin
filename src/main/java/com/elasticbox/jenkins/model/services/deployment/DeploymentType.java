@@ -1,16 +1,13 @@
 package com.elasticbox.jenkins.model.services.deployment;
 
 import com.elasticbox.jenkins.model.box.AbstractBox;
-import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBox;
-import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBoxType;
 import com.elasticbox.jenkins.model.services.error.ServiceException;
 
 public enum DeploymentType {
 
     CONTAINER_DEPLOYMENT_TYPE("Container"),
     APPLICATIONBOX_DEPLOYMENT_TYPE("ApplicationBox"),
-    CLOUDFORMATIONTEMPLATE_DEPLOYMENT_TYPE("CloudformationTemplate"),
-    CLOUDFORMATIONMANAGED_DEPLOYMENT_TYPE("CloudformationManaged"),
+    CLOUDFORMATION_DEPLOYMENT_TYPE("Cloudformation"),
     SCRIPTBOX_DEPLOYMENT_TYPE("ScriptBox");
 
     private String value;
@@ -31,11 +28,7 @@ public enum DeploymentType {
                 return APPLICATIONBOX_DEPLOYMENT_TYPE;
 
             case CLOUDFORMATION:
-                final CloudFormationBoxType cloudFormationType = ((CloudFormationBox) box).getCloudFormationType();
-                if (cloudFormationType == CloudFormationBoxType.MANAGED) {
-                    return CLOUDFORMATIONMANAGED_DEPLOYMENT_TYPE;
-                }
-                return CLOUDFORMATIONTEMPLATE_DEPLOYMENT_TYPE;
+                return CLOUDFORMATION_DEPLOYMENT_TYPE;
 
             case DOCKER:
                 return CONTAINER_DEPLOYMENT_TYPE;
@@ -46,8 +39,6 @@ public enum DeploymentType {
             default:
                 throw new ServiceException("There is no DeploymentType for box: " + box.getType());
         }
-
-
     }
 
     public static DeploymentType findBy(String value) throws ServiceException {
@@ -59,6 +50,5 @@ public enum DeploymentType {
         }
         throw new ServiceException("There is no DeploymentType with id: " + value);
     }
-
 }
 
