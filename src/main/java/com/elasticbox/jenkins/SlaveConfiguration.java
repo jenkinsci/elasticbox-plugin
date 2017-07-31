@@ -303,7 +303,9 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 }
             }
 
-            profiles.get(0).selected = true;
+            if (profiles.size() == 1 && !"".equals(profiles.get(0).name)) {
+                profiles.get(0).selected = true;
+            }
             return  profiles;
         }
 
