@@ -14,6 +14,9 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.jenkins.util.Condition;
 import hudson.model.AbstractBuild;
+import hudson.model.FreeStyleBuild;
+import hudson.model.FreeStyleProject;
+import hudson.model.Queue;
 import hudson.model.Result;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -21,25 +24,30 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.kohsuke.github.GHHook;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Phong Nguyen Le
  */
 public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
+    private static final Logger LOGGER = Logger.getLogger(PullRequestLifecycleManagementTest.class.getName() );
+
 
     @Test
     public void testPullRequestLifecycleManagement() throws Exception {
 
         setLoggerLevel("com.elasticbox.jenkins", Level.FINER);
 
-        // check GitHub webhook
+        LOGGER.fine("Check GitHub webhook");
         Thread.sleep(5000);
         List<GHHook> hooks = gitHubRepo.getHooks();
         GHHook webhook = null;
@@ -53,7 +61,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
 
         pullRequest.open();
 
-        // check that the job is triggered
+        LOGGER.fine("Check that the job is triggered");
         new Condition() {
 
             public boolean satisfied() {
@@ -70,13 +78,14 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         final List<JSONObject> instances = new ArrayList<JSONObject>();
         instances.addAll(checkBuild(null));
 
-        // Testing the sync payload:
+        LOGGER.fine("Testing the sync payload...");
         testSyncPayload("b33073260dbbf2457f24965c057abcf186add98d");
 
-        // Testing the sync payload - second run:
+        LOGGER.fine("Testing the sync payload - second run");
         testSyncPayload("553d231289338741f581dd99049f36ef5e1c5533");
 
         int count = 0;
+        LOGGER.fine("Testing trigger Phrase...");
         final String triggerPhrase = "Jenkins test this please ";
         pullRequest.comment(triggerPhrase + (count++) );
         Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''", triggerPhrase), waitForNextBuild(30));
@@ -91,11 +100,11 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10));
         Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());
 
+        LOGGER.fine("Checking that the job is not triggered because the pull request is closed");
         pullRequest.comment(triggerPhrase + (count++), "closed");
-        // check that the job is not triggered because the pull request is closed
         Assert.assertNull("Build is triggered even for closed pull request", waitForNextBuild(30));
 
-        // enable whitelist and check that that whitelist is enforced
+        LOGGER.fine("Enable whitelist and check that that whitelist is enforced");
         updateWhitelist(testTag);
         pullRequest.open();
         Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(30));
@@ -122,7 +131,15 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10));
         Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());
 
-        abortBuildOfClosePullRequest();
+        LOGGER.fine("Checking that the running job is aborted");
+        abortBuildOfClosePullRequest(true);
+
+        LOGGER.fine("Checking that the queued job is aborted");
+        jenkins.getInstance().setNumExecutors(1);
+        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-sleep-job",
+                new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-sleep-job.xml").getBytes() ));
+        TestUtils.runJob(project, new HashMap<String, String>(), jenkins.getInstance());
+        abortBuildOfClosePullRequest(false);
     }
 
     private void testSyncPayload(String sha) throws IOException {
@@ -138,20 +155,42 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", parameter), build.isBuilding() );
     }
 
-    private void abortBuildOfClosePullRequest() throws Exception {
-        pullRequest.open();
-        // check that the job is triggered
-        final AbstractBuild build = waitForNextBuild(60);
-        Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), build);
-        Assert.assertTrue(build.isBuilding());
-        pullRequest.close();
-        new Condition() {
+    private void abortBuildOfClosePullRequest(boolean waitUntilStarted) throws Exception {
 
-            @Override
-            public boolean satisfied() {
-                return !build.isBuilding();
-            }
-        }.waitUntilSatisfied(60);
+        pullRequest.open();
+
+        AbstractBuild build;
+        List<Queue.Item> queue = jenkins.getInstance().getQueue().getUnblockedItems();
+        if (waitUntilStarted) {
+            build = waitForNextBuild(60);
+            Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), build);
+            Assert.assertTrue(build.isBuilding());
+        } else {
+            LOGGER.fine("Items in queue: " + queue);
+            Assert.assertTrue(queue.size() > 0);
+            Queue.Item item = queue.get(0);
+            Assert.assertTrue(item.task instanceof FreeStyleProject); ;
+            build = ((FreeStyleProject) item.task).getLastBuild();
+            Assert.assertEquals("Item in queue not expected", item.task.getName(), project.getName() );
+        }
+
+        pullRequest.close();
+
+        if (waitUntilStarted) {
+            final AbstractBuild finalBuild = build;
+            new Condition() {
+
+                @Override
+                public boolean satisfied() {
+                    return !finalBuild.isBuilding();
+                }
+            }.waitUntilSatisfied(60);
+        } else {
+            Thread.sleep(2000); // Wait a couple of seconds to let the close event to be processed.
+        }
+
+        queue = jenkins.getInstance().getQueue().getUnblockedItems();
+        Assert.assertTrue("Expected queue to be 0. Current items: " + queue, queue.size() == 0);
 
         for (Object instance : cloud.getClient().getInstances(TestUtils.TEST_WORKSPACE)) {
             JSONObject instanceJson = (JSONObject) instance;
