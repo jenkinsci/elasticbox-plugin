@@ -72,6 +72,9 @@ public class WorkspacesRepositoryApiImpl implements WorkspaceRepository {
         } catch (IOException e) {
             logger.log(Level.SEVERE, "There is no workspaces");
             throw new RepositoryException("There is no workspaces");
+        } catch (NullPointerException npe) {
+            logger.log(Level.SEVERE, "There is no client");
+            throw new RepositoryException("There is no client");
         }
 
     }

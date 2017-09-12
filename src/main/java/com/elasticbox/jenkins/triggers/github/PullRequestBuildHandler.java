@@ -19,11 +19,13 @@ import com.elasticbox.jenkins.triggers.IBuildHandler;
 import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Actionable;
 import hudson.model.Executor;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
+import hudson.model.Queue;
 import hudson.model.Run;
 import hudson.model.StringParameterValue;
 import hudson.plugins.git.BranchSpec;
@@ -430,11 +432,19 @@ public class PullRequestBuildHandler implements IBuildHandler {
         return false;
     }
 
-    private boolean isPullRequestBuild(AbstractBuild build, String pullRequestUrl) {
-        ParametersAction parameters = build.getAction(ParametersAction.class);
-        return parameters != null
-            && parameters.getParameters().contains(new StringParameterValue("PR_URL", pullRequestUrl));
+    private boolean isPullRequestBuild(Actionable actionable, String pullRequestUrl) {
+        ParametersAction parameters = actionable.getAction(ParametersAction.class);
 
+        if (parameters == null) {
+            return false;
+        }
+
+        final ParameterValue pr_url = parameters.getParameter("PR_URL");
+        if (pr_url == null) {
+            return false;
+        }
+
+        return pullRequestUrl.equals(pr_url.getValue() );
     }
 
     void cancelBuilds(PullRequestData pullRequestData) {
@@ -443,6 +453,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         for (Object b : project.getBuilds()) {
             if (b instanceof AbstractBuild) {
                 AbstractBuild build = (AbstractBuild) b;
+
                 if (build.isBuilding() && isPullRequestBuild(build, pullRequestUrl)) {
                     pullRequestBuilds.add(build);
                 }
@@ -463,6 +474,14 @@ public class PullRequestBuildHandler implements IBuildHandler {
             }
         } else {
             LOGGER.fine("There is no previous running builds to cancel for Pull Request: " + pullRequestUrl);
+        }
+        LOGGER.info("Checking if there is any build on queue for Pull Request: " + pullRequestUrl);
+        for (Queue.Item item: Jenkins.getInstance().getQueue().getUnblockedItems() ) {
+            if (isPullRequestBuild(item, pullRequestUrl) ) {
+                LOGGER.info(MessageFormat.format("Cancelling item id {0} found in queue matching Pull Request: {1}",
+                        item.getId(), pullRequestUrl));
+                Jenkins.getInstance().getQueue().cancel(item);
+            }
         }
     }
 
@@ -502,15 +521,12 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
     private BuildData getBuildData(StringParameterValue pullRequestUrlParam) {
         for (Run<?, ?> build : project.getBuilds()) {
-            ParametersAction paramsAction = build.getAction(ParametersAction.class);
-            if (paramsAction != null) {
-                for (ParameterValue param : paramsAction.getParameters()) {
-                    if (param.equals(pullRequestUrlParam)) {
-                        List<BuildData> buildDataList = build.getActions(BuildData.class);
-                        if (!buildDataList.isEmpty()) {
-                            return buildDataList.get(0);
-                        }
-                    }
+
+            if (isPullRequestBuild(build, String.valueOf(pullRequestUrlParam.getValue() ))) {
+
+                List<BuildData> buildDataList = build.getActions(BuildData.class);
+                if (!buildDataList.isEmpty()) {
+                    return buildDataList.get(0);
                 }
             }
         }
