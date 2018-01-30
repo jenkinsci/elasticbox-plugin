@@ -76,6 +76,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
     public static final String PR_OWNER = "PR_OWNER";
     public static final String PR_OWNER_EMAIL = "PR_OWNER_EMAIL";
     public static final String PR_URL = "PR_URL";
+    public static final String PR_TITLE = "PR_TITLE";
 
     private static final SequentialExecutionQueue sequentialExecutionQueue
         = new SequentialExecutionQueue(ElasticBoxExecutor.threadPool);
@@ -514,6 +515,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         }
         final StringParameterValue prUrlParam = new StringParameterValue(PR_URL, pr.getHtmlUrl().toString());
         parameters.add(prUrlParam);
+        parameters.add(new StringParameterValue(PR_TITLE, pr.getTitle()));
 
         project.scheduleBuild2(project.getQuietPeriod(), cause, new ParametersAction(parameters),
                 getBuildData(prUrlParam), new RevisionParameterAction(pr.getHead().getSha()));
