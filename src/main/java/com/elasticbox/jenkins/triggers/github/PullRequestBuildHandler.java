@@ -439,13 +439,13 @@ public class PullRequestBuildHandler implements IBuildHandler {
         if (parameters == null) {
             return false;
         }
-
-        final ParameterValue pr_url = parameters.getParameter("PR_URL");
-        if (pr_url == null) {
-            return false;
+        for (ParameterValue parameter: parameters.getParameters()) {
+            if ("PR_URL".equals(parameter.getName()) && pullRequestUrl.equals(parameter.getValue())) {
+                return true;
+            }
         }
 
-        return pullRequestUrl.equals(pr_url.getValue() );
+        return false;
     }
 
     void cancelBuilds(PullRequestData pullRequestData) {
