@@ -451,9 +451,13 @@ public class PullRequestBuildHandler implements IBuildHandler {
     void cancelBuilds(PullRequestData pullRequestData) {
         final String pullRequestUrl = pullRequestData.pullRequestUrl.toString();
         List<AbstractBuild> pullRequestBuilds = new ArrayList<AbstractBuild>();
+        LOGGER.info("Checking if there is any previous build on queue for Pull Request: " + pullRequestUrl);
+
         for (Object b : project.getBuilds()) {
+            LOGGER.info("Checking current builds: " + b);
             if (b instanceof AbstractBuild) {
                 AbstractBuild build = (AbstractBuild) b;
+                LOGGER.info("Como b es una instancia de AbstractBuild, miro a ver");
 
                 if (build.isBuilding() && isPullRequestBuild(build, pullRequestUrl)) {
                     pullRequestBuilds.add(build);
