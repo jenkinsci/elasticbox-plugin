@@ -128,6 +128,6 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
                 return Client.FINISH_STATES.contains(instanceJson.getString("state"));
             }
 
-        }.waitUntilSatisfied(timeoutSeconds);
+        }.waitUntilSatisfied(timeoutSeconds, "StopOperation - waitForAvailable");
     }
 }

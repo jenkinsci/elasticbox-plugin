@@ -84,6 +84,13 @@ function set_jenkins_version() {
 function build_with_jenkins_version() {
     JENKINS_VERSION=${1}
 
+    # work-around by disabling forking for now until there is a way to fix error 'Cannot find any ElasticBox cloud with name ...'
+    if [[ -z "${FORK_COUNT}" ]]
+    then
+        echo "Setting FORK_COUNT to 1 avoiding race conditions when getting cloud."
+        FORK_COUNT=1C
+    fi
+
     # work-around by disabling forking for oldest supported Jenkins version for now until there is a way to fix error 'Failed to initialize exploded war'
     if [[ -z "${FORK_COUNT}" ]]
     then

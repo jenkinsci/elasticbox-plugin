@@ -59,6 +59,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -144,7 +145,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 .getDescriptorByType(GitHubTokenCredentialsCreator.class)
                 .createCredentials(apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN, TestUtils.GITHUB_USER);
         GitHubServerConfig config = new GitHubServerConfig(creds.getId());
-        config.setCustomApiUrl(customApiUrl);
+         // config.setCustomApiUrl(customApiUrl); // Deprecated - This method was introduced to hide custom api url under checkbox, but now UI simplified to show url all the time. See jenkinsci/github-plugin/pull/112
         config.setApiUrl(apiGithubAddress);
         config.setManageHooks(true);
         GitHubPlugin.configuration().getConfigs().add(config);
@@ -269,6 +270,10 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected AbstractBuild waitForNextBuild(long timeoutSeconds) {
+        return waitForNextBuild (timeoutSeconds, null);
+    }
+
+    protected AbstractBuild waitForNextBuild(long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
         new Condition() {
 
@@ -276,11 +281,15 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 return build.getNextBuild() != null;
             }
 
-        }.waitUntilSatisfied(timeoutSeconds);
+        }.waitUntilSatisfied(timeoutSeconds, callerId);
         return build.getNextBuild();
     }
 
     protected void waitForCompletion(long timeoutSeconds) {
+        waitForCompletion(timeoutSeconds, null);
+    }
+
+    protected void waitForCompletion(long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
         new Condition() {
 
@@ -288,10 +297,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 return !build.isBuilding();
             }
 
-        }.waitUntilSatisfied(timeoutSeconds);
+        }.waitUntilSatisfied(timeoutSeconds, callerId);
     }
 
     protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds) {
+        waitForDeletion(instances, timeoutSeconds, null);
+    }
+
+    protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds, String callerId) {
         new Condition() {
 
             public boolean satisfied() {
@@ -302,7 +315,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
                         try {
                             client.getInstance(instance.getString("id"));
                         } catch (ClientException ex) {
-                            if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                            // SC_NOT_FOUND admitted for compatibility with previous versions to CAM 5.0.22033
+                            if ( (ex.getStatusCode() == HttpStatus.SC_FORBIDDEN) || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) ){
                                 iter.remove();
                                 objectsToDelete.remove(instance);
                             } else {
@@ -317,7 +331,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 }
             }
 
-        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(timeoutSeconds));
+        }.waitUntilSatisfied(timeoutSeconds, callerId);
     }
 
     protected class MockPullRequest {
@@ -368,8 +382,10 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         private void postPayload(HttpEntity entity, String event) throws IOException {
-            HttpPost post = new HttpPost(webhookUrl + "?.crumb=test");
+            CrumbIssuerJson crumbIssuerJson = getCrumbIssuer();
+            HttpPost post = new HttpPost(webhookUrl);
             post.addHeader("X-GitHub-Event", event);
+            post.addHeader(crumbIssuerJson.crumbRequestField, crumbIssuerJson.crumb);
             post.setEntity(entity);
             HttpResponse response = Client.getHttpClient().execute(post);
             int status = response.getStatusLine().getStatusCode();
@@ -379,6 +395,18 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 EntityUtils.consumeQuietly(response.getEntity());
             }
         }
+
+        public CrumbIssuerJson getCrumbIssuer() throws IOException {
+            String jenkinsUrl = jenkins.getInstance().getRootUrl();
+            String uriCrumbIssuer = jenkinsUrl + "crumbIssuer/api/json";
+            HttpGet httpGet = new HttpGet(uriCrumbIssuer);
+            HttpResponse response = Client.getHttpClient().execute(httpGet);
+            String serializedCrumbIssuer = Client.getResponseBodyAsString(response);
+            // {"_class":"org.jvnet.hudson.test.TestCrumbIssuer","crumb":"test","crumbRequestField":"Jenkins-Crumb"}
+            LOGGER.finer("serializedCrumbIssuer = " + serializedCrumbIssuer );
+            return new CrumbIssuerJson(serializedCrumbIssuer);
+        }
+
 
         public void open() throws IOException {
             LOGGER.info("Opening PR #" + getGHPullRequest().getNumber() );
@@ -468,6 +496,28 @@ public class PullRequestTestBase extends BuildStepTestBase {
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
         Source streamSource = new StreamSource(in);
         project.updateByXml(streamSource);
+    }
+
+}
+
+class CrumbIssuerJson {
+    public String crumb;
+    public String crumbRequestField;
+
+    public CrumbIssuerJson(String crumb, String crumbRequestField){
+        this.crumb = crumb;
+        this.crumbRequestField = crumbRequestField;
+    }
+
+    /**
+     * helper construct to deserialize crumb json:
+     * {"_class":"org.jvnet.hudson.test.TestCrumbIssuer","crumb":"test","crumbRequestField":"Jenkins-Crumb"}
+     */
+    public CrumbIssuerJson(String serializedCrumbIssuer) {
+
+        JSONObject jsonObject = JSONObject.fromObject(serializedCrumbIssuer);
+        this.crumbRequestField = (String) jsonObject.get("crumbRequestField");
+        this.crumb = (String) jsonObject.get("crumb");
     }
 
 }

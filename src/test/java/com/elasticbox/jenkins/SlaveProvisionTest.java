@@ -98,6 +98,6 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
                 return false;
 
             }
-        }.waitUntilSatisfied(waitSeconds);
+        }.waitUntilSatisfied(waitSeconds, "SlaveProvisionTest - waitUntilFinished");
     }
 }

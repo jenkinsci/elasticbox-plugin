@@ -135,7 +135,7 @@ public class TestUtils {
     }
 
     static String getResourceAsString(String resourcePath) throws IOException {
-        return IOUtils.toString((InputStream) TestUtils.class.getResource(resourcePath).getContent());
+        return IOUtils.toString((InputStream) TestUtils.class.getResource(resourcePath).getContent(),  "UTF-8");
     }
 
     static FreeStyleProject createProject(String name, String projectXml, Jenkins jenkins) throws IOException {
@@ -171,7 +171,7 @@ public class TestUtils {
                     throw new RuntimeException(ex);
                 }
             }
-        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(ElasticBoxSlaveHandler.TIMEOUT_MINUTES));
+        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(ElasticBoxSlaveHandler.TIMEOUT_MINUTES), "runJob buildHolder");
         if (buildHolder[0] == null) {
             throw new Exception(MessageFormat.format("Cannot retrieve build after {0} minites",
                     ElasticBoxSlaveHandler.TIMEOUT_MINUTES));
@@ -327,7 +327,7 @@ public class TestUtils {
 
     private static JSONObject loadBox(String templatePath, TemplateResolver resolver) throws Exception {
         URI boxJsonUri = TestUtils.class.getResource(templatePath).toURI();
-        String template = FileUtils.readFileToString(new File(boxJsonUri));
+        String template = FileUtils.readFileToString(new File(boxJsonUri), "UTF-8");
         JSONObject box = JSONObject.fromObject(resolver.resolve(template));
         if (box.containsKey("variables")) {
             for (Object variable : box.getJSONArray("variables")) {

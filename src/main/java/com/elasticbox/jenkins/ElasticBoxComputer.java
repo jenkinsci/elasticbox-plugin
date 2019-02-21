@@ -34,7 +34,7 @@ import hudson.util.RunList;
 
 import jenkins.model.Jenkins;
 
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 
 import org.jenkinsci.remoting.RoleChecker;
 
@@ -270,7 +270,7 @@ public final class ElasticBoxComputer extends SlaveComputer {
                 && ((OfflineCause.SimpleOfflineCause) cause)
                             .description
                                 .toString()
-                                    .equals(Messages._Hudson_NodeBeingRemoved().toString());
+                                    .equals("Node is being removed");
     }
 
     private static class HostAddresses implements Callable<List<Inet4Address>, IOException> {

@@ -24,7 +24,7 @@ import hudson.model.TaskListener;
 
 import jenkins.model.Jenkins;
 
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHPullRequest;

@@ -18,7 +18,7 @@ import com.elasticbox.jenkins.ElasticBoxCloud;
 
 import jenkins.model.Jenkins;
 import hudson.slaves.Cloud;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;

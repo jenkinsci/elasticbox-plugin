@@ -23,7 +23,7 @@ import java.util.Arrays;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.junit.After;
@@ -97,7 +97,8 @@ public class ElasticBoxCloudTest extends TestBase {
             client.getInstance(instanceId);
             throw new Exception(MessageFormat.format("Instance {0} was not deleted", instanceId));
         } catch (ClientException ex) {
-            Assert.assertEquals(HttpStatus.SC_NOT_FOUND, ex.getStatusCode());
+            // SC_NOT_FOUND admitted for compatibility with previous versions
+            Assert.assertTrue((org.apache.http.HttpStatus.SC_FORBIDDEN == ex.getStatusCode()) || (HttpStatus.SC_NOT_FOUND == ex.getStatusCode()));
         }
     }
 

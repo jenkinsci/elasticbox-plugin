@@ -130,7 +130,7 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
         JSONArray profiles = (JSONArray) client.doGet(MessageFormat.format("/services/profiles?box_name={0}", TestUtils.JENKINS_SLAVE_BOX_NAME), true);
         assertTrue(MessageFormat.format("No profile is found for box {0} of ElasticBox cloud {1}", TestUtils.JENKINS_SLAVE_BOX_NAME, cloud.getDisplayName()), profiles.size() > 0);
         JSONObject profile = profiles.getJSONObject(0);
-        String projectXml = IOUtils.toString((InputStream) getClass().getResource("jobs/test-project-with-slave.xml").getContent());
+        String projectXml = IOUtils.toString((InputStream) getClass().getResource("jobs/test-project-with-slave.xml").getContent(), "UTF-8");
         projectXml = projectXml.replace("{workspaceId}", profile.getString("owner")).
                 replace("{InstanceCreator.boxId}", profile.getJSONObject("box").getString("version")).
                 replace("{InstanceCreator.profileId}", profile.getString("id")).
