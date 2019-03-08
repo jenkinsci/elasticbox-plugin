@@ -248,7 +248,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
 
                     // add the terminating instance to the DeleteInstancesWorkload
                     // so it will be deleted after its termination
-                    Jenkins.getInstance()
+                    Jenkins.get()
                         .getExtensionList(
                             ElasticBoxExecutor.Workload.class).get(DeleteInstancesWorkload.class).add(instance);
 

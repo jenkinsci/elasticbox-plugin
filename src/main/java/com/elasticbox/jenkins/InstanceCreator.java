@@ -121,7 +121,7 @@ public class InstanceCreator extends BuildWrapper {
                     cloud = ebCloud.name;
                 }
             } else {
-                Cloud cloud = Jenkins.getInstance().getCloud(this.cloud);
+                Cloud cloud = Jenkins.get().getCloud(this.cloud);
                 if (cloud instanceof ElasticBoxCloud) {
                     ebCloud = (ElasticBoxCloud) cloud;
                 }

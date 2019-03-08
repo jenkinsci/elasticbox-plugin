@@ -13,9 +13,11 @@
 package com.elasticbox.jenkins.util;
 
 import com.elasticbox.Client;
+import com.elasticbox.Client.HttpProxy;
 import com.elasticbox.ClientException;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 
+import hudson.ProxyConfiguration;
 import jenkins.model.Jenkins;
 import hudson.slaves.Cloud;
 import org.apache.http.HttpStatus;
@@ -50,7 +52,7 @@ public class ClientCache {
             List<String> keysToRemove = new ArrayList<>();
             for (Enumeration<String> keys = clientCache.keys(); keys.hasMoreElements(); ) {
                 String name = keys.nextElement();
-                if (Jenkins.getInstance().getCloud(name) == null) {
+                if (Jenkins.get().getCloud(name) == null) {
                     keysToRemove.add(name);
                 }
             }
@@ -58,9 +60,9 @@ public class ClientCache {
                 clientCache.remove(keyToRemove);
             }
 
-            Cloud cloud = Jenkins.getInstance().getCloud(cloudName);
+            Cloud cloud = Jenkins.get().getCloud(cloudName);
             if (cloud instanceof ElasticBoxCloud) {
-                client = new CachedClient((ElasticBoxCloud) cloud);
+                client = new CachedClient((ElasticBoxCloud) cloud, getHttpProxy());
                 client.connect();
                 clientCache.put(cloudName, client);
             } else if (StringUtils.isNotBlank(cloudName)) {
@@ -70,6 +72,17 @@ public class ClientCache {
 
         return client;
     }
+
+    public static HttpProxy getHttpProxy() {
+        HttpProxy httpProxy = null;
+        ProxyConfiguration proxyConfiguration = Jenkins.get().proxy;
+        if ((proxyConfiguration != null) && (!StringUtils.isBlank(proxyConfiguration.name))) {
+            httpProxy = new HttpProxy(proxyConfiguration.name, proxyConfiguration.port,
+                    proxyConfiguration.getUserName(), proxyConfiguration.getPassword());
+        }
+        return httpProxy;
+    }
+
 
     @CheckForNull
     public static final Client getClient(String cloudName) {
@@ -85,7 +98,7 @@ public class ClientCache {
     }
 
     public static Client getClient(String endpointUrl, String token) {
-        for (Cloud cloud : Jenkins.getInstance().clouds) {
+        for (Cloud cloud : Jenkins.get().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
                 if (ebCloud.getEndpointUrl().equals(endpointUrl)) {
@@ -108,13 +121,13 @@ public class ClientCache {
     private static final class CachedClient extends Client {
         private final String cloudName;
 
-        public CachedClient(ElasticBoxCloud cloud) throws IOException {
-            super(cloud.getEndpointUrl(), cloud.getToken());
+        public CachedClient(ElasticBoxCloud cloud, HttpProxy httpProxy) throws IOException {
+            super(cloud.getEndpointUrl(), cloud.getToken(), httpProxy );
             cloudName = cloud.name;
         }
 
         private ElasticBoxCloud getElasticBoxCloud() {
-            return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloudName);
+            return (ElasticBoxCloud) Jenkins.get().getCloud(cloudName);
         }
 
         private void handleException(ClientException ex) {

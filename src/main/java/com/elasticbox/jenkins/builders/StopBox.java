@@ -33,6 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * Stops a box instance.
  *
  * @author Phong Nguyen Le.
  * @deprecated The Operation alternative should be used.

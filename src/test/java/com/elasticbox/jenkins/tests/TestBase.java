@@ -47,14 +47,14 @@ public class TestBase {
     protected ElasticBoxCloud cloud;
 
     @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
+    public JenkinsRule jenkinsRule = new JenkinsRule();
 
     @Before
     public void setup() throws Exception {
-        LOGGER.info("Test timeout: " + jenkins.timeout);
+        LOGGER.info("Test timeout: " + jenkinsRule.timeout);
         cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
         LOGGER.fine("Elasticbox cloud: " + cloud);
-        jenkins.getInstance().clouds.add(cloud);
+        jenkinsRule.getInstance().clouds.add(cloud);
     }
 
     @After
@@ -183,7 +183,7 @@ public class TestBase {
     }
 
     public void setLoggerLevel(String name, Level level) {
-        jenkins.getInstance().getLog().doConfigLogger(name, level.toString() );
+        jenkinsRule.getInstance().getLog().doConfigLogger(name, level.toString() );
         final Logger logger = Logger.getLogger(name);
         Handler consoleHandler = new ConsoleHandler();
         consoleHandler.setLevel(level);

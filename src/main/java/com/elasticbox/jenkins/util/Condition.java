@@ -23,6 +23,7 @@ public abstract class Condition {
     private static final Logger logger = Logger.getLogger(Condition.class.getName());
 
     private String callerId = null;
+
     public abstract boolean satisfied();
 
     public boolean waitUntilSatisfied(long timeoutSeconds, String callerId) {

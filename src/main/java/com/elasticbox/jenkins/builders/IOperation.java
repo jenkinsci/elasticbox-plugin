@@ -21,6 +21,8 @@ import hudson.model.AbstractBuild;
 import java.io.IOException;
 
 /**
+ * IOperation interface method declarations.
+ *
  * @author Phong Nguyen Le.
  */
 public interface IOperation {

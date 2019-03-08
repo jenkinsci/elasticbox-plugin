@@ -22,10 +22,10 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.apache.commons.httpclient.HttpClient;
+//import org.apache.commons.httpclient.HttpClient;
+//import org.apache.commons.httpclient.NameValuePair;
+//import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.http.HttpStatus;
-import org.apache.commons.httpclient.NameValuePair;
-import org.apache.commons.httpclient.methods.PostMethod;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -75,7 +75,7 @@ public class ElasticBoxCloudTest extends TestBase {
         // make sure that a deployment request can be successfully submitted
         JSONObject profile  = TestUtils.createTestProfile(testJenkinsSlaveBoxData, provider, null, client);
         String slaveName = testJenkinsSlaveBox.getString("name").replace(' ', '-').toLowerCase();
-        JSONArray variables = SlaveInstance.createJenkinsVariables(jenkins.getInstance().getRootUrl(), slaveName);
+        JSONArray variables = SlaveInstance.createJenkinsVariables(jenkinsRule.getInstance().getRootUrl(), slaveName);
         JSONObject variable = new JSONObject();
         variable.put("name", "JNLP_SLAVE_OPTIONS");
         variable.put("type", "Text");

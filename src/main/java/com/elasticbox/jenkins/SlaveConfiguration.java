@@ -12,6 +12,8 @@
 
 package com.elasticbox.jenkins;
 
+import static com.elasticbox.jenkins.util.ClientCache.getHttpProxy;
+
 import com.elasticbox.Client;
 import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.box.AbstractBox;
@@ -151,7 +153,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 slaveConfig.setId(UUID.randomUUID().toString());
             }
 
-            FormValidation result = ((SlaveConfiguration.DescriptorImpl)Jenkins.getInstance()
+            FormValidation result = ((SlaveConfiguration.DescriptorImpl)Jenkins.get()
                 .getDescriptorOrDie(SlaveConfiguration.class))
                 .doCheckBoxVersion(slaveConfig.getBoxVersion(),
                         newCloud.name,
@@ -171,10 +173,10 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             }
 
             Client client = (name != null && name.length() > 0)
-                    ? ClientCache.getClient(name) : new Client(endpointUrl, token);
+                    ? ClientCache.getClient(name) : new Client(endpointUrl, token, getHttpProxy());
 
             if ( !client.getEndpointUrl().equals(endpointUrl) ) {
-                client = new Client(endpointUrl, token);
+                client = new Client(endpointUrl, token, getHttpProxy());
             }
 
             return client;

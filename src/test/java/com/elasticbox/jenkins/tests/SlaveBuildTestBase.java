@@ -58,9 +58,9 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
 
     @Before
     public void setJenkinsURL() throws IOException {
-        String jenkinsUrl = jenkins.getInstance().getRootUrl();
+        String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
         if (StringUtils.isBlank(jenkinsUrl)) {
-            jenkinsUrl = jenkins.createWebClient().getContextPath();
+            jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
         }
 
         jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
@@ -79,7 +79,7 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
     @After
     public void deleteSlaves() throws Exception {
         List<ElasticBoxSlave> slaves = new ArrayList<ElasticBoxSlave>();
-        for (Node node : jenkins.getInstance().getNodes()) {
+        for (Node node : jenkinsRule.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
                 if (slave.getInstanceId() != null) {
@@ -135,7 +135,7 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
                 replace("{InstanceCreator.boxId}", profile.getJSONObject("box").getString("version")).
                 replace("{InstanceCreator.profileId}", profile.getString("id")).
                 replace("{version}", "0.7.5-SNAPSHOT");
-        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test", new ByteArrayInputStream(projectXml.getBytes()));
+        FreeStyleProject project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test", new ByteArrayInputStream(projectXml.getBytes()));
         QueueTaskFuture future = project.scheduleBuild2(0);
         Object scheduleResult = TestUtils.getResult(future.getStartCondition(), 30);
         assertNotNull("30 minutes after job scheduling but no result returned", scheduleResult);
@@ -168,10 +168,10 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, box, box,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
-        jenkins.getInstance().clouds.remove(cloud);
-        jenkins.getInstance().clouds.add(newCloud);
-        FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
-        project.setAssignedLabel(jenkins.getInstance().getLabel(label));
+        jenkinsRule.getInstance().clouds.remove(cloud);
+        jenkinsRule.getInstance().clouds.add(newCloud);
+        FreeStyleProject project = jenkinsRule.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
+        project.setAssignedLabel(jenkinsRule.getInstance().getLabel(label));
         QueueTaskFuture future = project.scheduleBuild2(0);
         Object scheduleResult = TestUtils.getResult(future.getStartCondition(), 60);
         TestCase.assertNotNull("60 minutes after job scheduling but no result returned", scheduleResult);
@@ -205,14 +205,14 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
-        jenkins.getInstance().clouds.remove(cloud);
-        jenkins.getInstance().clouds.add(newCloud);
+        jenkinsRule.getInstance().clouds.remove(cloud);
+        jenkinsRule.getInstance().clouds.add(newCloud);
 
         // Create a project and tie it to the slave configuration created above
-        FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
+        FreeStyleProject project = jenkinsRule.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
         project.getBuildersList().add(new Shell("sleep 5"));
         project.getBuildersList().add(new Shell("sleep 5"));
-        project.setAssignedLabel(jenkins.getInstance().getLabel(label));
+        project.setAssignedLabel(jenkinsRule.getInstance().getLabel(label));
 
         // Schedule a build
         QueueTaskFuture future = project.scheduleBuild2(0);
@@ -236,7 +236,7 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
 
 
     protected ElasticBoxSlave findSlave(String label) {
-        for (Node node : jenkins.getInstance().getNodes()) {
+        for (Node node : jenkinsRule.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave && label.equals(node.getLabelString())) {
                 return (ElasticBoxSlave) node;
             }

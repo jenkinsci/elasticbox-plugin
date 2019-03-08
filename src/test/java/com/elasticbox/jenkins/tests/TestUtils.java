@@ -18,6 +18,7 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.Condition;
 import com.hubspot.jinjava.Jinjava;
+import hudson.ProxyConfiguration;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
@@ -60,6 +61,11 @@ public class TestUtils {
     static final String DEFAULT_TEST_WORKSPACE = "test_admin";
     static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", DEFAULT_TEST_WORKSPACE);
 
+    static final String TEST_JENKINS_PROXY_NAME = "http://21.22.23.24";
+    static final int TEST_JENKINS_PROXY_PORT = Integer.parseInt("25");
+    static final String TEST_JENKINS_PROXY_USER = "proxy_user";
+    static final String TEST_JENKINS_PROXY_PWRD = "1234";
+
     static final String TEST_LINUX_BOX_NAME = "test-linux-box";
     static final String TEST_NESTED_BOX_NAME = "test-nested-box";
     static final String TEST_BINDING_BOX_NAME = "test-binding-box";
@@ -73,6 +79,7 @@ public class TestUtils {
     static final String TEST_TAG = System.getProperty("elasticbox.jenkins.test.tag", "jenkins-plugin-test");
     static final String NAME_PREFIX = TEST_TAG + '-';
     static final String LINUX_COMPUTE = "Linux Compute";
+
 
     static final Properties GITHUB_PROPERTIES = loadGitHubProperties(System.getProperty("elasticbox.jenkins.test.GitHubProperties"));
     static final String GITHUB_USER = GITHUB_PROPERTIES.getProperty("GITHUB_USER");

@@ -43,9 +43,9 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
     @Before
     @Override
     public void setup() throws Exception {
-        String jenkinsUrl = jenkins.getInstance().getRootUrl();
+        String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
         if (StringUtils.isBlank(jenkinsUrl)) {
-            jenkinsUrl = jenkins.createWebClient().getContextPath();
+            jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
         }
         if (StringUtils.isNotBlank(TestUtils.JENKINS_PUBLIC_HOST)) {
             jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
@@ -82,14 +82,14 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         ElasticBoxCloud testCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
                 TestUtils.ELASTICBOX_URL, 6, TestUtils.ACCESS_TOKEN,
                 Arrays.asList(testLinuxBoxSlaveConfig, testNestedBoxSlaveConfig, testDeeplyNestedBoxSlaveConfig));
-        jenkins.getInstance().clouds.add(testCloud);
+        jenkinsRule.getInstance().clouds.add(testCloud);
 
         // wait for new slave to be launched
         new Condition() {
 
             @Override
             public boolean satisfied() {
-                return jenkins.getInstance().getNodes().size() > 3;
+                return jenkinsRule.getInstance().getNodes().size() > 3;
             }
         }.waitUntilSatisfied(60);
 
@@ -97,7 +97,7 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         Thread.sleep(10000);
 
         List<ElasticBoxSlave> slaves = new ArrayList<ElasticBoxSlave>();
-        for (Node node : jenkins.getInstance().getNodes()) {
+        for (Node node : jenkinsRule.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 slaves.add((ElasticBoxSlave) node);
             }
@@ -151,7 +151,7 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
             }
         }
         Assert.assertNotNull(jenkinsUrlVariable);
-        Assert.assertEquals(jenkins.getInstance().getRootUrl(), jenkinsUrlVariable.getString("value"));
+        Assert.assertEquals(jenkinsRule.getInstance().getRootUrl(), jenkinsUrlVariable.getString("value"));
         Assert.assertNotNull(jnlpSlaveOptionsVariable);
         Assert.assertEquals(SlaveInstance.createJnlpSlaveOptions(slave), jnlpSlaveOptionsVariable.getString("value"));
         if (StringUtils.isBlank(slaveScope)) {

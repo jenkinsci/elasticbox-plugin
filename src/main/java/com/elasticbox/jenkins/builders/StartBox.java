@@ -33,6 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * Starts a box instance.
  *
  * @author Phong Nguyen Le.
  * @deprecated you should use the DeployBox

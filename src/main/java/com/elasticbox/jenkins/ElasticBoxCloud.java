@@ -12,6 +12,8 @@
 
 package com.elasticbox.jenkins;
 
+import static com.elasticbox.jenkins.util.ClientCache.getHttpProxy;
+
 import antlr.ANTLRException;
 
 import com.elasticbox.Client;
@@ -112,7 +114,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     }
 
     public static final ElasticBoxCloud getInstance() {
-        for (Cloud cloud : Jenkins.getInstance().clouds) {
+        for (Cloud cloud : Jenkins.get().clouds) {
             if (cloud instanceof ElasticBoxCloud && cloud.name.indexOf('@') != -1) {
                 return (ElasticBoxCloud) cloud;
             }
@@ -148,7 +150,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     private List<ElasticBoxSlave> getPendingSlaves(Label label, List<JSONObject> activeInstances) {
         List<ElasticBoxSlave> pendingSlaves = new ArrayList<ElasticBoxSlave>();
         List<ElasticBoxSlave> offlineSlaves = new ArrayList<ElasticBoxSlave>();
-        for (Node node : Jenkins.getInstance().getNodes()) {
+        for (Node node : Jenkins.get().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
                 ElasticBoxCloud slaveCloud = null;
@@ -316,7 +318,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 plannedNodes.add(new NodeProvisioner.PlannedNode(slave.getDisplayName(),
                         new FutureWrapper<Node>(Computer.threadPoolForRemoting.submit(new Callable<Node>() {
                             public Node call() throws Exception {
-                                Jenkins.getInstance().addNode(slave);
+                                Jenkins.get().addNode(slave);
                                 IProgressMonitor monitor = ElasticBoxSlaveHandler.submit(slave);
                                 monitor.waitForDone(slave.getLaunchTimeout());
                                 if (slave.getComputer() != null && slave.getComputer().isOnline()) {
@@ -556,8 +558,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 throw new RuntimeException(ex);
             }
 
-            SlaveConfiguration.DescriptorImpl slaveConfigDescriptor = (SlaveConfiguration.DescriptorImpl) Jenkins
-                    .getInstance().getDescriptor(SlaveConfiguration.class);
+            SlaveConfiguration.DescriptorImpl slaveConfigDescriptor = (SlaveConfiguration.DescriptorImpl) Jenkins.get()
+                    .getDescriptor(SlaveConfiguration.class);
             int slaveMaxInstances = 0;
             for (SlaveConfiguration config : newCloud.getSlaveConfigurations()) {
                 slaveConfigDescriptor.validateSlaveConfiguration(config, newCloud);
@@ -596,7 +598,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         }
 
         public FormValidation doVerifyToken(@QueryParameter String endpointUrl, @QueryParameter String token) {
-            Client client = new Client(endpointUrl, token);
+            Client client = new Client(endpointUrl, token, getHttpProxy());
             try {
                 client.connect();
             } catch (IOException ex) {
@@ -641,7 +643,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 }
             }
             Set<ElasticBoxCloud> cloudsWithSlaves = new HashSet<ElasticBoxCloud>();
-            for (Node node : Jenkins.getInstance().getNodes()) {
+            for (Node node : Jenkins.get().getNodes()) {
                 if (node instanceof ElasticBoxSlave) {
                     try {
                         cloudsWithSlaves.add(((ElasticBoxSlave) node).getCloud());
@@ -653,7 +655,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
             Set<ElasticBoxCloud> deletedClouds = new HashSet<ElasticBoxCloud>();
             List<ElasticBoxCloud> cloudsToRemoveCachedClient = new ArrayList<ElasticBoxCloud>();
-            for (Cloud cloud : Jenkins.getInstance().clouds) {
+            for (Cloud cloud : Jenkins.get().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
                     JSONObject json = nameToExistingCloudMap.get(ebCloud.name);
@@ -687,13 +689,13 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         }
 
         private void checkDeletedSlaveConfiguration(ElasticBoxCloud newCloud) throws FormException {
-            Cloud cloud = Jenkins.getInstance().getCloud(newCloud.name);
+            Cloud cloud = Jenkins.get().getCloud(newCloud.name);
             if (!(cloud instanceof ElasticBoxCloud)) {
                 return;
             }
 
             ElasticBoxCloud existingCloud = (ElasticBoxCloud) cloud;
-            for (Node node : Jenkins.getInstance().getNodes()) {
+            for (Node node : Jenkins.get().getNodes()) {
                 if (node instanceof ElasticBoxSlave) {
                     ElasticBoxSlave slave = (ElasticBoxSlave) node;
                     try {
@@ -786,7 +788,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             Client client = ClientCache.getClient(endpointUrl, token);
             if (client == null) {
                 if (StringUtils.isNotBlank(token)) {
-                    client = new Client(endpointUrl, token);
+                    client = new Client(endpointUrl, token, getHttpProxy());
                 } else {
                     LOGGER.log(Level.SEVERE, "You need an ElasticBox token to be able to connect");
                 }

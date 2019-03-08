@@ -29,8 +29,8 @@ public class SelectPolicyByClaimsTests extends BuildStepTestBase {
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
         FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("jobs/test-policy-by-claims.xml"),
-                testParameters, jenkins.getInstance());
+                testParameters, jenkinsRule.getInstance());
         TestUtils.assertBuildSuccess(build);
-        TestUtils.cleanUp(testTag, jenkins.getInstance());
+        TestUtils.cleanUp(testTag, jenkinsRule.getInstance());
     }
 }

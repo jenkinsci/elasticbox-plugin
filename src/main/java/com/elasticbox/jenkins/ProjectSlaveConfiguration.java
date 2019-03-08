@@ -76,7 +76,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
     }
 
     public ElasticBoxCloud getElasticBoxCloud() {
-        Cloud cloud = Jenkins.getInstance().getCloud(this.cloud);
+        Cloud cloud = Jenkins.get().getCloud(this.cloud);
         return (cloud instanceof ElasticBoxCloud ? (ElasticBoxCloud) cloud : null);
     }
 
@@ -84,7 +84,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
 
         List<ProjectSlaveConfiguration> slaveConfigurations = new ArrayList<ProjectSlaveConfiguration>();
 
-        List<BuildableItemWithBuildWrappers> projects = Jenkins.getInstance()
+        List<BuildableItemWithBuildWrappers> projects = Jenkins.get()
             .getItems(BuildableItemWithBuildWrappers.class);
 
         for (BuildableItemWithBuildWrappers project : projects) {
@@ -132,7 +132,7 @@ public class ProjectSlaveConfiguration extends AbstractSlaveConfiguration {
 
         public ListBoxModel doFillCloudItems() {
             ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option(Constants.CHOOSE_CLOUD_MESSAGE, ""));
-            for (Cloud cloud : Jenkins.getInstance().clouds) {
+            for (Cloud cloud : Jenkins.get().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     clouds.add(cloud.getDisplayName(), cloud.name);
                 }

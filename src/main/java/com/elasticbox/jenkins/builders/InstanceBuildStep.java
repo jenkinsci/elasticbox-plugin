@@ -90,7 +90,7 @@ public abstract class InstanceBuildStep extends Builder {
                 }
 
                 public ElasticBoxCloud getElasticBoxCloud() {
-                    return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloud);
+                    return (ElasticBoxCloud) Jenkins.get().getCloud(cloud);
                 }
 
             };

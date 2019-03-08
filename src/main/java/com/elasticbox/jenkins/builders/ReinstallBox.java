@@ -34,6 +34,7 @@ import java.text.MessageFormat;
 import java.util.Collections;
 
 /**
+ * Reinstalls a box instance.
  *
  * @author Phong Nguyen Le.
  * @deprecated there is a reinstall operation that should be used instead of this

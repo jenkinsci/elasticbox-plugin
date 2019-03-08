@@ -58,7 +58,7 @@ public class ElasticBoxExecutor extends AsyncPeriodicWork {
     @Override
     protected void execute(TaskListener listener) throws IOException, InterruptedException {
         List<Workload> syncWorkloads = new ArrayList<Workload>();
-        for (Workload workload : Jenkins.getInstance().getExtensionList(Workload.class)) {
+        for (Workload workload : Jenkins.get().getExtensionList(Workload.class)) {
             if (workload.getExecutionType() == ExecutionType.ASYNC) {
                 if (LOGGER.isLoggable(Level.FINEST)) {
                     LOGGER.finest("Executing asynchronous workload: " + workload);

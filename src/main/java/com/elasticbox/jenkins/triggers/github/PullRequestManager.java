@@ -73,7 +73,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
     );
 
     public static final PullRequestManager getInstance() {
-        return (PullRequestManager) ((PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(
+        return (PullRequestManager) ((PullRequestBuildTrigger.DescriptorImpl) Jenkins.get().getDescriptor(
                 PullRequestBuildTrigger.class)).getBuildManager();
     }
 
@@ -192,7 +192,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             Authentication old = SecurityContextHolder.getContext().getAuthentication();
             SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
             try {
-                for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+                for (AbstractProject<?,?> job : Jenkins.get().getAllItems(AbstractProject.class)) {
                     PullRequestBuildTrigger trigger = job.getTrigger(PullRequestBuildTrigger.class);
                     if (trigger != null && trigger.getBuildHandler() instanceof PullRequestBuildHandler) {
                         ((PullRequestBuildHandler) trigger.getBuildHandler()).handle(pullRequest, gitHub);
@@ -234,7 +234,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
-            for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?,?> job : Jenkins.get().getAllItems(AbstractProject.class)) {
                 PullRequestBuildTrigger trigger = job.getTrigger(PullRequestBuildTrigger.class);
                 if (trigger != null && trigger.getBuildHandler() instanceof PullRequestBuildHandler) {
                     ((PullRequestBuildHandler) trigger.getBuildHandler()).handle(issueComment, gitHub);

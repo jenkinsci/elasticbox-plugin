@@ -44,7 +44,7 @@ public class PullRequestCommenter extends Builder {
         TriggerCause cause = build.getCause(TriggerCause.class);
         if (cause == null) {
             throw new AbortException(MessageFormat.format("{0} is not configured for this project",
-                    Jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class).getDisplayName()));
+                    Jenkins.get().getDescriptor(PullRequestBuildTrigger.class).getDisplayName()));
         }
 
         TaskLogger logger = new TaskLogger(listener);

@@ -81,11 +81,11 @@ public class BuildWithSingleUseViaLabelSlaveTest extends SlaveBuildTestBase {
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox", "ElasticBox", cloud.getEndpointUrl(),
                 cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
 
-        jenkins.getInstance().clouds.remove(cloud);
-        jenkins.getInstance().clouds.add(newCloud);
+        jenkinsRule.getInstance().clouds.remove(cloud);
+        jenkinsRule.getInstance().clouds.add(newCloud);
 
-        FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
-        project.setAssignedLabel(jenkins.getInstance().getLabel(label));
+        FreeStyleProject project = jenkinsRule.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
+        project.setAssignedLabel(jenkinsRule.getInstance().getLabel(label));
 
         QueueTaskFuture future = project.scheduleBuild2(0);
 

@@ -21,7 +21,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public abstract class InstanceExpiration implements Describable<InstanceExpiration> {
 
     public Descriptor<InstanceExpiration> getDescriptor() {
-        return Jenkins.getInstance().getDescriptor(getClass());
+        return Jenkins.get().getDescriptor(getClass());
     }
 
     public abstract static class InstanceExpirationDescriptor extends Descriptor<InstanceExpiration> {

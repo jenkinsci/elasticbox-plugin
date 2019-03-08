@@ -42,7 +42,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestLifecycleManagementTest.class.getName() );
 
 
-    @Test(timeout = 950000)
+    @Test
     public void testPullRequestLifecycleManagement() throws Exception {
 
         long NEXTBUILD_TIMEOUT = 120; // before was 30
@@ -136,10 +136,10 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         abortBuildOfClosePullRequest(true);
 
         LOGGER.fine("Checking that the queued job is aborted");
-        jenkins.getInstance().setNumExecutors(1);
-        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-sleep-job",
+        jenkinsRule.getInstance().setNumExecutors(1);
+        FreeStyleProject project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-sleep-job",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-sleep-job.xml").getBytes() ));
-        TestUtils.runJob(project, new HashMap<String, String>(), jenkins.getInstance());
+        TestUtils.runJob(project, new HashMap<String, String>(), jenkinsRule.getInstance());
         abortBuildOfClosePullRequest(false);
     }
 
@@ -161,7 +161,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         pullRequest.open();
 
         AbstractBuild build;
-        List<Queue.Item> queue = jenkins.getInstance().getQueue().getUnblockedItems();
+        List<Queue.Item> queue = jenkinsRule.getInstance().getQueue().getUnblockedItems();
         if (waitUntilStarted) {
             build = waitForNextBuild(60, "abortBuildOfClosePullRequest-1");
             Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), build);
@@ -190,7 +190,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
             Thread.sleep(2000); // Wait a couple of seconds to let the close event to be processed.
         }
 
-        queue = jenkins.getInstance().getQueue().getUnblockedItems();
+        queue = jenkinsRule.getInstance().getQueue().getUnblockedItems();
         Assert.assertTrue("Expected queue to be 0. Current items: " + queue, queue.size() == 0);
 
         for (Object instance : cloud.getClient().getInstances(TestUtils.TEST_WORKSPACE)) {

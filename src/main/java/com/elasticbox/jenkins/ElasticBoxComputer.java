@@ -195,7 +195,7 @@ public final class ElasticBoxComputer extends SlaveComputer {
         try {
             slave.checkInstanceReachable();
             if (slave.isSingleUse() && !slave.isRemovableFromCloud() ) {
-                for (Queue.BuildableItem item : Jenkins.getInstance().getQueue().getBuildableItems(this)) {
+                for (Queue.BuildableItem item : Jenkins.get().getQueue().getBuildableItems(this)) {
                     item.getFuture().cancel(true);
                 }
             }
@@ -312,7 +312,7 @@ public final class ElasticBoxComputer extends SlaveComputer {
 
         @Override
         public void onConfigurationChange() {
-            for (Node node : Jenkins.getInstance().getNodes()) {
+            for (Node node : Jenkins.get().getNodes()) {
                 if (node instanceof ElasticBoxSlave) {
                     ElasticBoxSlave slave = (ElasticBoxSlave) node;
                     if (slave.isDeletable()) {

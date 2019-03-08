@@ -40,6 +40,8 @@ import java.text.MessageFormat;
 import java.util.Collections;
 
 /**
+ * Reconfigures a box instance.
+ *
  * @author Phong Nguyen Le.
  * @deprecated Should be removed because there is ReconfigureOperation that do the same
  */

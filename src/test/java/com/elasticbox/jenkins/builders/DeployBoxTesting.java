@@ -60,7 +60,7 @@ public class DeployBoxTesting {
 //        // Need to mock Jenkins to read the console notes.
 //        Jenkins jenkins = mock(Jenkins.class);
 //        PowerMockito.mockStatic(Jenkins.class);
-//        when(Jenkins.getInstance()).thenReturn(jenkins);
+//        when(Jenkins.get()).thenReturn(jenkins);
 //        when(jenkins.getCloud(any(String.class))).thenReturn(new ElasticBoxCloud(fakeCloud, fakeCloudDescription, fakeEndpointURL, maxInstances, fakeToken, empty));
 //
 //    }
@@ -175,7 +175,7 @@ public class DeployBoxTesting {
 //
 //
 //
-//        final Jenkins instance = Jenkins.getInstance();
+//        final Jenkins instance = Jenkins.get();
 //
 //        DeployBox deployBox = new DeployBox(ID,CLOUD,workspace,box,boxVersion,instanceName,profile,claims,provider,location,instanceEnvVariable,tags,variables,expiration,autoUpdates,alternateAction,waitForCompletion,waitForCompletionTimeout,boxDeploymentType);
 //        deployBox.perform(build, launcher, buildListener);

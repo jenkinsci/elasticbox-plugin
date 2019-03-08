@@ -103,7 +103,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
             apiGithubAddress = MessageFormat.format("{0}/api/v3", TestUtils.GITHUB_ADDRESS);
             customApiUrl = true;
         }
-        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
+        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks
@@ -121,7 +121,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         // try to delete all comments that are older than 1 hour
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR_OF_DAY, -1);
-        HttpClient httpClient = Client.getHttpClient();
+        HttpClient httpClient = Client.getHttpClientInstance();
         for (GHIssueComment comment : ghPullRequest.getComments()) {
             if (comment.getCreatedAt().before(calendar.getTime())) {
                 HttpDelete delete = new HttpDelete(comment.getUrl().toString());
@@ -141,7 +141,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         pullRequest = new MockPullRequest(ghPullRequest);
         testTag = UUID.randomUUID().toString().substring(0, 30);
         
-        StandardCredentials creds = jenkins.getInstance()
+        StandardCredentials creds = jenkinsRule.getInstance()
                 .getDescriptorByType(GitHubTokenCredentialsCreator.class)
                 .createCredentials(apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN, TestUtils.GITHUB_USER);
         GitHubServerConfig config = new GitHubServerConfig(creds.getId());
@@ -160,9 +160,9 @@ public class PullRequestTestBase extends BuildStepTestBase {
             }
 
         };
-        downstreamProject = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request-downstream",
+        downstreamProject = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request-downstream",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request-downstream.xml")).getBytes()));
-        project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request",
+        project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
     }
 
@@ -198,6 +198,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         if (githubEndpoint.equals(publicGithubAddress)) {
             github = GitHub.connect(githubUser, githubToken);
         } else {
+            // Deprecated Use with caution. Login with password is not a preferred method. Hay que deidir si quitarlo
             github = GitHub.connectToEnterprise(apiGithubAddress, githubUser, githubToken);
         }
 
@@ -387,7 +388,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
             post.addHeader("X-GitHub-Event", event);
             post.addHeader(crumbIssuerJson.crumbRequestField, crumbIssuerJson.crumb);
             post.setEntity(entity);
-            HttpResponse response = Client.getHttpClient().execute(post);
+            HttpResponse response = Client.getHttpClientInstance().execute(post);
             int status = response.getStatusLine().getStatusCode();
             if (status < 200 || status > 299) {
                 throw new ClientException(Client.getResponseBodyAsString(response), status);
@@ -397,10 +398,10 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         public CrumbIssuerJson getCrumbIssuer() throws IOException {
-            String jenkinsUrl = jenkins.getInstance().getRootUrl();
+            String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
             String uriCrumbIssuer = jenkinsUrl + "crumbIssuer/api/json";
             HttpGet httpGet = new HttpGet(uriCrumbIssuer);
-            HttpResponse response = Client.getHttpClient().execute(httpGet);
+            HttpResponse response = Client.getHttpClientInstance().execute(httpGet);
             String serializedCrumbIssuer = Client.getResponseBodyAsString(response);
             // {"_class":"org.jvnet.hudson.test.TestCrumbIssuer","crumb":"test","crumbRequestField":"Jenkins-Crumb"}
             LOGGER.finer("serializedCrumbIssuer = " + serializedCrumbIssuer );

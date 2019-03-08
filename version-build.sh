@@ -51,7 +51,7 @@ done
 
 if [[ -z ${EBX_ADDRESS} ]]
 then
-    help "ElasticBox address must be specified"
+    help "ElasticBox address must be specified."
     exit 1
 fi
 
@@ -77,7 +77,11 @@ BUILD_OPTIONS="${BUILD_OPTIONS} -Dmaven.javadoc.skip=true -Delasticbox.jenkins.t
 
 # BUILD_OPTIONS="${BUILD_OPTIONS} -Dhudson.model.ParametersAction.safeParameters=['eb_test_build_parameter']"
 BUILD_OPTIONS="${BUILD_OPTIONS} -Dhudson.model.ParametersAction.keepUndefinedParameters=true"
-BUILD_OPTIONS="${BUILD_OPTIONS} -Djenkins.test.timeout=900"
+BUILD_OPTIONS="${BUILD_OPTIONS} -Djenkins.test.timeout=1200"
+
+# BUILD_OPTIONS="${BUILD_OPTIONS} -Djenkins.test.proxyName=http://ProxyServerName -Djenkins.test.proxyPort=3128
+# BUILD_OPTIONS="${BUILD_OPTIONS} -Djenkins.test.proxyUser=proxyUser -Djenkins.test.proxyPwrd=proxyPassword
+
 
 if [[ -n ${EBX_WORKSPACE} ]]
 then

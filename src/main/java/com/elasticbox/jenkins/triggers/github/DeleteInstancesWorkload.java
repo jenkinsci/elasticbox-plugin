@@ -62,11 +62,12 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
         try {
             instanceJson = client.getInstance(instance.id);
         } catch (IOException ex) {
-            if (ex instanceof ClientException){
+            if (ex instanceof ClientException) {
                 int exStatusCode = ((ClientException) ex).getStatusCode() ;
                 // SC_NOT_FOUND admitted for compatibility with previous versions to CAM 5.0.22033
-                if( (exStatusCode == HttpStatus.SC_FORBIDDEN) || (exStatusCode == HttpStatus.SC_NOT_FOUND))
+                if ( (exStatusCode == HttpStatus.SC_FORBIDDEN) || (exStatusCode == HttpStatus.SC_NOT_FOUND)) {
                     return true;
+                }
             }
             log(Level.SEVERE, MessageFormat.format(
                     "Error fetching instance {0}", client.getInstanceUrl(instance.id)), ex, listener);

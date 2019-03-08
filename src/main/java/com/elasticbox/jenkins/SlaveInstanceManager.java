@@ -49,7 +49,7 @@ public class SlaveInstanceManager {
         instanceIdToSlaveMap = new HashMap<String, ElasticBoxSlave>();
         cloudToInstancesMap = new HashMap<ElasticBoxCloud, List<JSONObject>>();
         cloudToWorkspaceIDsMap = new HashMap<ElasticBoxCloud, Set<String>>();
-        for (Node node : Jenkins.getInstance().getNodes()) {
+        for (Node node : Jenkins.get().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 final ElasticBoxSlave slave = (ElasticBoxSlave) node;
                 ElasticBoxCloud cloud = slave.getCloud();
@@ -214,7 +214,7 @@ public class SlaveInstanceManager {
 
     public Map<ElasticBoxCloud, Integer> getMaxInstancesPerCloud() throws IOException {
         Map<ElasticBoxCloud, Integer> cloudToMaxNewInstancesMap = new HashMap<>();
-        for (Cloud cloud : Jenkins.getInstance().clouds) {
+        for (Cloud cloud : Jenkins.get().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 ElasticBoxCloud ebCloud = (ElasticBoxCloud) cloud;
                 cloudToMaxNewInstancesMap.put(ebCloud, ebCloud.getMaxInstances() - getInstances(ebCloud).size());

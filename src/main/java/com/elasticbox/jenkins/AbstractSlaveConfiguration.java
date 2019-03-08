@@ -102,7 +102,7 @@ public abstract class AbstractSlaveConfiguration implements Describable<Abstract
 
     @Override
     public Descriptor<AbstractSlaveConfiguration> getDescriptor() {
-        return Jenkins.getInstance().getDescriptor(getClass());
+        return Jenkins.get().getDescriptor(getClass());
     }
 
     public String getBoxDeploymentType() {
