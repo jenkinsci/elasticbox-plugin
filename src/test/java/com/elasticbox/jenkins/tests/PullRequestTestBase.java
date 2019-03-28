@@ -145,7 +145,6 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 .getDescriptorByType(GitHubTokenCredentialsCreator.class)
                 .createCredentials(apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN, TestUtils.GITHUB_USER);
         GitHubServerConfig config = new GitHubServerConfig(creds.getId());
-         // config.setCustomApiUrl(customApiUrl); // Deprecated - This method was introduced to hide custom api url under checkbox, but now UI simplified to show url all the time. See jenkinsci/github-plugin/pull/112
         config.setApiUrl(apiGithubAddress);
         config.setManageHooks(true);
         GitHubPlugin.configuration().getConfigs().add(config);
@@ -276,13 +275,13 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
     protected AbstractBuild waitForNextBuild(long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
-        new Condition() {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 return build.getNextBuild() != null;
             }
 
-        }.waitUntilSatisfied(timeoutSeconds, callerId);
+        }.waitUntilSatisfied(timeoutSeconds);
         return build.getNextBuild();
     }
 
@@ -292,13 +291,13 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
     protected void waitForCompletion(long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
-        new Condition() {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 return !build.isBuilding();
             }
 
-        }.waitUntilSatisfied(timeoutSeconds, callerId);
+        }.waitUntilSatisfied(timeoutSeconds);
     }
 
     protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds) {
@@ -306,7 +305,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds, String callerId) {
-        new Condition() {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 try {
@@ -332,7 +331,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 }
             }
 
-        }.waitUntilSatisfied(timeoutSeconds, callerId);
+        }.waitUntilSatisfied(timeoutSeconds);
     }
 
     protected class MockPullRequest {
@@ -403,7 +402,6 @@ public class PullRequestTestBase extends BuildStepTestBase {
             HttpGet httpGet = new HttpGet(uriCrumbIssuer);
             HttpResponse response = Client.getHttpClientInstance().execute(httpGet);
             String serializedCrumbIssuer = Client.getResponseBodyAsString(response);
-            // {"_class":"org.jvnet.hudson.test.TestCrumbIssuer","crumb":"test","crumbRequestField":"Jenkins-Crumb"}
             LOGGER.finer("serializedCrumbIssuer = " + serializedCrumbIssuer );
             return new CrumbIssuerJson(serializedCrumbIssuer);
         }
@@ -515,10 +513,8 @@ class CrumbIssuerJson {
      * {"_class":"org.jvnet.hudson.test.TestCrumbIssuer","crumb":"test","crumbRequestField":"Jenkins-Crumb"}
      */
     public CrumbIssuerJson(String serializedCrumbIssuer) {
-
         JSONObject jsonObject = JSONObject.fromObject(serializedCrumbIssuer);
         this.crumbRequestField = (String) jsonObject.get("crumbRequestField");
         this.crumb = (String) jsonObject.get("crumb");
     }
-
 }

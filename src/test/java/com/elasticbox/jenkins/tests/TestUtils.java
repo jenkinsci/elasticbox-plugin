@@ -18,7 +18,6 @@ import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxSlaveHandler;
 import com.elasticbox.jenkins.util.Condition;
 import com.hubspot.jinjava.Jinjava;
-import hudson.ProxyConfiguration;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
@@ -60,11 +59,6 @@ public class TestUtils {
     public static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
     static final String DEFAULT_TEST_WORKSPACE = "test_admin";
     static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", DEFAULT_TEST_WORKSPACE);
-
-    static final String TEST_JENKINS_PROXY_NAME = "http://21.22.23.24";
-    static final int TEST_JENKINS_PROXY_PORT = Integer.parseInt("25");
-    static final String TEST_JENKINS_PROXY_USER = "proxy_user";
-    static final String TEST_JENKINS_PROXY_PWRD = "1234";
 
     static final String TEST_LINUX_BOX_NAME = "test-linux-box";
     static final String TEST_NESTED_BOX_NAME = "test-nested-box";
@@ -163,7 +157,7 @@ public class TestUtils {
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
         final FreeStyleBuild[]  buildHolder = new FreeStyleBuild[1];
-        new Condition() {
+        new Condition("runJob buildHolder") {
 
             @Override
             public boolean satisfied() {
@@ -178,7 +172,7 @@ public class TestUtils {
                     throw new RuntimeException(ex);
                 }
             }
-        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(ElasticBoxSlaveHandler.TIMEOUT_MINUTES), "runJob buildHolder");
+        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(ElasticBoxSlaveHandler.TIMEOUT_MINUTES));
         if (buildHolder[0] == null) {
             throw new Exception(MessageFormat.format("Cannot retrieve build after {0} minites",
                     ElasticBoxSlaveHandler.TIMEOUT_MINUTES));

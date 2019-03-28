@@ -12,8 +12,6 @@
 
 package com.elasticbox.jenkins;
 
-import static com.elasticbox.jenkins.util.ClientCache.getHttpProxy;
-
 import antlr.ANTLRException;
 
 import com.elasticbox.Client;
@@ -598,7 +596,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         }
 
         public FormValidation doVerifyToken(@QueryParameter String endpointUrl, @QueryParameter String token) {
-            Client client = new Client(endpointUrl, token, getHttpProxy());
+            Client client = new Client(endpointUrl, token, ClientCache.getJenkinsHttpProxyCfg());
             try {
                 client.connect();
             } catch (IOException ex) {
@@ -788,7 +786,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             Client client = ClientCache.getClient(endpointUrl, token);
             if (client == null) {
                 if (StringUtils.isNotBlank(token)) {
-                    client = new Client(endpointUrl, token, getHttpProxy());
+                    client = new Client(endpointUrl, token, ClientCache.getJenkinsHttpProxyCfg());
                 } else {
                     LOGGER.log(Level.SEVERE, "You need an ElasticBox token to be able to connect");
                 }

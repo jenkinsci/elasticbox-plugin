@@ -12,8 +12,6 @@
 
 package com.elasticbox.jenkins;
 
-import static com.elasticbox.jenkins.util.ClientCache.getHttpProxy;
-
 import com.elasticbox.BoxStack;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
@@ -143,7 +141,7 @@ public class DescriptorHelper {
 
 
         String token = null;
-        Client client = new Client(endpointUrl, username, password, getHttpProxy());
+        Client client = new Client(endpointUrl, username, password, ClientCache.getJenkinsHttpProxyCfg());
         try {
             token = client.generateToken(Constants.TOKEN_DESCRIPTION);
         } catch (ClientException ex) {

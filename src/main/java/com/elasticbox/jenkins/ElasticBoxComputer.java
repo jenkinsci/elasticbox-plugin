@@ -270,7 +270,7 @@ public final class ElasticBoxComputer extends SlaveComputer {
                 && ((OfflineCause.SimpleOfflineCause) cause)
                             .description
                                 .toString()
-                                    .equals("Node is being removed");
+                                    .equals(Messages._Hudson_NodeBeingRemoved().toString());
     }
 
     private static class HostAddresses implements Callable<List<Inet4Address>, IOException> {

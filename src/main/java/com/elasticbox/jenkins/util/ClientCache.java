@@ -62,7 +62,7 @@ public class ClientCache {
 
             Cloud cloud = Jenkins.get().getCloud(cloudName);
             if (cloud instanceof ElasticBoxCloud) {
-                client = new CachedClient((ElasticBoxCloud) cloud, getHttpProxy());
+                client = new CachedClient((ElasticBoxCloud) cloud, getJenkinsHttpProxyCfg());
                 client.connect();
                 clientCache.put(cloudName, client);
             } else if (StringUtils.isNotBlank(cloudName)) {
@@ -73,7 +73,7 @@ public class ClientCache {
         return client;
     }
 
-    public static HttpProxy getHttpProxy() {
+    public static HttpProxy getJenkinsHttpProxyCfg() {
         HttpProxy httpProxy = null;
         ProxyConfiguration proxyConfiguration = Jenkins.get().proxy;
         if ((proxyConfiguration != null) && (!StringUtils.isBlank(proxyConfiguration.name))) {

@@ -22,13 +22,17 @@ public abstract class Condition {
 
     private static final Logger logger = Logger.getLogger(Condition.class.getName());
 
-    private String callerId = null;
+    private String callerDesc = "no caller id" ;
 
     public abstract boolean satisfied();
 
-    public boolean waitUntilSatisfied(long timeoutSeconds, String callerId) {
-        this.callerId = callerId;
-        return waitUntilSatisfied(timeoutSeconds) ;
+    public Condition() {
+    }
+
+    public Condition(String callerId) {
+        if (callerId != null) {
+            this.callerDesc = callerId;
+        }
     }
 
     public synchronized boolean waitUntilSatisfied(long timeoutSeconds) {
@@ -43,10 +47,8 @@ public abstract class Condition {
             try {
                 wait(1000);
             } catch (InterruptedException ex) {
-                String callerDesc = (callerId != null) ? callerId : "no caller id" ;
                 logger.log(Level.SEVERE, "Thread Interrupted (" + callerDesc + ")", ex);
             } catch (Exception ex) {
-                String callerDesc = (callerId != null) ? callerId : "no caller id" ;
                 logger.log(Level.SEVERE, "Exception in waitUntilSatisfied (" + callerDesc + ")", ex);
                 throw ex;
             }

@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import static com.elasticbox.jenkins.util.ClientCache.getHttpProxy;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
@@ -70,7 +70,7 @@ public class BuildStepTest extends BuildStepTestBase {
         String jobNameAndBuildId = MessageFormat.format("{0}-{1}", variableResolver.resolve("${JOB_NAME}"), variableResolver.resolve("${BUILD_ID}"));
         String buildTag = variableResolver.resolve("${BUILD_TAG}");
 
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getToken(), getHttpProxy());
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getToken(), ClientCache.getJenkinsHttpProxyCfg());
 
         JSONObject testLinuxBox = getTestBox(TestUtils.TEST_LINUX_BOX_NAME);
         JSONObject testBindingBox = getTestBox(TestUtils.TEST_BINDING_BOX_NAME);

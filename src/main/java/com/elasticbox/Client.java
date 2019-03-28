@@ -18,7 +18,6 @@ import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.HttpHeaders;
@@ -103,12 +102,12 @@ public class Client implements ApiClient {
             Arrays.asList(TaskState.DONE, TaskState.UNSUCCESSFUL));
 
     private static HttpClient httpClient = null;
+    private static HttpProxy httpClientProxy = null;
 
     private final String endpointUrl;
     private final String username;
     private final String password;
     private String token = null;
-    private HttpProxy httpProxy = null;
 
     public static interface InstanceState {
         String PROCESSING = "processing";
@@ -145,7 +144,6 @@ public class Client implements ApiClient {
     }
 
     protected Client(String endpointUrl, String username, String password, String token, HttpProxy httpProxy) {
-        this.httpProxy = httpProxy;
         getHttpClient(httpProxy);
         this.endpointUrl = endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl;
         this.username = username;
@@ -173,8 +171,8 @@ public class Client implements ApiClient {
         return password;
     }
 
-    public HttpProxy getHttpProxy() {
-        return httpProxy;
+    public HttpProxy getHttpClientProxy() {
+        return httpClientProxy;
     }
 
     public void connect() throws IOException {
@@ -1141,8 +1139,8 @@ public class Client implements ApiClient {
     @CheckForNull
     public static synchronized HttpClient getHttpClientInstance() {
         if (httpClient == null) {
-            LOGGER.warning("Calling getHttpClientInstance() while httpClient is null. Fix it!" );
-            return getHttpClient(null);
+            LOGGER.warning("An attempt to re-configure a httpClient after constructor was made" );
+            return getHttpClient(httpClientProxy);
         }
         return httpClient;
     }
@@ -1177,23 +1175,28 @@ public class Client implements ApiClient {
 
                 httpClientBuilder.setConnectionManager(connectionManager);
 
-                if ((httpProxy != null)
-                        && (!StringUtils.isBlank(httpProxy.host)) && (httpProxy.port != 0) ) {
-                    LOGGER.info("Proxy configured for connection through " + httpProxy.host + ":" + httpProxy.port );
-                    HttpHost proxyHostObject = new HttpHost(httpProxy.host, httpProxy.port);
-                    httpClientBuilder.setProxy(proxyHostObject);
+                if (httpProxy != null) {
+                    if ( (!StringUtils.isBlank(httpProxy.host)) && (httpProxy.port != 0) ) {
+                        httpClientProxy = httpProxy;
+                        LOGGER.info("Proxy configured for connection through " + httpProxy.host + ":" + httpProxy.port);
+                        HttpHost proxyHostObject = new HttpHost(httpProxy.host, httpProxy.port);
+                        httpClientBuilder.setProxy(proxyHostObject);
 
-                    if (!StringUtils.isBlank(httpProxy.getUser()) && !StringUtils.isBlank(httpProxy.getPwrd())) {
-                        LOGGER.info("Proxy configured with credentials for " + httpProxy.getUser() );
-                        CredentialsProvider credsProvider = new BasicCredentialsProvider();
-                        credsProvider.setCredentials(new AuthScope(httpProxy.host, httpProxy.port),
-                                new UsernamePasswordCredentials(httpProxy.getUser(), httpProxy.getPwrd()));
-                        httpClientBuilder.setDefaultCredentialsProvider(credsProvider);
+                        if (!StringUtils.isBlank(httpProxy.getUser()) && !StringUtils.isBlank(httpProxy.getPwrd())) {
+                            LOGGER.info("Proxy configured with credentials for " + httpProxy.getUser());
+                            CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                            credsProvider.setCredentials(new AuthScope(httpProxy.host, httpProxy.port),
+                                    new UsernamePasswordCredentials(httpProxy.getUser(), httpProxy.getPwrd()));
+                            httpClientBuilder.setDefaultCredentialsProvider(credsProvider);
+                        }
+                    } else {
+                        LOGGER.warning("Misconfigured Jenkins proxy data. No proxy assumed." );
                     }
                 }
 
                 httpClient = httpClientBuilder.build();
-            } catch (Exception e) {
+            } catch (Exception ex) {
+                LOGGER.log(Level.WARNING, "Error while configuring httpClientBuilder.", ex);
                 httpClient = httpClientBuilder.build();
             }
 
@@ -1228,7 +1231,6 @@ public class Client implements ApiClient {
         }
 
     }
-
 
 }
 

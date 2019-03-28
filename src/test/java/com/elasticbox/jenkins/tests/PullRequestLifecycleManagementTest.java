@@ -41,11 +41,12 @@ import java.util.logging.Logger;
 public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestLifecycleManagementTest.class.getName() );
 
+    private long NEXTBUILD_TIMEOUT = 90;
+
 
     @Test
     public void testPullRequestLifecycleManagement() throws Exception {
 
-        long NEXTBUILD_TIMEOUT = 120; // before was 30
         setLoggerLevel("com.elasticbox.jenkins", Level.FINER);
 
         LOGGER.fine("Check GitHub webhook");
@@ -69,7 +70,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 return project.getLastBuild() != null;
             }
 
-        }.waitUntilSatisfied(60);
+        }.waitUntilSatisfied(NEXTBUILD_TIMEOUT);
 
         Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild());
 
@@ -149,7 +150,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     }
 
     private void ensureBuildTriggered(String messageFormat, Object parameter) {
-        final AbstractBuild build = waitForNextBuild(60, "ensureBuildTriggered");
+        final AbstractBuild build = waitForNextBuild(NEXTBUILD_TIMEOUT, "ensureBuildTriggered");
         Assert.assertNotNull(MessageFormat.format(messageFormat, parameter), build);
 
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15) );
@@ -163,7 +164,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         AbstractBuild build;
         List<Queue.Item> queue = jenkinsRule.getInstance().getQueue().getUnblockedItems();
         if (waitUntilStarted) {
-            build = waitForNextBuild(60, "abortBuildOfClosePullRequest-1");
+            build = waitForNextBuild(NEXTBUILD_TIMEOUT, "abortBuildOfClosePullRequest-1");
             Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), build);
             Assert.assertTrue(build.isBuilding());
         } else {
@@ -185,7 +186,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 public boolean satisfied() {
                     return !finalBuild.isBuilding();
                 }
-            }.waitUntilSatisfied(60);
+            }.waitUntilSatisfied(NEXTBUILD_TIMEOUT);
         } else {
             Thread.sleep(2000); // Wait a couple of seconds to let the close event to be processed.
         }

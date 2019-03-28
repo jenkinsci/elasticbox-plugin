@@ -68,29 +68,26 @@ public class TestBase {
             JSONObject object = iter.next();
             String uri = object.getString("uri");
             if (uri != null && uri.startsWith("/services/instances/")) {
-                String instanceId = null;
+                String instanceId = "unknown";
                 try {
                     instanceId = object.getString("id");
                     IProgressMonitor monitor = client.forceTerminate(instanceId);
                     terminatingInstancIdToMonitorMap.put(instanceId, monitor);
                     iter.remove();
-                } catch (IOException ex) {
-                    boolean isAlreadyDeleted = false;
-                    if (ex instanceof ClientException) {
-                        int exStatusCode = ((ClientException) ex).getStatusCode();
-                        // SC_NOT_FOUND admitted for compatibility with previous versions to CAM 5.0.22033
-                        isAlreadyDeleted = (exStatusCode == HttpStatus.SC_FORBIDDEN) || (exStatusCode == HttpStatus.SC_NOT_FOUND);
-                    }
-                    if(isAlreadyDeleted){
+                } catch (ClientException ex) {
+                    // SC_NOT_FOUND admitted for compatibility with previous versions to CAM 5.0.22033
+                    if ((ex.getStatusCode() == HttpStatus.SC_FORBIDDEN) || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND)){
                         LOGGER.log(Level.INFO, "Instance \"" + instanceId + "\" was already deleted.");
                     } else {
                         LOGGER.log(Level.WARNING, ex.getMessage(), ex);
                     }
+                } catch (IOException ex) {
+                    LOGGER.log(Level.WARNING, ex.getMessage(), ex);
                 }
             }
         }
         List<String> instanceIDs = new ArrayList<String>(terminatingInstancIdToMonitorMap.keySet());
-        new Condition() {
+        new Condition("terminatingInstancIdToMonitorMap") {
 
             public boolean satisfied() {
                 JSONArray instances;
@@ -124,7 +121,7 @@ public class TestBase {
                 return terminatingInstancIdToMonitorMap.isEmpty();
             }
 
-        }.waitUntilSatisfied(360, "terminatingInstancIdToMonitorMap");
+        }.waitUntilSatisfied(360 );
         for (String instanceId : instanceIDs) {
             try {
                 client.delete(instanceId);

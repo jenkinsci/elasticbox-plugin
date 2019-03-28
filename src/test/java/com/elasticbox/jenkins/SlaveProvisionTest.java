@@ -87,7 +87,7 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
     }
 
     public void waitUntilFinished(int waitSeconds) {
-        new Condition() {
+        new Condition("SlaveProvisionTest - waitUntilFinished") {
 
             @Override
             public boolean satisfied() {
@@ -98,6 +98,6 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
                 return false;
 
             }
-        }.waitUntilSatisfied(waitSeconds, "SlaveProvisionTest - waitUntilFinished");
+        }.waitUntilSatisfied(waitSeconds);
     }
 }
