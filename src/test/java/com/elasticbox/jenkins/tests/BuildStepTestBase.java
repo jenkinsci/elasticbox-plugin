@@ -42,7 +42,6 @@ public class BuildStepTestBase extends TestBase {
     @Before
     @Override
     public void setup() throws Exception {
-
         super.setup();
 
         Client client = cloud.getClient();

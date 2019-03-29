@@ -48,7 +48,7 @@ public abstract class ManageObject extends AbstractBuilder {
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Manage Instance build step");
 
-        Cloud ebCloud = Jenkins.getInstance().getCloud(getCloud());
+        Cloud ebCloud = Jenkins.get().getCloud(getCloud());
         if (!(ebCloud instanceof ElasticBoxCloud)) {
             throw new IOException(MessageFormat.format("Invalid cloud name: {0}", getCloud()));
         }
@@ -65,7 +65,7 @@ public abstract class ManageObject extends AbstractBuilder {
 
         protected List<? extends Descriptor<Operation>> getOperationDescriptors(Class type) {
             List<Descriptor<Operation>> operationDescriptors = new ArrayList<Descriptor<Operation>>();
-            for (Descriptor<Operation> descriptor : Jenkins.getInstance().getDescriptorList(Operation.class)) {
+            for (Descriptor<Operation> descriptor : Jenkins.get().getDescriptorList(Operation.class)) {
                 if (type.isAssignableFrom(descriptor.clazz)) {
                     operationDescriptors.add(descriptor);
                 }

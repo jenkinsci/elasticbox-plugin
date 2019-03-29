@@ -34,7 +34,7 @@ public class ElasticBoxQueueListener extends QueueListener {
 
                 if (ebxBuildWrappers.singleUseSlaveOption != null && ebxBuildWrappers.instanceCreator != null) {
                     Label label = li.getAssignedLabel();
-                    for (Node node : Jenkins.getInstance().getNodes()) {
+                    for (Node node : Jenkins.get().getNodes()) {
                         if (node instanceof ElasticBoxSlave && label.matches(node)) {
                             ((ElasticBoxSlave) node).markForTermination();
                             break;

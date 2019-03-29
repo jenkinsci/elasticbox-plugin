@@ -36,7 +36,7 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
 
     @Test
     public void testSlaveProvisionFailingAttempts() throws Exception {
-        ExtensionList<ElasticBoxExecutor.Workload> workloads = jenkins.getInstance().getExtensionList(ElasticBoxExecutor.Workload.class);
+        ExtensionList<ElasticBoxExecutor.Workload> workloads = jenkinsRule.getInstance().getExtensionList(ElasticBoxExecutor.Workload.class);
         for (ElasticBoxExecutor.Workload workload: workloads) {
             if (workload instanceof ElasticBoxSlaveHandler) {
                 elasticBoxSlaveHandlerMock = Mockito.spy(ElasticBoxSlaveHandler.class);
@@ -52,25 +52,25 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
         ElasticBoxCloud testCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
                 TestUtils.ELASTICBOX_URL, 6, TestUtils.ACCESS_TOKEN,
                 Collections.singletonList(testFailingSlaveConfig) );
-        jenkins.getInstance().clouds.add(testCloud);
+        jenkinsRule.getInstance().clouds.add(testCloud);
 
         // First attempt:
         new Condition() {
 
             @Override
             public boolean satisfied() {
-                return jenkins.getInstance().getNodes().size() == 1;
+                return jenkinsRule.getInstance().getNodes().size() == 1;
             }
         }.waitUntilSatisfied(20);
 
-        Assert.assertEquals("Expected only one node", 1, jenkins.getInstance().getNodes().size() );
-        ElasticBoxSlave slave1 = (ElasticBoxSlave) jenkins.getInstance().getNodes().get(0);
+        Assert.assertEquals("Expected only one node", 1, jenkinsRule.getInstance().getNodes().size() );
+        ElasticBoxSlave slave1 = (ElasticBoxSlave) jenkinsRule.getInstance().getNodes().get(0);
 
         // Final state:
         waitUntilFinished(120);
 
-        Assert.assertEquals("Expected only one node at the end of the run", 1, jenkins.getInstance().getNodes().size() );
-        ElasticBoxSlave slave3 = (ElasticBoxSlave) jenkins.getInstance().getNodes().get(0);
+        Assert.assertEquals("Expected only one node at the end of the run", 1, jenkinsRule.getInstance().getNodes().size() );
+        ElasticBoxSlave slave3 = (ElasticBoxSlave) jenkinsRule.getInstance().getNodes().get(0);
         Assert.assertEquals("Unexpected last slave state", Client.InstanceState.UNAVAILABLE, slave3.getInstanceState() );
         Assert.assertNotEquals("Initial slave object must not be the same than final slave object", slave1, slave3);
         Assert.assertTrue("Expected last slave not to be removable from cloud", !slave3.isRemovableFromCloud() );
@@ -87,12 +87,12 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
     }
 
     public void waitUntilFinished(int waitSeconds) {
-        new Condition() {
+        new Condition("SlaveProvisionTest - waitUntilFinished") {
 
             @Override
             public boolean satisfied() {
-                if (jenkins.getInstance().getNodes().size() == 1) {
-                    ElasticBoxSlave slave = (ElasticBoxSlave) jenkins.getInstance().getNodes().get(0);
+                if (jenkinsRule.getInstance().getNodes().size() == 1) {
+                    ElasticBoxSlave slave = (ElasticBoxSlave) jenkinsRule.getInstance().getNodes().get(0);
                     return !slave.isRemovableFromCloud();
                 }
                 return false;

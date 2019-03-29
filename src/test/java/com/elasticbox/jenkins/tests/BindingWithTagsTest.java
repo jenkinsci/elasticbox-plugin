@@ -40,7 +40,7 @@ public class BindingWithTagsTest extends BuildStepTestBase {
 
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
-        FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("jobs/test-binding-with-tags.xml"), testParameters, jenkins.getInstance());
+        FreeStyleBuild build = TestUtils.runJob("test", createTestDataFromTemplate("jobs/test-binding-with-tags.xml"), testParameters, jenkinsRule.getInstance());
 
         ByteArrayOutputStream log = new ByteArrayOutputStream();
         build.getLogText().writeLogTo(0, log);
@@ -73,7 +73,7 @@ public class BindingWithTagsTest extends BuildStepTestBase {
         Assert.assertEquals(
             MessageFormat.format("Number of bindings unexpected: Found {0}, expected: {1}", bindings.size(), 2),bindings.size(), 2);
 
-        TestUtils.cleanUp(testTag, jenkins.getInstance());
+        TestUtils.cleanUp(testTag, jenkinsRule.getInstance());
     }
 
     private JSONArray getInstances(Set<String> tags, String cloud, String workspace) throws IOException {

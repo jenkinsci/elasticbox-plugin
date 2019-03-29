@@ -40,7 +40,7 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
     public boolean postStatus(
         AbstractBuild<?, ?> build, GHPullRequest pullRequest, GHCommitState status, String message) {
 
-        String detailsUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();
+        String detailsUrl = Jenkins.get().getRootUrl() + build.getUrl();
 
         if (LOGGER.isLoggable(Level.FINER) ) {
             LOGGER.finer(MessageFormat.format("Posting status {0} to {1} with details URL {2} and message: {3}",
@@ -57,7 +57,7 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
     }
 
     public void postComment(AbstractBuild<?, ?> build, GHPullRequest pullRequest, String comment) {
-        String detailsUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();
+        String detailsUrl = Jenkins.get().getRootUrl() + build.getUrl();
         try {
 
             pullRequest.comment(MessageFormat.format("{0}. See {1} for more details.", comment, detailsUrl));

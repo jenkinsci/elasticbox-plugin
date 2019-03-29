@@ -46,11 +46,14 @@ import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
+
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Descriptor;
 import hudson.model.EnvironmentContributingAction;
+import hudson.model.Run;
+
 import hudson.slaves.Cloud;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -278,7 +281,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         final JSONObject service = client.getService(instanceId);
         build.addAction(new EnvironmentContributingAction() {
 
-            public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
+            public void buildEnvironment(Run<?,?> build, EnvVars env) {
                 final String instanceUrl = client.getInstanceUrl(instanceId);
                 env.put(instanceEnvVariable, instanceId);
                 env.put(instanceEnvVariable + "_URL", instanceUrl);
@@ -399,7 +402,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
     private void notifyDeploying(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud ebxCloud)
             throws InterruptedException {
 
-        for (BuilderListener listener : Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
+        for (BuilderListener listener : Jenkins.get().getExtensionList(BuilderListener.class)) {
             try {
                 listener.onDeploying(build, instanceId, ebxCloud);
             } catch (IOException ex) {
@@ -415,7 +418,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Deploy Box build step");
 
-        ElasticBoxCloud ebCloud = (ElasticBoxCloud) Jenkins.getInstance().getCloud(getCloud());
+        ElasticBoxCloud ebCloud = (ElasticBoxCloud) Jenkins.get().getCloud(getCloud());
         if (ebCloud == null) {
             throw new IOException(MessageFormat.format("Cannod find ElasticBox cloud ''{0}''.", getCloud()));
         }
@@ -573,7 +576,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
     }
 
     public ElasticBoxCloud getElasticBoxCloud() {
-        return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloud);
+        return (ElasticBoxCloud) Jenkins.get().getCloud(cloud);
     }
 
     private static class Result {
@@ -654,7 +657,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
 
         private static List<ElasticBoxCloud> getElasticBoxClouds() {
             List<ElasticBoxCloud> elasticBoxClouds = new ArrayList<>();
-            for (Cloud cloud : Jenkins.getInstance().clouds) {
+            for (Cloud cloud : Jenkins.get().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     elasticBoxClouds.add((ElasticBoxCloud) cloud);
                 }
@@ -675,7 +678,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         }
 
         public List<? extends Descriptor<InstanceExpiration>> getExpirationOptions() {
-            return Jenkins.getInstance().getDescriptorList(InstanceExpiration.class);
+            return Jenkins.get().getDescriptorList(InstanceExpiration.class);
         }
 
         @Override
@@ -756,7 +759,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
             trace("doFillCloudItems", "", "", "", "", "", "");
 
             ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option(Constants.CHOOSE_CLOUD_MESSAGE, ""));
-            for (Cloud cloud : Jenkins.getInstance().clouds) {
+            for (Cloud cloud : Jenkins.get().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     clouds.add(cloud.getDisplayName(), cloud.name);
                 }

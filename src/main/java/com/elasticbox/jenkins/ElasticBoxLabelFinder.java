@@ -12,7 +12,6 @@
 
 package com.elasticbox.jenkins;
 
-
 import hudson.Extension;
 import hudson.model.LabelFinder;
 import hudson.model.Node;
@@ -34,7 +33,7 @@ public class ElasticBoxLabelFinder extends LabelFinder {
     public static final ElasticBoxLabelFinder INSTANCE = new ElasticBoxLabelFinder();
 
     public static final LabelAtom getLabel(AbstractSlaveConfiguration slaveConfig, boolean singleUse) {
-        return Jenkins.getInstance().getLabelAtom((singleUse ? SINGLE_USE_PREFIX : REUSE_PREFIX) + slaveConfig.getId());
+        return Jenkins.get().getLabelAtom((singleUse ? SINGLE_USE_PREFIX : REUSE_PREFIX) + slaveConfig.getId());
     }
 
     @Override

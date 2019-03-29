@@ -151,7 +151,7 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 slaveConfig.setId(UUID.randomUUID().toString());
             }
 
-            FormValidation result = ((SlaveConfiguration.DescriptorImpl)Jenkins.getInstance()
+            FormValidation result = ((SlaveConfiguration.DescriptorImpl)Jenkins.get()
                 .getDescriptorOrDie(SlaveConfiguration.class))
                 .doCheckBoxVersion(slaveConfig.getBoxVersion(),
                         newCloud.name,
@@ -171,10 +171,11 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             }
 
             Client client = (name != null && name.length() > 0)
-                    ? ClientCache.getClient(name) : new Client(endpointUrl, token);
+                    ? ClientCache.getClient(name)
+                    : new Client(endpointUrl, token, ClientCache.getJenkinsHttpProxyCfg());
 
             if ( !client.getEndpointUrl().equals(endpointUrl) ) {
-                client = new Client(endpointUrl, token);
+                client = new Client(endpointUrl, token, ClientCache.getJenkinsHttpProxyCfg());
             }
 
             return client;

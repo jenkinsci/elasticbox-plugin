@@ -126,8 +126,8 @@ public class ProjectData implements Saveable {
     @Initializer(after = InitMilestone.JOB_LOADED)
     public static void loadAll() {
         LOGGER.info("Loading ElasticBox specific project data");
-        List<ProjectDataListener> listeners = Jenkins.getInstance().getExtensionList(ProjectDataListener.class);
-        for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+        List<ProjectDataListener> listeners = Jenkins.get().getExtensionList(ProjectDataListener.class);
+        for (AbstractProject<?,?> job : Jenkins.get().getAllItems(AbstractProject.class)) {
             ProjectData data = null;
             try {
                 data = ProjectData.load(job);

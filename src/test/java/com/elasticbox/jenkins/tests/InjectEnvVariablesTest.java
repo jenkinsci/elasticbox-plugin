@@ -85,10 +85,10 @@ public class InjectEnvVariablesTest extends TestBase {
         try {
             Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
             String jobXml = templateResolver.resolve(TestUtils.getResourceAsString(jobTemplatePath));
-            FreeStyleBuild build = TestUtils.runJob("test", jobXml, testParameters, jenkins.getInstance());
+            FreeStyleBuild build = TestUtils.runJob("test", jobXml, testParameters, jenkinsRule.getInstance());
             TestUtils.assertBuildSuccess(build);
         } finally {
-            TestUtils.cleanUp(testTag, Jenkins.getInstance());
+            TestUtils.cleanUp(testTag, Jenkins.get());
         }
     }
 }

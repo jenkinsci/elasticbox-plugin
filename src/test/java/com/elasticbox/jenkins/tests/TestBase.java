@@ -14,6 +14,7 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.jenkins.util.Condition;
 import com.elasticbox.Client;
+import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import java.io.IOException;
@@ -33,6 +34,7 @@ import java.util.logging.SimpleFormatter;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,17 +47,19 @@ public class TestBase {
     protected ElasticBoxCloud cloud;
 
     @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
+    public JenkinsRule jenkinsRule = new JenkinsRule();
 
     @Before
     public void setup() throws Exception {
-        jenkins.timeout = 300;
+        LOGGER.info("Test timeout: " + jenkinsRule.timeout);
         cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
-        jenkins.getInstance().clouds.add(cloud);
+        LOGGER.fine("Elasticbox cloud: " + cloud);
+        jenkinsRule.getInstance().clouds.add(cloud);
     }
 
     @After
     public void tearDown() throws Exception {
+        LOGGER.fine("tearDown cloud: " + cloud);
         final Client client = cloud.getClient();
 
         // terminate and delete instances
@@ -64,18 +68,26 @@ public class TestBase {
             JSONObject object = iter.next();
             String uri = object.getString("uri");
             if (uri != null && uri.startsWith("/services/instances/")) {
+                String instanceId = "unknown";
                 try {
-                    String instanceId = object.getString("id");
+                    instanceId = object.getString("id");
                     IProgressMonitor monitor = client.forceTerminate(instanceId);
                     terminatingInstancIdToMonitorMap.put(instanceId, monitor);
                     iter.remove();
+                } catch (ClientException ex) {
+                    // SC_NOT_FOUND admitted for compatibility with previous versions to CAM 5.0.22033
+                    if ((ex.getStatusCode() == HttpStatus.SC_FORBIDDEN) || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND)){
+                        LOGGER.log(Level.INFO, "Instance \"" + instanceId + "\" was already deleted.");
+                    } else {
+                        LOGGER.log(Level.WARNING, ex.getMessage(), ex);
+                    }
                 } catch (IOException ex) {
                     LOGGER.log(Level.WARNING, ex.getMessage(), ex);
                 }
             }
         }
         List<String> instanceIDs = new ArrayList<String>(terminatingInstancIdToMonitorMap.keySet());
-        new Condition() {
+        new Condition("terminatingInstancIdToMonitorMap") {
 
             public boolean satisfied() {
                 JSONArray instances;
@@ -109,7 +121,7 @@ public class TestBase {
                 return terminatingInstancIdToMonitorMap.isEmpty();
             }
 
-        }.waitUntilSatisfied(180);
+        }.waitUntilSatisfied(360 );
         for (String instanceId : instanceIDs) {
             try {
                 client.delete(instanceId);
@@ -122,7 +134,18 @@ public class TestBase {
             try {
                 delete(objectsToDelete.get(i), client);
             } catch (IOException ex) {
-                LOGGER.log(Level.WARNING, ex.getMessage(), ex);
+                boolean isAlreadyDeleted = false;
+                if (ex instanceof ClientException) {
+                    int exStatusCode = ((ClientException) ex).getStatusCode();
+                    // SC_NOT_FOUND admitted for compatibility with previous versions
+                    isAlreadyDeleted = (exStatusCode == HttpStatus.SC_FORBIDDEN) || (exStatusCode == HttpStatus.SC_NOT_FOUND);
+                }
+                if(isAlreadyDeleted){
+                    String instanceId = objectsToDelete.get(i).getString("id");
+                    LOGGER.log(Level.INFO, "Instance \"" + instanceId + "\" pending to delete was already deleted.");
+                } else {
+                    LOGGER.log(Level.WARNING, ex.getMessage(), ex);
+                }
             }
         }
     }
@@ -157,7 +180,7 @@ public class TestBase {
     }
 
     public void setLoggerLevel(String name, Level level) {
-        jenkins.getInstance().getLog().doConfigLogger(name, level.toString() );
+        jenkinsRule.getInstance().getLog().doConfigLogger(name, level.toString() );
         final Logger logger = Logger.getLogger(name);
         Handler consoleHandler = new ConsoleHandler();
         consoleHandler.setLevel(level);

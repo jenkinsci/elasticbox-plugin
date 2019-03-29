@@ -5,7 +5,7 @@ set -e
 USAGE="Usage : version-build.sh -a ELASTICBOX_ADDRESS -j JENKINS_VERSION
 
 Example:
-    build.sh -a https://blue.elasticbox.com -j 1.581
+    version-build.sh -a https://blue.elasticbox.com -j 2.150.2
 
 Options:
     -a ElasticBox address to run tests against
@@ -51,7 +51,7 @@ done
 
 if [[ -z ${EBX_ADDRESS} ]]
 then
-    help "ElasticBox address must be specified"
+    help "ElasticBox address must be specified."
     exit 1
 fi
 
@@ -72,7 +72,11 @@ echo "Building with Jenkins version ${JENKINS_VERSION}"
 echo "------------------------------------------------"
 echo "Testing against ElasticBox at ${EBX_ADDRESS}"
 
-BUILD_OPTIONS="-B -DskipTests=false -Dmaven.javadoc.skip=true -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+BUILD_OPTIONS="-B -DskipTests=false  -Dmaven.javadoc.skip=true"
+BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+
+BUILD_OPTIONS="${BUILD_OPTIONS} -Dhudson.model.ParametersAction.keepUndefinedParameters=true"
+BUILD_OPTIONS="${BUILD_OPTIONS} -Djenkins.test.timeout=1200"
 
 if [[ -n ${EBX_WORKSPACE} ]]
 then

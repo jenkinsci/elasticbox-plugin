@@ -120,7 +120,7 @@ public class BoxVersionTest extends BuildStepTestBase {
     @After
     @Override
     public void tearDown() throws Exception {
-        TestUtils.cleanUp(testTag, STAGING, jenkins.getInstance());
+        TestUtils.cleanUp(testTag, STAGING, jenkinsRule.getInstance());
         super.tearDown();
     }
 
@@ -153,8 +153,8 @@ public class BoxVersionTest extends BuildStepTestBase {
 
     public void testBoxVersion() throws Exception {
         Map<String, String> parameters = Collections.singletonMap("TEST_TAG", testTag);
-        FreeStyleProject project = TestUtils.createProject("test", createTestDataFromTemplate("jobs/test-box-version.xml"), jenkins.getInstance());
-        FreeStyleBuild build = TestUtils.runJob(project, parameters, jenkins.getInstance());
+        FreeStyleProject project = TestUtils.createProject("test", createTestDataFromTemplate("jobs/test-box-version.xml"), jenkinsRule.getInstance());
+        FreeStyleBuild build = TestUtils.runJob(project, parameters, jenkinsRule.getInstance());
         TestUtils.assertBuildSuccess(build);
 
         JSONObject testLinuxBox = testBoxDataLookup.get("test-linux-box").getJson();
@@ -164,20 +164,20 @@ public class BoxVersionTest extends BuildStepTestBase {
 
         // check that the latest of test-nested-box is deployed and updated by the build
         checkBuildOutcome(build, testNestedBoxId, testLinuxBoxVersion1);
-        TestUtils.cleanUp(testTag, STAGING, jenkins.getInstance());
+        TestUtils.cleanUp(testTag, STAGING, jenkinsRule.getInstance());
 
         // create version 1 of test-nested-box, share it as read-only with staging workspace and build again
         String testNestedBoxVersion1 = createVersion(testNestedBox, 1, 0, 0, "v1.0.0").getString("id");
         share(testNestedBoxUri, STAGING, true);
-        build = TestUtils.runJob(project, parameters, jenkins.getInstance());
+        build = TestUtils.runJob(project, parameters, jenkinsRule.getInstance());
         TestUtils.assertBuildSuccess(build);
         // check that version 1 is deployed and child box test-linux-box is updated by the build
         checkBuildOutcome(build, testNestedBoxVersion1, testLinuxBoxVersion1);
-        TestUtils.cleanUp(testTag, STAGING, jenkins.getInstance());
+        TestUtils.cleanUp(testTag, STAGING, jenkinsRule.getInstance());
 
         // create version 2 of test-linux-box and build again
         testLinuxBoxVersion2 = createVersion(testLinuxBox, 2, 0, 0, "v2.0.0").getString("id");
-        build = TestUtils.runJob(project, parameters, jenkins.getInstance());
+        build = TestUtils.runJob(project, parameters, jenkinsRule.getInstance());
         TestUtils.assertBuildSuccess(build);
         // check that version 2 is deployed and updated by the build
         checkBuildOutcome(build, testNestedBoxVersion1, testLinuxBoxVersion2);

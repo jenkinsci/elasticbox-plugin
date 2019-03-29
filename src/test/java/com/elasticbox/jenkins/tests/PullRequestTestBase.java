@@ -59,6 +59,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -102,7 +103,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
             apiGithubAddress = MessageFormat.format("{0}/api/v3", TestUtils.GITHUB_ADDRESS);
             customApiUrl = true;
         }
-        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
+        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks
@@ -120,7 +121,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         // try to delete all comments that are older than 1 hour
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR_OF_DAY, -1);
-        HttpClient httpClient = Client.getHttpClient();
+        HttpClient httpClient = Client.getHttpClientInstance();
         for (GHIssueComment comment : ghPullRequest.getComments()) {
             if (comment.getCreatedAt().before(calendar.getTime())) {
                 HttpDelete delete = new HttpDelete(comment.getUrl().toString());
@@ -140,11 +141,10 @@ public class PullRequestTestBase extends BuildStepTestBase {
         pullRequest = new MockPullRequest(ghPullRequest);
         testTag = UUID.randomUUID().toString().substring(0, 30);
         
-        StandardCredentials creds = jenkins.getInstance()
+        StandardCredentials creds = jenkinsRule.getInstance()
                 .getDescriptorByType(GitHubTokenCredentialsCreator.class)
                 .createCredentials(apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN, TestUtils.GITHUB_USER);
         GitHubServerConfig config = new GitHubServerConfig(creds.getId());
-        config.setCustomApiUrl(customApiUrl);
         config.setApiUrl(apiGithubAddress);
         config.setManageHooks(true);
         GitHubPlugin.configuration().getConfigs().add(config);
@@ -159,9 +159,9 @@ public class PullRequestTestBase extends BuildStepTestBase {
             }
 
         };
-        downstreamProject = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request-downstream",
+        downstreamProject = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request-downstream",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request-downstream.xml")).getBytes()));
-        project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request",
+        project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
     }
 
@@ -197,6 +197,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         if (githubEndpoint.equals(publicGithubAddress)) {
             github = GitHub.connect(githubUser, githubToken);
         } else {
+            // Deprecated Use with caution. Login with password is not a preferred method. Hay que deidir si quitarlo
             github = GitHub.connectToEnterprise(apiGithubAddress, githubUser, githubToken);
         }
 
@@ -269,8 +270,12 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected AbstractBuild waitForNextBuild(long timeoutSeconds) {
+        return waitForNextBuild (timeoutSeconds, null);
+    }
+
+    protected AbstractBuild waitForNextBuild(long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
-        new Condition() {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 return build.getNextBuild() != null;
@@ -281,8 +286,12 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void waitForCompletion(long timeoutSeconds) {
+        waitForCompletion(timeoutSeconds, null);
+    }
+
+    protected void waitForCompletion(long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
-        new Condition() {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 return !build.isBuilding();
@@ -292,7 +301,11 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds) {
-        new Condition() {
+        waitForDeletion(instances, timeoutSeconds, null);
+    }
+
+    protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds, String callerId) {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 try {
@@ -302,7 +315,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
                         try {
                             client.getInstance(instance.getString("id"));
                         } catch (ClientException ex) {
-                            if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                            // SC_NOT_FOUND admitted for compatibility with previous versions to CAM 5.0.22033
+                            if ( (ex.getStatusCode() == HttpStatus.SC_FORBIDDEN) || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) ){
                                 iter.remove();
                                 objectsToDelete.remove(instance);
                             } else {
@@ -317,7 +331,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 }
             }
 
-        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(timeoutSeconds));
+        }.waitUntilSatisfied(timeoutSeconds);
     }
 
     protected class MockPullRequest {
@@ -368,10 +382,12 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         private void postPayload(HttpEntity entity, String event) throws IOException {
-            HttpPost post = new HttpPost(webhookUrl + "?.crumb=test");
+            CrumbIssuerJson crumbIssuerJson = getCrumbIssuer();
+            HttpPost post = new HttpPost(webhookUrl);
             post.addHeader("X-GitHub-Event", event);
+            post.addHeader(crumbIssuerJson.crumbRequestField, crumbIssuerJson.crumb);
             post.setEntity(entity);
-            HttpResponse response = Client.getHttpClient().execute(post);
+            HttpResponse response = Client.getHttpClientInstance().execute(post);
             int status = response.getStatusLine().getStatusCode();
             if (status < 200 || status > 299) {
                 throw new ClientException(Client.getResponseBodyAsString(response), status);
@@ -379,6 +395,17 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 EntityUtils.consumeQuietly(response.getEntity());
             }
         }
+
+        public CrumbIssuerJson getCrumbIssuer() throws IOException {
+            String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+            String uriCrumbIssuer = jenkinsUrl + "crumbIssuer/api/json";
+            HttpGet httpGet = new HttpGet(uriCrumbIssuer);
+            HttpResponse response = Client.getHttpClientInstance().execute(httpGet);
+            String serializedCrumbIssuer = Client.getResponseBodyAsString(response);
+            LOGGER.finer("serializedCrumbIssuer = " + serializedCrumbIssuer );
+            return new CrumbIssuerJson(serializedCrumbIssuer);
+        }
+
 
         public void open() throws IOException {
             LOGGER.info("Opening PR #" + getGHPullRequest().getNumber() );
@@ -470,4 +497,24 @@ public class PullRequestTestBase extends BuildStepTestBase {
         project.updateByXml(streamSource);
     }
 
+}
+
+class CrumbIssuerJson {
+    public String crumb;
+    public String crumbRequestField;
+
+    public CrumbIssuerJson(String crumb, String crumbRequestField){
+        this.crumb = crumb;
+        this.crumbRequestField = crumbRequestField;
+    }
+
+    /**
+     * helper construct to deserialize crumb json:
+     * {"_class":"org.jvnet.hudson.test.TestCrumbIssuer","crumb":"test","crumbRequestField":"Jenkins-Crumb"}
+     */
+    public CrumbIssuerJson(String serializedCrumbIssuer) {
+        JSONObject jsonObject = JSONObject.fromObject(serializedCrumbIssuer);
+        this.crumbRequestField = (String) jsonObject.get("crumbRequestField");
+        this.crumb = (String) jsonObject.get("crumb");
+    }
 }

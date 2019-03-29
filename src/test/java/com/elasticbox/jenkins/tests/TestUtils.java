@@ -74,6 +74,7 @@ public class TestUtils {
     static final String NAME_PREFIX = TEST_TAG + '-';
     static final String LINUX_COMPUTE = "Linux Compute";
 
+
     static final Properties GITHUB_PROPERTIES = loadGitHubProperties(System.getProperty("elasticbox.jenkins.test.GitHubProperties"));
     static final String GITHUB_USER = GITHUB_PROPERTIES.getProperty("GITHUB_USER");
     static final String GITHUB_REPO_NAME = GITHUB_PROPERTIES.getProperty("GITHUB_REPO");
@@ -135,7 +136,7 @@ public class TestUtils {
     }
 
     static String getResourceAsString(String resourcePath) throws IOException {
-        return IOUtils.toString((InputStream) TestUtils.class.getResource(resourcePath).getContent());
+        return IOUtils.toString((InputStream) TestUtils.class.getResource(resourcePath).getContent(),  "UTF-8");
     }
 
     static FreeStyleProject createProject(String name, String projectXml, Jenkins jenkins) throws IOException {
@@ -156,7 +157,7 @@ public class TestUtils {
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
         final FreeStyleBuild[]  buildHolder = new FreeStyleBuild[1];
-        new Condition() {
+        new Condition("runJob buildHolder") {
 
             @Override
             public boolean satisfied() {
@@ -327,7 +328,7 @@ public class TestUtils {
 
     private static JSONObject loadBox(String templatePath, TemplateResolver resolver) throws Exception {
         URI boxJsonUri = TestUtils.class.getResource(templatePath).toURI();
-        String template = FileUtils.readFileToString(new File(boxJsonUri));
+        String template = FileUtils.readFileToString(new File(boxJsonUri), "UTF-8");
         JSONObject box = JSONObject.fromObject(resolver.resolve(template));
         if (box.containsKey("variables")) {
             for (Object variable : box.getJSONArray("variables")) {

@@ -41,6 +41,8 @@ import java.util.logging.Logger;
 public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestLifecycleManagementTest.class.getName() );
 
+    private long NEXTBUILD_TIMEOUT = 90;
+
 
     @Test
     public void testPullRequestLifecycleManagement() throws Exception {
@@ -68,7 +70,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 return project.getLastBuild() != null;
             }
 
-        }.waitUntilSatisfied(60);
+        }.waitUntilSatisfied(NEXTBUILD_TIMEOUT);
 
         Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild());
 
@@ -88,7 +90,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         LOGGER.fine("Testing trigger Phrase...");
         final String triggerPhrase = "Jenkins test this please ";
         pullRequest.comment(triggerPhrase + (count++) );
-        Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''", triggerPhrase), waitForNextBuild(30));
+        Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''", triggerPhrase), waitForNextBuild(NEXTBUILD_TIMEOUT, "Waiting build triggered with comment " + triggerPhrase));
 
         updateTriggerPhrase(triggerPhrase);
         pullRequest.comment(triggerPhrase + (count++) );
@@ -97,24 +99,24 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         instances.addAll(checkBuild(TestUtils.GITHUB_USER));
 
         pullRequest.close();
-        waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10));
+        waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10), "pullRequest.close PR#" + count);
         Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());
 
         LOGGER.fine("Checking that the job is not triggered because the pull request is closed");
         pullRequest.comment(triggerPhrase + (count++), "closed");
-        Assert.assertNull("Build is triggered even for closed pull request", waitForNextBuild(30));
+        Assert.assertNull("Build is triggered even for closed pull request", waitForNextBuild(NEXTBUILD_TIMEOUT, "Waiting build triggered for closed pull request" ));
 
         LOGGER.fine("Enable whitelist and check that that whitelist is enforced");
         updateWhitelist(testTag);
         pullRequest.open();
-        Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(30));
+        Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(NEXTBUILD_TIMEOUT, "Waiting build triggered by user not in the whitelist"));
 
         pullRequest.comment(triggerPhrase + (count++) );
-        Assert.assertNull("Build is triggered even by comment of user not in the whitelist", waitForNextBuild(30));
+        Assert.assertNull("Build is triggered even by comment of user not in the whitelist", waitForNextBuild(NEXTBUILD_TIMEOUT, "Waiting build triggered by comment of user not in the whitelist " + triggerPhrase + count));
 
         pullRequest.close();
         pullRequest.reopen();
-        Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(30));
+        Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(NEXTBUILD_TIMEOUT, "Waiting build triggered by reopened PR of user not in the whitelist"));
 
         updateWhitelist(testTag + ',' + TestUtils.GITHUB_USER);
         pullRequest.reopen();
@@ -135,10 +137,10 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         abortBuildOfClosePullRequest(true);
 
         LOGGER.fine("Checking that the queued job is aborted");
-        jenkins.getInstance().setNumExecutors(1);
-        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-sleep-job",
+        jenkinsRule.getInstance().setNumExecutors(1);
+        FreeStyleProject project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-sleep-job",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-sleep-job.xml").getBytes() ));
-        TestUtils.runJob(project, new HashMap<String, String>(), jenkins.getInstance());
+        TestUtils.runJob(project, new HashMap<String, String>(), jenkinsRule.getInstance());
         abortBuildOfClosePullRequest(false);
     }
 
@@ -148,7 +150,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     }
 
     private void ensureBuildTriggered(String messageFormat, Object parameter) {
-        final AbstractBuild build = waitForNextBuild(60);
+        final AbstractBuild build = waitForNextBuild(NEXTBUILD_TIMEOUT, "ensureBuildTriggered");
         Assert.assertNotNull(MessageFormat.format(messageFormat, parameter), build);
 
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15) );
@@ -160,9 +162,9 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         pullRequest.open();
 
         AbstractBuild build;
-        List<Queue.Item> queue = jenkins.getInstance().getQueue().getUnblockedItems();
+        List<Queue.Item> queue = jenkinsRule.getInstance().getQueue().getUnblockedItems();
         if (waitUntilStarted) {
-            build = waitForNextBuild(60);
+            build = waitForNextBuild(NEXTBUILD_TIMEOUT, "abortBuildOfClosePullRequest-1");
             Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), build);
             Assert.assertTrue(build.isBuilding());
         } else {
@@ -184,12 +186,12 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 public boolean satisfied() {
                     return !finalBuild.isBuilding();
                 }
-            }.waitUntilSatisfied(60);
+            }.waitUntilSatisfied(NEXTBUILD_TIMEOUT);
         } else {
             Thread.sleep(2000); // Wait a couple of seconds to let the close event to be processed.
         }
 
-        queue = jenkins.getInstance().getQueue().getUnblockedItems();
+        queue = jenkinsRule.getInstance().getQueue().getUnblockedItems();
         Assert.assertTrue("Expected queue to be 0. Current items: " + queue, queue.size() == 0);
 
         for (Object instance : cloud.getClient().getInstances(TestUtils.TEST_WORKSPACE)) {

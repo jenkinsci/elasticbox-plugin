@@ -46,7 +46,7 @@ public class TerminateOperation extends LongOperation implements IOperation.Inst
 
     private static void notifyTerminating(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud cloud)
             throws InterruptedException {
-        for (BuilderListener listener: Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
+        for (BuilderListener listener: Jenkins.get().getExtensionList(BuilderListener.class)) {
             try {
                 listener.onTerminating(build, instanceId, cloud);
             } catch (IOException ex) {

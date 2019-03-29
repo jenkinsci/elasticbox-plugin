@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.Client;
+import com.elasticbox.jenkins.util.ClientCache;
 import com.elasticbox.jenkins.util.VariableResolver;
 import hudson.FilePath;
 import hudson.model.FreeStyleBuild;
@@ -48,12 +49,12 @@ public class BuildStepTest extends BuildStepTestBase {
 
     @Test
     public void testBuildWithSteps() throws Exception {
-        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test",
+        FreeStyleProject project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-job.xml").getBytes()));
         LOGGER.info("Testing build steps with project: " + project);
 
         // copy files for file variables
-        FilePath workspace = jenkins.getInstance().getWorkspaceFor(project);
+        FilePath workspace = jenkinsRule.getInstance().getWorkspaceFor(project);
         File testNestedBoxJsonFile = new File(workspace.getRemote(), "test-nested-box.json");
         File jenkinsImageFile = new File(workspace.getRemote(), "jenkins.png");
         FileUtils.copyURLToFile(TestUtils.class.getResource("boxes/test-nested-box.json"), testNestedBoxJsonFile);
@@ -61,7 +62,7 @@ public class BuildStepTest extends BuildStepTestBase {
 
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
-        FreeStyleBuild build = TestUtils.runJob(project, testParameters, jenkins.getInstance());
+        FreeStyleBuild build = TestUtils.runJob(project, testParameters, jenkinsRule.getInstance());
         TestUtils.assertBuildSuccess(build);
 
         // validate the results of executed build steps
@@ -69,7 +70,7 @@ public class BuildStepTest extends BuildStepTestBase {
         String jobNameAndBuildId = MessageFormat.format("{0}-{1}", variableResolver.resolve("${JOB_NAME}"), variableResolver.resolve("${BUILD_ID}"));
         String buildTag = variableResolver.resolve("${BUILD_TAG}");
 
-        Client client = new Client(cloud.getEndpointUrl(), cloud.getToken());
+        Client client = new Client(cloud.getEndpointUrl(), cloud.getToken(), ClientCache.getJenkinsHttpProxyCfg());
 
         JSONObject testLinuxBox = getTestBox(TestUtils.TEST_LINUX_BOX_NAME);
         JSONObject testBindingBox = getTestBox(TestUtils.TEST_BINDING_BOX_NAME);
@@ -172,7 +173,7 @@ public class BuildStepTest extends BuildStepTestBase {
         }
         FileUtils.contentEquals(file, jenkinsImageFile);
 
-        TestUtils.cleanUp(testTag, jenkins.getInstance());
+        TestUtils.cleanUp(testTag, jenkinsRule.getInstance());
     }
 
 }

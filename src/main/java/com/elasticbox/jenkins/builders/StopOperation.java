@@ -115,7 +115,7 @@ public class StopOperation extends LongOperation implements IOperation.InstanceO
     }
 
     protected boolean waitForAvailable(final Client client, final String instanceId, long timeoutSeconds) {
-        return new Condition() {
+        return new Condition("StopOperation - waitForAvailable") {
 
             public boolean satisfied() {
                 JSONObject instanceJson = null;

@@ -128,7 +128,7 @@ public class DescriptorHelper {
 
     public static ListBoxModel getClouds() {
         ListBoxModel clouds = new ListBoxModel();
-        for (Cloud cloud : Jenkins.getInstance().clouds) {
+        for (Cloud cloud : Jenkins.get().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 clouds.add(cloud.getDisplayName(), cloud.name);
             }
@@ -141,7 +141,7 @@ public class DescriptorHelper {
 
 
         String token = null;
-        Client client = new Client(endpointUrl, username, password);
+        Client client = new Client(endpointUrl, username, password, ClientCache.getJenkinsHttpProxyCfg());
         try {
             token = client.generateToken(Constants.TOKEN_DESCRIPTION);
         } catch (ClientException ex) {

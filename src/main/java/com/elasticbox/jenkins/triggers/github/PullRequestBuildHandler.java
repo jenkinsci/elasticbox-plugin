@@ -143,7 +143,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
             // configured and it is retrieved in a separate thread without request context. So the webhook URL is first
             // retrieved here.
             PullRequestBuildTrigger.DescriptorImpl descriptor
-                = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance()
+                = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.get()
                                                                     .getDescriptor(PullRequestBuildTrigger.class);
 
             final String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl())
@@ -477,11 +477,11 @@ public class PullRequestBuildHandler implements IBuildHandler {
             LOGGER.fine("There is no previous running builds to cancel for Pull Request: " + pullRequestUrl);
         }
         LOGGER.info("Checking if there is any build on queue for Pull Request: " + pullRequestUrl);
-        for (Queue.Item item: Jenkins.getInstance().getQueue().getUnblockedItems() ) {
+        for (Queue.Item item: Jenkins.get().getQueue().getUnblockedItems() ) {
             if (isPullRequestBuild(item, pullRequestUrl) ) {
                 LOGGER.info(MessageFormat.format("Cancelling item id {0} found in queue matching Pull Request: {1}",
                         item.getId(), pullRequestUrl));
-                Jenkins.getInstance().getQueue().cancel(item);
+                Jenkins.get().getQueue().cancel(item);
             }
         }
     }
@@ -541,7 +541,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
-            for (AbstractProject<?,?> project : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?,?> project : Jenkins.get().getAllItems(AbstractProject.class)) {
 
                 PullRequestData data =
                     pullRequestManager.removePullRequestData(pullRequest.getHtmlUrl().toString(), project);
