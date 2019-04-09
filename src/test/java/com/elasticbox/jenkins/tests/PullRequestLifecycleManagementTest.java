@@ -42,6 +42,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestLifecycleManagementTest.class.getName() );
 
     private long NEXTBUILD_TIMEOUT = 90;
+    private long NEXTBUILD_TIMEOUT_LONG = 120;
 
 
     @Test
@@ -70,7 +71,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 return project.getLastBuild() != null;
             }
 
-        }.waitUntilSatisfied(NEXTBUILD_TIMEOUT);
+        }.waitUntilSatisfied(NEXTBUILD_TIMEOUT_LONG);
 
         Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild());
 
@@ -150,7 +151,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     }
 
     private void ensureBuildTriggered(String messageFormat, Object parameter) {
-        final AbstractBuild build = waitForNextBuild(NEXTBUILD_TIMEOUT, "ensureBuildTriggered");
+        final AbstractBuild build = waitForNextBuild(NEXTBUILD_TIMEOUT_LONG, "ensureBuildTriggered");
         Assert.assertNotNull(MessageFormat.format(messageFormat, parameter), build);
 
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15) );
@@ -164,7 +165,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         AbstractBuild build;
         List<Queue.Item> queue = jenkinsRule.getInstance().getQueue().getUnblockedItems();
         if (waitUntilStarted) {
-            build = waitForNextBuild(NEXTBUILD_TIMEOUT, "abortBuildOfClosePullRequest-1");
+            build = waitForNextBuild(NEXTBUILD_TIMEOUT_LONG, "abortBuildOfClosePullRequest-1");
             Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), build);
             Assert.assertTrue(build.isBuilding());
         } else {
@@ -186,7 +187,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
                 public boolean satisfied() {
                     return !finalBuild.isBuilding();
                 }
-            }.waitUntilSatisfied(NEXTBUILD_TIMEOUT);
+            }.waitUntilSatisfied(NEXTBUILD_TIMEOUT_LONG);
         } else {
             Thread.sleep(2000); // Wait a couple of seconds to let the close event to be processed.
         }
