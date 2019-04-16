@@ -191,7 +191,8 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
                     TerminateOperation.terminate(instanceJson, client, logger);
                     client.delete(instanceJson.getString("id"));
                 } catch (ClientException ex) {
-                    if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                    if ((ex.getStatusCode() != HttpStatus.SC_FORBIDDEN)
+                            && (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND)) {
                         throw ex;
                     }
                 }

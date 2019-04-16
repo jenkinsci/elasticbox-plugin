@@ -80,7 +80,7 @@ public class StartOperation extends LongOperation implements IOperation.Instance
 
             logger.info(
                 MessageFormat.format(
-                    "Waiting for {0} to comlete starting",
+                    "Waiting for {0} to complete start",
                     instances.size() > 1
                         ? "the instances"
                         : "the instance"));
