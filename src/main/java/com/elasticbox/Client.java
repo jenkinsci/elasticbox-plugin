@@ -652,7 +652,8 @@ public class Client implements ApiClient {
             try {
                 return (JSONObject) doGet(getResourceUrl(), false);
             } catch (ClientException ex) {
-                if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                if ((ex.getStatusCode() == HttpStatus.SC_FORBIDDEN)
+                        || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND)) {
                     throw new IncompleteException(MessageFormat.format("{0} cannot be found", getResourceUrl()));
                 } else {
                     throw ex;

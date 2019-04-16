@@ -329,10 +329,14 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
         try {
             instance = slave.getInstance();
             state = slave.getInstanceState();
-        } catch (IOException ex) {
-            if (ex instanceof ClientException && ((ClientException) ex).getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+        } catch (ClientException ex) {
+            if ( (ex.getStatusCode() == HttpStatus.SC_FORBIDDEN) || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) ) {
                 return true;
             }
+            log(Level.SEVERE,
+                    "Error fetching the instance data of ElasticBox slave - " + slave.getDisplayName(), ex, listener);
+            return false;
+        } catch (IOException ex) {
             log(Level.SEVERE,
                     "Error fetching the instance data of ElasticBox slave - " + slave.getDisplayName(), ex, listener);
 
@@ -397,7 +401,8 @@ public class ElasticBoxSlaveHandler extends ElasticBoxExecutor.Workload {
             } catch (ClientException ex) {
                 if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
                     return false;
-                } else if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                } else if ( (ex.getStatusCode() != HttpStatus.SC_FORBIDDEN)
+                        && (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) ) {
                     throw ex;
                 }
             }

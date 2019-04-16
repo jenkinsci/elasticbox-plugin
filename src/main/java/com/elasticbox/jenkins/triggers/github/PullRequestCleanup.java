@@ -203,7 +203,8 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                             );
                         }
 
-                    } else if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                    } else if ( (ex.getStatusCode() == HttpStatus.SC_FORBIDDEN)
+                            || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) ) {
 
                         LOGGER.info(
                             MessageFormat.format(

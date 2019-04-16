@@ -204,7 +204,8 @@ public final class ElasticBoxComputer extends SlaveComputer {
             try {
                 slave.terminate();
             } catch (ClientException ex) {
-                if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                if ((ex.getStatusCode() != HttpStatus.SC_FORBIDDEN)
+                        && (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND)) {
                     retry = true;
                     LOGGER.log(
                             Level.SEVERE,

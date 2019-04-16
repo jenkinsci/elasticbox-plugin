@@ -101,7 +101,8 @@ public class DeleteInstancesWorkload extends ElasticBoxExecutor.Workload {
             } catch (ClientException ex) {
                 if (ex.getStatusCode() == HttpStatus.SC_CONFLICT) {
                     return false;
-                } else if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                } else if ( (ex.getStatusCode() != HttpStatus.SC_FORBIDDEN)
+                        && (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) ) {
                     throw ex;
                 }
             }
