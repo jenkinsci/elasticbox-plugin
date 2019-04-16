@@ -41,6 +41,7 @@ import org.kohsuke.github.GitHub;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
@@ -267,16 +268,27 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 return;
             }
 
+            GHPullRequest ghPullRequest = cause.getPullRequest() ;
+            if (ghPullRequest == null) {
+                LOGGER.info("No pull request bind to cause.");
+                return;
+            }
+
             ConcurrentHashMap<String, PullRequestData> prDataLookup
-                = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject());
+                    = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject());
 
             if (prDataLookup != null) {
-                PullRequestData data = prDataLookup.get(cause.getPullRequest().getHtmlUrl().toString());
+                URL url = ghPullRequest.getHtmlUrl() ;
+                PullRequestData data = (url != null) ? prDataLookup.get(url.toString()) : null ;
                 if (data == null) {
                     data = getInstance().addPullRequestData(cause.getPullRequest(), rootBuild.getProject());
                 }
-                data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
-                data.save();
+                if (data != null) {
+                    data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
+                    data.save();
+                } else {
+                    LOGGER.info("No data saved onDeploying.");
+                }
             }
         }
 
