@@ -11,7 +11,7 @@
 
     <groupId>com.elasticbox.jenkins-ci.plugins</groupId>
     <artifactId>elasticbox</artifactId>
-    <version>5.0.2</version>
+    <version>5.0.2-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>ElasticBox CI Plug-in</name>
     <description>
@@ -71,7 +71,7 @@
         <connection>scm:git:git@github.com:jenkinsci/elasticbox-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/elasticbox-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/elasticbox-plugin</url>
-        <tag>elasticbox-5.0.2</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
