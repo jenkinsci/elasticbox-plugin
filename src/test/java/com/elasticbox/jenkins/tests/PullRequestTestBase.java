@@ -78,8 +78,8 @@ import org.w3c.dom.Document;
  */
 public class PullRequestTestBase extends BuildStepTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestTestBase.class.getName());
-    
-    private static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
+
+    protected static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
     private static final String PR_TITLE_PREFIX = "ElasticBox Jenkins plugin test PR ";
     private static final String PR_TITLE = PR_TITLE_PREFIX + UUID.randomUUID().toString();
     private static final String PR_DESCRIPTION = "Automatic test PR from ElasticBox Jenkins plugin";
@@ -217,7 +217,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         return parameters;
     }
 
-    protected List<JSONObject> checkBuild(String buildRequester) throws Exception {
+    protected List<JSONObject> checkBuild(FreeStyleProject project, String buildRequester) throws Exception {
         AbstractBuild<?, ?> build = project.getLastBuild();
         try {
             TestUtils.assertBuildSuccess(build);
@@ -269,11 +269,17 @@ public class PullRequestTestBase extends BuildStepTestBase {
         return Arrays.asList(mainProjectInstance, downstreamProjectInstance);
     }
 
-    protected AbstractBuild waitForNextBuild(long timeoutSeconds) {
-        return waitForNextBuild (timeoutSeconds, null);
+    protected void waitForBuildTriggered(FreeStyleProject project, long timeoutSeconds, String callerId) {
+        new Condition(callerId) {
+
+            public boolean satisfied() {
+                return project.getLastBuild() != null;
+            }
+
+        }.waitUntilSatisfied(timeoutSeconds);
     }
 
-    protected AbstractBuild waitForNextBuild(long timeoutSeconds, String callerId) {
+    protected AbstractBuild waitForNextBuild(FreeStyleProject project, long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
         new Condition(callerId) {
 
@@ -286,10 +292,19 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void waitForCompletion(long timeoutSeconds) {
-        waitForCompletion(timeoutSeconds, null);
+        waitForCompletion(project, timeoutSeconds, null);
     }
 
     protected void waitForCompletion(long timeoutSeconds, String callerId) {
+        waitForCompletion(project, timeoutSeconds, callerId);
+    }
+
+    protected void waitForCompletion(FreeStyleProject project, long timeoutSeconds) {
+        waitForCompletion(project, timeoutSeconds, null);
+    }
+
+
+    protected void waitForCompletion(FreeStyleProject project, long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
         new Condition(callerId) {
 
@@ -465,7 +480,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
     }
 
-    private Document getProjectDocument() throws Exception {
+    private Document getProjectDocument(FreeStyleProject project) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
         return builder.parse(project.getConfigFile().getFile());
@@ -473,18 +488,22 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
     protected void updateWhitelist(String whitelist) throws Exception {
         LOGGER.info("Updating Whitelist: " + whitelist);
-        Document document = getProjectDocument();
+        Document document = getProjectDocument(project);
         document.getElementsByTagName("whitelist").item(0).setTextContent(whitelist);
         updateProject(document);
     }
 
-    protected void updateTriggerPhrase(String triggerPhrase) throws Exception {
-        Document document = getProjectDocument();
+    protected void updateTriggerPhrase(FreeStyleProject project, String triggerPhrase) throws Exception {
+        Document document = getProjectDocument(project);
         document.getElementsByTagName("triggerPhrase").item(0).setTextContent(triggerPhrase);
-        updateProject(document);
+        updateProject(project, document);
     }
 
     private void updateProject(Document document) throws Exception {
+        updateProject(project, document);
+    }
+
+    private void updateProject(FreeStyleProject project, Document document) throws Exception {
         DOMSource src = new DOMSource(document);
         TransformerFactory factory = TransformerFactory.newInstance();
         Transformer transformer = factory.newTransformer();

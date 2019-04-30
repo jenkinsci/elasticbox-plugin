@@ -76,8 +76,8 @@
 
     <distributionManagement>
         <repository>
-            <id>maven.jenkins-ci.org</id>
-            <url>https://repo.jenkins-ci.org/releases</url>
+            <id>repo.jenkins-ci.org</id>
+            <url>https://repo.jenkins-ci.org/releases/</url>
         </repository>
     </distributionManagement>
 
@@ -317,8 +317,10 @@
             <plugin>
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
+                <version>3.5</version>
                 <extensions>true</extensions>
                 <configuration>
+                    <minimumJavaVersion>1.${java.level}</minimumJavaVersion>
                     <compatibleSinceVersion>4.0.0</compatibleSinceVersion>
                     <pluginFirstClassLoader>true</pluginFirstClassLoader>
                 </configuration>
