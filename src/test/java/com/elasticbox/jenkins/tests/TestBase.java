@@ -39,6 +39,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.mockito.Mockito;
+
+import static org.mockito.Mockito.when;
 
 public class TestBase {
     private static final Logger LOGGER = Logger.getLogger(TestBase.class.getName());
@@ -52,7 +55,11 @@ public class TestBase {
     @Before
     public void setup() throws Exception {
         LOGGER.info("Test timeout: " + jenkinsRule.timeout);
-        cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
+
+        ElasticBoxCloud elasticBoxCloudMock = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.CLOUD_CREDENTIALS_ID, Collections.EMPTY_LIST);
+        cloud = Mockito.spy(elasticBoxCloudMock);
+        Mockito.doReturn(TestUtils.ACCESS_TOKEN).when(cloud).getTokenFromCredentials(TestUtils.ELASTICBOX_URL, TestUtils.CLOUD_CREDENTIALS_ID);
+
         LOGGER.fine("Elasticbox cloud: " + cloud);
         jenkinsRule.getInstance().clouds.add(cloud);
     }

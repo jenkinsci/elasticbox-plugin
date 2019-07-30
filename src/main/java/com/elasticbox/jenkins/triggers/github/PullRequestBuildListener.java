@@ -109,20 +109,21 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
             return;
         }
         GHPullRequest pullRequest = cause.getPullRequest();
-        // Remove previous build data of the pull request from the build
-        for (Iterator<? extends Action> iter = build.getAllActions().iterator(); iter.hasNext();) {
-            Action action = iter.next();
-            if (action instanceof BuildData) {
-                BuildData buildData = (BuildData) action;
+        String sha = pullRequest.getHead().getSha();
 
-                if (buildData.getLastBuiltRevision() != null
-                    && pullRequest.getHead().getSha().equals(buildData.getLastBuiltRevision())) {
-
+        if (sha != null) {
+            // Remove previous build data of the pull request from the build
+            for (Iterator<? extends Action> iter = build.getAllActions().iterator(); iter.hasNext(); ) {
+                Action action = iter.next();
+                if (isRemovableAction(action, sha) ) {
                     iter.remove();
                     break;
                 }
             }
+        } else {
+            LOGGER.warning( "Pull request sha string is null. No previous actions removed.");
         }
+
         GHCommitState status;
         if (build.getResult() == Result.SUCCESS) {
             status = GHCommitState.SUCCESS;
@@ -145,4 +146,12 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
         postStatus(build, pullRequest, status, message);
     }
 
+    private boolean isRemovableAction(Action action, String sha) {
+        if (!BuildData.class.isInstance(action)) {
+            return false;
+        }
+        BuildData buildData = (BuildData) action;
+        return (buildData.getLastBuiltRevision() != null
+                && sha.equals(buildData.getLastBuiltRevision()));
+    }
 }

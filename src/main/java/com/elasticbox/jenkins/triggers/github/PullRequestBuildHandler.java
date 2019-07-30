@@ -450,6 +450,16 @@ public class PullRequestBuildHandler implements IBuildHandler {
             }
         }
 
+        if ( (itemRequestUrl == null) || (itemProjectName == null) ) {
+            if (itemRequestUrl == null) {
+                LOGGER.warning("Parameter " + PR_URL + " is not present.");
+            }
+            if (itemProjectName == null) {
+                LOGGER.warning("Parameter " + PROJECT_NAME + " is not present.");
+            }
+            return false;
+        }
+
         return ( (itemProjectName.equals(projectName)) && (itemRequestUrl.equals(pullRequestUrl)) ) ;
     }
 
@@ -530,9 +540,20 @@ public class PullRequestBuildHandler implements IBuildHandler {
     }
 
     private BuildData getBuildData(StringParameterValue pullRequestUrlParam) {
-        for (Run<?, ?> build : project.getBuilds()) {
+        if (pullRequestUrlParam == null) {
+            LOGGER.fine("getBuildData called with null pullRequestUrlParam.");
+            return null;
+        }
 
-            if (isPullRequestBuildInProject(build, String.valueOf(pullRequestUrlParam.getValue()), project.getName())) {
+        String pullRequestUrlParamValue = ( pullRequestUrlParam.getValue() != null )
+                    ? String.valueOf(pullRequestUrlParam.getValue()) : null;
+        if (pullRequestUrlParamValue == null) {
+            LOGGER.fine("getBuildData called with no pullRequestUrlParam value.");
+            return null;
+        }
+
+        for (Run<?, ?> build : project.getBuilds()) {
+            if (isPullRequestBuildInProject(build, pullRequestUrlParamValue, project.getName())) {
 
                 List<BuildData> buildDataList = build.getActions(BuildData.class);
                 if (!buildDataList.isEmpty()) {
@@ -540,6 +561,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
                 }
             }
         }
+
         return null;
     }
 

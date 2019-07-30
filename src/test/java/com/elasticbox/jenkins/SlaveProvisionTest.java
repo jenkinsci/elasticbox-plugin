@@ -49,9 +49,11 @@ public class SlaveProvisionTest extends SlaveProvisionTestBase {
         JSONArray variables = new JSONArray();
         SlaveConfiguration testFailingSlaveConfig = createSlaveConfiguration("linux-jenkins-slave-failing", variables);
 
-        ElasticBoxCloud testCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
-                TestUtils.ELASTICBOX_URL, 6, TestUtils.ACCESS_TOKEN,
+        ElasticBoxCloud elasticBoxCloudMock = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
+                TestUtils.ELASTICBOX_URL, 6, TestUtils.CLOUD_CREDENTIALS_ID,
                 Collections.singletonList(testFailingSlaveConfig) );
+        ElasticBoxCloud testCloud = Mockito.spy(elasticBoxCloudMock);
+        Mockito.doReturn(TestUtils.ACCESS_TOKEN).when(testCloud).getTokenFromCredentials(TestUtils.ELASTICBOX_URL, TestUtils.CLOUD_CREDENTIALS_ID);
         jenkinsRule.getInstance().clouds.add(testCloud);
 
         // First attempt:

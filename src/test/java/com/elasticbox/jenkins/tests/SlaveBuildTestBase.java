@@ -167,7 +167,7 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
         String label = UUID.randomUUID().toString();
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, box, box,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
-        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getCredentialsId(), Collections.singletonList(slaveConfig));
         jenkinsRule.getInstance().clouds.remove(cloud);
         jenkinsRule.getInstance().clouds.add(newCloud);
         FreeStyleProject project = jenkinsRule.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
@@ -204,7 +204,7 @@ public class SlaveBuildTestBase extends BuildStepTestBase {
         // Create a slave configuration with 0 retention time. This means, the slave of this configuration will be killed right after use (single-use)
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
-        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getCredentialsId(), Collections.singletonList(slaveConfig));
         jenkinsRule.getInstance().clouds.remove(cloud);
         jenkinsRule.getInstance().clouds.add(newCloud);
 
