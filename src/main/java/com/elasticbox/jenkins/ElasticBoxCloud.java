@@ -165,6 +165,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         token = DescriptorHelper.getToken(endpointUrl, username, password);
                     }
                 }
+            } else {
+                LOGGER.warning("Unable to obtain authentication data for credentials id " + credentialsId );
             }
         } catch (IOException ex) {
             LOGGER.warning("Unable to obtain token from ElasticBox cloud at: " + endpointUrl
@@ -606,10 +608,6 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             return newCloud;
         }
 
-        public ListBoxModel doFillCredentialsIdItems(@QueryParameter String endpointUrl) {
-            return PluginHelper.doFillCredentialsIdItems(endpointUrl);
-        }
-
         @RequirePOST
         public FormValidation doTestConnection(@QueryParameter String endpointUrl,
                                                @QueryParameter String credentialsId) {
@@ -788,6 +786,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
     }
 
+    // TODO Check if it is necessary to implement this same code for the new plugin version 5.0.x
     private static class DeploymentTypeMigrator extends AbstractConverter.Migrator<ElasticBoxCloud> {
 
         public DeploymentTypeMigrator() {
@@ -801,11 +800,12 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 if (StringUtils.isBlank(slaveConfiguration.getBoxDeploymentType())) {
 
                     final Client client = createClientWithCredentials(cloud.endpointUrl, cloud.getCredentialsId());
+                    if(client != null) {
+                        final DeploymentType deploymentType =
+                                new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
 
-                    final DeploymentType deploymentType =
-                            new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
-
-                    slaveConfiguration.boxDeploymentType = deploymentType.getValue();
+                        slaveConfiguration.boxDeploymentType = deploymentType.getValue();
+                    }
                 }
             }
         }
