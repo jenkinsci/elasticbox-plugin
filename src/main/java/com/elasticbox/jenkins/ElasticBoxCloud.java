@@ -156,9 +156,9 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         try {
             Authentication authData = PluginHelper.getAuthenticationData(credentialsId);
             if (authData != null) {
-                if (TokenAuthentication.class.isInstance(authData)) {
+                if (TokenAuthentication.class.isAssignableFrom(authData.getClass())) {
                     token = ((TokenAuthentication)authData).getAuthToken() ;
-                } else if (UserAndPasswordAuthentication.class.isInstance(authData)) {
+                } else if (UserAndPasswordAuthentication.class.isAssignableFrom(authData.getClass())) {
                     String username = ((UserAndPasswordAuthentication) authData).getUser() ;
                     String password = ((UserAndPasswordAuthentication) authData).getPassword() ;
                     if ((endpointUrl != null) && (username != null) && (password != null)) {
@@ -800,7 +800,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                 if (StringUtils.isBlank(slaveConfiguration.getBoxDeploymentType())) {
 
                     final Client client = createClientWithCredentials(cloud.endpointUrl, cloud.getCredentialsId());
-                    if(client != null) {
+                    if (client != null) {
                         final DeploymentType deploymentType =
                                 new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
 

@@ -30,6 +30,7 @@ import org.kohsuke.github.GHPullRequest;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -113,13 +114,7 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
 
         if (sha != null) {
             // Remove previous build data of the pull request from the build
-            for (Iterator<? extends Action> iter = build.getAllActions().iterator(); iter.hasNext(); ) {
-                Action action = iter.next();
-                if (isRemovableAction(action, sha) ) {
-                    iter.remove();
-                    break;
-                }
-            }
+            removeAction(build.getAllActions(), sha) ;
         } else {
             LOGGER.warning( "Pull request sha string is null. No previous actions removed.");
         }
@@ -144,6 +139,17 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
         }
         postComment(build, pullRequest, message);
         postStatus(build, pullRequest, status, message);
+    }
+
+    private void removeAction(List<? extends Action> actions, String actionId) {
+        if (actionId != null) {
+            for (Action action : actions) {
+                if (isRemovableAction(action, actionId)) {
+                    actions.remove(action);
+                    return;
+                }
+            }
+        }
     }
 
     private boolean isRemovableAction(Action action, String sha) {
