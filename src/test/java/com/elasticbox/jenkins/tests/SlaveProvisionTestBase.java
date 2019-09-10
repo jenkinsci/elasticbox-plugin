@@ -32,6 +32,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
+import org.mockito.Mockito;
 
 /**
  *
@@ -79,9 +80,11 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         variable.put("scope", "nested");
         variables.add(variable);
         SlaveConfiguration testDeeplyNestedBoxSlaveConfig = createSlaveConfiguration("test-deeply-nested-box", variables);
-        ElasticBoxCloud testCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
-                TestUtils.ELASTICBOX_URL, 6, TestUtils.ACCESS_TOKEN,
+        ElasticBoxCloud elasticBoxCloudMock = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
+                TestUtils.ELASTICBOX_URL, 6, TestUtils.CLOUD_CREDENTIALS_ID,
                 Arrays.asList(testLinuxBoxSlaveConfig, testNestedBoxSlaveConfig, testDeeplyNestedBoxSlaveConfig));
+        ElasticBoxCloud testCloud = Mockito.spy(elasticBoxCloudMock);
+        Mockito.doReturn(TestUtils.ACCESS_TOKEN).when(testCloud).getTokenFromCredentials(TestUtils.ELASTICBOX_URL, TestUtils.CLOUD_CREDENTIALS_ID);
         jenkinsRule.getInstance().clouds.add(testCloud);
 
         // wait for new slave to be launched

@@ -79,7 +79,7 @@ public class BuildWithSingleUseViaLabelSlaveTest extends SlaveBuildTestBase {
                 null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
 
         ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox", "ElasticBox", cloud.getEndpointUrl(),
-                cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
+                cloud.getMaxInstances(), cloud.getCredentialsId(), Collections.singletonList(slaveConfig));
 
         jenkinsRule.getInstance().clouds.remove(cloud);
         jenkinsRule.getInstance().clouds.add(newCloud);

@@ -450,6 +450,15 @@ public class PullRequestBuildHandler implements IBuildHandler {
             }
         }
 
+        if (itemRequestUrl == null) {
+            LOGGER.warning("Parameter " + PR_URL + " is not present.");
+            return false;
+        }
+        if (itemProjectName == null) {
+            LOGGER.warning("Parameter " + PROJECT_NAME + " is not present.");
+            return false;
+        }
+
         return ( (itemProjectName.equals(projectName)) && (itemRequestUrl.equals(pullRequestUrl)) ) ;
     }
 
@@ -530,9 +539,15 @@ public class PullRequestBuildHandler implements IBuildHandler {
     }
 
     private BuildData getBuildData(StringParameterValue pullRequestUrlParam) {
-        for (Run<?, ?> build : project.getBuilds()) {
+        if ((pullRequestUrlParam == null) || (pullRequestUrlParam.getValue() == null)) {
+            LOGGER.fine("getBuildData called with no pullRequestUrlParam value.");
+            return null;
+        }
 
-            if (isPullRequestBuildInProject(build, String.valueOf(pullRequestUrlParam.getValue()), project.getName())) {
+        final String pullRequestUrlParamValue = String.valueOf(pullRequestUrlParam.getValue()) ;
+
+        for (Run<?, ?> build : project.getBuilds()) {
+            if (isPullRequestBuildInProject(build, pullRequestUrlParamValue, project.getName())) {
 
                 List<BuildData> buildDataList = build.getActions(BuildData.class);
                 if (!buildDataList.isEmpty()) {
@@ -540,6 +555,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
                 }
             }
         }
+
         return null;
     }
 

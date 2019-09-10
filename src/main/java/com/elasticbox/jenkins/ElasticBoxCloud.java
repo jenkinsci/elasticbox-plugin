@@ -16,12 +16,15 @@ import antlr.ANTLRException;
 
 import com.elasticbox.Client;
 import com.elasticbox.IProgressMonitor;
+import com.elasticbox.jenkins.auth.Authentication;
+import com.elasticbox.jenkins.auth.TokenAuthentication;
+import com.elasticbox.jenkins.auth.UserAndPasswordAuthentication;
 import com.elasticbox.jenkins.migration.AbstractConverter;
 import com.elasticbox.jenkins.migration.Version;
 import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
 import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
-import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.util.ClientCache;
+import com.elasticbox.jenkins.util.PluginHelper;
 import com.elasticbox.jenkins.util.SlaveInstance;
 
 import hudson.Extension;
@@ -34,6 +37,7 @@ import hudson.slaves.AbstractCloudImpl;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.Scrambler;
 import hudson.util.XStream2;
 
@@ -48,6 +52,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
 
@@ -91,24 +96,21 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     private final String username;
     @Deprecated
     private final String password;
-    private final String token;
+    private final String credentialsId;
     private final List<? extends SlaveConfiguration> slaveConfigurations;
     private int maxInstances;
-    @Deprecated
-    private int retentionTime;
     private String description;
 
     @DataBoundConstructor
-    public ElasticBoxCloud(String name, String description, String endpointUrl, int maxInstances, String token,
+    public ElasticBoxCloud(String name, String description, String endpointUrl, int maxInstances, String credentialsId,
                            List<? extends SlaveConfiguration> slaveConfigurations) {
         super(name, String.valueOf(maxInstances));
         this.description = description;
         this.endpointUrl = endpointUrl;
         this.maxInstances = maxInstances;
-        this.token = token;
+        this.credentialsId = credentialsId;
         this.slaveConfigurations = slaveConfigurations;
         username = password = null;
-        retentionTime = 0;
     }
 
     public static final ElasticBoxCloud getInstance() {
@@ -142,7 +144,41 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
     }
 
     public String getToken() {
+        return getTokenFromCredentials(endpointUrl, credentialsId);
+    }
+
+    public String getCredentialsId() {
+        return credentialsId;
+    }
+
+    public static String retrieveTokenFromCredentials(String endpointUrl, String credentialsId) {
+        String token = null;
+        try {
+            Authentication authData = PluginHelper.getAuthenticationData(credentialsId);
+            if (authData != null) {
+                if (TokenAuthentication.class.isAssignableFrom(authData.getClass())) {
+                    token = ((TokenAuthentication)authData).getAuthToken() ;
+                } else if (UserAndPasswordAuthentication.class.isAssignableFrom(authData.getClass())) {
+                    String username = ((UserAndPasswordAuthentication) authData).getUser() ;
+                    String password = ((UserAndPasswordAuthentication) authData).getPassword() ;
+                    if ((endpointUrl != null) && (username != null) && (password != null)) {
+                        token = DescriptorHelper.getToken(endpointUrl, username, password);
+                    }
+                }
+            } else {
+                LOGGER.warning("Unable to obtain authentication data for credentials id " + credentialsId );
+            }
+        } catch (IOException ex) {
+            LOGGER.warning("Unable to obtain token from ElasticBox cloud at: " + endpointUrl
+                    + "for credentials id " + credentialsId
+                    + ". Error: " + ex.getMessage());
+        }
+
         return token;
+    }
+
+    public String getTokenFromCredentials(String testEndPointUrl, String testCredentialsId) {
+        return ElasticBoxCloud.retrieveTokenFromCredentials(testEndPointUrl, testCredentialsId);
     }
 
     private List<ElasticBoxSlave> getPendingSlaves(Label label, List<JSONObject> activeInstances) {
@@ -374,18 +410,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
         return username;
     }
 
-    @Deprecated
-    public String getPassword() {
-        return Scrambler.descramble(password);
-    }
-
     public int getMaxInstances() {
         return maxInstances;
-    }
-
-    @Deprecated
-    public int getRetentionTime() {
-        return retentionTime;
     }
 
     public List<? extends SlaveConfiguration> getSlaveConfigurations() {
@@ -533,11 +559,11 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         "maxInstances");
             }
 
-            if (StringUtils.isBlank(newCloud.token)) {
+            if (StringUtils.isBlank(newCloud.getCredentialsId())) {
                 throw new FormException(
-                        MessageFormat.format("Authentication token is required for ElasticBox cloud {0}",
+                        MessageFormat.format("Credentials are required for ElasticBox cloud {0}",
                                 newCloud.getDisplayName()),
-                        "token");
+                        "credentialsId");
             }
 
             checkDeletedSlaveConfiguration(newCloud);
@@ -570,8 +596,8 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
             if (StringUtils.isBlank(newCloud.name)) {
                 newCloud = new ElasticBoxCloud(NAME_PREFIX + UUID.randomUUID().toString(), newCloud.getDescription(),
-                        newCloud.getEndpointUrl(),
-                        newCloud.getMaxInstances(), newCloud.getToken(), newCloud.getSlaveConfigurations());
+                        newCloud.getEndpointUrl(), newCloud.getMaxInstances(),
+                        newCloud.getCredentialsId(), newCloud.getSlaveConfigurations());
             }
 
             List<ElasticBoxCloud> cloudsToRemoveCachedClient = validateClouds(clouds);
@@ -582,27 +608,31 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             return newCloud;
         }
 
-        public FormValidation doGetToken(
-                @QueryParameter String endpointUrl,
-                @QueryParameter String username,
-                @QueryParameter String password) {
-            String token = null;
-            try {
-                token = DescriptorHelper.getToken(endpointUrl, username, password);
-            } catch (IOException ex) {
-                return FormValidation.error(ex.getMessage());
-            }
-            return FormValidation.ok(token);
-        }
+        @RequirePOST
+        public FormValidation doTestConnection(@QueryParameter String endpointUrl,
+                                               @QueryParameter String credentialsId) {
 
-        public FormValidation doVerifyToken(@QueryParameter String endpointUrl, @QueryParameter String token) {
-            Client client = new Client(endpointUrl, token, ClientCache.getJenkinsHttpProxyCfg());
-            try {
-                client.connect();
-            } catch (IOException ex) {
-                return FormValidation.error(ex.getMessage());
+            if (StringUtils.isEmpty(endpointUrl) ) {
+                return FormValidation.error("Required field Url not provided");
             }
-            return FormValidation.ok(MessageFormat.format("The authentication token is valid for {0}.", endpointUrl));
+
+            try {
+                String token = retrieveTokenFromCredentials(endpointUrl, credentialsId);
+                if (token != null) {
+                    Client client = new Client(endpointUrl, token, ClientCache.getJenkinsHttpProxyCfg());
+                    client.connect();
+                } else {
+                    return FormValidation.error("Connection error. Check your credentials");
+                }
+
+            } catch (IOException ex) {
+                LOGGER.warning("Unable to connect to ElasticBox cloud at: " + endpointUrl
+                        + ". Error: " + ex.getMessage());
+                return FormValidation.error("Connection error");
+            }
+
+            return FormValidation.ok(MessageFormat.format("The credentials are valid for {0}.", endpointUrl));
+
         }
 
         private List<ElasticBoxCloud> validateClouds(JSONArray clouds) throws FormException {
@@ -662,7 +692,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
                         cloudsToRemoveCachedClient.add(ebCloud);
                     } else {
                         if (!ebCloud.getEndpointUrl().equalsIgnoreCase(json.getString(ENDPOINT_URL))
-                                || !json.getString("token").equals(ebCloud.getToken())) {
+                                || !json.getString("credentialsId").equals(ebCloud.getCredentialsId())) {
 
                             cloudsToRemoveCachedClient.add(ebCloud);
                         }
@@ -756,6 +786,7 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
 
     }
 
+    // TODO Check if it is necessary to implement this same code for the new plugin version 5.0.x
     private static class DeploymentTypeMigrator extends AbstractConverter.Migrator<ElasticBoxCloud> {
 
         public DeploymentTypeMigrator() {
@@ -768,18 +799,24 @@ public class ElasticBoxCloud extends AbstractCloudImpl {
             for (SlaveConfiguration slaveConfiguration : slaveConfigurations) {
                 if (StringUtils.isBlank(slaveConfiguration.getBoxDeploymentType())) {
 
-                    final Client client = createClient(cloud.endpointUrl, cloud.token);
+                    final Client client = createClientWithCredentials(cloud.endpointUrl, cloud.getCredentialsId());
+                    if (client != null) {
+                        final DeploymentType deploymentType =
+                                new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
 
-                    final DeploymentType deploymentType =
-                            new DeployBoxOrderServiceImpl(client).deploymentType(slaveConfiguration.getBox());
-
-                    slaveConfiguration.boxDeploymentType = deploymentType.getValue();
+                        slaveConfiguration.boxDeploymentType = deploymentType.getValue();
+                    }
                 }
             }
         }
 
-        private Client createClient(String endpointUrl, String token) {
-            if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(token)) {
+        private Client createClientWithCredentials(String endpointUrl, String credentialsId) {
+            if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(credentialsId)) {
+                return null;
+            }
+
+            String token = retrieveTokenFromCredentials(endpointUrl, credentialsId);
+            if (token == null) {
                 return null;
             }
 

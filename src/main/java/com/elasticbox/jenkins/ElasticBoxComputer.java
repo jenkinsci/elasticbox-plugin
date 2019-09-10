@@ -24,7 +24,6 @@ import hudson.model.Node;
 import hudson.model.Queue;
 import hudson.model.TaskListener;
 import hudson.model.labels.LabelAtom;
-import hudson.remoting.Callable;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.NodeProvisioner;
@@ -34,12 +33,14 @@ import hudson.util.RunList;
 
 import jenkins.model.Jenkins;
 
+import jenkins.security.MasterToSlaveCallable;
 import org.apache.http.HttpStatus;
 
 import org.jenkinsci.remoting.RoleChecker;
 
 import java.io.IOException;
 
+import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -84,8 +85,9 @@ public final class ElasticBoxComputer extends SlaveComputer {
             return null;
         }
 
-        for (Inet4Address ia : channel.call(new HostAddresses())) {
+        for (byte[] raw : channel.call(new HostAddresses())) {
             try {
+                InetAddress ia = InetAddress.getByAddress(raw);
                 if (ComputerPinger.checkIsReachable(ia, 3)) {
                     cachedHostAddress = ia.getHostAddress();
                     hostAddressCached = true;
@@ -274,10 +276,12 @@ public final class ElasticBoxComputer extends SlaveComputer {
                                     .equals(Messages._Hudson_NodeBeingRemoved().toString());
     }
 
-    private static class HostAddresses implements Callable<List<Inet4Address>, IOException> {
+    private static class HostAddresses extends MasterToSlaveCallable<List<byte[]>, IOException>
+            implements Serializable {
+        private static final long serialVersionUID = 4L;
 
-        public List<Inet4Address> call() throws IOException {
-            List<Inet4Address> inetAddresses = new ArrayList<Inet4Address>();
+        public List<byte[]> call() throws IOException {
+            final List<byte[]> inetAddresses = new ArrayList<>();
 
             Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
             while (nis.hasMoreElements()) {
@@ -285,8 +289,8 @@ public final class ElasticBoxComputer extends SlaveComputer {
                 Enumeration<InetAddress> enumeration = ni.getInetAddresses();
                 while (enumeration.hasMoreElements()) {
                     InetAddress ia =  enumeration.nextElement();
-                    if (ia instanceof Inet4Address && !ia.isLoopbackAddress()) {
-                        inetAddresses.add((Inet4Address) ia);
+                    if (Inet4Address.class.isInstance(ia) && !ia.isLoopbackAddress()) {
+                        inetAddresses.add((((Inet4Address) ia).getAddress()));
                     }
                 }
             }

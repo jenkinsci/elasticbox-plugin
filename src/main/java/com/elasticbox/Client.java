@@ -105,7 +105,7 @@ public class Client implements ApiClient {
     private static HttpProxy httpClientProxy = null;
 
     private final String endpointUrl;
-    private final String username;
+    private String username;
     private final String password;
     private String token = null;
 
@@ -176,7 +176,7 @@ public class Client implements ApiClient {
     }
 
     public void connect() throws IOException {
-        if (token != null && username == null) {
+        if (token != null && getUsername() == null) {
             try {
                 doGet("/services/workspaces", true);
             } catch (IOException excep) {
@@ -935,6 +935,10 @@ public class Client implements ApiClient {
             HttpResponse response = execute(get);
             return isArray ? JSONArray.fromObject(getResponseBodyAsString(response))
                     : JSONObject.fromObject(getResponseBodyAsString(response));
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Error while getting response data.", e);
         } finally {
             get.reset();
         }
