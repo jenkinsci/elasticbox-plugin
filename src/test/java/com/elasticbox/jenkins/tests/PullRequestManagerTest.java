@@ -29,7 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.kohsuke.github.GHHook;
-
+import org.kohsuke.github.GHIssueState;
 
 
 public class PullRequestManagerTest extends PullRequestTestBase {
@@ -87,75 +87,81 @@ public class PullRequestManagerTest extends PullRequestTestBase {
     }
 
     public void testPullRequestsAfterAddingProject(FreeStyleProject project2) throws Exception {
+        final List<JSONObject> instances = new ArrayList<JSONObject>();
 
         LOGGER.fine("test ---- testPullRequestsAfterAddingProject");
 
-        // Check that job 2 has no builds
-        waitForBuildTriggered(project2, NEXTBUILD_TIMEOUT, "testAddingProjectToGHRepository 0");
+        try {
+            // Check that job 2 has no builds
+            waitForBuildTriggered(project2, NEXTBUILD_TIMEOUT, "testAddingProjectToGHRepository 0");
 
-        Assert.assertNull(MessageFormat.format("Build in job 2 should not be triggered yet, on opening of pull request {0} after {1} minutes",
-                pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT)),
-                project2.getLastBuild() );
+            Assert.assertNull(MessageFormat.format("Build in job 2 should not be triggered yet, on opening of pull request {0} after {1} minutes",
+                    pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT)),
+                    project2.getLastBuild() );
 
-        // Wait till existing trigger Phrase is built, then send new trigger comment to both projects
-
-        final List<JSONObject> instances = new ArrayList<JSONObject>();
-
-        int count = 0;
-        LOGGER.fine("Testing trigger Phrase...");
-        final String triggerPhrase = TEST_TRIGGER_PHRASE;
-        pullRequest.comment(triggerPhrase + (count++) );
-        Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''",
-                triggerPhrase),
-                waitForNextBuild(project, NEXTBUILD_TIMEOUT, "Waiting build triggered with comment " + triggerPhrase));
-
-        updateTriggerPhrase(project, triggerPhrase);
-        updateTriggerPhrase(project2, triggerPhrase);
-        pullRequest.comment(triggerPhrase + (count++) );
-        // next build trigger event is the same for both projects. Any from both projects can be used to address this event
-        waitForNextBuild(project, NEXTBUILD_TIMEOUT, "ensureBuildTriggeredInProject");
-
-        // Test both projects building this pullRequest and this commit
-
-        LOGGER.fine("Check that the job 1 build is started");
-        waitForBuildTriggered(project, NEXTBUILD_TIMEOUT_LONG, "testAddingProjectToGHRepository 1");
-
-        Assert.assertNotNull(MessageFormat.format("Build 1 is not triggered on opening of pull request {0} after {1} minutes",
-                pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT_LONG)),
-                project.getLastBuild() );
+            // Wait till existing trigger Phrase is built, then send new trigger comment to both projects
 
 
-        LOGGER.fine("Check that the job 2 build is started");
-        waitForBuildTriggered(project2, NEXTBUILD_TIMEOUT, "testAddingProjectToGHRepository 2");
+            int count = 0;
+            LOGGER.fine("Testing trigger Phrase...");
+            final String triggerPhrase = TEST_TRIGGER_PHRASE;
+            pullRequest.comment(triggerPhrase + (count++) );
+            Assert.assertNull(MessageFormat.format("Unexpected build triggered with comment ''{0}''",
+                    triggerPhrase),
+                    waitForNextBuild(project, NEXTBUILD_TIMEOUT, "Waiting build triggered with comment " + triggerPhrase));
 
-        Assert.assertNotNull(MessageFormat.format("Build 2 is not triggered on opening of pull request {0} after {1} minutes",
-                pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT_LONG + NEXTBUILD_TIMEOUT)),
-                project2.getLastBuild());
+            updateTriggerPhrase(project, triggerPhrase);
+            updateTriggerPhrase(project2, triggerPhrase);
+            pullRequest.comment(triggerPhrase + (count++) );
+            // next build trigger event is the same for both projects. Any from both projects can be used to address this event
+            waitForNextBuild(project, NEXTBUILD_TIMEOUT, "ensureBuildTriggeredInProject");
 
-        // Tests success. Finishing...
-        LOGGER.fine("Test completed succesfully. Cleaning...");
+            // Test both projects building this pullRequest and this commit
 
-        // Ensure triggered builds are completed
-        waitForCompletion(project, COMPLETE_BUILD_TIMEOUT );
-        Assert.assertFalse(MessageFormat.format("Build of pull request {0} for project {1} is still not complete after 3 minutes",
-                pullRequest.getGHPullRequest().getHtmlUrl(), project.getName()),
-                project.getLastBuild().isBuilding() );
+            LOGGER.fine("Check that the job 1 build is started");
+            waitForBuildTriggered(project, NEXTBUILD_TIMEOUT_LONG, "testAddingProjectToGHRepository 1");
 
-        waitForCompletion(project2, COMPLETE_BUILD_TIMEOUT );
-        Assert.assertFalse(MessageFormat.format("Build of pull request {0} for project {1} is still not complete after 3 minutes",
-                pullRequest.getGHPullRequest().getHtmlUrl(), project2.getName()),
-                project2.getLastBuild().isBuilding() );
+            Assert.assertNotNull(MessageFormat.format("Build 1 is not triggered on opening of pull request {0} after {1} minutes",
+                    pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT_LONG)),
+                    project.getLastBuild() );
 
-        LOGGER.fine("Closing instances from project 1");
-        instances.addAll(checkBuild(project, TestUtils.GITHUB_USER));
 
-        LOGGER.fine("Closing the pull request and deleting " + instances.size() + " instances.");
-        pullRequest.close();
-        waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(5));
-        Assert.assertTrue("Deployed instances are not deleted after 5 minutes since the pull request is closed", instances.isEmpty());
+            LOGGER.fine("Check that the job 2 build is started");
+            waitForBuildTriggered(project2, NEXTBUILD_TIMEOUT, "testAddingProjectToGHRepository 2");
 
-        LOGGER.fine("End of test testAddingProjectToGHRepository");
+            Assert.assertNotNull(MessageFormat.format("Build 2 is not triggered on opening of pull request {0} after {1} minutes",
+                    pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT_LONG + NEXTBUILD_TIMEOUT)),
+                    project2.getLastBuild());
 
+            // Tests success. Finishing...
+            LOGGER.fine("Test completed succesfully. Cleaning...");
+
+            // Ensure triggered builds are completed
+            waitForCompletion(project, COMPLETE_BUILD_TIMEOUT );
+            Assert.assertFalse(MessageFormat.format("Build of pull request {0} for project {1} is still not complete after 3 minutes",
+                    pullRequest.getGHPullRequest().getHtmlUrl(), project.getName()),
+                    project.getLastBuild().isBuilding() );
+
+            waitForCompletion(project2, COMPLETE_BUILD_TIMEOUT );
+            Assert.assertFalse(MessageFormat.format("Build of pull request {0} for project {1} is still not complete after 3 minutes",
+                    pullRequest.getGHPullRequest().getHtmlUrl(), project2.getName()),
+                    project2.getLastBuild().isBuilding() );
+
+            LOGGER.fine("Closing instances from project 1");
+            instances.addAll(checkBuild(project, TestUtils.GITHUB_USER));
+
+        } catch (Exception ex) {
+            throw ex;
+        } finally {
+            if (pullRequest.getGHPullRequest().getState() == GHIssueState.OPEN) {
+                LOGGER.fine("Closing the pull request and deleting " + instances.size() + " instances.");
+                pullRequest.close();
+                waitForDeletion(instances, CLEARING_ALL_TIMEOUT);
+                Assert.assertTrue(MessageFormat.format("Deployed instances are not deleted after {0} minutes since the pull request is closed",
+                        TimeUnit.SECONDS.toMinutes(CLEARING_ALL_TIMEOUT)), instances.isEmpty());
+            }
+            LOGGER.fine("End of test testAddingProjectToGHRepository");
+        }
     }
 
 
@@ -165,44 +171,51 @@ public class PullRequestManagerTest extends PullRequestTestBase {
         LOGGER.fine("test ---- testSamePullRequestsTriggersMultipleProjects");
         LOGGER.fine("Launching one pull request that triggers two jobs");
 
-        pullRequest.open();
-        waitForNextBuild(project, NEXTBUILD_TIMEOUT_LONG, "testSamePullRequestsTriggersMultipleProjects 1");
+        try {
+            pullRequest.open();
+            waitForNextBuild(project, NEXTBUILD_TIMEOUT_LONG, "testSamePullRequestsTriggersMultipleProjects 1");
 
-        LOGGER.fine("Check that the job 1 build is triggered");
-        waitForBuildTriggered(project, NEXTBUILD_TIMEOUT_LONG, "testSamePullRequestsTriggersMultipleProjects 2");
+            LOGGER.fine("Check that the job 1 build is triggered");
+            waitForBuildTriggered(project, NEXTBUILD_TIMEOUT_LONG, "testSamePullRequestsTriggersMultipleProjects 2");
 
-        Assert.assertTrue(MessageFormat.format("Build is not triggered on opening of pull request {0} after {1} minutes",
-                pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT)),
-                project.getLastBuild().isBuilding() );
+            Assert.assertTrue(MessageFormat.format("Build is not triggered on opening of pull request {0} after {1} minutes",
+                    pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT)),
+                    project.getLastBuild().isBuilding());
 
-        LOGGER.fine("Check that the job 2 build is triggered");
-        waitForBuildTriggered(project2, NEXTBUILD_TIMEOUT, "testSamePullRequestsTriggersMultipleProjects 3");
+            LOGGER.fine("Check that the job 2 build is triggered");
+            waitForBuildTriggered(project2, NEXTBUILD_TIMEOUT, "testSamePullRequestsTriggersMultipleProjects 3");
 
-        Assert.assertTrue(MessageFormat.format("Build is not triggered on opening of pull request {0} after {1} minutes",
-                pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT)),
-                project2.getLastBuild().isBuilding() );
+            Assert.assertTrue(MessageFormat.format("Build is not triggered on opening of pull request {0} after {1} minutes",
+                    pullRequest.getGHPullRequest().getHtmlUrl(), TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT)),
+                    project2.getLastBuild().isBuilding());
 
-        // Tests success. Finishing...
-        LOGGER.fine("Test completed succesfully. Cleaning...");
+            // Tests success. Finishing...
+            LOGGER.fine("Test completed succesfully. Cleaning...");
 
-        LOGGER.fine("Waiting for completion of buildings...");
-        waitForCompletion(project, COMPLETE_BUILD_TIMEOUT, "testSamePullRequestsTriggersMultipleProjects 4");
-        Assert.assertFalse(MessageFormat.format("Job 1 Build of pull request {0} is still not complete after 3 minutes", pullRequest.getGHPullRequest().getHtmlUrl()),
-                project.getLastBuild().isBuilding());
+            LOGGER.fine("Waiting for completion of buildings...");
+            waitForCompletion(project, COMPLETE_BUILD_TIMEOUT, "testSamePullRequestsTriggersMultipleProjects 4");
+            Assert.assertFalse(MessageFormat.format("Job 1 Build of pull request {0} is still not complete after {1} minutes", pullRequest.getGHPullRequest().getHtmlUrl(), COMPLETE_BUILD_TIMEOUT),
+                    project.getLastBuild().isBuilding());
 
-        waitForCompletion(project2, COMPLETE_BUILD_TIMEOUT, "testSamePullRequestsTriggersMultipleProjects 5");
-        Assert.assertFalse(MessageFormat.format("Job 2 Build of pull request {0} is still not complete after 3 minutes", pullRequest.getGHPullRequest().getHtmlUrl()),
-                project2.getLastBuild().isBuilding());
+            waitForCompletion(project2, COMPLETE_BUILD_TIMEOUT, "testSamePullRequestsTriggersMultipleProjects 5");
+            Assert.assertFalse(MessageFormat.format("Job 2 Build of pull request {0} is still not complete after {1} minutes", pullRequest.getGHPullRequest().getHtmlUrl(), COMPLETE_BUILD_TIMEOUT),
+                    project2.getLastBuild().isBuilding());
 
-        LOGGER.fine("Closing the pull request 1");
-        instances.addAll(checkBuild(project, null));
+            LOGGER.fine("Closing the pull request 1");
+            instances.addAll(checkBuild(project, null));
 
-        LOGGER.fine("Closing the pull request and deleting " + instances.size() + " instances.");
-        pullRequest.close();
-        waitForDeletion(instances, CLEARING_ALL_TIMEOUT, "testSamePullRequestsTriggersMultipleProjects 6");
-        Assert.assertTrue("Deployed instances are not deleted after 5 minutes since the pull request is closed", instances.isEmpty());
-
-        LOGGER.fine("End of testSamePullRequestsTriggersMultipleProjects");
+        } catch (Exception ex) {
+            throw ex;
+        } finally {
+            if(pullRequest.getGHPullRequest().getState() == GHIssueState.OPEN) {
+                LOGGER.fine("Closing the pull request and deleting " + instances.size() + " instances.");
+                pullRequest.close();
+                waitForDeletion(instances, CLEARING_ALL_TIMEOUT, "testSamePullRequestsTriggersMultipleProjects 6");
+                Assert.assertTrue(MessageFormat.format("Deployed instances are not deleted after {0} minutes since the pull request is closed",
+                        TimeUnit.SECONDS.toMinutes(CLEARING_ALL_TIMEOUT)), instances.isEmpty());
+            }
+            LOGGER.fine("End of testSamePullRequestsTriggersMultipleProjects");
+        }
 
 
     }
