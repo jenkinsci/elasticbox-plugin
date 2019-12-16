@@ -58,7 +58,7 @@ public class PullRequestManagerTest extends PullRequestTestBase {
     public void testPullRequestsForMultipleProjects() throws Exception {
 
         LOGGER.fine("Check GitHub webhook");
-        Thread.sleep(5000);
+        Thread.sleep(5000); // Wait for webhook be created
         List<GHHook> hooks = gitHubRepo.getHooks();
         GHHook webhook = null;
         for (GHHook hook : hooks) {

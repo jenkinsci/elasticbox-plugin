@@ -51,6 +51,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+
+import jenkins.model.JenkinsLocationConfiguration;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -92,6 +94,17 @@ public class PullRequestTestBase extends BuildStepTestBase {
     protected String apiGithubAddress;
 
     @Before
+    public void setJenkinsURL() throws IOException {
+        String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+        if (StringUtils.isBlank(jenkinsUrl)) {
+            jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
+        }
+
+        jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
+        JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+    }
+
+    @Before
     @Override
     public void setup() throws Exception {
         super.setup();
@@ -103,7 +116,12 @@ public class PullRequestTestBase extends BuildStepTestBase {
             apiGithubAddress = MessageFormat.format("{0}/api/v3", TestUtils.GITHUB_ADDRESS);
             customApiUrl = true;
         }
+
         webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
+        if (webhookUrl != null) {
+            Assert.assertFalse(MessageFormat.format("Check Webhook {0}. \"localhost\" cannot be addessed from external GitHub repository", webhookUrl), webhookUrl.contains("localhost") );
+        }
+
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks

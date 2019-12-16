@@ -51,7 +51,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         setLoggerLevel("com.elasticbox.jenkins", Level.FINER);
 
         LOGGER.fine("Check GitHub webhook");
-        Thread.sleep(5000);
+        Thread.sleep(5000); // Wait for webhook be created
         List<GHHook> hooks = gitHubRepo.getHooks();
         GHHook webhook = null;
         for (GHHook hook : hooks) {
