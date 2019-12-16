@@ -101,6 +101,12 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
+
+        if (jenkinsUrl.contains("localhost")) {
+            LOGGER.info("JENKINS_PUBLIC_HOST parameter for webhook is not defined. Replaced \"localhost\" by \"" + TestUtils.TEST_JENKINS_PUBLIC_HOST + "\" while testing." );
+            jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.TEST_JENKINS_PUBLIC_HOST);
+        }
+        
         JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
     }
 
