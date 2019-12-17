@@ -60,7 +60,7 @@ public class TestBase {
         cloud = Mockito.spy(elasticBoxCloudMock);
         Mockito.doReturn(TestUtils.ACCESS_TOKEN).when(cloud).getTokenFromCredentials(TestUtils.ELASTICBOX_URL, TestUtils.CLOUD_CREDENTIALS_ID);
 
-        LOGGER.fine("Elasticbox cloud: " + cloud);
+        LOGGER.info("Elasticbox cloud: " + cloud);
         jenkinsRule.getInstance().clouds.add(cloud);
     }
 

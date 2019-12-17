@@ -179,8 +179,10 @@ public class PullRequestTestBase extends BuildStepTestBase {
         project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
 
-        if(backWebHookUrlLocalhost != null) {
+//        if(backWebHookUrlLocalhost != null) {
 //            webhookUrl = backWebHookUrlLocalhost;
+//        }
+        if(backJenkinsUrl != null) {
             JenkinsLocationConfiguration.get().setUrl(backJenkinsUrl);
         }
     }
@@ -436,7 +438,6 @@ public class PullRequestTestBase extends BuildStepTestBase {
         private void postPayload(HttpEntity entity, String event) throws IOException {
             CrumbIssuerJson crumbIssuerJson = getCrumbIssuer();
             String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
-            LOGGER.info("postPayload send to: " + jenkinsUrl);
             LOGGER.fine("postPayload send to: " + jenkinsUrl);
 //            HttpPost post = new HttpPost(webhookUrl);
             HttpPost post = new HttpPost(jenkinsUrl);

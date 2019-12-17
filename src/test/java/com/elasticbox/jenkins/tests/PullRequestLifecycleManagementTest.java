@@ -73,7 +73,10 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
 
         }.waitUntilSatisfied(NEXTBUILD_TIMEOUT_LONG);
 
-        Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after 1 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild());
+        Assert.assertNotNull(MessageFormat.format("Build is not triggered on opening of pull request {0} after {1} minutes",
+                pullRequest.getGHPullRequest().getHtmlUrl(),
+                TimeUnit.SECONDS.toMinutes(NEXTBUILD_TIMEOUT) ),
+            project.getLastBuild());
 
         waitForCompletion(TimeUnit.MINUTES.toSeconds(15));
         Assert.assertFalse(MessageFormat.format("Build of pull request {0} is still not complete after 15 minutes", pullRequest.getGHPullRequest().getHtmlUrl()), project.getLastBuild().isBuilding());
