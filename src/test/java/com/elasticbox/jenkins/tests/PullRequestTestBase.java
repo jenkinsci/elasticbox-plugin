@@ -94,27 +94,13 @@ public class PullRequestTestBase extends BuildStepTestBase {
     protected String apiGithubAddress;
 
     @Before
-    public void setJenkinsURL() throws IOException {
-        String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
-        if (StringUtils.isBlank(jenkinsUrl)) {
-            jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
-        }
-
-        jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
-
-        if (jenkinsUrl.contains("localhost")) {
-            LOGGER.info("JENKINS_PUBLIC_HOST parameter for webhook is not defined. Replaced \"localhost\" by \"" + TestUtils.TEST_JENKINS_PUBLIC_HOST + "\" while testing." );
-            jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.TEST_JENKINS_PUBLIC_HOST);
-        }
-        
-        JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
-    }
-
-    @Before
     @Override
     public void setup() throws Exception {
         super.setup();
         boolean customApiUrl;
+        String backWebHookUrlLocalhost = null;
+        String backJenkinsUrl = null;
+
         if (TestUtils.GITHUB_ADDRESS.equals(MessageFormat.format("https://{0}", TestUtils.GITHUB_PUBLIC_ADDRESS))) {
             apiGithubAddress = MessageFormat.format("https://api.{0}", TestUtils.GITHUB_PUBLIC_ADDRESS);
             customApiUrl = false;
@@ -124,8 +110,12 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
-        if (webhookUrl != null) {
-            Assert.assertFalse(MessageFormat.format("Check Webhook {0}. \"localhost\" cannot be addessed from external GitHub repository", webhookUrl), webhookUrl.contains("localhost") );
+        if ( (webhookUrl != null) && (webhookUrl.contains("localhost")) ) {
+            LOGGER.warning("Check Webhook " + webhookUrl + ". \"localhost\" cannot be addessed from external GitHub repository" );
+            backWebHookUrlLocalhost = webhookUrl;
+            webhookUrl = webhookUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
+            LOGGER.warning("Webhook \"localhost\" replaced for tests purposes by jenkinsPublicHost parameter value: " + webhookUrl);
+            backJenkinsUrl = setExternalJenkinsURL();
         }
 
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
@@ -183,10 +173,33 @@ public class PullRequestTestBase extends BuildStepTestBase {
             }
 
         };
+
         downstreamProject = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request-downstream",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request-downstream.xml")).getBytes()));
         project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
+
+        if(backWebHookUrlLocalhost != null) {
+//            webhookUrl = backWebHookUrlLocalhost;
+            JenkinsLocationConfiguration.get().setUrl(backJenkinsUrl);
+        }
+    }
+
+    private String setExternalJenkinsURL() throws IOException {
+        String backJenkinsUrl = null;
+
+        String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+        if (StringUtils.isBlank(jenkinsUrl)) {
+            jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
+        }
+
+        backJenkinsUrl = jenkinsUrl;
+        jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
+        JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+
+        LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
+
+        return backJenkinsUrl;
     }
 
     private GHPullRequest getTestPullRequest(GHRepository githubRepo) throws IOException {
@@ -422,7 +435,11 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
         private void postPayload(HttpEntity entity, String event) throws IOException {
             CrumbIssuerJson crumbIssuerJson = getCrumbIssuer();
-            HttpPost post = new HttpPost(webhookUrl);
+            String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+            LOGGER.info("postPayload send to: " + jenkinsUrl);
+            LOGGER.fine("postPayload send to: " + jenkinsUrl);
+//            HttpPost post = new HttpPost(webhookUrl);
+            HttpPost post = new HttpPost(jenkinsUrl);
             post.addHeader("X-GitHub-Event", event);
             post.addHeader(crumbIssuerJson.crumbRequestField, crumbIssuerJson.crumb);
             post.setEntity(entity);
