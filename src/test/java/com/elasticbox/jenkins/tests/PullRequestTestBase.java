@@ -117,11 +117,21 @@ public class PullRequestTestBase extends BuildStepTestBase {
         webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
         if ( (webhookUrl != null) && (webhookUrl.contains("localhost")) ) {
             LOGGER.warning("Check Webhook " + webhookUrl + ". \"localhost\" cannot be addessed from external GitHub repository" );
+
+            String externalJenkinsHost = getExternalJenkinsHost();
+            if (externalJenkinsHost == null) {
+                externalJenkinsHost = TestUtils.JENKINS_PUBLIC_HOST;
+            }
+
             backWebHookUrlLocalhost = webhookUrl;
-            webhookUrl = webhookUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
-            LOGGER.warning("Webhook \"localhost\" replaced for tests purposes by jenkinsPublicHost parameter value: " + webhookUrl);
+            webhookUrl = webhookUrl.replace("localhost", externalJenkinsHost);
+            LOGGER.info("Webhook " + backWebHookUrlLocalhost + " replaced for tests purposes by: " + webhookUrl);
+
             backJenkinsUrl = getJenkinsURL();
-            replaceJenkinsLocalhostByExternalHost(backJenkinsUrl);
+            String jenkinsUrl = backJenkinsUrl.replace("localhost", externalJenkinsHost);
+            JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+            LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
+
         }
 
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
@@ -201,19 +211,19 @@ public class PullRequestTestBase extends BuildStepTestBase {
         return jenkinsUrl;
     }
 
-    private void replaceJenkinsLocalhostByExternalHost(String backJenkinsUrl) throws IOException {
-        if (backJenkinsUrl.contains("localhost")) {
-            String externalJenkinsHost = getExternalJenkinsHost();
-            if (externalJenkinsHost == null) {
-                externalJenkinsHost = TestUtils.JENKINS_PUBLIC_HOST;
-            }
-            String jenkinsUrl = backJenkinsUrl.replace("localhost", externalJenkinsHost);
-            JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
-
-            LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
-
-        }
-    }
+//    private void replaceJenkinsLocalhostByExternalHost(String backJenkinsUrl) throws IOException {
+//        if (backJenkinsUrl.contains("localhost")) {
+//            String externalJenkinsHost = getExternalJenkinsHost();
+//            if (externalJenkinsHost == null) {
+//                externalJenkinsHost = TestUtils.JENKINS_PUBLIC_HOST;
+//            }
+//            String jenkinsUrl = backJenkinsUrl.replace("localhost", externalJenkinsHost);
+//            JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+//
+//            LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
+//
+//        }
+//    }
 
     private String getExternalJenkinsHost() {
         String jenkinsHostAddress = null;
@@ -225,21 +235,21 @@ public class PullRequestTestBase extends BuildStepTestBase {
             LOGGER.info("I can't get HostAddress");
         }
 
-        try {
-            Enumeration e = NetworkInterface.getNetworkInterfaces();
-            while(e.hasMoreElements())
-            {
-                NetworkInterface n = (NetworkInterface) e.nextElement();
-                Enumeration ee = n.getInetAddresses();
-                while (ee.hasMoreElements())
-                {
-                    InetAddress i = (InetAddress) ee.nextElement();
-                    LOGGER.info("Socket HostAddress = " + i.getHostAddress());
-                }
-            }
-        } catch (java.net.SocketException e) {
-            LOGGER.info("I can't get Socket HostAddress");
-        }
+//        try {
+//            Enumeration e = NetworkInterface.getNetworkInterfaces();
+//            while(e.hasMoreElements())
+//            {
+//                NetworkInterface n = (NetworkInterface) e.nextElement();
+//                Enumeration ee = n.getInetAddresses();
+//                while (ee.hasMoreElements())
+//                {
+//                    InetAddress i = (InetAddress) ee.nextElement();
+//                    LOGGER.info("Socket HostAddress = " + i.getHostAddress());
+//                }
+//            }
+//        } catch (java.net.SocketException e) {
+//            LOGGER.info("I can't get Socket HostAddress");
+//        }
 
 //        try(final DatagramSocket socket = new DatagramSocket()){
 //            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
