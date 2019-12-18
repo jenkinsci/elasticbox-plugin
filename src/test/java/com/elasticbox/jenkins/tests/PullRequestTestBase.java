@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.tests;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.elasticbox.jenkins.ElasticBoxComputer;
 import com.elasticbox.jenkins.util.Condition;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
@@ -28,6 +29,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
@@ -35,6 +39,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -115,7 +120,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
             backWebHookUrlLocalhost = webhookUrl;
             webhookUrl = webhookUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
             LOGGER.warning("Webhook \"localhost\" replaced for tests purposes by jenkinsPublicHost parameter value: " + webhookUrl);
-            backJenkinsUrl = setExternalJenkinsURL();
+            backJenkinsUrl = getJenkinsURL();
+            replaceJenkinsLocalhostByExternalHost(backJenkinsUrl);
         }
 
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
@@ -187,21 +193,60 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
     }
 
-    private String setExternalJenkinsURL() throws IOException {
-        String backJenkinsUrl = null;
-
+    private String getJenkinsURL() throws IOException {
         String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
         if (StringUtils.isBlank(jenkinsUrl)) {
             jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
         }
+        return jenkinsUrl;
+    }
 
-        backJenkinsUrl = jenkinsUrl;
-        jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
-        JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+    private void replaceJenkinsLocalhostByExternalHost(String backJenkinsUrl) throws IOException {
+        if (backJenkinsUrl.contains("localhost")) {
+            String externalJenkinsHost = getExternalJenkinsHost();
+            if (externalJenkinsHost == null) {
+                externalJenkinsHost = TestUtils.JENKINS_PUBLIC_HOST;
+            }
+            String jenkinsUrl = backJenkinsUrl.replace("localhost", externalJenkinsHost);
+            JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
 
-        LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
+            LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
 
-        return backJenkinsUrl;
+        }
+    }
+
+    private String getExternalJenkinsHost() {
+        String jenkinsHostAddress = null;
+        try {
+            jenkinsHostAddress = Inet4Address.getLocalHost().getHostAddress();
+            LOGGER.info("HostAddress = " + jenkinsHostAddress);
+
+        } catch (java.net.UnknownHostException e) {
+            LOGGER.info("I can't get HostAddress");
+        }
+
+        try {
+            Enumeration e = NetworkInterface.getNetworkInterfaces();
+            while(e.hasMoreElements())
+            {
+                NetworkInterface n = (NetworkInterface) e.nextElement();
+                Enumeration ee = n.getInetAddresses();
+                while (ee.hasMoreElements())
+                {
+                    InetAddress i = (InetAddress) ee.nextElement();
+                    LOGGER.info("Socket HostAddress = " + i.getHostAddress());
+                }
+            }
+        } catch (java.net.SocketException e) {
+            LOGGER.info("I can't get Socket HostAddress");
+        }
+
+//        try(final DatagramSocket socket = new DatagramSocket()){
+//            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+//            ip = socket.getLocalAddress().getHostAddress();
+//        }
+
+        return jenkinsHostAddress;
     }
 
     private GHPullRequest getTestPullRequest(GHRepository githubRepo) throws IOException {
