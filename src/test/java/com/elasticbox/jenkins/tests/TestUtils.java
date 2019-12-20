@@ -69,7 +69,7 @@ public class TestUtils {
     static final String JENKINS_SLAVE_BOX_NAME = "Linux Jenkins Slave";
     public static final String CLOUD_CREDENTIALS_ID = System.getProperty("elasticbox.jenkins.test.credentialsId", "52625622-3008-41fe-88b4-4fbe64595d2a");
     public static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
-    static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "localhost");
+    static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "myJenkinsUrl.test");
     static final String TEST_PROVIDER_TYPE = "Test Provider";
     static final String TEST_TAG = System.getProperty("elasticbox.jenkins.test.tag", "jenkins-plugin-test");
     static final String NAME_PREFIX = TEST_TAG + '-';

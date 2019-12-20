@@ -5,7 +5,7 @@ Cloud Application Manager Plug-in
 
 The **CenturyLink Cloud Application Manager** plug-in provides full integration between Jenkins and Cloud Application Manager (https://www.ctl.io/cloud-application-manager).  
 With this plugin, Jenkins can launch, provision, and manage Jenkins slaves on-demand in different cloud providers via Cloud Application Manager.  
-It also provides build steps to deploy and manage your applications, including complex, multi-tiear applications that are defined as boxes in Cloud Application Manager.
+It also provides build steps to deploy and manage your applications, including complex, multi-tier applications that are defined as boxes in Cloud Application Manager.
 
   - Configure project to be built on slaves deployed with specific deployment profile and variables in a specific workspace.
   - Slave can be single-use. Single-use slaves cannot be reused for another build.

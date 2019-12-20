@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.tests;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.elasticbox.jenkins.ElasticBoxComputer;
 import com.elasticbox.jenkins.util.Condition;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
@@ -28,6 +29,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
@@ -35,6 +39,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -51,6 +56,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+
+import jenkins.model.JenkinsLocationConfiguration;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -78,8 +85,8 @@ import org.w3c.dom.Document;
  */
 public class PullRequestTestBase extends BuildStepTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestTestBase.class.getName());
-    
-    private static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
+
+    protected static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
     private static final String PR_TITLE_PREFIX = "ElasticBox Jenkins plugin test PR ";
     private static final String PR_TITLE = PR_TITLE_PREFIX + UUID.randomUUID().toString();
     private static final String PR_DESCRIPTION = "Automatic test PR from ElasticBox Jenkins plugin";
@@ -96,6 +103,9 @@ public class PullRequestTestBase extends BuildStepTestBase {
     public void setup() throws Exception {
         super.setup();
         boolean customApiUrl;
+ //       String backWebHookUrlLocalhost = null;
+        String backJenkinsUrl = null;
+
         if (TestUtils.GITHUB_ADDRESS.equals(MessageFormat.format("https://{0}", TestUtils.GITHUB_PUBLIC_ADDRESS))) {
             apiGithubAddress = MessageFormat.format("https://api.{0}", TestUtils.GITHUB_PUBLIC_ADDRESS);
             customApiUrl = false;
@@ -103,7 +113,30 @@ public class PullRequestTestBase extends BuildStepTestBase {
             apiGithubAddress = MessageFormat.format("{0}/api/v3", TestUtils.GITHUB_ADDRESS);
             customApiUrl = true;
         }
-        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
+
+        PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class);
+        webhookUrl = descriptor.getWebHookUrl();
+        if ( (webhookUrl != null) && (webhookUrl.contains("localhost")) ) {
+            LOGGER.warning("Check Webhook " + webhookUrl + ". \"localhost\" cannot be addessed from external GitHub repository" );
+
+            String externalJenkinsHost = getExternalJenkinsHost();
+            if (externalJenkinsHost == null) {
+                externalJenkinsHost = TestUtils.JENKINS_PUBLIC_HOST;
+            }
+
+            if ( StringUtils.isBlank(descriptor.getWebHookExternalUrl()) ) {
+               String webHookExternalUrl = webhookUrl.replace("localhost", externalJenkinsHost);
+                descriptor.setWebHookExternalUrl(webHookExternalUrl);
+                LOGGER.info("Webhook " + webhookUrl + " replaced for tests purposes by webHookExternal: " + webHookExternalUrl);
+            }
+
+            backJenkinsUrl = getJenkinsURL();
+            String jenkinsUrl = backJenkinsUrl.replace("localhost", externalJenkinsHost);
+            JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+            LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
+
+        }
+
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks
@@ -159,10 +192,36 @@ public class PullRequestTestBase extends BuildStepTestBase {
             }
 
         };
+
         downstreamProject = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request-downstream",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request-downstream.xml")).getBytes()));
         project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
+
+        if(backJenkinsUrl != null) {
+            JenkinsLocationConfiguration.get().setUrl(backJenkinsUrl);
+        }
+    }
+
+    private String getJenkinsURL() throws IOException {
+        String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+        if (StringUtils.isBlank(jenkinsUrl)) {
+            jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
+        }
+        return jenkinsUrl;
+    }
+
+    private String getExternalJenkinsHost() {
+        String jenkinsHostAddress = null;
+        try {
+            jenkinsHostAddress = Inet4Address.getLocalHost().getHostAddress();
+            LOGGER.info("HostAddress = " + jenkinsHostAddress);
+
+        } catch (java.net.UnknownHostException e) {
+            LOGGER.info("I can't get HostAddress");
+        }
+
+        return jenkinsHostAddress;
     }
 
     private GHPullRequest getTestPullRequest(GHRepository githubRepo) throws IOException {
@@ -217,7 +276,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         return parameters;
     }
 
-    protected List<JSONObject> checkBuild(String buildRequester) throws Exception {
+    protected List<JSONObject> checkBuild(FreeStyleProject project, String buildRequester) throws Exception {
         AbstractBuild<?, ?> build = project.getLastBuild();
         try {
             TestUtils.assertBuildSuccess(build);
@@ -269,11 +328,17 @@ public class PullRequestTestBase extends BuildStepTestBase {
         return Arrays.asList(mainProjectInstance, downstreamProjectInstance);
     }
 
-    protected AbstractBuild waitForNextBuild(long timeoutSeconds) {
-        return waitForNextBuild (timeoutSeconds, null);
+    protected void waitForBuildTriggered(FreeStyleProject project, long timeoutSeconds, String callerId) {
+        new Condition(callerId) {
+
+            public boolean satisfied() {
+                return project.getLastBuild() != null;
+            }
+
+        }.waitUntilSatisfied(timeoutSeconds);
     }
 
-    protected AbstractBuild waitForNextBuild(long timeoutSeconds, String callerId) {
+    protected AbstractBuild waitForNextBuild(FreeStyleProject project, long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
         new Condition(callerId) {
 
@@ -286,10 +351,19 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void waitForCompletion(long timeoutSeconds) {
-        waitForCompletion(timeoutSeconds, null);
+        waitForCompletion(project, timeoutSeconds, null);
     }
 
     protected void waitForCompletion(long timeoutSeconds, String callerId) {
+        waitForCompletion(project, timeoutSeconds, callerId);
+    }
+
+    protected void waitForCompletion(FreeStyleProject project, long timeoutSeconds) {
+        waitForCompletion(project, timeoutSeconds, null);
+    }
+
+
+    protected void waitForCompletion(FreeStyleProject project, long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
         new Condition(callerId) {
 
@@ -383,6 +457,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
         private void postPayload(HttpEntity entity, String event) throws IOException {
             CrumbIssuerJson crumbIssuerJson = getCrumbIssuer();
+            String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+            LOGGER.fine("postPayload - webhookUrl: " + webhookUrl);
             HttpPost post = new HttpPost(webhookUrl);
             post.addHeader("X-GitHub-Event", event);
             post.addHeader(crumbIssuerJson.crumbRequestField, crumbIssuerJson.crumb);
@@ -465,7 +541,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
     }
 
-    private Document getProjectDocument() throws Exception {
+    private Document getProjectDocument(FreeStyleProject project) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
         return builder.parse(project.getConfigFile().getFile());
@@ -473,18 +549,22 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
     protected void updateWhitelist(String whitelist) throws Exception {
         LOGGER.info("Updating Whitelist: " + whitelist);
-        Document document = getProjectDocument();
+        Document document = getProjectDocument(project);
         document.getElementsByTagName("whitelist").item(0).setTextContent(whitelist);
         updateProject(document);
     }
 
-    protected void updateTriggerPhrase(String triggerPhrase) throws Exception {
-        Document document = getProjectDocument();
+    protected void updateTriggerPhrase(FreeStyleProject project, String triggerPhrase) throws Exception {
+        Document document = getProjectDocument(project);
         document.getElementsByTagName("triggerPhrase").item(0).setTextContent(triggerPhrase);
-        updateProject(document);
+        updateProject(project, document);
     }
 
     private void updateProject(Document document) throws Exception {
+        updateProject(project, document);
+    }
+
+    private void updateProject(FreeStyleProject project, Document document) throws Exception {
         DOMSource src = new DOMSource(document);
         TransformerFactory factory = TransformerFactory.newInstance();
         Transformer transformer = factory.newTransformer();
@@ -495,6 +575,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
         Source streamSource = new StreamSource(in);
         project.updateByXml(streamSource);
+    }
+
+    protected String getCurrentWebhookUrl() {
+        PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class);
+        String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl())
+            ? descriptor.getWebHookUrl()
+            : descriptor.getWebHookExternalUrl();
+        return webhookUrl;
     }
 
 }

@@ -74,6 +74,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -234,7 +235,8 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         String policyId = DescriptorHelper.resolveDeploymentPolicy(client, workspace, profile, claims);
         JSONArray policyVariables = new JSONArray();
         if (StringUtils.isNotBlank(provider)) {
-            logger.info("Deploying box {0}", client.getBoxPageUrl(boxId));
+            logger.info("[{0}] Deploying box {1}",
+                    new Timestamp(System.currentTimeMillis()), client.getBoxPageUrl(boxId));
             policyId = boxId;
             JSONObject providerVariable = new JSONObject();
             providerVariable.put("type", "Text");
@@ -247,7 +249,8 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
             locationVariable.put("value", location);
             policyVariables.add(locationVariable);
         } else {
-            logger.info("Deploying box {0} with policy {1}",
+            logger.info("[{0}] Deploying box {1} with policy {2}",
+                    new Timestamp(System.currentTimeMillis()),
                     client.getBoxPageUrl(boxId),
                     client.getBoxPageUrl(policyId));
         }
@@ -260,16 +263,18 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
 
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
-        logger.info("Instance {0} is being deployed", instancePageUrl);
+        logger.info("[{0}] Instance {1} is being deployed", new Timestamp(System.currentTimeMillis()), instancePageUrl);
         notifyDeploying(build, instanceId, ebCloud);
         if (waitForCompletion) {
             try {
                 logger.info("Waiting for the deployment of the instance {0} to finish", instancePageUrl);
                 monitor.waitForDone(getWaitForCompletionTimeout());
-                logger.info("The instance {0} has been deployed successfully ", instancePageUrl);
+                logger.info("[{0}] The instance {1} has been deployed successfully ",
+                        new Timestamp(System.currentTimeMillis()), instancePageUrl);
             } catch (IProgressMonitor.IncompleteException ex) {
                 Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
-                logger.error("Failed to deploy instance {0}: {1}", instancePageUrl, ex.getMessage());
+                logger.error("[{0}] Failed to deploy instance {1}: {2}",
+                        new Timestamp(System.currentTimeMillis()), instancePageUrl, ex.getMessage());
                 throw new AbortException(ex.getMessage());
             }
         }
