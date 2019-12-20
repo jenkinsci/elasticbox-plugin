@@ -61,13 +61,14 @@ public class PullRequestManagerTest extends PullRequestTestBase {
         Thread.sleep(5000); // Wait for webhook be created
         List<GHHook> hooks = gitHubRepo.getHooks();
         GHHook webhook = null;
+        String currentWebhookUrl = getCurrentWebhookUrl();
         for (GHHook hook : hooks) {
-            if ("web".equals(hook.getName()) && webhookUrl.equals(hook.getConfig().get("url"))) {
+            if ("web".equals(hook.getName()) && currentWebhookUrl.equals(hook.getConfig().get("url"))) {
                 webhook = hook;
                 break;
             }
         }
-        Assert.assertNotNull(MessageFormat.format("Webhook {0} is not created for repository {1}", webhookUrl, gitHubRepo.getHtmlUrl()), webhook);
+        Assert.assertNotNull(MessageFormat.format("Webhook {0} is not created for repository {1}", currentWebhookUrl, gitHubRepo.getHtmlUrl()), webhook);
 
         LOGGER.fine("launching one pull request that triggers job 1");
         pullRequest.open();
