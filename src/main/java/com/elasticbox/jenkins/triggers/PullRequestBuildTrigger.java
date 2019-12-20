@@ -160,5 +160,9 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
             return webHookExternalUrl;
         }
 
+        public void setWebHookExternalUrl(String webHookExternalUrl) {
+            this.webHookExternalUrl = webHookExternalUrl;
+        }
+
     }
 }

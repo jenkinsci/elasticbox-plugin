@@ -12,6 +12,7 @@
 
 package com.elasticbox.jenkins.tests;
 
+import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.elasticbox.jenkins.util.Condition;
 import hudson.model.AbstractBuild;
 import hudson.model.FreeStyleBuild;
@@ -54,13 +55,14 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         Thread.sleep(5000); // Wait for webhook be created
         List<GHHook> hooks = gitHubRepo.getHooks();
         GHHook webhook = null;
+        String currentWebhookUrl = getCurrentWebhookUrl();
         for (GHHook hook : hooks) {
-            if ("web".equals(hook.getName()) && webhookUrl.equals(hook.getConfig().get("url"))) {
+            if ("web".equals(hook.getName()) && currentWebhookUrl.equals(hook.getConfig().get("url"))) {
                 webhook = hook;
                 break;
             }
         }
-        Assert.assertNotNull(MessageFormat.format("Webhook {0} is not created for repository {1}", webhookUrl, gitHubRepo.getHtmlUrl()), webhook);
+        Assert.assertNotNull(MessageFormat.format("Webhook {0} is not created for repository {1}", currentWebhookUrl, gitHubRepo.getHtmlUrl()), webhook);
 
         pullRequest.open();
 

@@ -103,7 +103,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
     public void setup() throws Exception {
         super.setup();
         boolean customApiUrl;
-        String backWebHookUrlLocalhost = null;
+ //       String backWebHookUrlLocalhost = null;
         String backJenkinsUrl = null;
 
         if (TestUtils.GITHUB_ADDRESS.equals(MessageFormat.format("https://{0}", TestUtils.GITHUB_PUBLIC_ADDRESS))) {
@@ -114,7 +114,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
             customApiUrl = true;
         }
 
-        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
+        PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class);
+        webhookUrl = descriptor.getWebHookUrl();
         if ( (webhookUrl != null) && (webhookUrl.contains("localhost")) ) {
             LOGGER.warning("Check Webhook " + webhookUrl + ". \"localhost\" cannot be addessed from external GitHub repository" );
 
@@ -123,9 +124,11 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 externalJenkinsHost = TestUtils.JENKINS_PUBLIC_HOST;
             }
 
-            backWebHookUrlLocalhost = webhookUrl;
-            webhookUrl = webhookUrl.replace("localhost", externalJenkinsHost);
-            LOGGER.info("Webhook " + backWebHookUrlLocalhost + " replaced for tests purposes by: " + webhookUrl);
+            if ( StringUtils.isBlank(descriptor.getWebHookExternalUrl()) ) {
+               String webHookExternalUrl = webhookUrl.replace("localhost", externalJenkinsHost);
+                descriptor.setWebHookExternalUrl(webHookExternalUrl);
+                LOGGER.info("Webhook " + webhookUrl + " replaced for tests purposes by webHookExternal: " + webHookExternalUrl);
+            }
 
             backJenkinsUrl = getJenkinsURL();
             String jenkinsUrl = backJenkinsUrl.replace("localhost", externalJenkinsHost);
@@ -195,9 +198,6 @@ public class PullRequestTestBase extends BuildStepTestBase {
         project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
 
-//        if(backWebHookUrlLocalhost != null) {
-//            webhookUrl = backWebHookUrlLocalhost;
-//        }
         if(backJenkinsUrl != null) {
             JenkinsLocationConfiguration.get().setUrl(backJenkinsUrl);
         }
@@ -211,20 +211,6 @@ public class PullRequestTestBase extends BuildStepTestBase {
         return jenkinsUrl;
     }
 
-//    private void replaceJenkinsLocalhostByExternalHost(String backJenkinsUrl) throws IOException {
-//        if (backJenkinsUrl.contains("localhost")) {
-//            String externalJenkinsHost = getExternalJenkinsHost();
-//            if (externalJenkinsHost == null) {
-//                externalJenkinsHost = TestUtils.JENKINS_PUBLIC_HOST;
-//            }
-//            String jenkinsUrl = backJenkinsUrl.replace("localhost", externalJenkinsHost);
-//            JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
-//
-//            LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
-//
-//        }
-//    }
-
     private String getExternalJenkinsHost() {
         String jenkinsHostAddress = null;
         try {
@@ -234,27 +220,6 @@ public class PullRequestTestBase extends BuildStepTestBase {
         } catch (java.net.UnknownHostException e) {
             LOGGER.info("I can't get HostAddress");
         }
-
-//        try {
-//            Enumeration e = NetworkInterface.getNetworkInterfaces();
-//            while(e.hasMoreElements())
-//            {
-//                NetworkInterface n = (NetworkInterface) e.nextElement();
-//                Enumeration ee = n.getInetAddresses();
-//                while (ee.hasMoreElements())
-//                {
-//                    InetAddress i = (InetAddress) ee.nextElement();
-//                    LOGGER.info("Socket HostAddress = " + i.getHostAddress());
-//                }
-//            }
-//        } catch (java.net.SocketException e) {
-//            LOGGER.info("I can't get Socket HostAddress");
-//        }
-
-//        try(final DatagramSocket socket = new DatagramSocket()){
-//            socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
-//            ip = socket.getLocalAddress().getHostAddress();
-//        }
 
         return jenkinsHostAddress;
     }
@@ -493,9 +458,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
         private void postPayload(HttpEntity entity, String event) throws IOException {
             CrumbIssuerJson crumbIssuerJson = getCrumbIssuer();
             String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
-            LOGGER.fine("postPayload send to: " + jenkinsUrl);
-//            HttpPost post = new HttpPost(webhookUrl);
-            HttpPost post = new HttpPost(jenkinsUrl);
+            LOGGER.fine("postPayload - webhookUrl: " + webhookUrl);
+            HttpPost post = new HttpPost(webhookUrl);
             post.addHeader("X-GitHub-Event", event);
             post.addHeader(crumbIssuerJson.crumbRequestField, crumbIssuerJson.crumb);
             post.setEntity(entity);
@@ -611,6 +575,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
         Source streamSource = new StreamSource(in);
         project.updateByXml(streamSource);
+    }
+
+    protected String getCurrentWebhookUrl() {
+        PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class);
+        String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl())
+            ? descriptor.getWebHookUrl()
+            : descriptor.getWebHookExternalUrl();
+        return webhookUrl;
     }
 
 }
