@@ -30,7 +30,7 @@
         <hamcrest.version>2.1</hamcrest.version>
         <powermock.version>1.7.4</powermock.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <checkstyle.version>8.16</checkstyle.version>
+        <checkstyle.version>8.18</checkstyle.version>
         <checkstyle.plugin.version>3.0.0</checkstyle.plugin.version>
         <findbugs.skip>true</findbugs.skip>
     </properties>
