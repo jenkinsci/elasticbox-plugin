@@ -38,13 +38,14 @@ import java.util.logging.Logger;
  *
  * @author Phong Nguyen Le
  */
-@Ignore public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
+public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestLifecycleManagementTest.class.getName() );
 
     private long NEXTBUILD_TIMEOUT = 90;
     private long NEXTBUILD_TIMEOUT_LONG = 120;
 
 
+    @Ignore
     @Test
     public void testPullRequestLifecycleManagement() throws Exception {
 
