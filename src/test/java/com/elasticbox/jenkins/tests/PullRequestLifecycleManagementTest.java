@@ -22,6 +22,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.kohsuke.github.GHHook;
 
 import java.io.ByteArrayInputStream;
