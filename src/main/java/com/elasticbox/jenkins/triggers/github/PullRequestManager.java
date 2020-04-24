@@ -259,13 +259,12 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 if (run == null) {
                     break;
                 }
-                rootBuild = (AbstractBuild<?, ?>) run;
-                /*try {
+                try {
                     rootBuild = (AbstractBuild<?, ?>) run;
                 } catch (Exception e) {
                     LOGGER.info("Parent job could not be cast into AbstractBuild but still continue");
                     break;
-                }*/
+                }
             }
 
             TriggerCause cause = rootBuild.getCause(TriggerCause.class);
