@@ -112,8 +112,9 @@ public class PullRequestBuildHandler implements IBuildHandler {
         GHRepository repo = gitHubRepoName.resolveOne();
         if (repo == null) {
             LOGGER.severe(
-                MessageFormat.format("Cannot connect to {0}. Please check your registered GitHub credentials",
-                    gitHubRepoName));
+                MessageFormat.format("Cannot connect to {0}. "
+                                + "Please check your registered GitHub credentials in Jenkins project {1}",
+                    gitHubRepoName, project.getName()));
 
             gitHubRepositoryUrl = gitHubProjectUrl;
         } else {
