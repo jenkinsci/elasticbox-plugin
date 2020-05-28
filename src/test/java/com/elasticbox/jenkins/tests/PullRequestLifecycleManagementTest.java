@@ -113,7 +113,7 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         pullRequest.comment(triggerPhrase + (count++), "closed");
         Assert.assertNull("Build is triggered even for closed pull request", waitForNextBuild(project, NEXTBUILD_TIMEOUT, "Waiting build triggered for closed pull request" ));
 
-        LOGGER.fine("Enable whitelist and check that that whitelist is enforced");
+        LOGGER.fine("\nStep: Enable whitelist and check that that whitelist is enforced");
         updateWhitelist(testTag);
         pullRequest.open();
         Assert.assertNull("Build is triggered even by user not in the whitelist", waitForNextBuild(project, NEXTBUILD_TIMEOUT, "Waiting build triggered by user not in the whitelist"));
@@ -140,10 +140,10 @@ public class PullRequestLifecycleManagementTest extends PullRequestTestBase {
         waitForDeletion(instances, TimeUnit.MINUTES.toSeconds(10));
         Assert.assertTrue("Deployed instances are not deleted after 10 minutes since the pull request is closed", instances.isEmpty());
 
-        LOGGER.fine("Checking that the running job is aborted");
+        LOGGER.fine("\nStep: Checking that the running job is aborted");
         abortBuildOfClosePullRequest(true);
 
-        LOGGER.fine("Checking that the queued job is aborted");
+        LOGGER.fine("\nStep: Checking that the queued job is aborted");
         jenkinsRule.getInstance().setNumExecutors(1);
         FreeStyleProject project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-sleep-job",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-sleep-job.xml").getBytes() ));

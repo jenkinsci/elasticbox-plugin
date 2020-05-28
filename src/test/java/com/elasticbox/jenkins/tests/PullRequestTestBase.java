@@ -251,13 +251,13 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     private GitHub createGitHubConnection(String githubEndpoint, String githubUser, String githubToken) throws IOException {
-        GitHub github;
+        GitHub github = null;
         String publicGithubAddress = MessageFormat.format("https://{0}", TestUtils.GITHUB_PUBLIC_ADDRESS);
         if (githubEndpoint.equals(publicGithubAddress)) {
             github = GitHub.connect(githubUser, githubToken);
-        } else {
-            // Deprecated Use with caution. Login with password is not a preferred method. Hay que deidir si quitarlo
-            github = GitHub.connectToEnterprise(apiGithubAddress, githubUser, githubToken);
+//        } else {
+//            // Deprecated Use with caution. Login with password is not a preferred method. Hay que deidir si quitarlo
+//            github = GitHub.connectToEnterprise(apiGithubAddress, githubUser, githubToken);
         }
 
         return github;
