@@ -29,7 +29,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <checkstyle.version>8.18</checkstyle.version>
         <checkstyle.plugin.version>3.1.1</checkstyle.plugin.version>
-        <findbugs.skip>true</findbugs.skip>
+        <spotbugs.skip>true</spotbugs.skip>
         <!-- This plugin uses hudson/model/Messages -->
         <access-modifier-checker.failOnError>false</access-modifier-checker.failOnError>
     </properties>
