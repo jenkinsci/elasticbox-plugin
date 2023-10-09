@@ -24,3 +24,4 @@ Installation / Configuration
 How To Use
 ----------
 See plugin wiki at https://wiki.jenkins-ci.org/display/JENKINS/ElasticBox+CI
+
