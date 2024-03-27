@@ -32,6 +32,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
+import org.mockito.Mockito;
 
 /**
  *
@@ -43,9 +44,9 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
     @Before
     @Override
     public void setup() throws Exception {
-        String jenkinsUrl = jenkins.getInstance().getRootUrl();
+        String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
         if (StringUtils.isBlank(jenkinsUrl)) {
-            jenkinsUrl = jenkins.createWebClient().getContextPath();
+            jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
         }
         if (StringUtils.isNotBlank(TestUtils.JENKINS_PUBLIC_HOST)) {
             jenkinsUrl = jenkinsUrl.replace("localhost", TestUtils.JENKINS_PUBLIC_HOST);
@@ -60,7 +61,8 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         return new SlaveConfiguration(UUID.randomUUID().toString(), TestUtils.TEST_WORKSPACE,
                 testBoxData.getJson().getString("id"), DescriptorHelper.LATEST_BOX_VERSION,
                 testBoxData.getNewProfileId(), null, null, null, 1, 2, slaveBoxName, variables.toString(),
-                UUID.randomUUID().toString(), "", null, Node.Mode.NORMAL, 0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
+                UUID.randomUUID().toString(), slaveBoxName + "_TestSlaveCfg", null, Node.Mode.NORMAL,
+                0, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue() );
     }
 
     protected void provisionSlaves() throws Exception {
@@ -78,17 +80,19 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         variable.put("scope", "nested");
         variables.add(variable);
         SlaveConfiguration testDeeplyNestedBoxSlaveConfig = createSlaveConfiguration("test-deeply-nested-box", variables);
-        ElasticBoxCloud testCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
-                TestUtils.ELASTICBOX_URL, 6, TestUtils.ACCESS_TOKEN,
+        ElasticBoxCloud elasticBoxCloudMock = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox",
+                TestUtils.ELASTICBOX_URL, 6, TestUtils.CLOUD_CREDENTIALS_ID,
                 Arrays.asList(testLinuxBoxSlaveConfig, testNestedBoxSlaveConfig, testDeeplyNestedBoxSlaveConfig));
-        jenkins.getInstance().clouds.add(testCloud);
+        ElasticBoxCloud testCloud = Mockito.spy(elasticBoxCloudMock);
+        Mockito.doReturn(TestUtils.ACCESS_TOKEN).when(testCloud).getTokenFromCredentials(TestUtils.ELASTICBOX_URL, TestUtils.CLOUD_CREDENTIALS_ID);
+        jenkinsRule.getInstance().clouds.add(testCloud);
 
         // wait for new slave to be launched
         new Condition() {
 
             @Override
             public boolean satisfied() {
-                return jenkins.getInstance().getNodes().size() > 3;
+                return jenkinsRule.getInstance().getNodes().size() > 3;
             }
         }.waitUntilSatisfied(60);
 
@@ -96,7 +100,7 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
         Thread.sleep(10000);
 
         List<ElasticBoxSlave> slaves = new ArrayList<ElasticBoxSlave>();
-        for (Node node : jenkins.getInstance().getNodes()) {
+        for (Node node : jenkinsRule.getInstance().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 slaves.add((ElasticBoxSlave) node);
             }
@@ -116,6 +120,7 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
             Assert.assertTrue("Unexpected slave " + slave.getDisplayName(), configToSlaveMap.containsKey(slaveConfig));
             configToSlaveMap.put(slaveConfig, slave);
             validateSlave(slave, configToSlaveScopeMap.get(slaveConfig));
+            Assert.assertEquals("Slave and instance name doesn't match:", slave.getDisplayName(), slave.getInstance().getString("name") );
         }
 
         for (Map.Entry<AbstractSlaveConfiguration, ElasticBoxSlave> entry : configToSlaveMap.entrySet()) {
@@ -149,7 +154,7 @@ public class SlaveProvisionTestBase extends BuildStepTestBase {
             }
         }
         Assert.assertNotNull(jenkinsUrlVariable);
-        Assert.assertEquals(jenkins.getInstance().getRootUrl(), jenkinsUrlVariable.getString("value"));
+        Assert.assertEquals(jenkinsRule.getInstance().getRootUrl(), jenkinsUrlVariable.getString("value"));
         Assert.assertNotNull(jnlpSlaveOptionsVariable);
         Assert.assertEquals(SlaveInstance.createJnlpSlaveOptions(slave), jnlpSlaveOptionsVariable.getString("value"));
         if (StringUtils.isBlank(slaveScope)) {

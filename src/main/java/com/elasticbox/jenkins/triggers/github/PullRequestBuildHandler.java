@@ -12,19 +12,20 @@
 
 package com.elasticbox.jenkins.triggers.github;
 
-import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import com.coravy.hudson.plugins.github.GithubProjectProperty;
 import com.elasticbox.jenkins.ElasticBoxExecutor;
 import com.elasticbox.jenkins.triggers.IBuildHandler;
-
+import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Actionable;
 import hudson.model.Executor;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
+import hudson.model.Queue;
 import hudson.model.Run;
 import hudson.model.StringParameterValue;
 import hudson.plugins.git.BranchSpec;
@@ -34,9 +35,7 @@ import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.util.BuildData;
 import hudson.security.ACL;
 import hudson.util.SequentialExecutionQueue;
-
 import jenkins.model.Jenkins;
-
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.apache.commons.lang.StringUtils;
@@ -77,6 +76,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
     public static final String PR_OWNER = "PR_OWNER";
     public static final String PR_OWNER_EMAIL = "PR_OWNER_EMAIL";
     public static final String PR_URL = "PR_URL";
+    public static final String PR_TITLE = "PR_TITLE";
+    public static final String PROJECT_NAME = "PROJECT_NAME";
 
     private static final SequentialExecutionQueue sequentialExecutionQueue
         = new SequentialExecutionQueue(ElasticBoxExecutor.threadPool);
@@ -143,7 +144,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
             // configured and it is retrieved in a separate thread without request context. So the webhook URL is first
             // retrieved here.
             PullRequestBuildTrigger.DescriptorImpl descriptor
-                = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance()
+                = (PullRequestBuildTrigger.DescriptorImpl) Jenkins.get()
                                                                     .getDescriptor(PullRequestBuildTrigger.class);
 
             final String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl())
@@ -180,6 +181,10 @@ public class PullRequestBuildHandler implements IBuildHandler {
                 });
             }
         }
+    }
+
+    public static String getPullRequestAsString(GHPullRequest pullRequest) throws IOException {
+        return pullRequest.getHtmlUrl() + " [" + pullRequest.getState() + "] Updated: " + pullRequest.getUpdatedAt();
     }
 
     public String getGitHubRepositoryUrl() {
@@ -337,7 +342,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
                         + pullRequestData);
             }
             cancelBuilds(pullRequestData);
-            build(pullRequest, null, new TriggerCause(prEventPayload));
+            build(pullRequest, null, new TriggerCause(prEventPayload), project.getName());
 
         } else if (LOGGER.isLoggable(Level.FINE) ) {
             LOGGER.fine("No new build has been triggered for Pull request: " + pullRequestData);
@@ -386,15 +391,26 @@ public class PullRequestBuildHandler implements IBuildHandler {
             return;
         }
 
-        GHPullRequest pullRequest = issueComment.getRepository().getPullRequest(issueComment.getIssue().getNumber());
+        final int prNumber = issueComment.getIssue().getNumber();
+
+        GHPullRequest pullRequest = issueComment.getRepository().getPullRequest(prNumber);
+        // Updating PR to force the cache (if present) to refresh:
+        pullRequest.setTitle(pullRequest.getTitle() );
+
+        pullRequest = issueComment.getRepository().getPullRequest(prNumber);
+
+        if (LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.fine("ghPullRequest = " + getPullRequestAsString(pullRequest) );
+        }
+
         if (pullRequest.getState() == GHIssueState.OPEN) {
             PullRequestData pullRequestData = PullRequestManager.getInstance().addPullRequestData(pullRequest, project);
+
             cancelBuilds(pullRequestData);
-            build(pullRequest, buildRequester, new TriggerCause(pullRequest, buildRequester));
-        } else {
-            LOGGER.finer(
-                MessageFormat.format(
-                    "Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString()));
+            build(pullRequest, buildRequester, new TriggerCause(pullRequest, buildRequester), project.getName());
+        } else if (LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.fine(MessageFormat.format(
+                    "Pull request {0} is not opened, no build is triggered", pullRequest.getHtmlUrl().toString() ));
         }
     }
 
@@ -418,11 +434,36 @@ public class PullRequestBuildHandler implements IBuildHandler {
         return false;
     }
 
-    private boolean isPullRequestBuild(AbstractBuild build, String pullRequestUrl) {
-        ParametersAction parameters = build.getAction(ParametersAction.class);
-        return parameters != null
-            && parameters.getParameters().contains(new StringParameterValue("PR_URL", pullRequestUrl));
+    private boolean isPullRequestBuildInProject(Actionable actionable, String pullRequestUrl, String projectName) {
+        ParameterValue parameterValue ;
 
+        ParametersAction parameters = actionable.getAction(ParametersAction.class);
+        if (parameters == null) {
+            return false;
+        }
+        parameterValue = parameters.getParameter(PR_URL);
+        if (parameterValue == null) {
+            return false;
+        }
+        String itemRequestUrl = (String) parameterValue.getValue();
+
+        parameterValue = parameters.getParameter(PROJECT_NAME);
+        if (parameterValue == null) {
+            return false;
+        }
+        String itemProjectName = (String) parameterValue.getValue();
+
+
+        if (itemRequestUrl == null) {
+            LOGGER.warning("Parameter " + PR_URL + " is not present.");
+            return false;
+        }
+        if (itemProjectName == null) {
+            LOGGER.warning("Parameter " + PROJECT_NAME + " is not present.");
+            return false;
+        }
+
+        return ((itemProjectName.equals(projectName)) && (itemRequestUrl.equals(pullRequestUrl)));
     }
 
     void cancelBuilds(PullRequestData pullRequestData) {
@@ -431,7 +472,8 @@ public class PullRequestBuildHandler implements IBuildHandler {
         for (Object b : project.getBuilds()) {
             if (b instanceof AbstractBuild) {
                 AbstractBuild build = (AbstractBuild) b;
-                if (build.isBuilding() && isPullRequestBuild(build, pullRequestUrl)) {
+
+                if (build.isBuilding() && isPullRequestBuildInProject(build, pullRequestUrl, project.getName())) {
                     pullRequestBuilds.add(build);
                 }
             }
@@ -452,6 +494,15 @@ public class PullRequestBuildHandler implements IBuildHandler {
         } else {
             LOGGER.fine("There is no previous running builds to cancel for Pull Request: " + pullRequestUrl);
         }
+        LOGGER.info("Checking if there is any build on queue for Pull Request: " + pullRequestUrl);
+        for (Queue.Item item: Jenkins.get().getQueue().getUnblockedItems() ) {
+            if (isPullRequestBuildInProject(item, pullRequestUrl, project.getName()) ) {
+                LOGGER.info(MessageFormat.format("Cancelling item id {0} found in queue "
+                                + "matching Pull Request: {1} for project \"{2}\".",
+                        item.getId(), pullRequestUrl, project.getName()));
+                Jenkins.get().getQueue().cancel(item);
+            }
+        }
     }
 
     private ArrayList<ParameterValue> getDefaultBuildParameters() {
@@ -465,8 +516,10 @@ public class PullRequestBuildHandler implements IBuildHandler {
         return values;
     }
 
-    private void build(GHPullRequest pr, GHUser buildRequester, TriggerCause cause) throws IOException {
+    private void build(GHPullRequest pr, GHUser buildRequester,
+                       TriggerCause cause, String projectName) throws IOException {
         ArrayList<ParameterValue> parameters = getDefaultBuildParameters();
+        parameters.add(new StringParameterValue(PROJECT_NAME, projectName));
         parameters.add(new StringParameterValue(PR_COMMIT, pr.getHead().getSha()));
         parameters.add(new StringParameterValue(PR_BRANCH, pr.getHead().getRef()));
         if (buildRequester != null) {
@@ -483,6 +536,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         }
         final StringParameterValue prUrlParam = new StringParameterValue(PR_URL, pr.getHtmlUrl().toString());
         parameters.add(prUrlParam);
+        parameters.add(new StringParameterValue(PR_TITLE, pr.getTitle()));
 
         project.scheduleBuild2(project.getQuietPeriod(), cause, new ParametersAction(parameters),
                 getBuildData(prUrlParam), new RevisionParameterAction(pr.getHead().getSha()));
@@ -490,15 +544,12 @@ public class PullRequestBuildHandler implements IBuildHandler {
 
     private BuildData getBuildData(StringParameterValue pullRequestUrlParam) {
         for (Run<?, ?> build : project.getBuilds()) {
-            ParametersAction paramsAction = build.getAction(ParametersAction.class);
-            if (paramsAction != null) {
-                for (ParameterValue param : paramsAction.getParameters()) {
-                    if (param.equals(pullRequestUrlParam)) {
-                        List<BuildData> buildDataList = build.getActions(BuildData.class);
-                        if (!buildDataList.isEmpty()) {
-                            return buildDataList.get(0);
-                        }
-                    }
+
+            if (isPullRequestBuildInProject(build, String.valueOf(pullRequestUrlParam.getValue()), project.getName())) {
+
+                List<BuildData> buildDataList = build.getActions(BuildData.class);
+                if (!buildDataList.isEmpty()) {
+                    return buildDataList.get(0);
                 }
             }
         }
@@ -511,7 +562,7 @@ public class PullRequestBuildHandler implements IBuildHandler {
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
-            for (AbstractProject<?,?> project : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?,?> project : Jenkins.get().getAllItems(AbstractProject.class)) {
 
                 PullRequestData data =
                     pullRequestManager.removePullRequestData(pullRequest.getHtmlUrl().toString(), project);

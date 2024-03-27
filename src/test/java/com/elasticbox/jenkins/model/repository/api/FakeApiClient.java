@@ -21,7 +21,6 @@ public class FakeApiClient implements ApiClient {
         final JSONArray objects = new JSONArray();
         objects.add(UnitTestingUtils.getFakeScriptBox());
         objects.add(UnitTestingUtils.getFakePolicyBox());
-        objects.add(UnitTestingUtils.getFakeCloudFormationManagedBox());
         objects.add(UnitTestingUtils.getFakeCloudFormationTemplateBox());
         objects.add(UnitTestingUtils.getFakeEmptyApplicationBox());
         return objects;

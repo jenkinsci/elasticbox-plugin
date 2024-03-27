@@ -14,6 +14,7 @@ package com.elasticbox.jenkins.tests;
 
 import com.elasticbox.jenkins.util.Condition;
 import com.elasticbox.Client;
+import com.elasticbox.ClientException;
 import com.elasticbox.IProgressMonitor;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import java.io.IOException;
@@ -25,19 +26,23 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.mockito.Mockito;
 
-/**
- *
- * @author Phong Nguyen Le
- */
+import static org.mockito.Mockito.when;
+
 public class TestBase {
     private static final Logger LOGGER = Logger.getLogger(TestBase.class.getName());
 
@@ -45,17 +50,23 @@ public class TestBase {
     protected ElasticBoxCloud cloud;
 
     @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
+    public JenkinsRule jenkinsRule = new JenkinsRule();
 
     @Before
     public void setup() throws Exception {
-        jenkins.timeout = 300;
-        cloud = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.ACCESS_TOKEN, Collections.EMPTY_LIST);
-        jenkins.getInstance().clouds.add(cloud);
+        LOGGER.info("Test timeout: " + jenkinsRule.timeout);
+
+        ElasticBoxCloud elasticBoxCloudMock = new ElasticBoxCloud("elasticbox", "ElasticBox", TestUtils.ELASTICBOX_URL, 2, TestUtils.CLOUD_CREDENTIALS_ID, Collections.EMPTY_LIST);
+        cloud = Mockito.spy(elasticBoxCloudMock);
+        Mockito.doReturn(TestUtils.ACCESS_TOKEN).when(cloud).getTokenFromCredentials(TestUtils.ELASTICBOX_URL, TestUtils.CLOUD_CREDENTIALS_ID);
+
+        LOGGER.info("Elasticbox cloud: " + cloud + ", name:" + cloud.getDisplayName());
+        jenkinsRule.getInstance().clouds.add(cloud);
     }
 
     @After
     public void tearDown() throws Exception {
+        LOGGER.fine("tearDown cloud: " + cloud);
         final Client client = cloud.getClient();
 
         // terminate and delete instances
@@ -64,18 +75,26 @@ public class TestBase {
             JSONObject object = iter.next();
             String uri = object.getString("uri");
             if (uri != null && uri.startsWith("/services/instances/")) {
+                String instanceId = "unknown";
                 try {
-                    String instanceId = object.getString("id");
+                    instanceId = object.getString("id");
                     IProgressMonitor monitor = client.forceTerminate(instanceId);
                     terminatingInstancIdToMonitorMap.put(instanceId, monitor);
                     iter.remove();
+                } catch (ClientException ex) {
+                    // SC_NOT_FOUND admitted for compatibility with previous versions to CAM 5.0.22033
+                    if ((ex.getStatusCode() == HttpStatus.SC_FORBIDDEN) || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND)){
+                        LOGGER.log(Level.INFO, "Instance \"" + instanceId + "\" was already deleted.");
+                    } else {
+                        LOGGER.log(Level.WARNING, ex.getMessage(), ex);
+                    }
                 } catch (IOException ex) {
                     LOGGER.log(Level.WARNING, ex.getMessage(), ex);
                 }
             }
         }
         List<String> instanceIDs = new ArrayList<String>(terminatingInstancIdToMonitorMap.keySet());
-        new Condition() {
+        new Condition("terminatingInstancIdToMonitorMap") {
 
             public boolean satisfied() {
                 JSONArray instances;
@@ -109,7 +128,7 @@ public class TestBase {
                 return terminatingInstancIdToMonitorMap.isEmpty();
             }
 
-        }.waitUntilSatisfied(180);
+        }.waitUntilSatisfied(360 );
         for (String instanceId : instanceIDs) {
             try {
                 client.delete(instanceId);
@@ -122,7 +141,18 @@ public class TestBase {
             try {
                 delete(objectsToDelete.get(i), client);
             } catch (IOException ex) {
-                LOGGER.log(Level.WARNING, ex.getMessage(), ex);
+                boolean isAlreadyDeleted = false;
+                if (ex instanceof ClientException) {
+                    int exStatusCode = ((ClientException) ex).getStatusCode();
+                    // SC_NOT_FOUND admitted for compatibility with previous versions
+                    isAlreadyDeleted = (exStatusCode == HttpStatus.SC_FORBIDDEN) || (exStatusCode == HttpStatus.SC_NOT_FOUND);
+                }
+                if(isAlreadyDeleted){
+                    String instanceId = objectsToDelete.get(i).getString("id");
+                    LOGGER.log(Level.INFO, "Instance \"" + instanceId + "\" pending to delete was already deleted.");
+                } else {
+                    LOGGER.log(Level.WARNING, ex.getMessage(), ex);
+                }
             }
         }
     }
@@ -154,5 +184,15 @@ public class TestBase {
             }
         }
         client.doDelete(resource.getString("uri"));
+    }
+
+    public void setLoggerLevel(String name, Level level) {
+        jenkinsRule.getInstance().getLog().doConfigLogger(name, level.toString() );
+        final Logger logger = Logger.getLogger(name);
+        Handler consoleHandler = new ConsoleHandler();
+        consoleHandler.setLevel(level);
+        consoleHandler.setFormatter(new SimpleFormatter());
+        logger.addHandler(consoleHandler);
+        logger.setUseParentHandlers(false);
     }
 }

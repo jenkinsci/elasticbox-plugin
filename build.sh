@@ -95,7 +95,12 @@ function build_with_jenkins_version() {
         fi
     fi
 
-    BUILD_OPTIONS="-a ${EBX_ADDRESS} -j ${JENKINS_VERSION} -c ${FORK_COUNT}"
+    BUILD_OPTIONS="-a ${EBX_ADDRESS} -c ${FORK_COUNT}"
+
+    if [[ -n ${JENKINS_VERSION} ]]
+    then
+        BUILD_OPTIONS="${BUILD_OPTIONS} -j ${JENKINS_VERSION}"
+    fi
 
     if [[ -n ${EBX_TOKEN} ]]
     then
@@ -115,6 +120,9 @@ function build_with_jenkins_version() {
     echo "Building Jenkins version [${JENKINS_VERSION}] with options [${BUILD_OPTIONS}]"
     bash $(dirname $0)/version-build.sh ${BUILD_OPTIONS}
 }
+
+echo "Updating EBX Appliance IP setting:"
+update_appliance_ip ${EBX_ADDRESS} ${EBX_TOKEN}
 
 if [[ -n ${PACKAGE} ]]
 then

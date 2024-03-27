@@ -57,7 +57,7 @@ public abstract class AbstractBuilder extends Builder {
 
         public ListBoxModel doFillCloudItems() {
             ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option(Constants.CHOOSE_CLOUD_MESSAGE, ""));
-            for (Cloud cloud : Jenkins.getInstance().clouds) {
+            for (Cloud cloud : Jenkins.get().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     clouds.add(cloud.getDisplayName(), cloud.name);
                 }

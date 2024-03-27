@@ -30,6 +30,7 @@ import org.kohsuke.github.GHPullRequest;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,28 +41,24 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
     public boolean postStatus(
         AbstractBuild<?, ?> build, GHPullRequest pullRequest, GHCommitState status, String message) {
 
-        String detailsUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();
+        String detailsUrl = Jenkins.get().getRootUrl() + build.getUrl();
 
-        LOGGER.finest(
-            MessageFormat.format(
-                "Posting status {0} to {1} with details URL {2} and message: {3}",
-                status,
-                pullRequest.getHtmlUrl(),
-                detailsUrl,
-                message)
-        );
+        if (LOGGER.isLoggable(Level.FINER) ) {
+            LOGGER.finer(MessageFormat.format("Posting status {0} to {1} with details URL {2} and message: {3}",
+                    status, pullRequest.getHtmlUrl(), detailsUrl, message) );
+        }
 
         try {
             pullRequest.getRepository().createCommitStatus(pullRequest.getHead().getSha(), status, detailsUrl, message);
             return true;
         } catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, MessageFormat.format("Error posting status to {0}", pullRequest.getHtmlUrl()), ex);
+            LOGGER.log(Level.SEVERE, "Error posting status to " + pullRequest.getHtmlUrl(), ex);
         }
         return false;
     }
 
     public void postComment(AbstractBuild<?, ?> build, GHPullRequest pullRequest, String comment) {
-        String detailsUrl = Jenkins.getInstance().getRootUrl() + build.getUrl();
+        String detailsUrl = Jenkins.get().getRootUrl() + build.getUrl();
         try {
 
             pullRequest.comment(MessageFormat.format("{0}. See {1} for more details.", comment, detailsUrl));
@@ -113,20 +110,15 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
             return;
         }
         GHPullRequest pullRequest = cause.getPullRequest();
-        // Remove previous build data of the pull request from the build
-        for (Iterator<Action> iter = build.getActions().iterator(); iter.hasNext();) {
-            Action action = iter.next();
-            if (action instanceof BuildData) {
-                BuildData buildData = (BuildData) action;
+        String sha = pullRequest.getHead().getSha();
 
-                if (buildData.getLastBuiltRevision() != null
-                    && pullRequest.getHead().getSha().equals(buildData.getLastBuiltRevision())) {
-
-                    iter.remove();
-                    break;
-                }
-            }
+        if (sha != null) {
+            // Remove previous build data of the pull request from the build
+            removeAction(build.getAllActions(), sha) ;
+        } else {
+            LOGGER.warning( "Pull request sha string is null. No previous actions removed.");
         }
+
         GHCommitState status;
         if (build.getResult() == Result.SUCCESS) {
             status = GHCommitState.SUCCESS;
@@ -149,4 +141,23 @@ public class PullRequestBuildListener extends RunListener<AbstractBuild<?, ?>> {
         postStatus(build, pullRequest, status, message);
     }
 
+    private void removeAction(List<? extends Action> actions, String actionId) {
+        if (actionId != null) {
+            for (Action action : actions) {
+                if (isRemovableAction(action, actionId)) {
+                    actions.remove(action);
+                    return;
+                }
+            }
+        }
+    }
+
+    private boolean isRemovableAction(Action action, String sha) {
+        if (!BuildData.class.isInstance(action)) {
+            return false;
+        }
+        BuildData buildData = (BuildData) action;
+        return (buildData.getLastBuiltRevision() != null
+                && sha.equals(buildData.getLastBuiltRevision()));
+    }
 }

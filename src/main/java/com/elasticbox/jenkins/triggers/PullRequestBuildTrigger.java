@@ -134,7 +134,7 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
 
         public BuildManager<?> getBuildManager() {
             if (buildManager == null) {
-                ExtensionList<BuildManager> buildManagers = Jenkins.getInstance().getExtensionList(BuildManager.class);
+                ExtensionList<BuildManager> buildManagers = Jenkins.get().getExtensionList(BuildManager.class);
                 if (!buildManagers.isEmpty()) {
                     buildManager = buildManagers.get(0);
                 }
@@ -143,7 +143,7 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
         }
 
         public String getWebHookUrl() {
-            String jenkinsUrl = Jenkins.getInstance().getRootUrl();
+            String jenkinsUrl = Jenkins.get().getRootUrl();
             if (jenkinsUrl == null) {
                 LOGGER.severe("Jenkins URL is not configured");
                 return null;
@@ -153,11 +153,15 @@ public class PullRequestBuildTrigger extends Trigger<AbstractProject<?, ?>> {
                 jenkinsUrl += '/';
             }
             return jenkinsUrl
-                + Jenkins.getInstance().getExtensionList(RootAction.class).get(WebHook.class).getUrlName() + '/';
+                + Jenkins.get().getExtensionList(RootAction.class).get(WebHook.class).getUrlName() + '/';
         }
 
         public String getWebHookExternalUrl() {
             return webHookExternalUrl;
+        }
+
+        public void setWebHookExternalUrl(String webHookExternalUrl) {
+            this.webHookExternalUrl = webHookExternalUrl;
         }
 
     }

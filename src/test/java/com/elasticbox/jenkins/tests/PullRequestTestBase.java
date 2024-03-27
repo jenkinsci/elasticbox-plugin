@@ -13,6 +13,7 @@
 package com.elasticbox.jenkins.tests;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.elasticbox.jenkins.ElasticBoxComputer;
 import com.elasticbox.jenkins.util.Condition;
 import com.elasticbox.Client;
 import com.elasticbox.ClientException;
@@ -28,6 +29,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
@@ -35,6 +39,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -51,6 +56,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+
+import jenkins.model.JenkinsLocationConfiguration;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -59,6 +66,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -77,8 +85,8 @@ import org.w3c.dom.Document;
  */
 public class PullRequestTestBase extends BuildStepTestBase {
     private static final Logger LOGGER = Logger.getLogger(PullRequestTestBase.class.getName());
-    
-    private static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
+
+    protected static final String GIT_REPO = MessageFormat.format("{0}/{1}", TestUtils.GITHUB_USER, TestUtils.GITHUB_REPO_NAME);
     private static final String PR_TITLE_PREFIX = "ElasticBox Jenkins plugin test PR ";
     private static final String PR_TITLE = PR_TITLE_PREFIX + UUID.randomUUID().toString();
     private static final String PR_DESCRIPTION = "Automatic test PR from ElasticBox Jenkins plugin";
@@ -95,6 +103,9 @@ public class PullRequestTestBase extends BuildStepTestBase {
     public void setup() throws Exception {
         super.setup();
         boolean customApiUrl;
+ //       String backWebHookUrlLocalhost = null;
+        String backJenkinsUrl = null;
+
         if (TestUtils.GITHUB_ADDRESS.equals(MessageFormat.format("https://{0}", TestUtils.GITHUB_PUBLIC_ADDRESS))) {
             apiGithubAddress = MessageFormat.format("https://api.{0}", TestUtils.GITHUB_PUBLIC_ADDRESS);
             customApiUrl = false;
@@ -102,7 +113,30 @@ public class PullRequestTestBase extends BuildStepTestBase {
             apiGithubAddress = MessageFormat.format("{0}/api/v3", TestUtils.GITHUB_ADDRESS);
             customApiUrl = true;
         }
-        webhookUrl = ((PullRequestBuildTrigger.DescriptorImpl) jenkins.getInstance().getDescriptor(PullRequestBuildTrigger.class)).getWebHookUrl();
+
+        PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class);
+        webhookUrl = descriptor.getWebHookUrl();
+        if ( (webhookUrl != null) && (webhookUrl.contains("localhost")) ) {
+            LOGGER.warning("Check Webhook " + webhookUrl + ". \"localhost\" cannot be addessed from external GitHub repository" );
+
+            String externalJenkinsHost = getExternalJenkinsHost();
+            if (externalJenkinsHost == null) {
+                externalJenkinsHost = TestUtils.JENKINS_PUBLIC_HOST;
+            }
+
+            if ( StringUtils.isBlank(descriptor.getWebHookExternalUrl()) ) {
+               String webHookExternalUrl = webhookUrl.replace("localhost", externalJenkinsHost);
+                descriptor.setWebHookExternalUrl(webHookExternalUrl);
+                LOGGER.info("Webhook " + webhookUrl + " replaced for tests purposes by webHookExternal: " + webHookExternalUrl);
+            }
+
+            backJenkinsUrl = getJenkinsURL();
+            String jenkinsUrl = backJenkinsUrl.replace("localhost", externalJenkinsHost);
+            JenkinsLocationConfiguration.get().setUrl(jenkinsUrl);
+            LOGGER.info("jenkinsUrl " + backJenkinsUrl + " replaced for tests purposes by: " + jenkinsUrl);
+
+        }
+
         GitHub gitHub = createGitHubConnection(TestUtils.GITHUB_ADDRESS, TestUtils.GITHUB_USER, TestUtils.GITHUB_ACCESS_TOKEN);
         gitHubRepo = gitHub.getRepository(GIT_REPO);
         // try to delete all hooks
@@ -120,7 +154,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         // try to delete all comments that are older than 1 hour
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR_OF_DAY, -1);
-        HttpClient httpClient = Client.getHttpClient();
+        HttpClient httpClient = Client.getHttpClientInstance();
         for (GHIssueComment comment : ghPullRequest.getComments()) {
             if (comment.getCreatedAt().before(calendar.getTime())) {
                 HttpDelete delete = new HttpDelete(comment.getUrl().toString());
@@ -140,11 +174,10 @@ public class PullRequestTestBase extends BuildStepTestBase {
         pullRequest = new MockPullRequest(ghPullRequest);
         testTag = UUID.randomUUID().toString().substring(0, 30);
         
-        StandardCredentials creds = jenkins.getInstance()
+        StandardCredentials creds = jenkinsRule.getInstance()
                 .getDescriptorByType(GitHubTokenCredentialsCreator.class)
                 .createCredentials(apiGithubAddress, TestUtils.GITHUB_ACCESS_TOKEN, TestUtils.GITHUB_USER);
         GitHubServerConfig config = new GitHubServerConfig(creds.getId());
-        config.setCustomApiUrl(customApiUrl);
         config.setApiUrl(apiGithubAddress);
         config.setManageHooks(true);
         GitHubPlugin.configuration().getConfigs().add(config);
@@ -159,10 +192,36 @@ public class PullRequestTestBase extends BuildStepTestBase {
             }
 
         };
-        downstreamProject = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request-downstream",
+
+        downstreamProject = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request-downstream",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request-downstream.xml")).getBytes()));
-        project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test-pull-request",
+        project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test-pull-request",
                 new ByteArrayInputStream(templateResolver.resolve(TestUtils.getResourceAsString("jobs/test-pull-request.xml")).getBytes()));
+
+        if(backJenkinsUrl != null) {
+            JenkinsLocationConfiguration.get().setUrl(backJenkinsUrl);
+        }
+    }
+
+    private String getJenkinsURL() throws IOException {
+        String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+        if (StringUtils.isBlank(jenkinsUrl)) {
+            jenkinsUrl = jenkinsRule.createWebClient().getContextPath();
+        }
+        return jenkinsUrl;
+    }
+
+    private String getExternalJenkinsHost() {
+        String jenkinsHostAddress = null;
+        try {
+            jenkinsHostAddress = Inet4Address.getLocalHost().getHostAddress();
+            LOGGER.info("HostAddress = " + jenkinsHostAddress);
+
+        } catch (java.net.UnknownHostException e) {
+            LOGGER.info("I can't get HostAddress");
+        }
+
+        return jenkinsHostAddress;
     }
 
     private GHPullRequest getTestPullRequest(GHRepository githubRepo) throws IOException {
@@ -197,6 +256,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         if (githubEndpoint.equals(publicGithubAddress)) {
             github = GitHub.connect(githubUser, githubToken);
         } else {
+            // Deprecated Use with caution. Login with password is not a preferred method. Hay que deidir si quitarlo
             github = GitHub.connectToEnterprise(apiGithubAddress, githubUser, githubToken);
         }
 
@@ -216,7 +276,7 @@ public class PullRequestTestBase extends BuildStepTestBase {
         return parameters;
     }
 
-    protected List<JSONObject> checkBuild(String buildRequester) throws Exception {
+    protected List<JSONObject> checkBuild(FreeStyleProject project, String buildRequester) throws Exception {
         AbstractBuild<?, ?> build = project.getLastBuild();
         try {
             TestUtils.assertBuildSuccess(build);
@@ -268,9 +328,19 @@ public class PullRequestTestBase extends BuildStepTestBase {
         return Arrays.asList(mainProjectInstance, downstreamProjectInstance);
     }
 
-    protected AbstractBuild waitForNextBuild(long timeoutSeconds) {
+    protected void waitForBuildTriggered(FreeStyleProject project, long timeoutSeconds, String callerId) {
+        new Condition(callerId) {
+
+            public boolean satisfied() {
+                return project.getLastBuild() != null;
+            }
+
+        }.waitUntilSatisfied(timeoutSeconds);
+    }
+
+    protected AbstractBuild waitForNextBuild(FreeStyleProject project, long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
-        new Condition() {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 return build.getNextBuild() != null;
@@ -281,8 +351,21 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void waitForCompletion(long timeoutSeconds) {
+        waitForCompletion(project, timeoutSeconds, null);
+    }
+
+    protected void waitForCompletion(long timeoutSeconds, String callerId) {
+        waitForCompletion(project, timeoutSeconds, callerId);
+    }
+
+    protected void waitForCompletion(FreeStyleProject project, long timeoutSeconds) {
+        waitForCompletion(project, timeoutSeconds, null);
+    }
+
+
+    protected void waitForCompletion(FreeStyleProject project, long timeoutSeconds, String callerId) {
         final AbstractBuild build = project.getLastBuild();
-        new Condition() {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 return !build.isBuilding();
@@ -292,7 +375,11 @@ public class PullRequestTestBase extends BuildStepTestBase {
     }
 
     protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds) {
-        new Condition() {
+        waitForDeletion(instances, timeoutSeconds, null);
+    }
+
+    protected void waitForDeletion(final List<JSONObject> instances, long timeoutSeconds, String callerId) {
+        new Condition(callerId) {
 
             public boolean satisfied() {
                 try {
@@ -302,7 +389,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
                         try {
                             client.getInstance(instance.getString("id"));
                         } catch (ClientException ex) {
-                            if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                            // SC_NOT_FOUND admitted for compatibility with previous versions to CAM 5.0.22033
+                            if ( (ex.getStatusCode() == HttpStatus.SC_FORBIDDEN) || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) ){
                                 iter.remove();
                                 objectsToDelete.remove(instance);
                             } else {
@@ -317,16 +405,19 @@ public class PullRequestTestBase extends BuildStepTestBase {
                 }
             }
 
-        }.waitUntilSatisfied(TimeUnit.MINUTES.toSeconds(timeoutSeconds));
+        }.waitUntilSatisfied(timeoutSeconds);
     }
 
     protected class MockPullRequest {
         private final StringEntity openPullRequestPayload;
-        private final StringEntity closePullRequestPayload;
         private final StringEntity reopenPullRequestPayload;
+        private final String closePullRequestPayload;
         private final String syncPullRequestPayload;
         private final String commentPullRequestPayloadTemplate;
-        private final GHPullRequest ghPullRequest;
+
+        private GHPullRequest ghPullRequest;
+
+        private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd\'T\'HH:mm:ss\'Z\'");
 
         private StringEntity createPayload(String content) throws UnsupportedEncodingException {
             return new StringEntity("payload=" + URLEncoder.encode(content, "UTF-8"), ContentType.APPLICATION_FORM_URLENCODED);
@@ -336,8 +427,8 @@ public class PullRequestTestBase extends BuildStepTestBase {
             this.ghPullRequest = ghPullRequest;
             HashMap<String, Object> jinjaContext = createJinjaContext();
             openPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-opened.json"), jinjaContext));
-            closePullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext));
             reopenPullRequestPayload = createPayload(TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-reopened.json"), jinjaContext));
+            closePullRequestPayload = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-closed.json"), jinjaContext);
             syncPullRequestPayload = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-pull-request-synchronize.json"), jinjaContext);
             commentPullRequestPayloadTemplate = TestUtils.JINJA_RENDER.render(TestUtils.getResourceAsString("test-github-issue-comment-created.json"), jinjaContext);
         }
@@ -365,10 +456,14 @@ public class PullRequestTestBase extends BuildStepTestBase {
         }
 
         private void postPayload(HttpEntity entity, String event) throws IOException {
-            HttpPost post = new HttpPost(webhookUrl + "?.crumb=test");
+            CrumbIssuerJson crumbIssuerJson = getCrumbIssuer();
+            String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+            LOGGER.fine("postPayload - webhookUrl: " + webhookUrl);
+            HttpPost post = new HttpPost(webhookUrl);
             post.addHeader("X-GitHub-Event", event);
+            post.addHeader(crumbIssuerJson.crumbRequestField, crumbIssuerJson.crumb);
             post.setEntity(entity);
-            HttpResponse response = Client.getHttpClient().execute(post);
+            HttpResponse response = Client.getHttpClientInstance().execute(post);
             int status = response.getStatusLine().getStatusCode();
             if (status < 200 || status > 299) {
                 throw new ClientException(Client.getResponseBodyAsString(response), status);
@@ -377,41 +472,76 @@ public class PullRequestTestBase extends BuildStepTestBase {
             }
         }
 
+        public CrumbIssuerJson getCrumbIssuer() throws IOException {
+            String jenkinsUrl = jenkinsRule.getInstance().getRootUrl();
+            String uriCrumbIssuer = jenkinsUrl + "crumbIssuer/api/json";
+            HttpGet httpGet = new HttpGet(uriCrumbIssuer);
+            HttpResponse response = Client.getHttpClientInstance().execute(httpGet);
+            String serializedCrumbIssuer = Client.getResponseBodyAsString(response);
+            LOGGER.finer("serializedCrumbIssuer = " + serializedCrumbIssuer );
+            return new CrumbIssuerJson(serializedCrumbIssuer);
+        }
+
+
         public void open() throws IOException {
             LOGGER.info("Opening PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.reopen();
+            refreshPullRequestData();
             postPayload(openPullRequestPayload, "pull_request");
         }
 
         public void reopen() throws IOException {
             LOGGER.info("Reopening PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.reopen();
+            refreshPullRequestData();
             postPayload(reopenPullRequestPayload, "pull_request");
         }
 
         public void close() throws IOException {
             LOGGER.info("Closing PR #" + getGHPullRequest().getNumber() );
             ghPullRequest.close();
-            postPayload(closePullRequestPayload, "pull_request");
+            refreshPullRequestData();
+
+            postPayload(createPayload(closePullRequestPayload.replace("${TIMESTAMP}", dateFormat.format(new Date() ))),
+                    "pull_request");
         }
 
         public void sync(String sha) throws IOException {
             LOGGER.info("Synchronizing PR #" + getGHPullRequest().getNumber() );
 
             String payload = StringUtils.replaceOnce(syncPullRequestPayload, "${RANDOM_SHA}", sha);
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd\'T\'HH:mm:ss\'Z\'");
             payload = StringUtils.replaceOnce(payload, "${TIMESTAMP}", dateFormat.format(new Date() ));
 
             postPayload(createPayload(payload), "pull_request");
         }
 
         public void comment(String comment) throws IOException {
-            LOGGER.info("Commenting PR #" + getGHPullRequest().getNumber() + ": " + comment);
-            postPayload(createPayload(commentPullRequestPayloadTemplate.replace("${COMMENT}", comment)), "issue_comment");
+            comment(comment, "opem");
         }
+
+        public void comment(String comment, String state) throws IOException {
+            LOGGER.info("Commenting PR #" + getGHPullRequest().getNumber() + ": " + comment);
+            ghPullRequest.comment(comment);
+            refreshPullRequestData();
+
+            final String content = commentPullRequestPayloadTemplate.replace("${COMMENT}", comment)
+                                    .replace("${STATE}", state )
+                                    .replace("${TIMESTAMP}", dateFormat.format(new Date() ));
+
+            postPayload(createPayload(content), "issue_comment");
+        }
+
+        public void refreshPullRequestData() throws IOException {
+            ghPullRequest = gitHubRepo.getPullRequest(ghPullRequest.getNumber() );
+
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.info("PR data: " + PullRequestBuildHandler.getPullRequestAsString(ghPullRequest));
+            }
+        }
+
     }
 
-    private Document getProjectDocument() throws Exception {
+    private Document getProjectDocument(FreeStyleProject project) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
         return builder.parse(project.getConfigFile().getFile());
@@ -419,18 +549,22 @@ public class PullRequestTestBase extends BuildStepTestBase {
 
     protected void updateWhitelist(String whitelist) throws Exception {
         LOGGER.info("Updating Whitelist: " + whitelist);
-        Document document = getProjectDocument();
+        Document document = getProjectDocument(project);
         document.getElementsByTagName("whitelist").item(0).setTextContent(whitelist);
         updateProject(document);
     }
 
-    protected void updateTriggerPhrase(String triggerPhrase) throws Exception {
-        Document document = getProjectDocument();
+    protected void updateTriggerPhrase(FreeStyleProject project, String triggerPhrase) throws Exception {
+        Document document = getProjectDocument(project);
         document.getElementsByTagName("triggerPhrase").item(0).setTextContent(triggerPhrase);
-        updateProject(document);
+        updateProject(project, document);
     }
 
     private void updateProject(Document document) throws Exception {
+        updateProject(project, document);
+    }
+
+    private void updateProject(FreeStyleProject project, Document document) throws Exception {
         DOMSource src = new DOMSource(document);
         TransformerFactory factory = TransformerFactory.newInstance();
         Transformer transformer = factory.newTransformer();
@@ -443,4 +577,32 @@ public class PullRequestTestBase extends BuildStepTestBase {
         project.updateByXml(streamSource);
     }
 
+    protected String getCurrentWebhookUrl() {
+        PullRequestBuildTrigger.DescriptorImpl descriptor = (PullRequestBuildTrigger.DescriptorImpl) jenkinsRule.getInstance().getDescriptor(PullRequestBuildTrigger.class);
+        String webhookUrl = StringUtils.isBlank(descriptor.getWebHookExternalUrl())
+            ? descriptor.getWebHookUrl()
+            : descriptor.getWebHookExternalUrl();
+        return webhookUrl;
+    }
+
+}
+
+class CrumbIssuerJson {
+    public String crumb;
+    public String crumbRequestField;
+
+    public CrumbIssuerJson(String crumb, String crumbRequestField){
+        this.crumb = crumb;
+        this.crumbRequestField = crumbRequestField;
+    }
+
+    /**
+     * helper construct to deserialize crumb json:
+     * {"_class":"org.jvnet.hudson.test.TestCrumbIssuer","crumb":"test","crumbRequestField":"Jenkins-Crumb"}
+     */
+    public CrumbIssuerJson(String serializedCrumbIssuer) {
+        JSONObject jsonObject = JSONObject.fromObject(serializedCrumbIssuer);
+        this.crumbRequestField = (String) jsonObject.get("crumbRequestField");
+        this.crumb = (String) jsonObject.get("crumb");
+    }
 }

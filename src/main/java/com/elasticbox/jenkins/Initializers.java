@@ -42,7 +42,7 @@ public class Initializers {
         new Condition() {
             @Override
             public boolean satisfied() {
-                return Jenkins.getInstance().getNodes() != null;
+                return Jenkins.get().getNodes() != null;
             }
         }.waitUntilSatisfied(3000);
 
@@ -69,7 +69,7 @@ public class Initializers {
         boolean saveNeeded = false;
 
         // set the ID of those slave configurations that don't have an ID assigned yet
-        for (Cloud cloud : Jenkins.getInstance().clouds) {
+        for (Cloud cloud : Jenkins.get().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 ElasticBoxCloud ebxCloud = (ElasticBoxCloud) cloud;
                 for (SlaveConfiguration slaveConfig : ebxCloud.getSlaveConfigurations()) {
@@ -82,7 +82,7 @@ public class Initializers {
         }
 
         if (saveNeeded) {
-            Jenkins.getInstance().save();
+            Jenkins.get().save();
         }
     }
 }

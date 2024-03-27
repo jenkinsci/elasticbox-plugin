@@ -33,6 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * Terminates a box instance.
  *
  * @author Phong Nguyen Le.
  * @deprecated should use TerminateOperation instead

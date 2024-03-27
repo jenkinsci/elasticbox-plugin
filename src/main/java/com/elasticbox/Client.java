@@ -18,10 +18,15 @@ import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -34,6 +39,7 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.entity.ContentType;
@@ -67,6 +73,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
 import javax.net.ssl.SSLContext;
 
 public class Client implements ApiClient {
@@ -95,9 +102,10 @@ public class Client implements ApiClient {
             Arrays.asList(TaskState.DONE, TaskState.UNSUCCESSFUL));
 
     private static HttpClient httpClient = null;
+    private static HttpProxy httpClientProxy = null;
 
     private final String endpointUrl;
-    private final String username;
+    private String username;
     private final String password;
     private String token = null;
 
@@ -135,20 +143,20 @@ public class Client implements ApiClient {
         String UNSUCCESSFUL = "unsuccessful";
     }
 
-    protected Client(String endpointUrl, String username, String password, String token) {
-        getHttpClient();
+    protected Client(String endpointUrl, String username, String password, String token, HttpProxy httpProxy) {
+        getHttpClient(httpProxy);
         this.endpointUrl = endpointUrl.endsWith("/") ? endpointUrl.substring(0, endpointUrl.length() - 1) : endpointUrl;
         this.username = username;
         this.password = password;
         this.token = token;
     }
 
-    public Client(String endpointUrl, String username, String password) {
-        this(endpointUrl, username, password, null);
+    public Client(String endpointUrl, String username, String password, HttpProxy httpProxy) {
+        this(endpointUrl, username, password, null, httpProxy);
     }
 
-    public Client(String endpointUrl, String token) {
-        this(endpointUrl, null, null, token);
+    public Client(String endpointUrl, String token, HttpProxy httpProxy) {
+        this(endpointUrl, null, null, token, httpProxy);
     }
 
     public String getEndpointUrl() {
@@ -163,8 +171,12 @@ public class Client implements ApiClient {
         return password;
     }
 
+    public HttpProxy getHttpClientProxy() {
+        return httpClientProxy;
+    }
+
     public void connect() throws IOException {
-        if (token != null && username == null) {
+        if (token != null && getUsername() == null) {
             try {
                 doGet("/services/workspaces", true);
             } catch (IOException excep) {
@@ -640,7 +652,8 @@ public class Client implements ApiClient {
             try {
                 return (JSONObject) doGet(getResourceUrl(), false);
             } catch (ClientException ex) {
-                if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                if ((ex.getStatusCode() == HttpStatus.SC_FORBIDDEN)
+                        || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND)) {
                     throw new IncompleteException(MessageFormat.format("{0} cannot be found", getResourceUrl()));
                 } else {
                     throw ex;
@@ -734,7 +747,7 @@ public class Client implements ApiClient {
     public IProgressMonitor deploy(String profileId, String workspaceId, List<String> tags, JSONArray variables)
             throws IOException {
 
-        return deploy(profileId, profileId, workspaceId, null, tags, variables, null, null, null,
+        return deploy(profileId, profileId, profileId, workspaceId, tags, variables, null, null, null,
                 Constants.AUTOMATIC_UPDATES_OFF);
     }
 
@@ -761,10 +774,10 @@ public class Client implements ApiClient {
         JSONObject policyBox = new JSONObject();
         policyBox.put("id", policyId);
         policyBox.put("variables", policyVariables);
-        JSONObject boxVersionJson = getBox(boxVersion);
 
         String name;
         if (instanceName == null || StringUtils.isBlank(instanceName)) {
+            JSONObject boxVersionJson = getBox(boxVersion);
             name = boxVersionJson.getString("name");
         } else {
             name = instanceName;
@@ -922,6 +935,10 @@ public class Client implements ApiClient {
             HttpResponse response = execute(get);
             return isArray ? JSONArray.fromObject(getResponseBodyAsString(response))
                     : JSONObject.fromObject(getResponseBodyAsString(response));
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Error while getting response data.", e);
         } finally {
             get.reset();
         }
@@ -996,6 +1013,9 @@ public class Client implements ApiClient {
     public static final String getPageUrl(String endpointUrl, String resourceUrl) {
         String resourceId = getResourceId(resourceUrl);
         if (resourceId != null) {
+            if (endpointUrl.endsWith("/")) {
+                endpointUrl = endpointUrl.substring(0, endpointUrl.length() - 1);
+            }
             if (resourceUrl.startsWith(MessageFormat.format("{0}/services/instances/", endpointUrl))) {
                 return MessageFormat.format("{0}/#/instances/{1}/i", endpointUrl, resourceId);
             } else if (resourceUrl.startsWith(MessageFormat.format("{0}/services/boxes/", endpointUrl))) {
@@ -1121,8 +1141,18 @@ public class Client implements ApiClient {
         return response;
     }
 
-    public static synchronized HttpClient getHttpClient() {
+    @CheckForNull
+    public static synchronized HttpClient getHttpClientInstance() {
         if (httpClient == null) {
+            LOGGER.warning("An attempt to re-configure a httpClient after constructor was made" );
+            return getHttpClient(httpClientProxy);
+        }
+        return httpClient;
+    }
+
+    private static synchronized HttpClient getHttpClient(HttpProxy httpProxy) {
+        if (httpClient == null) {
+
             HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
             try {
 
@@ -1135,7 +1165,7 @@ public class Client implements ApiClient {
                     }
                     }).build();
 
-                httpClientBuilder.setSslcontext(sslContext);
+                httpClientBuilder.setSSLContext(sslContext);
 
                 SSLConnectionSocketFactory sslConnectionSocketFactory =
                         new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier());
@@ -1150,8 +1180,28 @@ public class Client implements ApiClient {
 
                 httpClientBuilder.setConnectionManager(connectionManager);
 
+                if (httpProxy != null) {
+                    if ( (!StringUtils.isBlank(httpProxy.host)) && (httpProxy.port != 0) ) {
+                        httpClientProxy = httpProxy;
+                        LOGGER.info("Proxy configured for connection through " + httpProxy.host + ":" + httpProxy.port);
+                        HttpHost proxyHostObject = new HttpHost(httpProxy.host, httpProxy.port);
+                        httpClientBuilder.setProxy(proxyHostObject);
+
+                        if (!StringUtils.isBlank(httpProxy.getUser()) && !StringUtils.isBlank(httpProxy.getPwrd())) {
+                            LOGGER.info("Proxy configured with credentials for " + httpProxy.getUser());
+                            CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                            credsProvider.setCredentials(new AuthScope(httpProxy.host, httpProxy.port),
+                                    new UsernamePasswordCredentials(httpProxy.getUser(), httpProxy.getPwrd()));
+                            httpClientBuilder.setDefaultCredentialsProvider(credsProvider);
+                        }
+                    } else {
+                        LOGGER.warning("Misconfigured Jenkins proxy data. No proxy assumed." );
+                    }
+                }
+
                 httpClient = httpClientBuilder.build();
-            } catch (Exception e) {
+            } catch (Exception ex) {
+                LOGGER.log(Level.WARNING, "Error while configuring httpClientBuilder.", ex);
                 httpClient = httpClientBuilder.build();
             }
 
@@ -1160,4 +1210,32 @@ public class Client implements ApiClient {
         return httpClient;
     }
 
+    public static class HttpProxy {
+        public String host;
+        public int port;
+        private String user;
+        private String pwrd;
+
+        public String getUser() {
+            return user;
+        }
+
+        public String getPwrd() {
+            return pwrd;
+        }
+
+        public HttpProxy(String host, int port) {
+            this (host, port, null, null);
+        }
+
+        public HttpProxy(String host, int port, String user, String pwrd) {
+            this.host = host;
+            this.port = port;
+            this.user = user;
+            this.pwrd = pwrd;
+        }
+
+    }
+
 }
+

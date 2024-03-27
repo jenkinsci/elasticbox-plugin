@@ -29,8 +29,7 @@ public class TriggerCause extends Cause {
     private final transient GHPullRequest pullRequest;
 
     public TriggerCause(GHEventPayload.PullRequest prEventPayload) throws IOException {
-        this
-            (prEventPayload.getPullRequest(),
+        this (prEventPayload.getPullRequest(),
             MessageFormat.format("GitHub pull request {0} is {1} by {2}",
                 prEventPayload.getPullRequest().getHtmlUrl(),
                 PullRequestManager.PullRequestAction.SYNCHRONIZE.equals(prEventPayload.getAction())

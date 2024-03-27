@@ -56,8 +56,8 @@ public class TestUtils {
 
     static final Jinjava JINJA_RENDER = new Jinjava();
     static final String GITHUB_PUBLIC_ADDRESS = "github.com";
-    static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
-    static final String DEFAULT_TEST_WORKSPACE = "tphongio";
+    public static final String ELASTICBOX_URL = System.getProperty("elasticbox.jenkins.test.ElasticBoxURL", "https://blue.elasticbox.com");
+    static final String DEFAULT_TEST_WORKSPACE = "test_admin";
     static final String TEST_WORKSPACE = System.getProperty("elasticbox.jenkins.test.workspace", DEFAULT_TEST_WORKSPACE);
 
     static final String TEST_LINUX_BOX_NAME = "test-linux-box";
@@ -67,12 +67,14 @@ public class TestUtils {
     static final String TEST_BINDING_INSTANCE_TAG = "test-instance-binding";
 
     static final String JENKINS_SLAVE_BOX_NAME = "Linux Jenkins Slave";
-    static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
-    static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "localhost");
+    public static final String CLOUD_CREDENTIALS_ID = System.getProperty("elasticbox.jenkins.test.credentialsId", "52625622-3008-41fe-88b4-4fbe64595d2a");
+    public static final String ACCESS_TOKEN = System.getProperty("elasticbox.jenkins.test.accessToken", "52625622-3008-41fe-88b4-4fbe64595d2a");
+    static final String JENKINS_PUBLIC_HOST = System.getProperty("elasticbox.jenkins.test.jenkinsPublicHost", "myJenkinsUrl.test");
     static final String TEST_PROVIDER_TYPE = "Test Provider";
     static final String TEST_TAG = System.getProperty("elasticbox.jenkins.test.tag", "jenkins-plugin-test");
     static final String NAME_PREFIX = TEST_TAG + '-';
     static final String LINUX_COMPUTE = "Linux Compute";
+
 
     static final Properties GITHUB_PROPERTIES = loadGitHubProperties(System.getProperty("elasticbox.jenkins.test.GitHubProperties"));
     static final String GITHUB_USER = GITHUB_PROPERTIES.getProperty("GITHUB_USER");
@@ -135,7 +137,7 @@ public class TestUtils {
     }
 
     static String getResourceAsString(String resourcePath) throws IOException {
-        return IOUtils.toString((InputStream) TestUtils.class.getResource(resourcePath).getContent());
+        return IOUtils.toString((InputStream) TestUtils.class.getResource(resourcePath).getContent(),  "UTF-8");
     }
 
     static FreeStyleProject createProject(String name, String projectXml, Jenkins jenkins) throws IOException {
@@ -156,7 +158,7 @@ public class TestUtils {
         Future startCondition = future.getStartCondition();
         startCondition.get(60, TimeUnit.MINUTES);
         final FreeStyleBuild[]  buildHolder = new FreeStyleBuild[1];
-        new Condition() {
+        new Condition("runJob buildHolder") {
 
             @Override
             public boolean satisfied() {
@@ -327,7 +329,7 @@ public class TestUtils {
 
     private static JSONObject loadBox(String templatePath, TemplateResolver resolver) throws Exception {
         URI boxJsonUri = TestUtils.class.getResource(templatePath).toURI();
-        String template = FileUtils.readFileToString(new File(boxJsonUri));
+        String template = FileUtils.readFileToString(new File(boxJsonUri), "UTF-8");
         JSONObject box = JSONObject.fromObject(resolver.resolve(template));
         if (box.containsKey("variables")) {
             for (Object variable : box.getJSONArray("variables")) {

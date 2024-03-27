@@ -1,24 +1,22 @@
 package com.elasticbox.jenkins.model.repository.api.deserializer.factory.box;
 
+import static org.junit.Assert.assertTrue;
+
 import com.elasticbox.jenkins.UnitTestingUtils;
-import com.elasticbox.jenkins.model.box.*;
-import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBoxType;
-import com.elasticbox.jenkins.model.box.cloudformation.ManagedCloudFormationBox;
-import com.elasticbox.jenkins.model.box.cloudformation.TemplateCloudFormationBox;
+import com.elasticbox.jenkins.model.box.AbstractBox;
+import com.elasticbox.jenkins.model.box.BoxType;
+import com.elasticbox.jenkins.model.box.cloudformation.CloudFormationBox;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.box.script.ScriptBox;
 import com.elasticbox.jenkins.model.error.ElasticBoxModelException;
-import com.elasticbox.jenkins.model.repository.api.deserializer.Utils;
-import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes.*;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes.BoxFactory;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes.PolicyBoxTransformer;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes.ScriptBoxTransformer;
+import com.elasticbox.jenkins.model.repository.api.deserializer.transformer.boxes.CloudFormationBoxTransformer;
 import net.sf.json.JSONObject;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
-
 public class BoxFactoryTest {
-
-
-
 
     @Test
     public void testCreateScriptBox() throws ElasticBoxModelException {
@@ -33,7 +31,6 @@ public class BoxFactoryTest {
         assertTrue("box requirements was not properly set", scriptBox.getRequirements().length == 2);
         assertTrue("box requirements was not properly set", scriptBox.getRequirements()[0].equals("req1"));
         assertTrue("box requirements was not properly set", scriptBox.getRequirements()[1].equals("req2"));
-
     }
 
     @Test
@@ -48,44 +45,28 @@ public class BoxFactoryTest {
         assertTrue("policyBox requirements was not properly set", policyBox.getClaims().length == 2);
         assertTrue("policyBox claims was not properly set", policyBox.getClaims()[0].equals("large"));
         assertTrue("policyBox claims was not properly set", policyBox.getClaims()[1].equals("linux"));
-
     }
 
     @Test
-    public void testCreateTemplateCloudFormationBox() throws ElasticBoxModelException {
+    public void testCreateCloudFormationBox() throws ElasticBoxModelException {
 
-        TemplateCloudFormationBoxTransformer transformer = new TemplateCloudFormationBoxTransformer();
-        final TemplateCloudFormationBox templateCloudFormationBox = transformer.apply(UnitTestingUtils.getFakeCloudFormationTemplateBox());
+        CloudFormationBoxTransformer transformer = new CloudFormationBoxTransformer();
+        final CloudFormationBox cloudFormationBox = transformer.apply(UnitTestingUtils.getFakeCloudFormationTemplateBox());
 
-        assertTrue("box id was not set", templateCloudFormationBox.getId().equals("3d87d385-8710-47c3-951e-7112d8db25f4"));
-        assertTrue("box name was not set", templateCloudFormationBox.getName().equals("CF Template"));
-        assertTrue("box type was not set", templateCloudFormationBox.getCloudFormationType() == CloudFormationBoxType.TEMPLATE);
-    }
-
-    @Test
-    public void testCreateManagedCloudFormationBox() throws ElasticBoxModelException {
-
-        ManagedCloudFormationBoxTransformer transformer = new ManagedCloudFormationBoxTransformer();
-        final ManagedCloudFormationBox managedCloudFormationBox = transformer.apply(UnitTestingUtils.getFakeCloudFormationManagedBox());
-
-        assertTrue("box member role was not set", managedCloudFormationBox.getMembers()[0].getRole().getValue().equals("collaborator"));
-        assertTrue("box memmber workspace set", managedCloudFormationBox.getMembers()[0].getWorkspace().equals("jenkins1"));
-
-        assertTrue("box id was not set", managedCloudFormationBox.getId().equals("02fab23c-5278-41ec-8d9e-0f7936582937"));
-        assertTrue("box name was not set", managedCloudFormationBox.getName().equals("CF Managed"));
-        assertTrue("box type was not set", managedCloudFormationBox.getCloudFormationType() == CloudFormationBoxType.MANAGED);
+        assertTrue("box id was not set", cloudFormationBox.getId().equals("3d87d385-8710-47c3-951e-7112d8db25f4"));
+        assertTrue("box name was not set", cloudFormationBox.getName().equals("CF Template"));
+        assertTrue("box type was not set", cloudFormationBox.getCloudFormationType() == "CloudFormation Service");
     }
 
     @Test
     public void testCreateAbstractBoxType() throws ElasticBoxModelException {
 
-        BoxType [] types = new BoxType[]{BoxType.SCRIPT, BoxType.POLICY, BoxType.CLOUDFORMATION, BoxType.CLOUDFORMATION, BoxType.APPLICATION};
+        BoxType [] types = new BoxType[]{BoxType.SCRIPT, BoxType.POLICY, BoxType.CLOUDFORMATION, BoxType.APPLICATION};
         JSONObject [] boxes = new JSONObject[]{
             UnitTestingUtils.getFakeScriptBox(),
-                UnitTestingUtils.getFakePolicyBox(),
-                    UnitTestingUtils.getFakeCloudFormationTemplateBox(),
-                        UnitTestingUtils.getFakeCloudFormationManagedBox(),
-                            UnitTestingUtils.getFakeEmptyApplicationBox()
+            UnitTestingUtils.getFakePolicyBox(),
+            UnitTestingUtils.getFakeCloudFormationTemplateBox(),
+            UnitTestingUtils.getFakeEmptyApplicationBox()
         };
 
         int counter = 0;
@@ -94,9 +75,5 @@ public class BoxFactoryTest {
             assertTrue("box type was not properly set", abstractBox.getType() == types[counter]);
             counter++;
         }
-
     }
-
-
-
 }

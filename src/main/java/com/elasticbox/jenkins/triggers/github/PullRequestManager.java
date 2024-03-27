@@ -13,17 +13,15 @@
 package com.elasticbox.jenkins.triggers.github;
 
 import static java.text.MessageFormat.format;
-
 import static org.jenkinsci.plugins.github.config.GitHubServerConfig.withHost;
 
-import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.cloudbees.jenkins.GitHubRepositoryName;
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.builders.BuilderListener;
 import com.elasticbox.jenkins.triggers.BuildManager;
+import com.elasticbox.jenkins.triggers.PullRequestBuildTrigger;
 import com.elasticbox.jenkins.util.ProjectData;
 import com.elasticbox.jenkins.util.ProjectDataListener;
-
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -32,11 +30,8 @@ import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.listeners.ItemListener;
 import hudson.security.ACL;
-
 import jenkins.model.Jenkins;
-
 import net.sf.json.JSONObject;
-
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.jenkinsci.plugins.github.GitHubPlugin;
@@ -46,9 +41,8 @@ import org.kohsuke.github.GitHub;
 
 import java.io.IOException;
 import java.io.StringReader;
-
+import java.net.URL;
 import java.text.MessageFormat;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -80,7 +74,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
     );
 
     public static final PullRequestManager getInstance() {
-        return (PullRequestManager) ((PullRequestBuildTrigger.DescriptorImpl) Jenkins.getInstance().getDescriptor(
+        return (PullRequestManager) ((PullRequestBuildTrigger.DescriptorImpl) Jenkins.get().getDescriptor(
                 PullRequestBuildTrigger.class)).getBuildManager();
     }
 
@@ -199,7 +193,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
             Authentication old = SecurityContextHolder.getContext().getAuthentication();
             SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
             try {
-                for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+                for (AbstractProject<?,?> job : Jenkins.get().getAllItems(AbstractProject.class)) {
                     PullRequestBuildTrigger trigger = job.getTrigger(PullRequestBuildTrigger.class);
                     if (trigger != null && trigger.getBuildHandler() instanceof PullRequestBuildHandler) {
                         ((PullRequestBuildHandler) trigger.getBuildHandler()).handle(pullRequest, gitHub);
@@ -241,7 +235,7 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         Authentication old = SecurityContextHolder.getContext().getAuthentication();
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM);
         try {
-            for (AbstractProject<?,?> job : Jenkins.getInstance().getAllItems(AbstractProject.class)) {
+            for (AbstractProject<?,?> job : Jenkins.get().getAllItems(AbstractProject.class)) {
                 PullRequestBuildTrigger trigger = job.getTrigger(PullRequestBuildTrigger.class);
                 if (trigger != null && trigger.getBuildHandler() instanceof PullRequestBuildHandler) {
                     ((PullRequestBuildHandler) trigger.getBuildHandler()).handle(issueComment, gitHub);
@@ -250,7 +244,6 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
         } finally {
             SecurityContextHolder.getContext().setAuthentication(old);
         }
-
     }
 
     @Extension
@@ -275,16 +268,27 @@ public class PullRequestManager extends BuildManager<PullRequestBuildHandler> {
                 return;
             }
 
+            GHPullRequest ghPullRequest = cause.getPullRequest() ;
+            if (ghPullRequest == null) {
+                LOGGER.info("No pull request bind to cause.");
+                return;
+            }
+
             ConcurrentHashMap<String, PullRequestData> prDataLookup
-                = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject());
+                    = getInstance().projectPullRequestDataLookup.get(rootBuild.getProject());
 
             if (prDataLookup != null) {
-                PullRequestData data = prDataLookup.get(cause.getPullRequest().getHtmlUrl().toString());
+                URL url = ghPullRequest.getHtmlUrl() ;
+                PullRequestData data = (url != null) ? prDataLookup.get(url.toString()) : null ;
                 if (data == null) {
                     data = getInstance().addPullRequestData(cause.getPullRequest(), rootBuild.getProject());
                 }
-                data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
-                data.save();
+                if (data != null) {
+                    data.getInstances().add(new PullRequestInstance(instanceId, cloud.name));
+                    data.save();
+                } else {
+                    LOGGER.info("No data saved onDeploying.");
+                }
             }
         }
 

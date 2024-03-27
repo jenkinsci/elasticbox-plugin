@@ -15,32 +15,27 @@ package com.elasticbox.jenkins;
 import com.elasticbox.Client;
 import com.elasticbox.Constants;
 import com.elasticbox.jenkins.model.box.AbstractBox;
-import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
-import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
 import com.elasticbox.jenkins.model.box.policy.PolicyBox;
 import com.elasticbox.jenkins.model.services.deployment.DeployBoxOrderServiceImpl;
+import com.elasticbox.jenkins.model.services.deployment.DeploymentType;
+import com.elasticbox.jenkins.model.services.deployment.execution.order.DeployBoxOrderResult;
+import com.elasticbox.jenkins.model.services.error.ServiceException;
 import com.elasticbox.jenkins.model.workspace.AbstractWorkspace;
 import com.elasticbox.jenkins.util.ClientCache;
-
 import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.Node;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-
 import jenkins.model.Jenkins;
-
 import org.apache.commons.lang.StringUtils;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SlaveConfiguration extends AbstractSlaveConfiguration {
@@ -156,156 +151,196 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
                 slaveConfig.setId(UUID.randomUUID().toString());
             }
 
-            FormValidation result = ((SlaveConfiguration.DescriptorImpl)Jenkins.getInstance()
+            FormValidation result = ((SlaveConfiguration.DescriptorImpl)Jenkins.get()
                 .getDescriptorOrDie(SlaveConfiguration.class))
                 .doCheckBoxVersion(slaveConfig.getBoxVersion(),
-                    newCloud.getEndpointUrl(),
-                    newCloud.getToken(),
-                    slaveConfig.getWorkspace(),
-                    slaveConfig.getBox());
+                        newCloud.name,
+                        newCloud.getEndpointUrl(),
+                        newCloud.getToken(),
+                        slaveConfig.getWorkspace(),
+                        slaveConfig.getBox());
 
             if (result.kind == FormValidation.Kind.ERROR) {
                 throw new FormException(result.getMessage(), SlaveConfiguration.SLAVE_CONFIGURATIONS);
             }
         }
 
-        private Client createClient(String endpointUrl, String token) {
-            if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(token)) {
+        private Client retrieveClientWithCredentials(String name, String endpointUrl, String credentialsId) {
+            if (StringUtils.isBlank(endpointUrl) || StringUtils.isBlank(credentialsId)) {
                 return null;
             }
 
-            Client client = ClientCache.getClient(endpointUrl, token);
-            if (client == null) {
-                if (StringUtils.isNotBlank(token)) {
-                    client = new Client(endpointUrl, token);
-                } else {
-                    LOGGER.log(Level.SEVERE, "You need an ElasticBox token to be able to connect");
-                }
-                try {
-                    client.connect();
-                } catch (IOException ex) {
-                    client = null;
-                    LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
-                }
+            String token = ElasticBoxCloud.retrieveTokenFromCredentials(endpointUrl, credentialsId);
+
+            Client client = (name != null && name.length() > 0)
+                    ? ClientCache.getClient(name)
+                    : new Client(endpointUrl, token, ClientCache.getJenkinsHttpProxyCfg());
+
+            if ((client == null) || ( !client.getEndpointUrl().equals(endpointUrl) )) {
+                client = new Client(endpointUrl, token, ClientCache.getJenkinsHttpProxyCfg());
             }
 
             return client;
         }
 
-        public ListBoxModel doFillWorkspaceItems(
-            @RelativePath("..") @QueryParameter String endpointUrl,
-            @RelativePath("..") @QueryParameter String token) {
+        public ListBoxModel doFillWorkspaceItems(@RelativePath("..") @QueryParameter String name,
+                                                 @RelativePath("..") @QueryParameter String endpointUrl,
+                                                 @RelativePath("..") @QueryParameter String credentialsId) {
 
             final ListBoxModel workspaceOptions = getEmptyListBoxModel(Constants.CHOOSE_WORKSPACE_MESSAGE, "");
-            if (anyOfThemIsBlank(endpointUrl, token)) {
+            if (anyOfThemIsBlank(endpointUrl, credentialsId)) {
                 return workspaceOptions;
             }
 
-            final DeployBoxOrderResult<List<AbstractWorkspace>> result
-                = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).getWorkspaces();
+            try {
+                final DeployBoxOrderResult<List<AbstractWorkspace>> result =
+                        new DeployBoxOrderServiceImpl(retrieveClientWithCredentials(name, endpointUrl, credentialsId))
+                                .getWorkspaces();
 
-            final List<AbstractWorkspace> workspaces = result.getResult();
-            for (AbstractWorkspace workspace : workspaces) {
-                workspaceOptions.add(workspace.getName(), workspace.getId());
+                final List<AbstractWorkspace> workspaces = result.getResult();
+                for (AbstractWorkspace workspace : workspaces) {
+                    workspaceOptions.add(workspace.getName(), workspace.getId());
+                }
+            } catch (ServiceException e) {
+                LOGGER.warning("Invalid parameters: endpointUrl=" + endpointUrl + ", credentials=" + credentialsId);
             }
 
             return workspaceOptions;
         }
 
-        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                                           @RelativePath("..") @QueryParameter String token,
+        public ListBoxModel doFillBoxItems(@RelativePath("..") @QueryParameter String name,
+                                           @RelativePath("..") @QueryParameter String endpointUrl,
+                                           @RelativePath("..") @QueryParameter String credentialsId,
                                            @QueryParameter String workspace) {
 
             ListBoxModel boxes = getEmptyListBoxModel(Constants.CHOOSE_BOX_MESSAGE, "");
-            if (anyOfThemIsBlank(token, workspace)) {
+            if (anyOfThemIsBlank(credentialsId, workspace)) {
                 return boxes;
             }
 
-            final DeployBoxOrderResult<List<AbstractBox>> result =
-                    new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).updateableBoxes(workspace);
+            try {
+                final DeployBoxOrderResult<List<AbstractBox>> result =
+                    new DeployBoxOrderServiceImpl(retrieveClientWithCredentials(name, endpointUrl, credentialsId))
+                            .updateableBoxes(workspace);
 
-            for (AbstractBox box : result.getResult()) {
-                boxes.add(box.getName(), box.getId());
+                for (AbstractBox box : result.getResult()) {
+                    boxes.add(box.getName(), box.getId());
+                }
+            } catch (ServiceException e) {
+                LOGGER.warning("Invalid parameters: endpointUrl=" + endpointUrl + ", credentials=" + credentialsId);
             }
+
             return boxes;
         }
 
-        public ListBoxModel doFillBoxDeploymentTypeItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                                                         @RelativePath("..") @QueryParameter String token,
+        public ListBoxModel doFillBoxDeploymentTypeItems(@RelativePath("..") @QueryParameter String name,
+                                                         @RelativePath("..") @QueryParameter String endpointUrl,
+                                                         @RelativePath("..") @QueryParameter String credentialsId,
                                                          @QueryParameter String workspace,
                                                          @QueryParameter String box) {
 
             ListBoxModel boxDeploymentType = getEmptyListBoxModel(Constants.CHOOSE_DEPLOYMENT_TYPE_MESSAGE, "");
-            if (anyOfThemIsBlank(endpointUrl, token, workspace, box)) {
+            if (anyOfThemIsBlank(endpointUrl, credentialsId, workspace, box)) {
                 return boxDeploymentType;
             }
 
-            final DeploymentType deploymentType
-                = new DeployBoxOrderServiceImpl(createClient(endpointUrl, token)).deploymentType(box);
+            try {
+                final DeploymentType deploymentType
+                    = new DeployBoxOrderServiceImpl(retrieveClientWithCredentials(name, endpointUrl, credentialsId))
+                        .deploymentType(box);
 
-            final String id = deploymentType.getValue();
-            boxDeploymentType.add(new ListBoxModel.Option(id,id,true));
+                final String id = deploymentType.getValue();
+                boxDeploymentType.add(new ListBoxModel.Option(id,id,true));
+            } catch (ServiceException e) {
+                LOGGER.warning("Invalid parameters: endpointUrl=" + endpointUrl + ", credentials=" + credentialsId);
+            }
 
             return boxDeploymentType;
         }
 
-        public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                                                  @RelativePath("..") @QueryParameter String token,
+        public ListBoxModel doFillBoxVersionItems(@RelativePath("..") @QueryParameter String name,
+                                                  @RelativePath("..") @QueryParameter String endpointUrl,
+                                                  @RelativePath("..") @QueryParameter String credentialsId,
                                                   @QueryParameter String workspace,
                                                   @QueryParameter String box) {
 
-            if (anyOfThemIsBlank(endpointUrl, workspace, box, token)) {
+            if (anyOfThemIsBlank(endpointUrl, workspace, box, credentialsId)) {
                 return getEmptyListBoxModel();
             }
 
-            return DescriptorHelper.getBoxVersions(createClient(endpointUrl, token), workspace, box);
+            return DescriptorHelper.getBoxVersions(retrieveClientWithCredentials(name, endpointUrl, credentialsId),
+                    workspace, box);
         }
 
-        public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                                                @RelativePath("..") @QueryParameter String token,
+        public ListBoxModel doFillProfileItems(@RelativePath("..") @QueryParameter String name,
+                                               @RelativePath("..") @QueryParameter String endpointUrl,
+                                                @RelativePath("..") @QueryParameter String credentialsId,
                                                 @QueryParameter String workspace,
                                                 @QueryParameter String box) {
 
-            ListBoxModel profiles = getEmptyListBoxModel("--Please choose policy box--", "");
-            if (anyOfThemIsBlank(endpointUrl, workspace, box, token)) {
+            if (anyOfThemIsBlank(endpointUrl, workspace, box, credentialsId)) {
                 return getEmptyListBoxModel();
             }
 
-            final DeployBoxOrderResult<List<PolicyBox>> result
-                = new DeployBoxOrderServiceImpl(
-                                        ClientCache.getClient(endpointUrl,token)).deploymentPolicies(workspace, box);
+            List<PolicyBox> policyBoxList = null;
+            try {
+                DeployBoxOrderResult<List<PolicyBox>> result = new DeployBoxOrderServiceImpl(
+                        retrieveClientWithCredentials(name, endpointUrl, credentialsId) )
+                        .deploymentPolicies(workspace, box);
 
-            final List<PolicyBox> policyBoxList = result.getResult();
-            for (PolicyBox policyBox : policyBoxList) {
-                profiles.add(policyBox.getName(), policyBox.getId());
+                policyBoxList = result.getResult();
+
+            } catch (ServiceException e) {
+                LOGGER.severe("Invalid parameters: endpointUrl=" + endpointUrl + ", credentials=" + credentialsId);
             }
 
+            final ListBoxModel profiles;
+            if (policyBoxList == null) {
+                profiles = getEmptyListBoxModel("--Unable to retrieve policies--", "");
+            } else {
+                if (policyBoxList.size() == 0) {
+                    profiles = getEmptyListBoxModel("--No compatible policy box found--", "");
+                } else if (policyBoxList.size() == 1) {
+                    profiles = new ListBoxModel();
+                } else {
+                    profiles = getEmptyListBoxModel("--Please choose policy box--", "");
+                }
+
+                for (PolicyBox policyBox : policyBoxList) {
+                    profiles.add(policyBox.getName(), policyBox.getId());
+                }
+            }
+
+            if (profiles.size() == 1 && !"".equals(profiles.get(0).name)) {
+                profiles.get(0).selected = true;
+            }
             return  profiles;
         }
 
-        public ListBoxModel doFillProviderItems(@RelativePath("..") @QueryParameter String endpointUrl,
-                                                @RelativePath("..") @QueryParameter String token,
+        public ListBoxModel doFillProviderItems(@RelativePath("..") @QueryParameter String name,
+                                                @RelativePath("..") @QueryParameter String endpointUrl,
+                                                @RelativePath("..") @QueryParameter String credentialsId,
                                                 @QueryParameter String workspace) {
-
             ListBoxModel providers = getEmptyListBoxModel(Constants.CHOOSE_PROVIDER_MESSAGE, "");
 
-            if (anyOfThemIsBlank(endpointUrl, token, workspace)) {
+            if (anyOfThemIsBlank(endpointUrl, credentialsId, workspace)) {
                 return providers;
             }
 
-            return DescriptorHelper.getCloudFormationProviders(createClient(endpointUrl, token), workspace);
+            return DescriptorHelper.getCloudFormationProviders(
+                    retrieveClientWithCredentials(name, endpointUrl, credentialsId), workspace);
         }
 
-        public ListBoxModel doFillLocationItems(
+        public ListBoxModel doFillLocationItems(@RelativePath("..") @QueryParameter String name,
                                                 @RelativePath("..") @QueryParameter String endpointUrl,
-                                                @RelativePath("..") @QueryParameter String token,
+                                                @RelativePath("..") @QueryParameter String credentialsId,
                                                 @QueryParameter String provider) {
-
             ListBoxModel locations = getEmptyListBoxModel(Constants.CHOOSE_REGION_MESSAGE, "");
-            if (anyOfThemIsBlank(endpointUrl, token, provider)) {
+            if (anyOfThemIsBlank(endpointUrl, credentialsId, provider)) {
                 return locations;
             }
-            return DescriptorHelper.getCloudFormationLocations(createClient(endpointUrl, token), provider);
+            return DescriptorHelper.getCloudFormationLocations(
+                    retrieveClientWithCredentials(name, endpointUrl, credentialsId), provider);
         }
 
 
@@ -324,8 +359,9 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
         }
 
         public FormValidation doCheckBoxVersion(@QueryParameter String value,
+                                                @RelativePath("..") @QueryParameter String name,
                                                 @RelativePath("..") @QueryParameter String endpointUrl,
-                                                @RelativePath("..") @QueryParameter String token,
+                                                @RelativePath("..") @QueryParameter String credentialsId,
                                                 @QueryParameter String workspace,
                                                 @QueryParameter String box) {
             if (StringUtils.isBlank(workspace)) {
@@ -334,29 +370,32 @@ public class SlaveConfiguration extends AbstractSlaveConfiguration {
             if (StringUtils.isBlank(box)) {
                 return FormValidation.error("Box is required");
             }
+            if (StringUtils.isBlank(credentialsId)) {
+                return FormValidation.error("Credentials are required");
+            }
 
-            Client client = createClient(endpointUrl, token);
-            return checkBoxVersion(value, box, workspace, client);
+            return checkBoxVersion(value, box, workspace,
+                    retrieveClientWithCredentials(name, endpointUrl, credentialsId));
         }
 
-
-        public DescriptorHelper.JsonArrayResponse doGetBoxStack(
-                @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String workspace,
-                @QueryParameter String box,
-                @QueryParameter String boxVersion) {
-            return DescriptorHelper.getBoxStack(createClient(endpointUrl, token), workspace, box,
-                    StringUtils.isBlank(boxVersion) ? box : boxVersion);
+        public DescriptorHelper.JsonArrayResponse doGetBoxStack(@RelativePath("..") @QueryParameter String name,
+                                                        @RelativePath("..") @QueryParameter String endpointUrl,
+                                                        @RelativePath("..") @QueryParameter String credentialsId,
+                                                        @QueryParameter String workspace,
+                                                        @QueryParameter String box,
+                                                        @QueryParameter String boxVersion) {
+            return DescriptorHelper.getBoxStack(retrieveClientWithCredentials(name, endpointUrl, credentialsId),
+                    workspace, box, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 
-        public DescriptorHelper.JsonArrayResponse doGetInstances(
-                @RelativePath("..") @QueryParameter String endpointUrl,
-                @RelativePath("..") @QueryParameter String token,
-                @QueryParameter String workspace,
-                @QueryParameter String box,
-                @QueryParameter String boxVersion) {
-            return DescriptorHelper.getInstancesAsJsonArrayResponse(createClient(endpointUrl, token),
+        public DescriptorHelper.JsonArrayResponse doGetInstances(@RelativePath("..") @QueryParameter String name,
+                                                         @RelativePath("..") @QueryParameter String endpointUrl,
+                                                         @RelativePath("..") @QueryParameter String credentialsId,
+                                                         @QueryParameter String workspace,
+                                                         @QueryParameter String box,
+                                                         @QueryParameter String boxVersion) {
+            return DescriptorHelper.getInstancesAsJsonArrayResponse(
+                    retrieveClientWithCredentials(name, endpointUrl, credentialsId),
                     workspace, StringUtils.isBlank(boxVersion) ? box : boxVersion);
         }
 

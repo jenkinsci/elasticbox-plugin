@@ -1,11 +1,11 @@
-#/bin/bash
+#!/bin/bash
 
 set -e
 
 USAGE="Usage : version-build.sh -a ELASTICBOX_ADDRESS -j JENKINS_VERSION
 
 Example:
-    build.sh -a https://blue.elasticbox.com -j 1.581
+    version-build.sh -a https://blue.elasticbox.com -j 2.150.2
 
 Options:
     -a ElasticBox address to run tests against
@@ -51,7 +51,7 @@ done
 
 if [[ -z ${EBX_ADDRESS} ]]
 then
-    help "ElasticBox address must be specified"
+    help "ElasticBox address must be specified."
     exit 1
 fi
 
@@ -67,17 +67,16 @@ else
     JENKINS_VERSION=$(get_jenkins_version ${REPOSITORY_FOLDER})
 fi
 
-echo ------------------------------------------------
-echo Building with Jenkins version ${JENKINS_VERSION}
-echo ------------------------------------------------
-echo Testing against ElasticBox at ${EBX_ADDRESS}
+echo "------------------------------------------------"
+echo "Building with Jenkins version ${JENKINS_VERSION}"
+echo "------------------------------------------------"
+echo "Testing against ElasticBox at ${EBX_ADDRESS}"
 
-BUILD_OPTIONS="-DskipTests=false -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
+BUILD_OPTIONS="-B -DskipTests=false  -Dmaven.javadoc.skip=true"
+BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.ElasticBoxURL=${EBX_ADDRESS}"
 
-if [[ -n ${EBX_TOKEN} ]]
-then
-    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
-fi
+BUILD_OPTIONS="${BUILD_OPTIONS} -Dhudson.model.ParametersAction.keepUndefinedParameters=true"
+BUILD_OPTIONS="${BUILD_OPTIONS} -Djenkins.test.timeout=1200"
 
 if [[ -n ${EBX_WORKSPACE} ]]
 then
@@ -89,7 +88,13 @@ then
     BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.GitHubProperties=${GITHUB_PROPERTIES}"
 fi
 
+if [[ -n ${EBX_TOKEN} ]]
+then
+    BUILD_OPTIONS="${BUILD_OPTIONS} -Delasticbox.jenkins.test.accessToken=${EBX_TOKEN}"
+fi
+
 cd ${REPOSITORY_FOLDER}
+echo "Executing: mvn ${BUILD_OPTIONS} clean install"
 mvn ${BUILD_OPTIONS} clean install
 
 # keep the test results and logs for the tested Jenkins version
@@ -109,4 +114,3 @@ if [[ -f "${REPOSITORY_FOLDER}/pom.xml.bak" ]]
 then
     mv -f ${REPOSITORY_FOLDER}/pom.xml.bak ${REPOSITORY_FOLDER}/pom.xml
 fi
-

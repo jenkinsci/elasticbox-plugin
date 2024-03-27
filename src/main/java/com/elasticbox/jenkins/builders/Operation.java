@@ -48,7 +48,7 @@ public abstract class Operation implements IOperation, Describable<Operation> {
 
     @Override
     public Descriptor<Operation> getDescriptor() {
-        return Jenkins.getInstance().getDescriptor(getClass());
+        return Jenkins.get().getDescriptor(getClass());
     }
 
     public abstract static class OperationDescriptor extends Descriptor<Operation> {

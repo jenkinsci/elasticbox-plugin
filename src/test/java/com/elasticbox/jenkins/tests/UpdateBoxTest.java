@@ -36,11 +36,11 @@ public class UpdateBoxTest extends BuildStepTestBase {
 
     @Test
     public void testUpdateBox() throws Exception {
-        FreeStyleProject project = (FreeStyleProject) jenkins.getInstance().createProjectFromXML("test",
+        FreeStyleProject project = (FreeStyleProject) jenkinsRule.getInstance().createProjectFromXML("test",
                 new ByteArrayInputStream(createTestDataFromTemplate("jobs/test-update-box.xml").getBytes()));
 
         // copy files for box file variables
-        FilePath workspace = jenkins.getInstance().getWorkspaceFor(project);
+        FilePath workspace = jenkinsRule.getInstance().getWorkspaceFor(project);
         File testNestedBoxJsonFile = new File(workspace.getRemote(), "test-nested-box.json");
         File jenkinsImageFile = new File(workspace.getRemote(), "jenkins.png");
         FileUtils.copyURLToFile(TestUtils.class.getResource("boxes/test-nested-box.json"), testNestedBoxJsonFile);
@@ -49,7 +49,7 @@ public class UpdateBoxTest extends BuildStepTestBase {
 
         final String testTag = UUID.randomUUID().toString().substring(0, 30);
         Map<String, String> testParameters = Collections.singletonMap("TEST_TAG", testTag);
-        FreeStyleBuild build = TestUtils.runJob(project, testParameters, jenkins.getInstance());
+        FreeStyleBuild build = TestUtils.runJob(project, testParameters, jenkinsRule.getInstance());
         TestUtils.assertBuildSuccess(build);
 
         // verify the box has been updated and the uploaded files are there
@@ -78,7 +78,7 @@ public class UpdateBoxTest extends BuildStepTestBase {
         }
         FileUtils.contentEquals(file, jenkinsImageFile);
 
-        TestUtils.cleanUp(testTag, jenkins.getInstance());
+        TestUtils.cleanUp(testTag, jenkinsRule.getInstance());
     }
 
 }

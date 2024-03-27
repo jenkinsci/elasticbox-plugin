@@ -24,7 +24,7 @@
   <builders>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <operations>
         <com.elasticbox.jenkins.builders.TerminateOperation>
           <tags>${TEST_TAG}</tags>
@@ -37,7 +37,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-7b80286a-9174-4d5d-be34-469e8ecc4876</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-linux-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-linux-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-linux-box.test-profile</profile>
@@ -55,7 +55,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-a15eed89-3ec2-40a1-b93e-add35dad5075</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
@@ -73,7 +73,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-ba74ebf0-240c-441b-bcfa-bb76d9c3689f</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
@@ -91,7 +91,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-a924d736-3021-474c-af50-ea1885c3a9cd</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-nested-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-nested-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-nested-box.test-profile</profile>
@@ -109,7 +109,7 @@
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.9.5-SNAPSHOT">
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <operations>
         <com.elasticbox.jenkins.builders.UpdateOperation>
           <tags>${BUILD_ID}</tags>
@@ -171,7 +171,7 @@
     <com.elasticbox.jenkins.builders.DeployBox plugin="elasticbox@0.8.8-SNAPSHOT">
       <id>com.elasticbox.jenkins.builders.DeployBox-ad677e58-fb68-4c51-97a1-f2e62e913771</id>
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <box>com.elasticbox.jenkins.tests.boxes.test-binding-box</box>
       <boxVersion>com.elasticbox.jenkins.tests.boxes.test-binding-box</boxVersion>
       <profile>com.elasticbox.jenkins.tests.boxes.test-binding-box.test-profile</profile>
@@ -188,7 +188,7 @@
     </com.elasticbox.jenkins.builders.DeployBox>
     <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
       <cloud>elasticbox</cloud>
-      <workspace>tphongio</workspace>
+      <workspace>test_admin</workspace>
       <operations>
         <com.elasticbox.jenkins.builders.ReconfigureOperation>
           <tags>${JOB_NAME}-${BUILD_ID}, ${TEST_TAG}</tags>
@@ -210,6 +210,12 @@
           <tags>${JOB_NAME}-${BUILD_ID}, ${TEST_TAG}</tags>
           <waitForCompletion>true</waitForCompletion>
         </com.elasticbox.jenkins.builders.ReinstallOperation>
+      </operations>
+    </com.elasticbox.jenkins.builders.ManageInstance>
+    <com.elasticbox.jenkins.builders.ManageInstance plugin="elasticbox@0.8.8-SNAPSHOT">
+      <cloud>elasticbox</cloud>
+      <workspace>test_admin</workspace>
+      <operations>
         <com.elasticbox.jenkins.builders.StopOperation>
           <tags> ${TEST_TAG}</tags>
           <waitForCompletion>true</waitForCompletion>

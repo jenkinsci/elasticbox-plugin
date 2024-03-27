@@ -45,7 +45,7 @@ public class SlaveInstance {
 
     public static String createJnlpSlaveOptions(ElasticBoxSlave slave) {
         return MessageFormat.format("-jnlpUrl {0}/computer/{1}/slave-agent.jnlp -secret {2}",
-                Jenkins.getInstance().getRootUrl(), slave.getNodeName(), slave.getComputer().getJnlpMac());
+                Jenkins.get().getRootUrl(), slave.getNodeName(), slave.getComputer().getJnlpMac());
     }
 
     public static JSONArray createJenkinsVariables(String jenkinsUrl, String slaveName) {
@@ -93,7 +93,7 @@ public class SlaveInstance {
         }
 
         JSONObject jenkinsUrlVariable = requiredVariables.get(JENKINS_URL_VARIABLE);
-        String jenkinsUrl = Jenkins.getInstance().getRootUrl();
+        String jenkinsUrl = Jenkins.get().getRootUrl();
 
 
         JSONObject variable = new JSONObject();
@@ -140,7 +140,7 @@ public class SlaveInstance {
 
     public static Map<String, Integer> getSlaveConfigIdToInstanceCountMap(List<JSONObject> activeInstances) {
         Map<String, String> slaveNameToConfigIdMap = new HashMap<String, String>();
-        for (Node node : Jenkins.getInstance().getNodes()) {
+        for (Node node : Jenkins.get().getNodes()) {
             if (node instanceof ElasticBoxSlave) {
                 ElasticBoxSlave slave = (ElasticBoxSlave) node;
                 AbstractSlaveConfiguration config = slave.getSlaveConfiguration();
@@ -171,7 +171,7 @@ public class SlaveInstance {
             Map<String, AbstractSlaveConfiguration> instanceIdToSlaveConfigMap
                 = new HashMap<String, AbstractSlaveConfiguration>();
 
-            for (Node node : Jenkins.getInstance().getNodes()) {
+            for (Node node : Jenkins.get().getNodes()) {
                 if (node instanceof ElasticBoxSlave) {
                     ElasticBoxSlave slave = (ElasticBoxSlave) node;
                     AbstractSlaveConfiguration config = slave.getSlaveConfiguration();

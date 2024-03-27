@@ -32,7 +32,7 @@ public class CompatibilityTest extends BuildStepTestBase {
         String testParameter = UUID.randomUUID().toString();
         String projectXml = createTestDataFromTemplate("jobs/test-old-job.xml");
         FreeStyleBuild build = TestUtils.runJob("test-old-job", projectXml,
-                Collections.singletonMap("eb_test_build_parameter", testParameter), jenkins.getInstance());
+                Collections.singletonMap("eb_test_build_parameter", testParameter), jenkinsRule.getInstance());
         TestUtils.assertBuildSuccess(build);
 
         Client client = cloud.getClient();

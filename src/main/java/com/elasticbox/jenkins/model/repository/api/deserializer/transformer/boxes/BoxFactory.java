@@ -25,8 +25,7 @@ public class BoxFactory extends AbstractBoxTransformer<AbstractBox> {
     public static AbstractBoxTransformer[] boxCreationActions = new AbstractBoxTransformer[] {
         new ScriptBoxTransformer(),
         new PolicyBoxTransformer(),
-        new TemplateCloudFormationBoxTransformer(),
-        new ManagedCloudFormationBoxTransformer(),
+        new CloudFormationBoxTransformer(),
         new ApplicationBoxTransformer(),
         new ContainerBoxTransformer()
     };
@@ -50,9 +49,8 @@ public class BoxFactory extends AbstractBoxTransformer<AbstractBox> {
                     return action.apply(jsonObject);
                 }
             }
-
         }
 
-        throw new ElasticBoxModelException("There is no factory for building: " + schema);
+        return null; // There is no factory for building this box schema, ignoring
     }
 }

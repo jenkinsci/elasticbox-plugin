@@ -14,7 +14,6 @@
 
 package com.elasticbox.jenkins.model.services.instances.execution.context;
 
-
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.InstanceRepository;

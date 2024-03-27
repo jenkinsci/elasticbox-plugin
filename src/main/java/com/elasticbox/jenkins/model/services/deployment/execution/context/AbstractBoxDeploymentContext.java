@@ -14,7 +14,6 @@
 
 package com.elasticbox.jenkins.model.services.deployment.execution.context;
 
-
 import com.elasticbox.jenkins.ElasticBoxCloud;
 import com.elasticbox.jenkins.model.repository.BoxRepository;
 import com.elasticbox.jenkins.model.repository.DeploymentOrderRepository;
@@ -29,7 +28,6 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 
 import org.apache.commons.lang.StringUtils;
-
 
 import java.util.Set;
 

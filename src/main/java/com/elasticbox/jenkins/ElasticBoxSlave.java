@@ -37,7 +37,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
@@ -63,6 +63,7 @@ public class ElasticBoxSlave extends Slave {
 
     private static final int ID_PREFIX_LENGTH = 21;
     private static final String ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+    public static final int MAX_DELETE_ATTEMPTS = 10;
 
     private final String boxVersion;
     private String profileId;
@@ -72,7 +73,7 @@ public class ElasticBoxSlave extends Slave {
     private int retentionTime;
     private int builds;
     private final String cloudName;
-    private boolean deletable;
+    private short deleteAttempts;
     private boolean removableFromCloud = true;
 
     private final transient int launchTimeout;
@@ -102,7 +103,7 @@ public class ElasticBoxSlave extends Slave {
         String name;
         do {
             name = prefix + '-' + randomId(random);
-        } while (Jenkins.getInstance().getNode(name) != null);
+        } while (Jenkins.get().getNode(name) != null);
 
         return name;
     }
@@ -123,16 +124,19 @@ public class ElasticBoxSlave extends Slave {
             RetentionStrategy retentionStrategy, boolean singleUse) throws Descriptor.FormException, IOException {
 
         super(generateName(cloud, config.resolveBoxVersion(cloud.getClient() )),
-                config.getDescription(),
                 StringUtils.isBlank(config.getRemoteFs() )
                         ? getRemoteFs(config.resolveDeploymentPolicy(cloud.getClient()), cloud)
                         : config.getRemoteFs(),
-                config.getExecutors(),
-                config.getMode(),
-                config.getLabels(),
-                new JNLPLauncher(),
-                retentionStrategy,
-                Collections.EMPTY_LIST);
+                new JNLPLauncher(true)
+
+        );
+
+        setNodeDescription(config.getDescription());
+        setNumExecutors(config.getExecutors());
+        setMode(config.getMode());
+        setLabelString(config.getLabels());
+        setRetentionStrategy(retentionStrategy);
+        setNodeProperties(Collections.EMPTY_LIST);
 
         this.boxVersion = config.getResolvedBoxVersion();
         this.profileId = config.getResolvedDeploymentPolicy();
@@ -190,17 +194,32 @@ public class ElasticBoxSlave extends Slave {
     }
 
     public void setDeletable(boolean deletable) {
-        this.deletable = deletable;
+        if (deletable) {
+            this.deleteAttempts++;
+            if (maxDeleteAttemptsReached() ) {
+                LOGGER.warning(MessageFormat.format(
+                        "MAX_DELETE_ATTEMPTS reached. Attempted to delete slave [{0}] {1} times. Giving up.",
+                        this.toString(), MAX_DELETE_ATTEMPTS));
+
+                this.setRemovableFromCloud(false);
+            }
+        } else {
+            this.deleteAttempts = 0;
+        }
     }
 
     public boolean isDeletable() {
-        return deletable;
+        return deleteAttempts > 0;
+    }
+
+    public boolean maxDeleteAttemptsReached() {
+        return deleteAttempts > MAX_DELETE_ATTEMPTS;
     }
 
     public ElasticBoxCloud getCloud() throws IOException {
         ElasticBoxCloud ebCloud = null;
         if (cloudName != null) {
-            Cloud cloud = Jenkins.getInstance().getCloud(cloudName);
+            Cloud cloud = Jenkins.get().getCloud(cloudName);
             if (cloud instanceof ElasticBoxCloud) {
                 ebCloud = (ElasticBoxCloud) cloud;
             } else {
@@ -402,7 +421,7 @@ public class ElasticBoxSlave extends Slave {
 
     public void save() {
         try {
-            Jenkins.getInstance().save();
+            Jenkins.get().save();
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, ex.getMessage(), ex);
         }
@@ -502,7 +521,7 @@ public class ElasticBoxSlave extends Slave {
 
         @Override
         protected SlaveConfiguration getSlaveConfiguration() {
-            Cloud cloud = Jenkins.getInstance().getCloud(cloudName);
+            Cloud cloud = Jenkins.get().getCloud(cloudName);
             if (cloud instanceof ElasticBoxCloud) {
                 return ((ElasticBoxCloud) cloud).getSlaveConfiguration(slaveConfigId);
             }
@@ -577,7 +596,7 @@ public class ElasticBoxSlave extends Slave {
                 }
 
                 Set<String> configActiveInstanceIDs = new HashSet<String>();
-                for (Node node : Jenkins.getInstance().getNodes()) {
+                for (Node node : Jenkins.get().getNodes()) {
                     if (node instanceof ElasticBoxSlave) {
                         ElasticBoxSlave slave = (ElasticBoxSlave) node;
                         if (slave.getSlaveConfiguration() == getSlaveConfiguration()) {

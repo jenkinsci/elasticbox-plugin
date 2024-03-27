@@ -46,11 +46,14 @@ import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
+
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Descriptor;
 import hudson.model.EnvironmentContributingAction;
+import hudson.model.Run;
+
 import hudson.slaves.Cloud;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -71,6 +74,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -188,7 +192,8 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
                     TerminateOperation.terminate(instanceJson, client, logger);
                     client.delete(instanceJson.getString("id"));
                 } catch (ClientException ex) {
-                    if (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND) {
+                    if ((ex.getStatusCode() != HttpStatus.SC_FORBIDDEN)
+                            && (ex.getStatusCode() != HttpStatus.SC_NOT_FOUND)) {
                         throw ex;
                     }
                 }
@@ -230,7 +235,8 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         String policyId = DescriptorHelper.resolveDeploymentPolicy(client, workspace, profile, claims);
         JSONArray policyVariables = new JSONArray();
         if (StringUtils.isNotBlank(provider)) {
-            logger.info("Deploying box {0}", client.getBoxPageUrl(boxId));
+            logger.info("[{0}] Deploying box {1}",
+                    new Timestamp(System.currentTimeMillis()), client.getBoxPageUrl(boxId));
             policyId = boxId;
             JSONObject providerVariable = new JSONObject();
             providerVariable.put("type", "Text");
@@ -243,7 +249,8 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
             locationVariable.put("value", location);
             policyVariables.add(locationVariable);
         } else {
-            logger.info("Deploying box {0} with policy {1}",
+            logger.info("[{0}] Deploying box {1} with policy {2}",
+                    new Timestamp(System.currentTimeMillis()),
                     client.getBoxPageUrl(boxId),
                     client.getBoxPageUrl(policyId));
         }
@@ -256,16 +263,18 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
 
         String instanceId = Client.getResourceId(monitor.getResourceUrl());
         String instancePageUrl = Client.getPageUrl(ebCloud.getEndpointUrl(), client.getInstance(instanceId));
-        logger.info("Instance {0} is being deployed", instancePageUrl);
+        logger.info("[{0}] Instance {1} is being deployed", new Timestamp(System.currentTimeMillis()), instancePageUrl);
         notifyDeploying(build, instanceId, ebCloud);
         if (waitForCompletion) {
             try {
                 logger.info("Waiting for the deployment of the instance {0} to finish", instancePageUrl);
                 monitor.waitForDone(getWaitForCompletionTimeout());
-                logger.info("The instance {0} has been deployed successfully ", instancePageUrl);
+                logger.info("[{0}] The instance {1} has been deployed successfully ",
+                        new Timestamp(System.currentTimeMillis()), instancePageUrl);
             } catch (IProgressMonitor.IncompleteException ex) {
                 Logger.getLogger(DeployBox.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
-                logger.error("Failed to deploy instance {0}: {1}", instancePageUrl, ex.getMessage());
+                logger.error("[{0}] Failed to deploy instance {1}: {2}",
+                        new Timestamp(System.currentTimeMillis()), instancePageUrl, ex.getMessage());
                 throw new AbortException(ex.getMessage());
             }
         }
@@ -278,7 +287,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         final JSONObject service = client.getService(instanceId);
         build.addAction(new EnvironmentContributingAction() {
 
-            public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
+            public void buildEnvironment(Run<?,?> build, EnvVars env) {
                 final String instanceUrl = client.getInstanceUrl(instanceId);
                 env.put(instanceEnvVariable, instanceId);
                 env.put(instanceEnvVariable + "_URL", instanceUrl);
@@ -399,7 +408,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
     private void notifyDeploying(AbstractBuild<?, ?> build, String instanceId, ElasticBoxCloud ebxCloud)
             throws InterruptedException {
 
-        for (BuilderListener listener : Jenkins.getInstance().getExtensionList(BuilderListener.class)) {
+        for (BuilderListener listener : Jenkins.get().getExtensionList(BuilderListener.class)) {
             try {
                 listener.onDeploying(build, instanceId, ebxCloud);
             } catch (IOException ex) {
@@ -415,7 +424,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         TaskLogger logger = new TaskLogger(listener);
         logger.info("Executing Deploy Box build step");
 
-        ElasticBoxCloud ebCloud = (ElasticBoxCloud) Jenkins.getInstance().getCloud(getCloud());
+        ElasticBoxCloud ebCloud = (ElasticBoxCloud) Jenkins.get().getCloud(getCloud());
         if (ebCloud == null) {
             throw new IOException(MessageFormat.format("Cannod find ElasticBox cloud ''{0}''.", getCloud()));
         }
@@ -573,7 +582,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
     }
 
     public ElasticBoxCloud getElasticBoxCloud() {
-        return (ElasticBoxCloud) Jenkins.getInstance().getCloud(cloud);
+        return (ElasticBoxCloud) Jenkins.get().getCloud(cloud);
     }
 
     private static class Result {
@@ -654,7 +663,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
 
         private static List<ElasticBoxCloud> getElasticBoxClouds() {
             List<ElasticBoxCloud> elasticBoxClouds = new ArrayList<>();
-            for (Cloud cloud : Jenkins.getInstance().clouds) {
+            for (Cloud cloud : Jenkins.get().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     elasticBoxClouds.add((ElasticBoxCloud) cloud);
                 }
@@ -675,7 +684,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         }
 
         public List<? extends Descriptor<InstanceExpiration>> getExpirationOptions() {
-            return Jenkins.getInstance().getDescriptorList(InstanceExpiration.class);
+            return Jenkins.get().getDescriptorList(InstanceExpiration.class);
         }
 
         @Override
@@ -756,7 +765,7 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
             trace("doFillCloudItems", "", "", "", "", "", "");
 
             ListBoxModel clouds = new ListBoxModel(new ListBoxModel.Option(Constants.CHOOSE_CLOUD_MESSAGE, ""));
-            for (Cloud cloud : Jenkins.getInstance().clouds) {
+            for (Cloud cloud : Jenkins.get().clouds) {
                 if (cloud instanceof ElasticBoxCloud) {
                     clouds.add(cloud.getDisplayName(), cloud.name);
                 }
@@ -987,6 +996,16 @@ public class DeployBox extends Builder implements IInstanceProvider, Serializabl
         public FormValidation doCheckBox(@QueryParameter String box) {
             if (StringUtils.isBlank(box)) {
                 return FormValidation.error("Box to deploy is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckInstanceName(@QueryParameter String instanceName,
+                                                  @QueryParameter String boxDeploymentType) {
+            if (StringUtils.isBlank(instanceName)
+                    && DeploymentType.APPLICATIONBOX_DEPLOYMENT_TYPE.getValue().equals(boxDeploymentType)) {
+
+                return FormValidation.error("Instance name is required");
             }
             return FormValidation.ok();
         }

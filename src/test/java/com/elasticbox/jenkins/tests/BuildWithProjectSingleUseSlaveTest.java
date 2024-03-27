@@ -65,14 +65,14 @@ public class BuildWithProjectSingleUseSlaveTest extends SlaveBuildTestBase {
         // Create a slave configuration with retention time of 2 minutes.
         SlaveConfiguration slaveConfig = new SlaveConfiguration(UUID.randomUUID().toString(), workspace, boxId, boxId,
                 profile.getString("id"), null, null, null, 0, 1, slaveBoxName, "[]", label, "", null, Node.Mode.NORMAL, 2, null, 1, 60, DeploymentType.SCRIPTBOX_DEPLOYMENT_TYPE.getValue());
-        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getToken(), Collections.singletonList(slaveConfig));
-        jenkins.getInstance().clouds.remove(cloud);
-        jenkins.getInstance().clouds.add(newCloud);
+        ElasticBoxCloud newCloud = new ElasticBoxCloud("elasticbox-" + UUID.randomUUID().toString(), "ElasticBox", cloud.getEndpointUrl(), cloud.getMaxInstances(), cloud.getCredentialsId(), Collections.singletonList(slaveConfig));
+        jenkinsRule.getInstance().clouds.remove(cloud);
+        jenkinsRule.getInstance().clouds.add(newCloud);
 
         // create a project with single-use slave option and tie it to the slave configuration created above
-        FreeStyleProject project = jenkins.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
+        FreeStyleProject project = jenkinsRule.getInstance().createProject(FreeStyleProject.class, MessageFormat.format("Build with {0}", slaveBoxName));
         project.getBuildWrappersList().add(new SingleUseSlaveBuildOption());
-        project.setAssignedLabel(jenkins.getInstance().getLabel(label));
+        project.setAssignedLabel(jenkinsRule.getInstance().getLabel(label));
 
         // schedule a build
         QueueTaskFuture future = project.scheduleBuild2(0);

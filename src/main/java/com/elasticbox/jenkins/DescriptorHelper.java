@@ -128,7 +128,7 @@ public class DescriptorHelper {
 
     public static ListBoxModel getClouds() {
         ListBoxModel clouds = new ListBoxModel();
-        for (Cloud cloud : Jenkins.getInstance().clouds) {
+        for (Cloud cloud : Jenkins.get().clouds) {
             if (cloud instanceof ElasticBoxCloud) {
                 clouds.add(cloud.getDisplayName(), cloud.name);
             }
@@ -141,7 +141,7 @@ public class DescriptorHelper {
 
 
         String token = null;
-        Client client = new Client(endpointUrl, username, password);
+        Client client = new Client(endpointUrl, username, password, ClientCache.getJenkinsHttpProxyCfg());
         try {
             token = client.generateToken(Constants.TOKEN_DESCRIPTION);
         } catch (ClientException ex) {
@@ -313,8 +313,7 @@ public class DescriptorHelper {
                 return new JsonArrayResponse(boxStack.toJsonArray());
 
             } catch (IOException ex) {
-                LOGGER.log(
-                        Level.SEVERE,
+                LOGGER.log(Level.SEVERE,
                         MessageFormat.format("Error fetching variables for profile {0}", instance), ex);
             }
         }
@@ -652,11 +651,6 @@ public class DescriptorHelper {
                 formData.remove("location");
                 break;
 
-            case CLOUDFORMATIONMANAGED_DEPLOYMENT_TYPE:
-                formData.remove("profile");
-                formData.remove("claims");
-                break;
-
             default:
                 String policySelection = null;
                 for (Object entry : formData.entrySet()) {
@@ -677,8 +671,6 @@ public class DescriptorHelper {
 
                 break;
         }
-
-
     }
 
     public static ListBoxModel getEmptyListBoxModel() {

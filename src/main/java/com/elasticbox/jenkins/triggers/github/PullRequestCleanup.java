@@ -24,7 +24,7 @@ import hudson.model.TaskListener;
 
 import jenkins.model.Jenkins;
 
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHPullRequest;
@@ -203,7 +203,8 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
                             );
                         }
 
-                    } else if (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                    } else if ( (ex.getStatusCode() == HttpStatus.SC_FORBIDDEN)
+                            || (ex.getStatusCode() == HttpStatus.SC_NOT_FOUND) ) {
 
                         LOGGER.info(
                             MessageFormat.format(
@@ -248,7 +249,7 @@ public class PullRequestCleanup extends AsyncPeriodicWork {
 
                     // add the terminating instance to the DeleteInstancesWorkload
                     // so it will be deleted after its termination
-                    Jenkins.getInstance()
+                    Jenkins.get()
                         .getExtensionList(
                             ElasticBoxExecutor.Workload.class).get(DeleteInstancesWorkload.class).add(instance);
 

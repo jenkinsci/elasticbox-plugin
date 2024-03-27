@@ -1,0 +1,49 @@
+<project>
+    <actions/>
+    <description/>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <hudson.model.ParametersDefinitionProperty>
+            <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                    <name>SLEEP_TIMER</name>
+                    <description>Number of seconds to sleep</description>
+                    <defaultValue>30</defaultValue>
+                </hudson.model.StringParameterDefinition>
+            </parameterDefinitions>
+        </hudson.model.ParametersDefinitionProperty>
+    </properties>
+    <scm class="hudson.scm.NullSCM"/>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+        <hudson.tasks.Shell>
+            <command>#!/bin/bash
+
+                echo Sleeping ${SLEEP_TIMER} for PR=${PR_NUMBER} with the following Jenkins params:
+                echo BUILD_NUMBER=${BUILD_NUMBER}
+                echo BUILD_ID=${BUILD_ID}
+                echo BUILD_URL=${BUILD_URL}
+                echo NODE_NAME=${NODE_NAME}
+                echo JOB_NAME=${JOB_NAME}
+                echo BUILD_TAG=${BUILD_TAG}
+                echo JENKINS_URL=${JENKINS_URL}
+                echo EXECUTOR_NUMBER=${EXECUTOR_NUMBER}
+                echo JAVA_HOME=${JAVA_HOME}
+                echo WORKSPACE=${WORKSPACE}
+                echo GIT_BRANCH=${GIT_BRANCH}
+                echo SVN_REVISION=${SVN_REVISION}
+                echo CVS_BRANCH=${CVS_BRANCH}
+                echo GIT_COMMIT=${GIT_COMMIT}
+                echo GIT_URL=${GIT_URL}
+                sleep ${SLEEP_TIMER}
+            </command>
+        </hudson.tasks.Shell>
+    </builders>
+    <publishers/>
+    <buildWrappers/>
+</project>
