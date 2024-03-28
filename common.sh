@@ -62,7 +62,7 @@ function upgrade_appliance() {
     set +e
     for i in `seq 20`
     do
-      sleep 10
+      sleep 70
       echo "...checking if the appliance is back online "$i
       if [[ -n $(check_online ${EBX_TOKEN} ${ELASTICBOX_RELEASE} ${EBX_ADDRESS}) ]]
       then
